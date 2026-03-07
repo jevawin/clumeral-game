@@ -7,12 +7,12 @@
 
 ### Data Loading
 
-- [ ] **DATA-01**: App fetches `data.csv` from the project root using a relative path on page load
-- [ ] **DATA-02**: CSV is parsed with PapaParse using `dynamicTyping: true` so numeric columns are numbers, not strings
-- [ ] **DATA-03**: All column headers are trimmed of leading/trailing whitespace before use (4 headers in data.csv have trailing spaces)
-- [ ] **DATA-04**: Row 0 of the CSV is treated as labels; rows 1+ are data rows
+- [x] **DATA-01**: App fetches `data.csv` from the project root using a relative path on page load
+- [x] **DATA-02**: CSV is parsed with PapaParse using `dynamicTyping: true` so numeric columns are numbers, not strings
+- [x] **DATA-03**: All column headers are trimmed of leading/trailing whitespace before use (4 headers in data.csv have trailing spaces)
+- [x] **DATA-04**: Row 0 of the CSV is treated as labels; rows 1+ are data rows
 - [x] **DATA-05**: A loading state is shown while the CSV is fetching
-- [ ] **DATA-06**: An error state is shown if the CSV fetch fails
+- [x] **DATA-06**: An error state is shown if the CSV fetch fails
 
 ### Filtering Engine
 
@@ -68,12 +68,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
+| DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
-| DATA-06 | Phase 1 | Pending |
+| DATA-06 | Phase 1 | Complete |
 | FILT-01 | Phase 2 | Pending |
 | FILT-02 | Phase 2 | Pending |
 | FILT-03 | Phase 2 | Pending |
