@@ -43,7 +43,11 @@ Plans:
   2. Running the filter loop 50 times in the browser console always terminates and never produces the same answer twice in a row (random)
   3. Calling `runFilterLoop` with a repeated-digit number row (e.g., the row for 111) does not hang — it terminates within the iteration cap and returns a result or a defined escape value
   4. Each clue object contains `{ label, operator, value }` with a human-readable label string (not a raw column index)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Implement RANGE_GROUPS constant, applyFilter, and runFilterLoop in app.js; create MANUAL-TEST-CHECKLIST.md
+- [ ] 02-02-PLAN.md — Human verification: run all 10 FILT browser-console checks and 50-iteration stress test
 
 ### Phase 3: Game Loop and UI
 **Goal**: A fully playable game in the browser — clues display, the player can guess, receives correct/incorrect feedback with guess history, and can start a new puzzle — styled with the dark n8n-inspired theme
@@ -75,6 +79,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 2/2 | Complete   | 2026-03-07 |
-| 2. Filtering Engine | 0/TBD | Not started | - |
+| 2. Filtering Engine | 0/2 | Not started | - |
 | 3. Game Loop and UI | 0/TBD | Not started | - |
 | 4. Deployment | 0/TBD | Not started | - |
