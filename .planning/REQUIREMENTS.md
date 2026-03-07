@@ -94,7 +94,7 @@
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 3 | Pending |
+| UI-04 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 27 total
@@ -103,4 +103,4 @@
 
 ---
 *Requirements defined: 2026-03-07*
-*Last updated: 2026-03-07 after initial definition*
+*Last updated: 2026-03-07 after roadmap creation*
