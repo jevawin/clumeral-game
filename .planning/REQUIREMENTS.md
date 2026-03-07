@@ -11,7 +11,7 @@
 - [ ] **DATA-02**: CSV is parsed with PapaParse using `dynamicTyping: true` so numeric columns are numbers, not strings
 - [ ] **DATA-03**: All column headers are trimmed of leading/trailing whitespace before use (4 headers in data.csv have trailing spaces)
 - [ ] **DATA-04**: Row 0 of the CSV is treated as labels; rows 1+ are data rows
-- [ ] **DATA-05**: A loading state is shown while the CSV is fetching
+- [x] **DATA-05**: A loading state is shown while the CSV is fetching
 - [ ] **DATA-06**: An error state is shown if the CSV fetch fails
 
 ### Filtering Engine
@@ -72,7 +72,7 @@
 | DATA-02 | Phase 1 | Pending |
 | DATA-03 | Phase 1 | Pending |
 | DATA-04 | Phase 1 | Pending |
-| DATA-05 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Complete |
 | DATA-06 | Phase 1 | Pending |
 | FILT-01 | Phase 2 | Pending |
 | FILT-02 | Phase 2 | Pending |

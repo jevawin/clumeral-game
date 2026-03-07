@@ -12,7 +12,7 @@ Four phases deliver the game in strict dependency order: first the CSV data laye
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Data Foundation** - CSV loads correctly with typed columns, trimmed headers, loading/error states
+- [x] **Phase 1: Data Foundation** - CSV loads correctly with typed columns, trimmed headers, loading/error states (in progress — 1/2 plans complete)
 - [ ] **Phase 2: Filtering Engine** - Pure filter loop reliably produces one answer and readable clues for any input
 - [ ] **Phase 3: Game Loop and UI** - Complete playable game with guess input, feedback, history, and dark theme
 - [ ] **Phase 4: Deployment** - Game is live on GitHub Pages and verified end-to-end in production
@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — HTML game shell (index.html, style.css) and manual test checklist
+- [x] 01-01-PLAN.md — HTML game shell (index.html, style.css) and manual test checklist
 - [ ] 01-02-PLAN.md — CSV data loader (app.js) with fetch-then-parse, loading/error states, browser verification
 
 ### Phase 2: Filtering Engine
@@ -74,7 +74,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation | 0/2 | Not started | - |
+| 1. Data Foundation | 1/2 | In progress | - |
 | 2. Filtering Engine | 0/TBD | Not started | - |
 | 3. Game Loop and UI | 0/TBD | Not started | - |
 | 4. Deployment | 0/TBD | Not started | - |
