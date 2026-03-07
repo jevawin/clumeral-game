@@ -16,16 +16,16 @@
 
 ### Filtering Engine
 
-- [ ] **FILT-01**: Six named filter ranges are defined matching the Apps Script: SpecialNumbers (cols 4–6), Sums (cols 7–10), AbsoluteDifference (cols 11–13), Products (cols 14–17), Means (cols 18–21), Range (col 22)
-- [ ] **FILT-02**: Filter loop starts with all data rows as candidates
-- [ ] **FILT-03**: Each iteration picks a random untried range, a random column within that range, and a random value from that column among current candidates
-- [ ] **FILT-04**: Numeric columns use operators: `<=`, `=`, `!=`, `>=` (chosen at random); text columns use `=`, `!=`
-- [ ] **FILT-05**: A filter is skipped if it would eliminate all remaining candidates
-- [ ] **FILT-06**: A filter is skipped if all current candidate values in the chosen column are identical (uniform — filter would be meaningless)
-- [ ] **FILT-07**: The loop terminates when 1 candidate remains or all 6 ranges have been tried
-- [ ] **FILT-08**: An iteration cap prevents infinite loops on edge-case rows (e.g., repeated-digit numbers like 111, 222)
-- [ ] **FILT-09**: Each applied filter records a clue: { label, operator, value }
-- [ ] **FILT-10**: Column 0 (Number) of the surviving row is the answer
+- [x] **FILT-01**: Six named filter ranges are defined matching the Apps Script: SpecialNumbers (cols 4–6), Sums (cols 7–10), AbsoluteDifference (cols 11–13), Products (cols 14–17), Means (cols 18–21), Range (col 22)
+- [x] **FILT-02**: Filter loop starts with all data rows as candidates
+- [x] **FILT-03**: Each iteration picks a random untried range, a random column within that range, and a random value from that column among current candidates
+- [x] **FILT-04**: Numeric columns use operators: `<=`, `=`, `!=`, `>=` (chosen at random); text columns use `=`, `!=`
+- [x] **FILT-05**: A filter is skipped if it would eliminate all remaining candidates
+- [x] **FILT-06**: A filter is skipped if all current candidate values in the chosen column are identical (uniform — filter would be meaningless)
+- [x] **FILT-07**: The loop terminates when 1 candidate remains or all 6 ranges have been tried
+- [x] **FILT-08**: An iteration cap prevents infinite loops on edge-case rows (e.g., repeated-digit numbers like 111, 222)
+- [x] **FILT-09**: Each applied filter records a clue: { label, operator, value }
+- [x] **FILT-10**: Column 0 (Number) of the surviving row is the answer
 
 ### Game Loop
 
@@ -74,16 +74,16 @@
 | DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
 | DATA-06 | Phase 1 | Complete |
-| FILT-01 | Phase 2 | Pending |
-| FILT-02 | Phase 2 | Pending |
-| FILT-03 | Phase 2 | Pending |
-| FILT-04 | Phase 2 | Pending |
-| FILT-05 | Phase 2 | Pending |
-| FILT-06 | Phase 2 | Pending |
-| FILT-07 | Phase 2 | Pending |
-| FILT-08 | Phase 2 | Pending |
-| FILT-09 | Phase 2 | Pending |
-| FILT-10 | Phase 2 | Pending |
+| FILT-01 | Phase 2 | Complete |
+| FILT-02 | Phase 2 | Complete |
+| FILT-03 | Phase 2 | Complete |
+| FILT-04 | Phase 2 | Complete |
+| FILT-05 | Phase 2 | Complete |
+| FILT-06 | Phase 2 | Complete |
+| FILT-07 | Phase 2 | Complete |
+| FILT-08 | Phase 2 | Complete |
+| FILT-09 | Phase 2 | Complete |
+| FILT-10 | Phase 2 | Complete |
 | GAME-01 | Phase 3 | Pending |
 | GAME-02 | Phase 3 | Pending |
 | GAME-03 | Phase 3 | Pending |
