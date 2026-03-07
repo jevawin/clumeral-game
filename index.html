@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>David Lark's Lame Number Game</title>
+  <!-- DEVELOPMENT NOTE: This app uses fetch() to load data.csv.
+       You MUST serve via a local HTTP server — opening index.html directly
+       via file:// will block fetch() with a CORS error.
+       Use: python3 -m http.server 8080  (then open http://localhost:8080)
+       or VS Code Live Server extension. -->
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <p id="status">Loading...</p>
+  <ul id="clues"></ul>
+  <input id="guess" type="text" inputmode="numeric" maxlength="3"
+         placeholder="Enter a 3-digit number" disabled>
+  <button id="submit" disabled>Submit</button>
+  <ul id="history"></ul>
+  <button id="new-puzzle" disabled>New Puzzle</button>
+
+  <script src="app.js"></script>
+</body>
+</html>
