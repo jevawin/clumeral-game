@@ -28,7 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. After load, all 23 column headers are available in code with no trailing whitespace
   3. Numeric columns contain JavaScript numbers (not strings) after parse — `typeof value === 'number'` returns true
   4. Simulating a failed fetch shows an error message in the UI (not a silent blank page)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — HTML game shell (index.html, style.css) and manual test checklist
+- [ ] 01-02-PLAN.md — CSV data loader (app.js) with fetch-then-parse, loading/error states, browser verification
 
 ### Phase 2: Filtering Engine
 **Goal**: The pure filter loop function accepts typed row data and reliably produces exactly one answer with human-readable clues — including on pathological inputs — with no UI dependencies
@@ -70,7 +74,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation | 0/TBD | Not started | - |
+| 1. Data Foundation | 0/2 | Not started | - |
 | 2. Filtering Engine | 0/TBD | Not started | - |
 | 3. Game Loop and UI | 0/TBD | Not started | - |
 | 4. Deployment | 0/TBD | Not started | - |
