@@ -42,8 +42,11 @@ async function loadData() {
     `data.csv loaded: ${gameRows.length} rows, ${gameHeaders.length} headers`,
     gameHeaders
   );
-  // #status intentionally left as 'Loading...' per Phase 1 scope decision
-  // Phase 2/3 will update #status when the game is ready
+
+  document.getElementById('status').textContent = 'Ready — data loaded successfully.';
+  document.getElementById('guess').removeAttribute('disabled');
+  document.getElementById('submit').removeAttribute('disabled');
+  document.getElementById('new-puzzle').removeAttribute('disabled');
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
