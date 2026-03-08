@@ -1,1 +1,235 @@
-/* Phase 3 adds all visual styling here. Phase 1 intentionally leaves this empty. */
+/* ============================================================
+   1. CSS Custom Properties
+   ============================================================ */
+
+:root {
+  --bg-deep:    #0f0f1a;
+  --bg-card:    rgba(255, 255, 255, 0.06);
+  --accent:     #ff6d5a;
+  --accent-alt: #ff914d;
+  --text:       #e8e8f0;
+  --text-muted: #7a7a9a;
+  --green:      #4caf88;
+  --red:        #ff6d5a;
+}
+
+/* ============================================================
+   2. Reset / Base
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================================
+   3. Body + Background
+   ============================================================ */
+
+body {
+  background-color: var(--bg-deep);
+  background-image: radial-gradient(ellipse at top, #1a1a2e 0%, #0f0f1a 70%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  padding: 1.5rem;
+  gap: 1.25rem;
+}
+
+/* ============================================================
+   4. Game Title (outside card)
+   ============================================================ */
+
+.game-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+/* ============================================================
+   5. Frosted Glass Card
+   CRITICAL: both -webkit-backdrop-filter AND backdrop-filter required (UI-02)
+   ============================================================ */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  width: min(480px, 90vw);
+  -webkit-backdrop-filter: blur(12px);  /* Safari — required per UI-02 */
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ============================================================
+   6. Status Subtitle
+   ============================================================ */
+
+#status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ============================================================
+   7. Clue List and Clue Rows
+   ============================================================ */
+
+#clues {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.clue-row {
+  border-left: 3px solid var(--accent);
+  padding: 0.35rem 0 0.35rem 0.75rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   8. Input Row — inline desktop, stacked mobile
+   ============================================================ */
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#guess {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+}
+
+#guess:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 109, 90, 0.25);
+}
+
+#guess:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#submit {
+  padding: 0.55rem 1.1rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#submit:hover:not(:disabled) {
+  background: var(--accent-alt);
+}
+
+#submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .input-row {
+    flex-direction: column;
+  }
+  .input-row button {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   9. Feedback Message
+   ============================================================ */
+
+.feedback {
+  font-size: 0.95rem;
+  font-weight: 500;
+  min-height: 1.4rem;
+}
+
+.feedback--correct {
+  color: var(--green);
+}
+
+.feedback--incorrect {
+  color: var(--red);
+}
+
+/* ============================================================
+   10. Guess History
+   ============================================================ */
+
+#history-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#history {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.history-item {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 0.15rem 0;
+}
+
+/* ============================================================
+   11. New Puzzle Button
+   ============================================================ */
+
+#new-puzzle {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  align-self: flex-start;
+}
+
+#new-puzzle:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+#new-puzzle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
