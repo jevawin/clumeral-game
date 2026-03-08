@@ -59,7 +59,12 @@ Plans:
   3. A wrong guess shows an "Incorrect" message and adds the guessed number to a visible guess history below the input
   4. Clicking "New Puzzle" clears clues, resets the input, clears guess history, and shows a fresh puzzle with a different answer
   5. The page visually matches the n8n dark theme: near-black background, orange/coral accents, frosted glass card panels
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Game loop JS (app.js) + HTML structure additions (index.html): gameState, renderClues/Feedback/History, startPuzzle, handleGuess, event listeners
+- [ ] 03-02-PLAN.md — Full CSS in style.css: dark theme, frosted glass card, Inter font, responsive input row, clue/feedback/history styling
+- [ ] 03-03-PLAN.md — Human verification: full 10-item checklist in browser for all GAME-01–GAME-07 and UI-01–UI-03
 
 ### Phase 4: Deployment
 **Goal**: The game is live on GitHub Pages and works end-to-end in production — all asset paths resolve correctly under the repo subdirectory and the game is playable by anyone with the URL
@@ -80,5 +85,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 2/2 | Complete   | 2026-03-07 |
 | 2. Filtering Engine | 2/2 | Complete   | 2026-03-08 |
-| 3. Game Loop and UI | 0/TBD | Not started | - |
+| 3. Game Loop and UI | 0/3 | Not started | - |
 | 4. Deployment | 0/TBD | Not started | - |
