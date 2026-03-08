@@ -220,29 +220,126 @@ body {
 }
 
 /* ============================================================
-   11. New Puzzle Button
+   11. Puzzle Label
    ============================================================ */
 
-#new-puzzle {
-  padding: 0.5rem 1rem;
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 500;
+.puzzle-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   12. Save Row (score cookie checkbox)
+   ============================================================ */
+
+.save-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: -0.25rem;
+}
+
+.save-toggle {
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-  align-self: flex-start;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
 }
 
-#new-puzzle:hover:not(:disabled) {
-  background: var(--accent);
-  color: #fff;
+.save-toggle:hover {
+  color: var(--accent);
 }
 
-#new-puzzle:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.save-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ============================================================
+   13. Stats
+   ============================================================ */
+
+.stats {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.85rem;
+}
+
+.stats-heading {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+
+.stats-grid {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.stats-val {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+.stats-lbl {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.stats-last-lbl {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.stats-bubbles {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.stats-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(255, 109, 90, 0.12);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ============================================================
+   14. Next Puzzle
+   ============================================================ */
+
+.next-puzzle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding-top: 0.25rem;
 }

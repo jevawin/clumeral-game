@@ -43,11 +43,8 @@ async function loadData() {
     gameHeaders
   );
 
-  document.getElementById('status').textContent = 'Ready — data loaded successfully.';
-  document.getElementById('guess').removeAttribute('disabled');
-  document.getElementById('submit').removeAttribute('disabled');
-  document.getElementById('new-puzzle').removeAttribute('disabled');
-  startPuzzle();
+  document.getElementById('status').style.display = 'none';
+  startDailyPuzzle();
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
@@ -81,7 +78,7 @@ function applyFilter(candidates, colHeader, operator, value) {
   });
 }
 
-function runFilterLoop(rows) {
+function runFilterLoop(rows, rng = Math.random) {
   let candidates = [...rows];            // FILT-02: start with all data rows; never mutate gameRows
   const clues = [];                      // FILT-09: accumulated clues
   const triedRanges = new Set();
@@ -94,11 +91,11 @@ function runFilterLoop(rows) {
 
     // FILT-03a: pick a random untried range
     const untriedRanges = rangeNames.filter(n => !triedRanges.has(n));
-    const rangeName = untriedRanges[Math.floor(Math.random() * untriedRanges.length)];
+    const rangeName = untriedRanges[Math.floor(rng() * untriedRanges.length)];
     const colIndices = RANGE_GROUPS[rangeName];
 
     // FILT-03b: pick a random column within the range
-    const colIndex = colIndices[Math.floor(Math.random() * colIndices.length)];
+    const colIndex = colIndices[Math.floor(rng() * colIndices.length)];
     const colHeader = gameHeaders[colIndex]; // index-based — resolves whatever PapaParse key is used
 
     // FILT-06: skip if column is uniform (all candidates have identical values)
@@ -109,12 +106,12 @@ function runFilterLoop(rows) {
     }
 
     // FILT-03c: pick a random value from current candidates in this column
-    const value = values[Math.floor(Math.random() * values.length)];
+    const value = values[Math.floor(rng() * values.length)];
 
     // FILT-04: pick operator appropriate to column type
     const isText = typeof value === 'string';
     const ops = isText ? ['=', '!='] : ['<=', '=', '!=', '>='];
-    const operator = ops[Math.floor(Math.random() * ops.length)];
+    const operator = ops[Math.floor(rng() * ops.length)];
 
     // FILT-05: skip if filter would eliminate all candidates; do NOT mark range tried
     const filtered = applyFilter(candidates, colHeader, operator, value);
@@ -164,21 +161,79 @@ function runFilterLoop(rows) {
   return { answer: candidates[0]['Number'], clues };
 }
 
-// ─── Phase 3: Game Loop ───────────────────────────────────────────────────────
+// ─── Phase 3: Daily Puzzle ────────────────────────────────────────────────────
 
-const OPERATOR_SYMBOLS = {
-  '<=': '≤',
-  '>=': '≥',
-  '=':  '=',
-  '!=': '≠',
-};
+const EPOCH_DATE       = '2026-03-08'; // Puzzle #1 launch date
+const STORAGE_HISTORY  = 'dlng_history';
+const STORAGE_PREFS    = 'dlng_prefs';
 
-let gameState = {
-  answer: null,
-  guesses: [],
-  solved: false,
-};
+const OPERATOR_SYMBOLS = { '<=': '≤', '>=': '≥', '=': '=', '!=': '≠' };
 
+let gameState = { answer: null, guesses: [], solved: false };
+let saveScore  = true;
+
+// ── Seeded RNG (mulberry32) ───────────────────────────────────────────────────
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return function () {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function todayLocal() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function puzzleNumber(dateStr) {
+  const ms = new Date(dateStr + 'T00:00:00') - new Date(EPOCH_DATE + 'T00:00:00');
+  return Math.max(1, Math.floor(ms / 86400000) + 1);
+}
+
+function dateSeedInt(dateStr) {
+  return parseInt(dateStr.replace(/-/g, ''), 10);
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  });
+}
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function loadPrefs() {
+  try { return { saveScore: true, ...JSON.parse(localStorage.getItem(STORAGE_PREFS) || '{}') }; }
+  catch { return { saveScore: true }; }
+}
+
+function persistPrefs() {
+  localStorage.setItem(STORAGE_PREFS, JSON.stringify({ saveScore }));
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || []; }
+  catch { return []; }
+}
+
+function recordGame(dateStr, tries) {
+  const history = loadHistory().filter(h => h.date !== dateStr);
+  history.unshift({ date: dateStr, tries });
+  localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history.slice(0, 60)));
+}
+
+function todayEntry() {
+  const today = todayLocal();
+  return loadHistory().find(h => h.date === today) || null;
+}
+
+// ── Render helpers ────────────────────────────────────────────────────────────
 function renderClues(clues) {
   const ul = document.getElementById('clues');
   ul.innerHTML = '';
@@ -206,11 +261,12 @@ function renderClues(clues) {
   }
 }
 
-function renderFeedback(type, answer) {
+function renderFeedback(type, answer, tries) {
   const el = document.getElementById('feedback');
   if (!el) return;
   if (type === 'correct') {
-    el.textContent = `Correct! The answer was ${answer}.`;
+    const t = tries === 1 ? '1 try' : `${tries} tries`;
+    el.textContent = `You got it in ${t}! The answer was ${answer}.`;
     el.className = 'feedback feedback--correct';
   } else if (type === 'incorrect') {
     el.textContent = 'Incorrect — try again.';
@@ -238,42 +294,121 @@ function renderHistory(guesses) {
   }
 }
 
-function startPuzzle() {
-  const { answer, clues } = runFilterLoop(gameRows);
-  gameState = { answer, guesses: [], solved: false };
+function renderStats() {
+  const statsEl = document.getElementById('stats');
+  if (!statsEl) return;
+  const history = loadHistory();
+  if (history.length === 0) { statsEl.style.display = 'none'; return; }
+  const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
+  const last5 = history.slice(0, 5);
+  statsEl.innerHTML = `
+    <p class="stats-heading">Your stats</p>
+    <div class="stats-grid">
+      <div class="stats-item"><span class="stats-val">${history.length}</span><span class="stats-lbl">Played</span></div>
+      <div class="stats-item"><span class="stats-val">${avg}</span><span class="stats-lbl">Avg tries</span></div>
+    </div>
+    <p class="stats-last-lbl">Last ${last5.length} game${last5.length !== 1 ? 's' : ''}</p>
+    <div class="stats-bubbles">${last5.map(h => `<span class="stats-bubble">${h.tries}</span>`).join('')}</div>
+  `;
+  statsEl.style.display = '';
+}
+
+// ── Checkbox ──────────────────────────────────────────────────────────────────
+function updateCheckbox(checked) {
+  saveScore = checked;
+  const toggle = document.getElementById('save-toggle');
+  if (!toggle) return;
+  toggle.setAttribute('aria-checked', String(checked));
+  toggle.querySelector('.icon-checked').style.display   = checked ? '' : 'none';
+  toggle.querySelector('.icon-unchecked').style.display = checked ? 'none' : '';
+}
+
+// ── Game ──────────────────────────────────────────────────────────────────────
+function showNextPuzzle() {
+  const num = puzzleNumber(todayLocal());
+  const np  = document.getElementById('next-puzzle');
+  const nn  = document.getElementById('next-number');
+  if (np && nn) { nn.textContent = num + 1; np.style.display = ''; }
+}
+
+function showCompletedState(tries) {
+  const t  = tries === 1 ? '1 try' : `${tries} tries`;
+  const fb = document.getElementById('feedback');
+  fb.textContent = `You already solved today's puzzle in ${t}!`;
+  fb.className   = 'feedback feedback--correct';
+  document.getElementById('input-area').style.display = 'none';
+  document.getElementById('save-row').style.display   = 'none';
+  renderStats();
+  showNextPuzzle();
+}
+
+function startDailyPuzzle() {
+  const today = todayLocal();
+  const num   = puzzleNumber(today);
+
+  document.getElementById('puzzle-label').style.display = '';
+  document.getElementById('puzzle-number').textContent  = num;
+  document.getElementById('puzzle-date').textContent    = formatDate(today);
+
+  const rng            = makeRng(dateSeedInt(today));
+  const { answer, clues } = runFilterLoop(gameRows, rng);
   renderClues(clues);
-  renderFeedback(null, null);
+
+  const entry = todayEntry();
+  if (entry) {
+    showCompletedState(entry.tries);
+    return;
+  }
+
+  gameState = { answer, guesses: [], solved: false };
+  renderFeedback(null, null, 0);
   renderHistory([]);
-  const guessEl = document.getElementById('guess');
+  document.getElementById('stats').style.display        = 'none';
+  document.getElementById('next-puzzle').style.display  = 'none';
+
+  const guessEl  = document.getElementById('guess');
   const submitEl = document.getElementById('submit');
-  guessEl.value = '';
+  guessEl.value  = '';
   guessEl.removeAttribute('disabled');
   submitEl.removeAttribute('disabled');
   guessEl.focus();
+
+  updateCheckbox(loadPrefs().saveScore);
 }
 
 function handleGuess() {
   if (gameState.solved) return;
-  const raw = document.getElementById('guess').value.trim();
+  const raw   = document.getElementById('guess').value.trim();
   const guess = Number(raw);
   if (!Number.isInteger(guess) || raw.length !== 3) return;
+
+  const tries = gameState.guesses.length + 1;
+
   if (guess === gameState.answer) {
     gameState.solved = true;
-    renderFeedback('correct', gameState.answer);
+    renderFeedback('correct', gameState.answer, tries);
     document.getElementById('guess').setAttribute('disabled', '');
     document.getElementById('submit').setAttribute('disabled', '');
+    if (saveScore) {
+      recordGame(todayLocal(), tries);
+      renderStats();
+    }
+    showNextPuzzle();
   } else {
     gameState.guesses.push(guess);
-    renderFeedback('incorrect', null);
+    renderFeedback('incorrect', null, 0);
     renderHistory(gameState.guesses);
     document.getElementById('guess').value = '';
     document.getElementById('guess').focus();
   }
 }
 
-// Event listeners — attached once, never inside startPuzzle()
+// Event listeners
 document.getElementById('submit').addEventListener('click', handleGuess);
 document.getElementById('guess').addEventListener('keydown', e => {
   if (e.key === 'Enter') handleGuess();
 });
-document.getElementById('new-puzzle').addEventListener('click', startPuzzle);
+document.getElementById('save-toggle').addEventListener('click', () => {
+  updateCheckbox(!saveScore);
+  persistPrefs();
+});

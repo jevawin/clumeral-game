@@ -17,19 +17,32 @@
 </head>
 <body>
   <h1 class="game-title">David Lark's Number Game</h1>
-  <p class="game-instructions">A secret number between 100 and 999 is hiding. The clues below describe its digits — their sums, products, differences, and more. Only one number satisfies all of them. Use your maths prowess to find it.</p>
+  <p class="game-instructions">A new puzzle every day. A secret number between 100 and 999 is hiding — the clues below describe its digits through their sums, products, differences, and more. Only one number satisfies all of them. Use your maths prowess to find it.</p>
   <div class="card">
     <p id="status">Loading...</p>
+    <p class="puzzle-label" id="puzzle-label" style="display:none">
+      Puzzle #<span id="puzzle-number"></span>&ensp;&middot;&ensp;<span id="puzzle-date"></span>
+    </p>
     <ul id="clues"></ul>
-    <div class="input-row">
+    <div class="input-row" id="input-area">
       <input id="guess" type="text" inputmode="numeric" maxlength="3"
              placeholder="Enter a 3-digit number" disabled>
       <button id="submit" disabled>Submit</button>
     </div>
+    <div class="save-row" id="save-row">
+      <button class="save-toggle" id="save-toggle" role="checkbox" aria-checked="true" aria-label="Keep my score in a cookie">
+        <svg class="icon-checked" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344"/><path d="m9 11 3 3L22 4"/></svg>
+        <svg class="icon-unchecked" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+      </button>
+      <span class="save-label">Keep my score in a cookie</span>
+    </div>
     <p id="feedback"></p>
     <p id="history-label" style="display:none">Previous guesses:</p>
     <ul id="history"></ul>
-    <button id="new-puzzle" disabled>New Puzzle</button>
+    <div class="stats" id="stats" style="display:none"></div>
+    <p class="next-puzzle" id="next-puzzle" style="display:none">
+      Come back tomorrow for Puzzle #<span id="next-number"></span> ›
+    </p>
   </div>
   <script src="app.js"></script>
 </body>
