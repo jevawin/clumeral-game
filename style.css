@@ -247,15 +247,15 @@ body {
   border: none;
   padding: 0;
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--accent);
   display: flex;
   align-items: center;
   flex-shrink: 0;
   transition: color 0.15s ease;
 }
 
-.save-toggle:hover {
-  color: var(--accent);
+.save-toggle[aria-checked="true"] {
+  color: var(--green);
 }
 
 .save-label {
