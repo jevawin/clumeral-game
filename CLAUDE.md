@@ -116,3 +116,10 @@ Must use a server — `fetch()` fails over `file://` protocol.
 - DOM IDs are locked: `#status`, `#clues`, `#guess`, `#submit`, `#history`, `#feedback`, `#history-label`
 - Event listeners attached at module level — never inside puzzle-start functions
 - `gameState`, `gameRows`, `gameHeaders` are module-scoped `let` — not `window` globals
+
+## Git & Deploy Workflow
+
+- **Always commit and push to the `staging` branch** (never push directly to `main`)
+- After every push, give the user this link to preview: **https://staging.clumeral.com/** and remind them Cloudflare will need a minute to deploy
+- To view and test your own work, use the same URL: https://staging.clumeral.com/
+- When ready to merge to `main`, create a pull request and give the user a direct link to approve it on GitHub: **https://github.com/jevawin/clumeral-game/compare/main...staging**
