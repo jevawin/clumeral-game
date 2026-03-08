@@ -46,19 +46,29 @@ body {
    ============================================================ */
 
 .game-title {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
+  font-family: 'Forum', Georgia, serif;
+  font-size: 2.25rem;
+  font-weight: 400;
+  color: #fff;
   text-align: center;
 }
 
 .game-instructions {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-family: 'Forum', Georgia, serif;
+  font-size: 1.5rem;
+  color: #fff;
   text-align: center;
   max-width: min(480px, 90vw);
-  line-height: 1.6;
+  line-height: 1.4;
+}
+
+@media (min-width: 481px) {
+  .game-title {
+    font-size: 3rem;
+  }
+  .game-instructions {
+    font-size: 2rem;
+  }
 }
 
 /* ============================================================
