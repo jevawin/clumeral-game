@@ -185,7 +185,23 @@ function renderClues(clues) {
   for (const { label, operator, value } of clues) {
     const li = document.createElement('li');
     li.className = 'clue-row';
-    li.textContent = `${label.replace(/_\d+$/, '')} ${OPERATOR_SYMBOLS[operator] ?? operator} ${value}`;
+    const displayLabel = label.replace(/_\d+$/, '');
+    if (typeof value === 'string') {
+      li.appendChild(document.createTextNode(displayLabel + ' '));
+      const strong = document.createElement('strong');
+      strong.textContent = value;
+      li.appendChild(strong);
+    } else {
+      li.appendChild(document.createTextNode(displayLabel + ' '));
+      const opSpan = document.createElement('span');
+      opSpan.className = 'clue-op';
+      opSpan.textContent = OPERATOR_SYMBOLS[operator] ?? operator;
+      li.appendChild(opSpan);
+      li.appendChild(document.createTextNode(' '));
+      const strong = document.createElement('strong');
+      strong.textContent = value;
+      li.appendChild(strong);
+    }
     ul.appendChild(li);
   }
 }
