@@ -13,7 +13,7 @@ Four phases deliver the game in strict dependency order: first the CSV data laye
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Data Foundation** - CSV loads correctly with typed columns, trimmed headers, loading/error states (in progress — 1/2 plans complete)
-- [ ] **Phase 2: Filtering Engine** - Pure filter loop reliably produces one answer and readable clues for any input
+- [x] **Phase 2: Filtering Engine** - Pure filter loop reliably produces one answer and readable clues for any input
 - [ ] **Phase 3: Game Loop and UI** - Complete playable game with guess input, feedback, history, and dark theme
 - [ ] **Phase 4: Deployment** - Game is live on GitHub Pages and verified end-to-end in production
 
@@ -46,8 +46,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Implement RANGE_GROUPS constant, applyFilter, and runFilterLoop in app.js; create MANUAL-TEST-CHECKLIST.md
-- [ ] 02-02-PLAN.md — Human verification: run all 10 FILT browser-console checks and 50-iteration stress test
+- [x] 02-01-PLAN.md — Implement RANGE_GROUPS constant, applyFilter, and runFilterLoop in app.js; create MANUAL-TEST-CHECKLIST.md
+- [x] 02-02-PLAN.md — Human verification: run all 10 FILT browser-console checks and 50-iteration stress test
 
 ### Phase 3: Game Loop and UI
 **Goal**: A fully playable game in the browser — clues display, the player can guess, receives correct/incorrect feedback with guess history, and can start a new puzzle — styled with the dark n8n-inspired theme
@@ -79,6 +79,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 2/2 | Complete   | 2026-03-07 |
-| 2. Filtering Engine | 1/2 | In Progress|  |
+| 2. Filtering Engine | 2/2 | Complete   | 2026-03-08 |
 | 3. Game Loop and UI | 0/TBD | Not started | - |
 | 4. Deployment | 0/TBD | Not started | - |
