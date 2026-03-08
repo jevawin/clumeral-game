@@ -10,17 +10,26 @@
        Use: python3 -m http.server 8080  (then open http://localhost:8080)
        or VS Code Live Server extension. -->
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
-  <p id="status">Loading...</p>
-  <ul id="clues"></ul>
-  <input id="guess" type="text" inputmode="numeric" maxlength="3"
-         placeholder="Enter a 3-digit number" disabled>
-  <button id="submit" disabled>Submit</button>
-  <ul id="history"></ul>
-  <button id="new-puzzle" disabled>New Puzzle</button>
-
+  <h1 class="game-title">David Lark's Lame Number Game</h1>
+  <div class="card">
+    <p id="status">Loading...</p>
+    <ul id="clues"></ul>
+    <div class="input-row">
+      <input id="guess" type="text" inputmode="numeric" maxlength="3"
+             placeholder="Enter a 3-digit number" disabled>
+      <button id="submit" disabled>Submit</button>
+    </div>
+    <p id="feedback"></p>
+    <p id="history-label" style="display:none">Previous guesses:</p>
+    <ul id="history"></ul>
+    <button id="new-puzzle" disabled>New Puzzle</button>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>
