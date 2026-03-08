@@ -47,6 +47,7 @@ async function loadData() {
   document.getElementById('guess').removeAttribute('disabled');
   document.getElementById('submit').removeAttribute('disabled');
   document.getElementById('new-puzzle').removeAttribute('disabled');
+  startPuzzle();
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
@@ -145,3 +146,101 @@ function runFilterLoop(rows) {
   // FILT-10: answer is the Number field of the surviving row
   return { answer: candidates[0]['Number'], clues };
 }
+
+// ─── Phase 3: Game Loop ───────────────────────────────────────────────────────
+
+const OPERATOR_SYMBOLS = {
+  '<=': '≤',
+  '>=': '≥',
+  '=':  '=',
+  '!=': '≠',
+};
+
+let gameState = {
+  answer: null,
+  guesses: [],
+  solved: false,
+};
+
+function renderClues(clues) {
+  const ul = document.getElementById('clues');
+  ul.innerHTML = '';
+  for (const { label, operator, value } of clues) {
+    const li = document.createElement('li');
+    li.className = 'clue-row';
+    li.textContent = `${label} ${OPERATOR_SYMBOLS[operator] ?? operator} ${value}`;
+    ul.appendChild(li);
+  }
+}
+
+function renderFeedback(type, answer) {
+  const el = document.getElementById('feedback');
+  if (!el) return;
+  if (type === 'correct') {
+    el.textContent = `Correct! The answer was ${answer}.`;
+    el.className = 'feedback feedback--correct';
+  } else if (type === 'incorrect') {
+    el.textContent = 'Incorrect — try again.';
+    el.className = 'feedback feedback--incorrect';
+  } else {
+    el.textContent = '';
+    el.className = 'feedback';
+  }
+}
+
+function renderHistory(guesses) {
+  const label = document.getElementById('history-label');
+  const ul = document.getElementById('history');
+  ul.innerHTML = '';
+  if (guesses.length === 0) {
+    if (label) label.style.display = 'none';
+    return;
+  }
+  if (label) label.style.display = '';
+  for (const g of guesses) {
+    const li = document.createElement('li');
+    li.textContent = g;
+    li.className = 'history-item';
+    ul.appendChild(li);
+  }
+}
+
+function startPuzzle() {
+  const { answer, clues } = runFilterLoop(gameRows);
+  gameState = { answer, guesses: [], solved: false };
+  renderClues(clues);
+  renderFeedback(null, null);
+  renderHistory([]);
+  const guessEl = document.getElementById('guess');
+  const submitEl = document.getElementById('submit');
+  guessEl.value = '';
+  guessEl.removeAttribute('disabled');
+  submitEl.removeAttribute('disabled');
+  guessEl.focus();
+}
+
+function handleGuess() {
+  if (gameState.solved) return;
+  const raw = document.getElementById('guess').value.trim();
+  const guess = Number(raw);
+  if (!Number.isInteger(guess) || raw.length !== 3) return;
+  if (guess === gameState.answer) {
+    gameState.solved = true;
+    renderFeedback('correct', gameState.answer);
+    document.getElementById('guess').setAttribute('disabled', '');
+    document.getElementById('submit').setAttribute('disabled', '');
+  } else {
+    gameState.guesses.push(guess);
+    renderFeedback('incorrect', null);
+    renderHistory(gameState.guesses);
+    document.getElementById('guess').value = '';
+    document.getElementById('guess').focus();
+  }
+}
+
+// Event listeners — attached once, never inside startPuzzle()
+document.getElementById('submit').addEventListener('click', handleGuess);
+document.getElementById('guess').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleGuess();
+});
+document.getElementById('new-puzzle').addEventListener('click', startPuzzle);
