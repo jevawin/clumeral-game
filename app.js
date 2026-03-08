@@ -168,7 +168,7 @@ function renderClues(clues) {
   for (const { label, operator, value } of clues) {
     const li = document.createElement('li');
     li.className = 'clue-row';
-    li.textContent = `${label} ${OPERATOR_SYMBOLS[operator] ?? operator} ${value}`;
+    li.textContent = `${label.replace(/_\d+$/, '')} ${OPERATOR_SYMBOLS[operator] ?? operator} ${value}`;
     ul.appendChild(li);
   }
 }
