@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 03-01-PLAN.md (re-executed for context)
-last_updated: "2026-03-08T08:13:44.094Z"
+last_updated: "2026-03-08T08:13:49.448Z"
 last_activity: "2026-03-08 — Completed 03-02: CSS styling — dark theme, frosted glass card, responsive layout"
 progress:
   total_phases: 4
@@ -73,6 +73,8 @@ Recent decisions affecting current work:
 - [Phase 03-02]: Both -webkit-backdrop-filter and backdrop-filter required on .card for Safari frosted glass support
 - [Phase 03-02]: --bg-card uses rgba() not solid color so backdrop-filter blur is visible
 - [Phase 03-02]: CSS custom properties in :root — all downstream selectors use var(--accent) etc.
+- [Phase 03-01]: Event listeners attached at module level — never inside startPuzzle() to prevent listener accumulation on each New Puzzle click
+- [Phase 03-01]: gameState kept as module-level let (not window global), consistent with gameRows/gameHeaders pattern
 
 ### Pending Todos
 

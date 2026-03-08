@@ -29,13 +29,13 @@
 
 ### Game Loop
 
-- [ ] **GAME-01**: After CSV load, a puzzle is automatically generated and clues are displayed
-- [ ] **GAME-02**: Each clue is displayed as a readable row: "[column label] [operator] [value]"
-- [ ] **GAME-03**: Player can enter a 3-digit number guess via a text input
-- [ ] **GAME-04**: Guess can be submitted by pressing Enter or clicking a submit button
-- [ ] **GAME-05**: If the guess matches the answer, a "Correct!" message is shown
-- [ ] **GAME-06**: If the guess is wrong, an "Incorrect" message is shown and the wrong guess is added to a visible guess history list
-- [ ] **GAME-07**: A "New Puzzle" button resets all state and generates a fresh puzzle from the full dataset
+- [x] **GAME-01**: After CSV load, a puzzle is automatically generated and clues are displayed
+- [x] **GAME-02**: Each clue is displayed as a readable row: "[column label] [operator] [value]"
+- [x] **GAME-03**: Player can enter a 3-digit number guess via a text input
+- [x] **GAME-04**: Guess can be submitted by pressing Enter or clicking a submit button
+- [x] **GAME-05**: If the guess matches the answer, a "Correct!" message is shown
+- [x] **GAME-06**: If the guess is wrong, an "Incorrect" message is shown and the wrong guess is added to a visible guess history list
+- [x] **GAME-07**: A "New Puzzle" button resets all state and generates a fresh puzzle from the full dataset
 
 ### UI & Deployment
 
@@ -84,13 +84,13 @@
 | FILT-08 | Phase 2 | Complete |
 | FILT-09 | Phase 2 | Complete |
 | FILT-10 | Phase 2 | Complete |
-| GAME-01 | Phase 3 | Pending |
-| GAME-02 | Phase 3 | Pending |
-| GAME-03 | Phase 3 | Pending |
-| GAME-04 | Phase 3 | Pending |
-| GAME-05 | Phase 3 | Pending |
-| GAME-06 | Phase 3 | Pending |
-| GAME-07 | Phase 3 | Pending |
+| GAME-01 | Phase 3 | Complete |
+| GAME-02 | Phase 3 | Complete |
+| GAME-03 | Phase 3 | Complete |
+| GAME-04 | Phase 3 | Complete |
+| GAME-05 | Phase 3 | Complete |
+| GAME-06 | Phase 3 | Complete |
+| GAME-07 | Phase 3 | Complete |
 | UI-01 | Phase 3 | Complete |
 | UI-02 | Phase 3 | Complete |
 | UI-03 | Phase 3 | Complete |
