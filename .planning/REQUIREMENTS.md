@@ -39,9 +39,9 @@
 
 ### UI & Deployment
 
-- [ ] **UI-01**: Dark n8n-inspired theme: deep charcoal/near-black background, orange/coral accent colours
-- [ ] **UI-02**: Frosted glass card panels using `backdrop-filter: blur()` with `-webkit-` prefix for Safari
-- [ ] **UI-03**: Clean sans-serif typography (Inter via CDN or system font stack)
+- [x] **UI-01**: Dark n8n-inspired theme: deep charcoal/near-black background, orange/coral accent colours
+- [x] **UI-02**: Frosted glass card panels using `backdrop-filter: blur()` with `-webkit-` prefix for Safari
+- [x] **UI-03**: Clean sans-serif typography (Inter via CDN or system font stack)
 - [ ] **UI-04**: Fully static — no server required; GitHub Pages compatible (relative paths only)
 
 ## v2 Requirements
@@ -91,9 +91,9 @@
 | GAME-05 | Phase 3 | Pending |
 | GAME-06 | Phase 3 | Pending |
 | GAME-07 | Phase 3 | Pending |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Complete |
+| UI-02 | Phase 3 | Complete |
+| UI-03 | Phase 3 | Complete |
 | UI-04 | Phase 4 | Pending |
 
 **Coverage:**
