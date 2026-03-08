@@ -126,6 +126,23 @@ function runFilterLoop(rows) {
     triedRanges.add(rangeName);
   }
 
+  // Tiebreaker: main loop exhausted range groups but candidates not unique.
+  // Sweep remaining columns with '=' (exact match on candidates[0]) until unique.
+  if (candidates.length > 1) {
+    const usedLabels = new Set(clues.map(c => c.label));
+    for (let idx = 4; idx < gameHeaders.length && candidates.length > 1; idx++) {
+      const hdr = gameHeaders[idx];
+      if (usedLabels.has(hdr)) continue;
+      const targetValue = candidates[0][hdr];
+      const filtered = applyFilter(candidates, hdr, '=', targetValue);
+      if (filtered.length > 0 && filtered.length < candidates.length) {
+        candidates = filtered;
+        clues.push({ label: hdr, operator: '=', value: targetValue });
+        usedLabels.add(hdr);
+      }
+    }
+  }
+
   // Guard: if no clue was recorded (all ranges were uniform or the loop didn't fire),
   // force one clue using the first column with any variance. (RESEARCH.md Pitfall 5)
   if (clues.length === 0) {
