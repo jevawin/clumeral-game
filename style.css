@@ -380,6 +380,12 @@ body {
   vertical-align: middle;
 }
 
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
 .footer-link {
   color: var(--accent);
   text-decoration: none;
