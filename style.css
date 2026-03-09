@@ -360,12 +360,24 @@ body {
 
 .site-footer {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
   font-family: 'Forum', Georgia, serif;
   font-size: 0.8rem;
   color: #fff;
   text-align: center;
+}
+
+.footer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.footer-icon {
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .footer-link {
