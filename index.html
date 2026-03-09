@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clumeral</title>
-  <!-- DEVELOPMENT NOTE: On localhost, app.js imports puzzle.js directly in-browser.
-       You still MUST serve via a local HTTP server (ES module imports block over file://).
-       Use: python3 -m http.server 8080  (then open http://localhost:8080)
-       In production, puzzle logic runs on the Cloudflare Worker (see worker.js). -->
+  <!-- DEVELOPMENT NOTE: Must serve via HTTP — ES module imports block over file://.
+       Local dev:  python3 -m http.server 8080  (puzzle.js imported directly in-browser)
+       Production: _worker.js injects window.PUZZLE_DATA into this page before serving it. -->
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

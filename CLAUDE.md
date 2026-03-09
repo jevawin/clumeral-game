@@ -13,8 +13,7 @@ Tagline: *Crack the three-digit number. New puzzle every day.*
 | `index.html` | Game shell — title, instructions, card, clue list, input, save-row, stats, next-puzzle |
 | `app.js` | Client UI — fetches puzzle from Worker (or local fallback), renders clues/feedback/history/stats, handles guesses |
 | `puzzle.js` | Shared logic — `PROPERTIES`, `PROPERTY_GROUPS`, `runFilterLoop`, `makeRng`, date helpers. Used by Worker and as local dev fallback |
-| `worker.js` | Cloudflare Worker — runs `runFilterLoop` server-side, returns `{ date, puzzleNumber, answer, clues }` as JSON |
-| `wrangler.toml` | Worker deployment config (`wrangler deploy`) |
+| `_worker.js` | Cloudflare Pages Advanced Mode Worker — intercepts `GET /`, injects `window.PUZZLE_DATA` into HTML, falls through to Pages assets for everything else |
 | `style.css` | All visual styling — dark theme, frosted glass card, clue rows, stats, responsive layout |
 
 ## Architecture
@@ -107,17 +106,12 @@ Range:       ['range']
 ```bash
 python3 -m http.server 8080
 # open http://localhost:8080
-# puzzle.js runs directly in-browser — no Worker needed locally
+# window.PUZZLE_DATA won't be set; app.js falls back to importing puzzle.js directly
 ```
 
-## Worker Deployment
+## Deployment
 
-```bash
-# Install Wrangler if needed: npm install -g wrangler
-wrangler login
-wrangler deploy
-# Then update WORKER_URL in app.js with the deployed URL
-```
+Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is picked up automatically by Pages Advanced Mode. No `wrangler.toml` needed.
 
 ## Conventions
 
