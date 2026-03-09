@@ -1,0 +1,8 @@
+{
+  "name": "clumeral-game",
+  "compatibility_date": "2026-03-09",
+  "main": "_worker.js",
+  "assets": {
+    "directory": "./"
+  }
+}
