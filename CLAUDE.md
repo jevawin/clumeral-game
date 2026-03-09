@@ -61,6 +61,7 @@ After the main filter loop exhausts all 6 range groups, a **tiebreaker** sweeps 
 
 - `dlng_history` — array of `{ date: "YYYY-MM-DD", tries: N }`, max 60 entries
 - `dlng_prefs` — `{ saveScore: boolean }`
+- Prefix `dlng_` = original game name "David Lark's Lame Number Game" — do not rename (persisted in existing user browsers)
 
 ## Design System
 
@@ -89,16 +90,6 @@ After the main filter loop exhausts all 6 range groups, a **tiebreaker** sweeps 
 
 1. **`_1` label suffix** — PapaParse deduplicates duplicate CSV headers by appending `_1`. Stripped in `renderClues` with `label.replace(/_\d+$/, '')`. Data lookup keys are unaffected.
 2. **Ambiguous puzzles** — The tiebreaker sweep added after `runFilterLoop`'s main loop ensures only one number ever satisfies all displayed clues.
-
-## Planning Files
-
-| File | Purpose |
-|------|---------|
-| `.planning/ROADMAP.md` | Phase breakdown and progress |
-| `.planning/STATE.md` | Current position, decisions log |
-| `.planning/REQUIREMENTS.md` | All requirements with traceability |
-| `.planning/PROJECT.md` | Original project brief |
-| `.planning/phases/` | Per-phase plans, research, context, summaries |
 
 ## Dev Server
 
