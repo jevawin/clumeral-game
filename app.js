@@ -186,6 +186,30 @@ function showCompletedState(tries) {
   showNextPuzzle();
 }
 
+function startRandomPuzzle(puzzleData) {
+  const { answer, clues } = puzzleData;
+
+  document.getElementById("puzzle-label").style.display = "none";
+  document.getElementById("random-label").style.display = "";
+
+  renderClues(clues);
+
+  gameState = { answer, guesses: [], solved: false, isRandom: true };
+  renderFeedback(null, null, 0);
+  renderHistory([]);
+  document.getElementById("stats").style.display = "none";
+  document.getElementById("next-puzzle").style.display = "none";
+  document.getElementById("random-again").style.display = "none";
+  document.getElementById("save-row").style.display = "none";
+
+  const guessEl = document.getElementById("guess");
+  const submitEl = document.getElementById("submit");
+  guessEl.value = "";
+  guessEl.removeAttribute("disabled");
+  submitEl.removeAttribute("disabled");
+  guessEl.focus();
+}
+
 function startDailyPuzzle(puzzleData) {
   const { date, puzzleNumber: num, answer, clues } = puzzleData;
 
@@ -230,11 +254,15 @@ function handleGuess() {
     renderFeedback("correct", gameState.answer, tries);
     document.getElementById("guess").setAttribute("disabled", "");
     document.getElementById("submit").setAttribute("disabled", "");
-    if (saveScore) {
-      recordGame(todayLocal(), tries);
-      renderStats();
+    if (gameState.isRandom) {
+      document.getElementById("random-again").style.display = "";
+    } else {
+      if (saveScore) {
+        recordGame(todayLocal(), tries);
+        renderStats();
+      }
+      showNextPuzzle();
     }
-    showNextPuzzle();
   } else {
     gameState.guesses.push(guess);
     renderFeedback("incorrect", null, 0);
@@ -246,18 +274,30 @@ function handleGuess() {
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 async function loadPuzzle() {
+  const isRandomRoute = window.location.pathname === "/random";
+
   if (window.PUZZLE_DATA) {
     // Production: injected by _worker.js
     document.getElementById("status").style.display = "none";
-    startDailyPuzzle(window.PUZZLE_DATA);
+    if (window.PUZZLE_DATA.isRandom) {
+      startRandomPuzzle(window.PUZZLE_DATA);
+    } else {
+      startDailyPuzzle(window.PUZZLE_DATA);
+    }
   } else {
     // Local dev fallback: import puzzle.js directly in-browser
     const { runFilterLoop, makeRng, dateSeedInt, todayLocal: tl, puzzleNumber: pn } =
       await import("./puzzle.js");
-    const today = tl();
-    const { answer, clues } = runFilterLoop(makeRng(dateSeedInt(today)));
     document.getElementById("status").style.display = "none";
-    startDailyPuzzle({ date: today, puzzleNumber: pn(today), answer, clues });
+    if (isRandomRoute) {
+      const seed = Math.floor(Math.random() * 0xFFFFFFFF);
+      const { answer, clues } = runFilterLoop(makeRng(seed));
+      startRandomPuzzle({ answer, clues, isRandom: true });
+    } else {
+      const today = tl();
+      const { answer, clues } = runFilterLoop(makeRng(dateSeedInt(today)));
+      startDailyPuzzle({ date: today, puzzleNumber: pn(today), answer, clues });
+    }
   }
 }
 

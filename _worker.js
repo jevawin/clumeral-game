@@ -27,6 +27,24 @@ export default {
       });
     }
 
+    if (request.method === 'GET' && url.pathname === '/random') {
+      const seed = Math.floor(Math.random() * 0xFFFFFFFF);
+      const rng = makeRng(seed);
+      const { answer, clues } = runFilterLoop(rng);
+      const puzzleData = { isRandom: true, answer, clues };
+
+      const assetRes = await env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
+      const html = await assetRes.text();
+      const injected = html.replace(
+        '</head>',
+        `<script>window.PUZZLE_DATA=${JSON.stringify(puzzleData)}</script></head>`
+      );
+
+      return new Response(injected, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    }
+
     return env.ASSETS.fetch(request);
   },
 };
