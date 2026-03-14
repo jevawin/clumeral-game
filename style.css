@@ -384,6 +384,10 @@ body {
   vertical-align: middle;
 }
 
+.footer-icon + a {
+  margin-left: 0.3rem;
+}
+
 .footer-brand {
   display: inline-flex;
   align-items: center;
