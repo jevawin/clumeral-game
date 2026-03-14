@@ -1,0 +1,12 @@
+gh_pat
+.clancy/.env
+.env
+.env.*
+!.env.example
+!.clancy/.env.example
+bot/.env
+bot/.venv/
+bot/logs/
+bot/.relay-state
+**/*.pem
+**/*.key

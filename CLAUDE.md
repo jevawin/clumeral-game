@@ -121,3 +121,35 @@ Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is pic
 - DOM IDs are locked: `#status`, `#clues`, `#guess`, `#submit`, `#history`, `#feedback`, `#history-label`
 - Event listeners attached at module level in `app.js` — never inside `startDailyPuzzle`
 - `gameState` is module-scoped `let` in `app.js` — not a `window` global
+
+<!-- clancy:start -->
+## Clancy — Autonomous Development
+
+This project uses [Clancy](https://github.com/Pushedskydiver/clancy) for autonomous ticket implementation.
+
+### Board
+- **Provider:** GitHub Issues
+- **Repo:** jevawin/clumeral-game
+- **Label flow:** ideas → plan → approve → build → review → done
+
+### Roles enabled
+- Implementer (default)
+- Planner — refines issues labelled `plan`, posts structured plan as comment
+
+### Status transitions
+- Picks up: issues labelled `build`
+- On start: re-labels `build` (in-progress)
+- On done: re-labels `review`
+
+### Commands
+- `/plan` — plan one `plan`-labelled issue
+- `/approve` — promote plan comment to description, re-label `build`
+- `/run` — implement one `build`-labelled issue
+- `/clancy:map-codebase` — rescan codebase into `.clancy/docs/`
+- `/clancy:doctor` — test all integrations
+- `/clancy:dry-run` — preview next ticket without running
+
+### Config
+- Credentials: `.clancy/.env` (gitignored)
+- Docs: `.clancy/docs/` (10 context files, populated by map-codebase)
+<!-- clancy:end -->

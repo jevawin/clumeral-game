@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.clancy/.env)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(bot/.env)",
+      "Read(gh_pat)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/home/jevawin/clumeral-game/.claude/hooks/clancy-check-update.js\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/home/jevawin/clumeral-game/.claude/hooks/clancy-context-monitor.js\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/home/jevawin/clumeral-game/.claude/hooks/clancy-credential-guard.js\""
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"/home/jevawin/clumeral-game/.claude/hooks/clancy-statusline.js\""
+  }
+}
