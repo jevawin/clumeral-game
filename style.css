@@ -402,7 +402,30 @@ body {
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
+.footer-link:visited {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .footer-link:hover {
+  color: var(--accent-alt);
+  border-color: var(--accent-alt);
+}
+
+#random-again a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 2px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+#random-again a:visited {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+#random-again a:hover {
   color: var(--accent-alt);
   border-color: var(--accent-alt);
 }
