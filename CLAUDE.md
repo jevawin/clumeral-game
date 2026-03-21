@@ -4,7 +4,7 @@
 
 **Clumeral** (clumeral.com) is a daily browser word puzzle game. A seeded random algorithm filters numbers 100–999 down to one answer using column-based clues. The player reads the clues and guesses the hidden number. New puzzle every day, same answer for everyone.
 
-Tagline: *Crack the three-digit number. New puzzle every day.*
+Tagline: *Work out the number from 100–999. New puzzle every day.*
 
 ## Project Files
 
