@@ -16,7 +16,7 @@
   /* ── Theme-sensitive ── */
   --bg: light-dark(#f5edd8, #262624);
   --sh1: light-dark(#e8a87c, #ff6d5a);
-  --sh2: light-dark(#c0543a, #262624);
+  --sh2: light-dark(#c0543a, #c0543a);
   --text: light-dark(#262624, #fffdf7);
   --muted: light-dark(rgba(38, 38, 36, 0.55), rgba(255, 253, 247, 0.6));
   --card-bg: light-dark(#fffdf7, #2e2e2c);
