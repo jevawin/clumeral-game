@@ -116,12 +116,15 @@ function renderFeedback(type, answer, tries) {
     const t = tries === 1 ? "1 try" : `${tries} tries`;
     el.textContent = `You got it in ${t}! The answer was ${answer}.`;
     el.className = "feedback feedback--correct";
+    el.style.display = "";
   } else if (type === "incorrect") {
     el.textContent = "Incorrect — try again.";
     el.className = "feedback feedback--incorrect";
+    el.style.display = "";
   } else {
     el.textContent = "";
     el.className = "feedback";
+    el.style.display = "none";
   }
 }
 
@@ -131,9 +134,11 @@ function renderHistory(guesses) {
   ul.innerHTML = "";
   if (guesses.length === 0) {
     if (label) label.style.display = "none";
+    ul.style.display = "none";
     return;
   }
   if (label) label.style.display = "";
+  ul.style.display = "";
   for (const g of guesses) {
     const li = document.createElement("li");
     li.textContent = g;
