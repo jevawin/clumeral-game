@@ -2,18 +2,31 @@
 // Production: puzzle data is injected by _worker.js as window.PUZZLE_DATA.
 // Local dev (python -m http.server): falls back to importing puzzle.js directly.
 
-// ─── Phase 3: Daily Puzzle ────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const EPOCH_DATE = "2026-03-08"; // Puzzle #1 launch date
+const EPOCH_DATE = "2026-03-08";
 const STORAGE_HISTORY = "dlng_history";
 const STORAGE_PREFS = "dlng_prefs";
-
 const OPERATOR_SYMBOLS = { "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
+
+// ─── Module state ─────────────────────────────────────────────────────────────
 
 let gameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
 
-// ── Date helpers ──────────────────────────────────────────────────────────────
+function initPossibles() {
+  return [
+    new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]),          // hundreds: no zero
+    new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+  ];
+}
+
+let possibles = initPossibles();
+let activeBox = null; // 0 | 1 | 2 | null
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+
 function todayLocal() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -32,7 +45,8 @@ function formatDate(dateStr) {
   });
 }
 
-// ── Storage ───────────────────────────────────────────────────────────────────
+// ─── Storage ──────────────────────────────────────────────────────────────────
+
 function loadPrefs() {
   try {
     return { saveScore: true, ...JSON.parse(localStorage.getItem(STORAGE_PREFS) || "{}") };
@@ -64,7 +78,8 @@ function todayEntry() {
   return loadHistory().find((h) => h.date === today) || null;
 }
 
-// ── Render helpers ────────────────────────────────────────────────────────────
+// ─── Clue helpers ─────────────────────────────────────────────────────────────
+
 function formatClueValue(value) {
   if (typeof value !== "number" || !isFinite(value)) return String(value);
   if (Number.isInteger(value)) return String(value);
@@ -75,39 +90,73 @@ function formatClueValue(value) {
   return value.toFixed(2);
 }
 
-function renderClues(clues) {
-  const ul = document.getElementById("clues");
-  ul.innerHTML = "";
-  for (const { label, operator, value } of clues) {
-    const li = document.createElement("li");
-    li.className = "clue-row";
+function getClueTag(label) {
+  const l = label.toLowerCase();
+  if (l.includes("prime")) return "PRIME";
+  if (l.includes("square")) return "SQUARE";
+  if (l.includes("cube")) return "CUBE";
+  if (l.includes("triangular")) return "TRIG";
+  if (l.includes("sum")) return "SUM";
+  if (l.includes("difference")) return "DIFF";
+  if (l.includes("product")) return "PROD";
+  if (l.includes("mean")) return "MEAN";
+  if (l.includes("range")) return "RANGE";
+  return "?";
+}
 
+function getClueLitDigits(label) {
+  const l = label.toLowerCase();
+  if (l.includes("all three")) return [true, true, true];
+  if (l.includes("first and second")) return [true, true, false];
+  if (l.includes("first and third")) return [true, false, true];
+  if (l.includes("second and third")) return [false, true, true];
+  if (l.includes("first digit")) return [true, false, false];
+  if (l.includes("second digit")) return [false, true, false];
+  if (l.includes("third digit")) return [false, false, true];
+  return [true, true, true];
+}
+
+function renderClues(clues) {
+  const container = document.querySelector(".cw-clue-container");
+  if (!container) return;
+  container.innerHTML = "";
+  for (const { label, operator, value } of clues) {
+    const tag = getClueTag(label);
+    const lit = getClueLitDigits(label);
+    const miniDigitsHtml = lit.map((on) => `<div class="md${on ? " lit" : ""}"></div>`).join("");
+
+    let l1Text, l2Text;
     if (typeof value === "boolean") {
-      // Boolean clue: "The first digit is [not] a prime number"
-      // Split on first ' is ' to separate subject from predicate
       const isAffirmative = operator === "=" ? value : !value;
-      const [subject, ...rest] = label.split(" is ");
-      const predicate = rest.join(" is ");
-      li.appendChild(document.createTextNode(subject + " "));
-      const strong = document.createElement("strong");
-      strong.textContent = "is " + (isAffirmative ? "" : "not ") + predicate;
-      li.appendChild(strong);
+      const idx = label.indexOf(" is ");
+      const subject = label.slice(0, idx);
+      const predicate = label.slice(idx + 4);
+      l1Text = subject + " is" + (isAffirmative ? "" : " not");
+      l2Text = predicate;
     } else {
-      // Numeric clue: "The sum of ... is ≤ 5"
-      li.appendChild(document.createTextNode(label + " "));
-      const opSpan = document.createElement("span");
-      opSpan.className = "clue-op";
-      opSpan.textContent = OPERATOR_SYMBOLS[operator] ?? operator;
-      li.appendChild(opSpan);
-      li.appendChild(document.createTextNode(" "));
-      const strong = document.createElement("strong");
-      strong.textContent = formatClueValue(value);
-      li.appendChild(strong);
+      l1Text = label;
+      l2Text = `${OPERATOR_SYMBOLS[operator] ?? operator} ${formatClueValue(value)}`;
     }
 
-    ul.appendChild(li);
+    const clueEl = document.createElement("div");
+    clueEl.className = "cw-clue";
+    clueEl.innerHTML = `
+      <div class="cw-tag-cell">
+        <span class="cw-tag">${tag}</span>
+        <div class="mini-digits">${miniDigitsHtml}</div>
+      </div>
+      <div class="cw-lines">
+        <div class="cw-l1"></div>
+        <div class="cw-l2"></div>
+      </div>
+    `;
+    clueEl.querySelector(".cw-l1").textContent = l1Text;
+    clueEl.querySelector(".cw-l2").textContent = l2Text;
+    container.appendChild(clueEl);
   }
 }
+
+// ─── Feedback / history / stats ───────────────────────────────────────────────
 
 function renderFeedback(type, answer, tries) {
   const el = document.getElementById("feedback");
@@ -131,6 +180,7 @@ function renderFeedback(type, answer, tries) {
 function renderHistory(guesses) {
   const label = document.getElementById("history-label");
   const ul = document.getElementById("history");
+  if (!ul) return;
   ul.innerHTML = "";
   if (guesses.length === 0) {
     if (label) label.style.display = "none";
@@ -169,17 +219,113 @@ function renderStats() {
   statsEl.style.display = "";
 }
 
-// ── Checkbox ──────────────────────────────────────────────────────────────────
-function updateCheckbox(checked) {
-  saveScore = checked;
-  const toggle = document.getElementById("save-toggle");
-  if (!toggle) return;
-  toggle.setAttribute("aria-checked", String(checked));
-  toggle.querySelector(".icon-checked").style.display = checked ? "" : "none";
-  toggle.querySelector(".icon-unchecked").style.display = checked ? "none" : "";
+// ─── Digit boxes ──────────────────────────────────────────────────────────────
+
+function renderBox(i) {
+  const el = document.getElementById(`d${i}`);
+  if (!el) return;
+  const s = possibles[i];
+
+  if (s.size === 1) {
+    el.innerHTML = `<span class="db-resolved">${[...s][0]}</span>`;
+  } else if (i === 0) {
+    // 3×3 grid for hundreds box (digits 1–9)
+    const spans = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+      .map((d) => `<span${s.has(d) ? "" : ' class="elim"'}>${d}</span>`)
+      .join("");
+    el.innerHTML = `<div class="db-possibles">${spans}</div>`;
+  } else {
+    // 4-col grid for tens/units boxes (digits 0–9); 5 and 8 span 2 cols
+    const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      .map((d) => {
+        const isMid = d === 5 || d === 8;
+        const isElim = !s.has(d);
+        const cls = [isMid && "dc-mid", isElim && "elim"].filter(Boolean).join(" ");
+        return `<span${cls ? ` class="${cls}"` : ""}>${d}</span>`;
+      })
+      .join("");
+    el.innerHTML = `<div class="db-possibles four-col">${spans}</div>`;
+  }
+
+  el.classList.toggle("active", i === activeBox);
 }
 
-// ── Game ──────────────────────────────────────────────────────────────────────
+function renderAllBoxes() {
+  renderBox(0);
+  renderBox(1);
+  renderBox(2);
+}
+
+function buildKeypad() {
+  const kp = document.getElementById("cw-keypad");
+  if (!kp || activeBox === null) return;
+  // Box 0 (hundreds) cannot be 0
+  const digits = activeBox === 0 ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  kp.innerHTML = "";
+  for (const d of digits) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "kbtn" + (possibles[activeBox].has(d) ? "" : " elim");
+    btn.textContent = d;
+    btn.setAttribute("aria-label", `Toggle digit ${d}`);
+    btn.addEventListener("click", () => toggleDigit(d));
+    kp.appendChild(btn);
+  }
+}
+
+function openKeypad() {
+  const wrap = document.getElementById("cw-keypad-wrap");
+  if (wrap) wrap.classList.add("open");
+}
+
+function closeKeypad() {
+  const wrap = document.getElementById("cw-keypad-wrap");
+  if (wrap) wrap.classList.remove("open");
+  activeBox = null;
+  renderAllBoxes();
+}
+
+// Single mutation path for both keypad click and keyboard — prevents double-firing
+function toggleDigit(digit) {
+  if (activeBox === null) return;
+  const s = possibles[activeBox];
+  if (s.has(digit)) {
+    if (s.size === 1) return; // guard: cannot eliminate last digit
+    s.delete(digit);
+  } else {
+    s.add(digit);
+  }
+  renderBox(activeBox);
+  buildKeypad();
+  checkSubmit();
+}
+
+function openBox(i) {
+  activeBox = i;
+  renderAllBoxes();
+  buildKeypad();
+  openKeypad();
+}
+
+// Called by click: toggles same box closed, otherwise switches to new box
+function selectBox(i) {
+  if (gameState.solved) return;
+  if (activeBox === i) {
+    activeBox = null;
+    closeKeypad();
+    return;
+  }
+  openBox(i);
+}
+
+function checkSubmit() {
+  const allResolved = possibles.every((s) => s.size === 1);
+  const wrap = document.getElementById("cw-submit-wrap");
+  if (wrap) wrap.classList.toggle("visible", allResolved);
+}
+
+// ─── Game ─────────────────────────────────────────────────────────────────────
+
 function showNextPuzzle() {
   const num = puzzleNumber(todayLocal());
   const np = document.getElementById("next-puzzle");
@@ -193,10 +339,17 @@ function showNextPuzzle() {
 function showCompletedState(tries) {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   const fb = document.getElementById("feedback");
-  fb.textContent = `You already solved today's puzzle in ${t}!`;
-  fb.className = "feedback feedback--correct";
-  document.getElementById("input-area").style.display = "none";
-  document.getElementById("save-row").style.display = "none";
+  if (fb) {
+    fb.textContent = `You already solved today's puzzle in ${t}!`;
+    fb.className = "feedback feedback--correct";
+    fb.style.display = "";
+  }
+  const hintEl = document.getElementById("cw-hint");
+  if (hintEl) hintEl.style.display = "none";
+  const digitsEl = document.getElementById("cw-digits");
+  if (digitsEl) digitsEl.style.display = "none";
+  const submitWrap = document.getElementById("cw-submit-wrap");
+  if (submitWrap) submitWrap.classList.remove("visible");
   renderStats();
   showNextPuzzle();
 }
@@ -204,33 +357,41 @@ function showCompletedState(tries) {
 function startRandomPuzzle(puzzleData) {
   const { answer, clues } = puzzleData;
 
-  document.getElementById("puzzle-label").style.display = "none";
-  document.getElementById("random-label").style.display = "";
+  const plabel = document.getElementById("cw-plabel");
+  if (plabel) plabel.textContent = "Random puzzle";
 
   renderClues(clues);
 
   gameState = { answer, guesses: [], solved: false, isRandom: true };
   renderFeedback(null, null, 0);
   renderHistory([]);
-  document.getElementById("stats").style.display = "none";
-  document.getElementById("next-puzzle").style.display = "none";
-  document.getElementById("random-again").style.display = "none";
-  document.getElementById("save-row").style.display = "none";
 
-  const guessEl = document.getElementById("guess");
-  const submitEl = document.getElementById("submit");
-  guessEl.value = "";
-  guessEl.removeAttribute("disabled");
-  submitEl.removeAttribute("disabled");
-  guessEl.focus();
+  const statsEl = document.getElementById("stats");
+  if (statsEl) statsEl.style.display = "none";
+  const npEl = document.getElementById("next-puzzle");
+  if (npEl) npEl.style.display = "none";
+  const ragain = document.getElementById("random-again");
+  if (ragain) ragain.style.display = "none";
+  // No score saving for random puzzles
+  const saveEl = document.getElementById("cw-save");
+  if (saveEl) saveEl.style.display = "none";
+
+  const hintEl = document.getElementById("cw-hint");
+  if (hintEl) hintEl.style.display = "";
+  const digitsEl = document.getElementById("cw-digits");
+  if (digitsEl) digitsEl.style.display = "";
+
+  possibles = initPossibles();
+  renderAllBoxes();
+  closeKeypad();
+  checkSubmit();
 }
 
 function startDailyPuzzle(puzzleData) {
   const { date, puzzleNumber: num, answer, clues } = puzzleData;
 
-  document.getElementById("puzzle-label").style.display = "";
-  document.getElementById("puzzle-number").textContent = num;
-  document.getElementById("puzzle-date").textContent = formatDate(date);
+  const plabel = document.getElementById("cw-plabel");
+  if (plabel) plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
 
   renderClues(clues);
 
@@ -243,34 +404,43 @@ function startDailyPuzzle(puzzleData) {
   gameState = { answer, guesses: [], solved: false };
   renderFeedback(null, null, 0);
   renderHistory([]);
-  document.getElementById("stats").style.display = "none";
-  document.getElementById("next-puzzle").style.display = "none";
 
-  const guessEl = document.getElementById("guess");
-  const submitEl = document.getElementById("submit");
-  guessEl.value = "";
-  guessEl.removeAttribute("disabled");
-  submitEl.removeAttribute("disabled");
-  guessEl.focus();
+  const statsEl = document.getElementById("stats");
+  if (statsEl) statsEl.style.display = "none";
+  const npEl = document.getElementById("next-puzzle");
+  if (npEl) npEl.style.display = "none";
 
-  updateCheckbox(loadPrefs().saveScore);
+  const hintEl = document.getElementById("cw-hint");
+  if (hintEl) hintEl.style.display = "";
+  const digitsEl = document.getElementById("cw-digits");
+  if (digitsEl) digitsEl.style.display = "";
+
+  possibles = initPossibles();
+  renderAllBoxes();
+  closeKeypad();
+  checkSubmit();
+
+  const prefs = loadPrefs();
+  saveScore = prefs.saveScore;
+  const ckEl = document.getElementById("cw-ck");
+  if (ckEl) ckEl.checked = saveScore;
 }
 
 function handleGuess() {
   if (gameState.solved) return;
-  const raw = document.getElementById("guess").value.trim();
-  const guess = Number(raw);
-  if (!Number.isInteger(guess) || raw.length !== 3) return;
+  if (!possibles.every((s) => s.size === 1)) return;
 
+  const guessStr = possibles.map((s) => [...s][0]).join("");
+  const guess = Number(guessStr);
   const tries = gameState.guesses.length + 1;
 
   if (guess === gameState.answer) {
     gameState.solved = true;
     renderFeedback("correct", gameState.answer, tries);
-    document.getElementById("guess").setAttribute("disabled", "");
-    document.getElementById("submit").setAttribute("disabled", "");
+    closeKeypad();
     if (gameState.isRandom) {
-      document.getElementById("random-again").style.display = "";
+      const ragain = document.getElementById("random-again");
+      if (ragain) ragain.style.display = "";
     } else {
       if (saveScore) {
         recordGame(todayLocal(), tries);
@@ -282,30 +452,30 @@ function handleGuess() {
     gameState.guesses.push(guess);
     renderFeedback("incorrect", null, 0);
     renderHistory(gameState.guesses);
-    document.getElementById("guess").value = "";
-    document.getElementById("guess").focus();
+    // Reset all boxes to full possibles on wrong guess
+    possibles = initPossibles();
+    renderAllBoxes();
+    closeKeypad();
+    checkSubmit();
   }
 }
 
-// ── Bootstrap ─────────────────────────────────────────────────────────────────
+// ─── Bootstrap ────────────────────────────────────────────────────────────────
+
 async function loadPuzzle() {
   const isRandomRoute = window.location.pathname === "/random";
 
   if (window.PUZZLE_DATA) {
-    // Production: injected by _worker.js
-    document.getElementById("status").style.display = "none";
     if (window.PUZZLE_DATA.isRandom) {
       startRandomPuzzle(window.PUZZLE_DATA);
     } else {
       startDailyPuzzle(window.PUZZLE_DATA);
     }
   } else {
-    // Local dev fallback: import puzzle.js directly in-browser
     const { runFilterLoop, makeRng, dateSeedInt, todayLocal: tl, puzzleNumber: pn } =
       await import("./puzzle.js");
-    document.getElementById("status").style.display = "none";
     if (isRandomRoute) {
-      const seed = Math.floor(Math.random() * 0xFFFFFFFF);
+      const seed = Math.floor(Math.random() * 0xffffffff);
       const { answer, clues } = runFilterLoop(makeRng(seed));
       startRandomPuzzle({ answer, clues, isRandom: true });
     } else {
@@ -316,14 +486,122 @@ async function loadPuzzle() {
   }
 }
 
-// Event listeners (module-level — not inside startDailyPuzzle)
-document.getElementById("submit").addEventListener("click", handleGuess);
-document.getElementById("guess").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") handleGuess();
-});
-document.getElementById("save-toggle").addEventListener("click", () => {
-  updateCheckbox(!saveScore);
-  persistPrefs();
+// ─── Theme toggle ─────────────────────────────────────────────────────────────
+
+function initTheme() {
+  const root = document.documentElement;
+  const togBtn = document.getElementById("cw-tog");
+  if (!togBtn) return;
+
+  function applyTheme(dark) {
+    root.classList.toggle("dark", dark);
+    root.classList.toggle("light", !dark);
+    togBtn.textContent = dark ? "Light" : "Dark";
+  }
+
+  // Set initial label to reflect system preference
+  applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  togBtn.addEventListener("click", () => {
+    applyTheme(!root.classList.contains("dark"));
+  });
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
+function initModal() {
+  const modal = document.getElementById("cw-modal");
+  if (!modal) return;
+
+  function openModal() {
+    modal.style.display = "flex";
+    requestAnimationFrame(() => modal.classList.add("open"));
+  }
+
+  function closeModal() {
+    modal.classList.remove("open");
+    modal.addEventListener("transitionend", () => { modal.style.display = "none"; }, { once: true });
+  }
+
+  const htpBtn = document.getElementById("cw-htp-btn");
+  const closeBtn = document.getElementById("cw-modal-close");
+  const gotitBtn = document.getElementById("cw-modal-gotit");
+  if (htpBtn) htpBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+}
+
+// ─── Event listeners (module-level) ───────────────────────────────────────────
+
+// Digit box clicks
+for (let i = 0; i < 3; i++) {
+  const box = document.getElementById(`d${i}`);
+  if (box) box.addEventListener("click", ((idx) => () => selectBox(idx))(i));
+}
+
+// Submit button
+const cwSubmitEl = document.getElementById("cw-submit");
+if (cwSubmitEl) cwSubmitEl.addEventListener("click", handleGuess);
+
+// Save checkbox
+const ckEl = document.getElementById("cw-ck");
+if (ckEl) {
+  ckEl.addEventListener("change", () => {
+    saveScore = ckEl.checked;
+    persistPrefs();
+  });
+}
+
+// Keyboard: digit keys toggle active box; Tab/arrows navigate; Enter submits; Escape closes
+document.addEventListener("keydown", (e) => {
+  if (gameState.solved) return;
+
+  const digit = parseInt(e.key, 10);
+  if (!isNaN(digit) && e.key.length === 1) {
+    if (activeBox === null) return;
+    if (activeBox === 0 && digit === 0) return; // 0 invalid for hundreds
+    e.preventDefault();
+    toggleDigit(digit);
+    return;
+  }
+
+  if (e.key === "Tab" && activeBox !== null) {
+    const next = e.shiftKey ? activeBox - 1 : activeBox + 1;
+    if (next >= 0 && next <= 2) {
+      e.preventDefault();
+      openBox(next);
+    } else {
+      closeKeypad();
+      // Don't prevent default — let Tab leave the widget naturally
+    }
+    return;
+  }
+
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    const dir = e.key === "ArrowRight" ? 1 : -1;
+    if (activeBox === null) {
+      openBox(dir === 1 ? 0 : 2);
+    } else {
+      const next = activeBox + dir;
+      if (next >= 0 && next <= 2) openBox(next);
+      else closeKeypad();
+    }
+    return;
+  }
+
+  if (e.key === "Enter" && possibles.every((s) => s.size === 1)) {
+    e.preventDefault();
+    handleGuess();
+    return;
+  }
+
+  if (e.key === "Escape" && activeBox !== null) {
+    closeKeypad();
+  }
 });
 
+initTheme();
+initModal();
 loadPuzzle();
