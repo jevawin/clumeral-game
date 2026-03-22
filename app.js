@@ -65,6 +65,16 @@ function todayEntry() {
 }
 
 // ── Render helpers ────────────────────────────────────────────────────────────
+function formatClueValue(value) {
+  if (typeof value !== "number" || !isFinite(value)) return String(value);
+  if (Number.isInteger(value)) return String(value);
+  const frac = value - Math.floor(value);
+  if (Math.abs(frac - 1 / 3) < 1e-9) return Math.floor(value) + ".3\u0307";
+  if (Math.abs(frac - 2 / 3) < 1e-9) return Math.floor(value) + ".6\u0307";
+  if (value % 0.5 === 0) return String(value);
+  return value.toFixed(2);
+}
+
 function renderClues(clues) {
   const ul = document.getElementById("clues");
   ul.innerHTML = "";
@@ -91,7 +101,7 @@ function renderClues(clues) {
       li.appendChild(opSpan);
       li.appendChild(document.createTextNode(" "));
       const strong = document.createElement("strong");
-      strong.textContent = value;
+      strong.textContent = formatClueValue(value);
       li.appendChild(strong);
     }
 
