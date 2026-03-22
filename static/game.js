@@ -261,9 +261,9 @@ function triggerCorrect() {
   if (!isFloating) detachOcto();
   octo.classList.add('celebrate');
   flyOcto(5000, () => {
-    animateTo(octoHomeX(), octoHomeY(), 900, () => {
-      gentleFloatActive = true;
-      setTimeout(gentleFloat, 300);
+    const ph = document.getElementById('octo-placeholder').getBoundingClientRect();
+    animateTo(ph.left, ph.top, 900, () => {
+      reattachOcto();
     });
     setTimeout(() => octo.classList.remove('celebrate'), 900);
   });
@@ -659,9 +659,7 @@ document.addEventListener('mouseup',  stopDrag);
 document.addEventListener('touchend', stopDrag);
 
 window.addEventListener('scroll', () => {
-  if (!isFloating) {
-    if (octoWrap.getBoundingClientRect().bottom < 0) detachOcto();
-  } else if (!isDragging) {
+  if (isFloating && !isDragging) {
     if (document.getElementById('octo-placeholder').getBoundingClientRect().top > 20) reattachOcto();
   }
 }, { passive: true });

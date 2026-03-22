@@ -46,14 +46,14 @@
 }
 
 html {
-  background: var(--bg);
+  background-color: var(--bg);
   transition: background-color 0.4s;
 }
 
 body {
   font-family: "DM Sans", system-ui, sans-serif;
   min-height: 100vh;
-  background: var(--bg);
+  background-color: var(--bg);
 }
 
 /* ─── Wrapper ─── */
@@ -61,7 +61,7 @@ body {
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  background: var(--bg);
+  background-color: var(--bg);
 }
 
 #cw-canvas {
@@ -79,7 +79,7 @@ body {
   width: 28.75rem;
   height: 28.75rem;
   border-radius: 50%;
-  background: var(--sh1);
+  background-color: var(--sh1);
   opacity: 0.11;
   pointer-events: none;
   z-index: 0;
@@ -92,7 +92,7 @@ body {
   width: 16.25rem;
   height: 16.25rem;
   border-radius: 50%;
-  background: var(--sh2);
+  background-color: var(--sh2);
   opacity: 0.07;
   pointer-events: none;
   z-index: 0;
@@ -127,7 +127,7 @@ body {
   transform-origin: center bottom;
   filter: drop-shadow(0.125rem 0.1875rem 0 rgba(38, 38, 36, 0.25));
   opacity: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 0.15rem;
 }
 #octo-wrap svg {
   overflow: visible;
@@ -154,7 +154,7 @@ body {
 #cw-title svg {
   display: block;
   width: auto;
-  height: 3rem;
+  height: 2.5rem;
   overflow: visible;
 }
 .tlt {
@@ -181,7 +181,7 @@ body {
   width: 100%;
   border-radius: 0.375rem;
   padding: 1.4rem 1.2rem;
-  background: var(--card-bg);
+  background-color: var(--card-bg);
   border: 1px solid var(--border);
   box-shadow: var(--card-sh);
   transition:
@@ -236,7 +236,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--tag-bg);
+  background-color: var(--tag-bg);
   color: var(--acc);
   border-color: var(--acc);
   transition:
@@ -261,11 +261,11 @@ body {
 }
 .md.lit {
   border-color: var(--acc);
-  background: var(--md-lit-bg);
+  background-color: var(--md-lit-bg);
 }
 .md:not(.lit) {
   border-color: var(--border);
-  background: var(--surface);
+  background-color: var(--surface);
 }
 .cw-lines {
   display: flex;
@@ -306,7 +306,7 @@ body {
   cursor: pointer;
   user-select: none;
   position: relative;
-  background: var(--surface);
+  background-color: var(--surface);
   border: 1.5px solid var(--border);
   box-shadow: var(--dig-sh);
   transition:
@@ -400,7 +400,7 @@ body {
   font-weight: 500;
   border: 1.5px solid;
   cursor: pointer;
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--text);
   border-color: var(--border);
   box-shadow: var(--k-sh);
@@ -416,7 +416,7 @@ body {
     box-shadow 0.08s;
 }
 .kbtn.elim {
-  background: var(--k-bg-elim);
+  background-color: var(--k-bg-elim);
   color: var(--k-txt-elim);
   box-shadow: none;
 }
@@ -445,7 +445,7 @@ body {
   color: #fff;
   border: none;
   cursor: pointer;
-  background: var(--acc);
+  background-color: var(--acc);
   box-shadow: 0.1875rem 0.1875rem 0 rgba(38, 38, 36, 0.18);
   transition:
     background-color 0.4s,
@@ -514,7 +514,7 @@ body {
   display: inline-block;
   width: 0.125rem;
   height: 0.9em;
-  background: var(--div-col);
+  background-color: var(--div-col);
   transition: background-color 0.4s;
 }
 .ui-link {
@@ -639,7 +639,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.55);
+  background-color: rgba(0, 0, 0, 0.55);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s;
@@ -656,7 +656,7 @@ body {
   border-radius: 0.375rem;
   padding: 1.75rem 1.5rem 1.5rem;
   position: relative;
-  background: var(--modal-bg);
+  background-color: var(--modal-bg);
   box-shadow: var(--modal-sh);
   transform: translateY(0.75rem);
   transition:
@@ -754,7 +754,7 @@ body {
   border-radius: 0.25rem;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background-color: var(--surface);
   border: 1.5px solid var(--border);
   box-shadow: var(--dig-sh);
   transition:
@@ -805,7 +805,7 @@ body {
   color: #fff;
   border: none;
   cursor: pointer;
-  background: var(--acc);
+  background-color: var(--acc);
   box-shadow: 0.1875rem 0.1875rem 0 rgba(38, 38, 36, 0.25);
   transition:
     background-color 0.4s,
