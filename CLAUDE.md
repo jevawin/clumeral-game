@@ -84,19 +84,28 @@ Uses `light-dark()` for automatic theme switching. JS sets `:root.dark` or `:roo
 
 ```css
 /* ── Constants (same in both themes) ── */
---acc:        #ff6d5a   /* coral — operators, borders, buttons */
---tag-bg:     rgba(255, 109, 90, 0.1)
---md-lit-bg:  rgba(255, 109, 90, 0.12)
+--acc:          #ff6d5a   /* coral — operators, borders, buttons */
+--tag-bg:       rgba(255, 109, 90, 0.1)
+--md-lit-bg:    rgba(255, 109, 90, 0.12)
+--dig-sh-act:   0.1875rem 0.1875rem 0 rgba(255, 109, 90, 0.3)
 
 /* ── Theme-sensitive (light / dark) ── */
---bg:         light-dark(#f5edd8, #262624)       /* page background */
---text:       light-dark(#262624, #fffdf7)       /* primary text */
---muted:      light-dark(rgba(38,38,36,0.55), rgba(255,253,247,0.6))
---card-bg:    light-dark(#fffdf7, #2e2e2c)       /* card background */
---card-sh:    light-dark(offset shadow light, offset shadow dark)
---surface:    light-dark(#ffffff, #363634)        /* input/key backgrounds */
---border:     light-dark(rgba(38,38,36,0.12), rgba(255,253,247,0.1))
---modal-bg:   light-dark(#ffffff, #1e1e1c)
+--bg:           light-dark(#f5edd8, #262624)       /* page background */
+--sh1:          light-dark(#e8a87c, #ff6d5a)       /* octopus shape colour 1 */
+--sh2:          light-dark(#c0543a, #c0543a)       /* octopus shape colour 2 */
+--text:         light-dark(#262624, #fffdf7)       /* primary text */
+--muted:        light-dark(rgba(38,38,36,0.55), rgba(255,253,247,0.6))
+--card-bg:      light-dark(#fffdf7, #2e2e2c)       /* card background */
+--card-sh:      light-dark(0.25rem 0.25rem 0 …, 0.25rem 0.25rem 0 …)
+--surface:      light-dark(#ffffff, #363634)        /* input/key backgrounds */
+--border:       light-dark(rgba(38,38,36,0.12), rgba(255,253,247,0.1))
+--dig-sh:       light-dark(…)                       /* digit box shadow */
+--k-bg-elim:    light-dark(#ffffff, #262624)        /* eliminated key bg */
+--k-txt-elim:   light-dark(…)                       /* eliminated key text */
+--k-sh:         light-dark(…)                       /* key shadow */
+--div-col:      light-dark(…)                       /* divider colour */
+--modal-bg:     light-dark(#ffffff, #1e1e1c)
+--modal-sh:     light-dark(…)                       /* modal shadow */
 ```
 
 - Font: DM Sans (body) + Inconsolata (monospace labels/digits) via Google Fonts CDN, with system-ui fallback
@@ -128,6 +137,6 @@ Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is pic
 - No framework, no bundler, no TypeScript — plain JS with ES modules
 - `puzzle.js` is shared; never put UI code in it
 - `app.js` is UI only; never put filter/compute logic in it
-- DOM IDs are locked: `#cw`, `#cw-canvas`, `#cw-shape`, `#cw-shape2`, `#cw-inner`, `#cw-header`, `#cw-title`, `#cw-sub`, `#cw-card`, `#cw-plabel`, `#cw-digits`, `#d0`, `#d1`, `#d2`, `#cw-hint`, `#cw-keypad-wrap`, `#cw-keypad`, `#cw-submit-wrap`, `#cw-submit`, `#cw-save`, `#cw-ck`, `#cw-feedback`, `#cw-history`, `#cw-history-list`, `#cw-stats`, `#cw-next`, `#cw-next-number`, `#cw-again`, `#cw-foot-links`, `#cw-tog`, `#cw-htp-btn`, `#cw-foot`, `#cw-modal`, `#cw-modal-box`, `#cw-modal-close`, `#cw-modal-gotit`, `#octo-wrap`, `#octo`
+- DOM IDs are locked: `#cw`, `#cw-canvas`, `#cw-shape`, `#cw-shape2`, `#cw-inner`, `#cw-header`, `#cw-title`, `#cw-sub`, `#cw-card`, `#cw-plabel`, `#cw-digits`, `#d0`, `#d1`, `#d2`, `#cw-hint`, `#cw-keypad-wrap`, `#cw-keypad`, `#cw-submit-wrap`, `#cw-submit`, `#cw-save`, `#cw-ck`, `#cw-feedback`, `#cw-history`, `#cw-history-label`, `#cw-history-list`, `#cw-stats`, `#cw-next`, `#cw-next-number`, `#cw-again`, `#cw-again-link`, `#cw-foot-links`, `#cw-tog`, `#cw-tog-icon`, `#cw-htp-btn`, `#cw-fl`, `#cw-gh`, `#cw-foot`, `#cw-modal`, `#cw-modal-box`, `#cw-modal-close`, `#cw-modal-gotit`, `#cw-modal-title`, `#octo-wrap`, `#octo`, `#octo-mask`, `#octo-placeholder`, `#eyeL-r`, `#eyeL-s`, `#eyeL-x`, `#eyeR-r`, `#eyeR-s`, `#eyeR-x`, `#mouth-h`, `#mouth-s`, `#mouth-sad`, `#cookie-icon`, `#footer-heart`, `#demo-keypad`
 - Event listeners attached at module level in `app.js` — never inside `startDailyPuzzle`
 - `gameState` is module-scoped `let` in `app.js` — not a `window` global
