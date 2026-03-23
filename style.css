@@ -137,6 +137,18 @@ body {
 #octo.celebrate {
   filter: hue-rotate(145deg) saturate(1.3);
 }
+#octo-wrap.celebrating {
+  animation: octo-fly 4.5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+@keyframes octo-fly {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  12%  { transform: translate(40vw, 28vh) scale(1.9) rotate(25deg); }
+  30%  { transform: translate(62vw, 12vh) scale(1.4) rotate(-20deg); }
+  50%  { transform: translate(22vw, 52vh) scale(2.1) rotate(30deg); }
+  68%  { transform: translate(58vw, 42vh) scale(1.6) rotate(-15deg); }
+  85%  { transform: translate(12vw, 8vh) scale(1.3) rotate(10deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
 #octo-placeholder {
   flex-shrink: 0;
   width: 3.3125rem;
@@ -318,6 +330,10 @@ body {
 .digit-box.active {
   border-color: var(--acc);
   box-shadow: var(--dig-sh-act);
+}
+#cw-digits.digit-correct .digit-box {
+  background-color: rgba(76, 175, 136, 0.15);
+  border-color: rgba(76, 175, 136, 0.4);
 }
 .digit-box:active {
   transform: translateY(0.0625rem) translateX(0.0625rem);

@@ -446,9 +446,10 @@ function handleGuess() {
     renderFeedback("correct", gameState.answer);
     closeKeypad();
     const digitsEl = document.getElementById("cw-digits");
-    if (digitsEl) digitsEl.style.display = "none";
+    if (digitsEl) digitsEl.classList.add("digit-correct");
     const submitWrap = document.getElementById("cw-submit-wrap");
     if (submitWrap) submitWrap.classList.remove("visible");
+    celebrateOcto();
     if (gameState.isRandom) {
       const ragain = document.getElementById("cw-again");
       if (ragain) ragain.style.display = "";
@@ -463,6 +464,7 @@ function handleGuess() {
     gameState.guesses.push(guess);
     renderFeedback("incorrect");
     renderHistory(gameState.guesses);
+    sadOcto();
     // Reset all boxes to full possibles on wrong guess
     possibles = initPossibles();
     renderAllBoxes();
@@ -669,12 +671,17 @@ const tlts       = [...document.querySelectorAll('.tlt')];
 let eyeTX = 0, eyeTY = 0, eyeX = 0, eyeY = 0;
 let exprMode = 'round';
 
-const eyeLR  = document.getElementById('eyeL-r');
-const eyeRR  = document.getElementById('eyeR-r');
-const eyeLS  = document.getElementById('eyeL-s');
-const eyeRS  = document.getElementById('eyeR-s');
-const mouthH = document.getElementById('mouth-h');
-const mouthS = document.getElementById('mouth-s');
+const eyeLR   = document.getElementById('eyeL-r');
+const eyeRR   = document.getElementById('eyeR-r');
+const eyeLS   = document.getElementById('eyeL-s');
+const eyeRS   = document.getElementById('eyeR-s');
+const eyeLX   = document.getElementById('eyeL-x');
+const eyeRX   = document.getElementById('eyeR-x');
+const mouthH  = document.getElementById('mouth-h');
+const mouthS  = document.getElementById('mouth-s');
+const mouthSad = document.getElementById('mouth-sad');
+
+let octoAnimating = false;
 
 document.addEventListener('mousemove', (e) => {
   if (exprMode !== 'squint-glancing') {
@@ -871,11 +878,105 @@ function runEntry() {
   });
 }
 
-octoWrapEl.addEventListener('click', () => { if (!entryBusy) runEntry(); });
+octoWrapEl.addEventListener('click', () => { if (!entryBusy && !octoAnimating) runEntry(); });
+
+// ── Correct / wrong animations ──
+
+function celebrateOcto() {
+  if (octoAnimating) return;
+  octoAnimating = true;
+
+  const rect = octoWrapEl.getBoundingClientRect();
+  octoWrapEl.style.position = 'fixed';
+  octoWrapEl.style.left = rect.left + 'px';
+  octoWrapEl.style.top = rect.top + 'px';
+  octoWrapEl.style.margin = '0';
+  octoWrapEl.style.transform = '';
+
+  const ph = document.getElementById('octo-placeholder');
+  if (ph) ph.style.display = '';
+
+  octoEl.classList.add('celebrate');
+  octoWrapEl.classList.add('celebrating');
+  document.body.style.overflow = 'hidden';
+
+  setTimeout(reattachOcto, 5000);
+}
+
+function reattachOcto() {
+  octoWrapEl.style.transition = 'opacity 0.35s';
+  octoWrapEl.style.opacity = '0';
+
+  setTimeout(() => {
+    octoWrapEl.classList.remove('celebrating');
+    octoEl.classList.remove('celebrate');
+    octoWrapEl.style.position = '';
+    octoWrapEl.style.left = '';
+    octoWrapEl.style.top = '';
+    octoWrapEl.style.margin = '';
+
+    const ph = document.getElementById('octo-placeholder');
+    if (ph) ph.style.display = 'none';
+
+    const digitsEl = document.getElementById('cw-digits');
+    if (digitsEl) digitsEl.style.display = 'none';
+
+    document.body.style.overflow = '';
+    exprMode = 'round';
+
+    setTimeout(() => {
+      octoWrapEl.style.opacity = '1';
+      setTimeout(() => { octoWrapEl.style.transition = ''; octoAnimating = false; }, 350);
+    }, 50);
+  }, 350);
+}
+
+function sadOcto() {
+  if (octoAnimating) return;
+  octoAnimating = true;
+  exprMode = 'sad';
+
+  // Show X-eyes and sad mouth
+  eyeLR.style.opacity = '0';
+  eyeRR.style.opacity = '0';
+  eyeLS.style.opacity = '0';
+  eyeRS.style.opacity = '0';
+  mouthH.style.opacity = '0';
+  mouthS.style.opacity = '0';
+  eyeLX.style.opacity = '1';
+  eyeRX.style.opacity = '1';
+  mouthSad.style.opacity = '1';
+
+  // Tilt sideways
+  octoWrapEl.style.transition = 'transform 0.3s ease-out';
+  octoWrapEl.style.transform = 'rotate(-80deg) translateY(20px)';
+
+  setTimeout(() => {
+    // Spring back
+    octoWrapEl.style.transition = 'transform 0.45s cubic-bezier(.34,1.56,.64,1)';
+    octoWrapEl.style.transform = '';
+
+    setTimeout(() => {
+      // Restore face
+      octoWrapEl.style.transition = '';
+      eyeLR.style.opacity = '1';
+      eyeRR.style.opacity = '1';
+      eyeLS.style.opacity = '';
+      eyeRS.style.opacity = '';
+      mouthH.style.opacity = '1';
+      mouthS.style.opacity = '';
+      eyeLX.style.opacity = '0';
+      eyeRX.style.opacity = '0';
+      mouthSad.style.opacity = '0';
+      exprMode = 'round';
+      octoAnimating = false;
+    }, 450);
+  }, 1800);
+}
 
 // ── Idle bob ──
 (function bob() {
-  if (!entryBusy) {
+  if (!entryBusy && !octoAnimating) {
     bobT += 0.030;
     octoWrapEl.style.transform =
       `translateY(${Math.sin(bobT) * 2.5}px) rotate(${Math.sin(bobT * 0.45) * 0.8}deg)`;
