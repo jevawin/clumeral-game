@@ -119,13 +119,44 @@ python3 -m http.server 8080
 # window.PUZZLE_DATA won't be set; app.js falls back to importing puzzle.js directly
 ```
 
+## Git Workflow
+
+**`main` is protected — never commit or push to it directly.** Not on GitHub, not locally.
+
+- **Public-facing changes** (features, bug fixes, UI work): create `issue/NUM` branch from `dev` → build there → merge into `dev` → PR from `dev` to `main`
+- **Non-public-facing changes** (cleanup, config, docs): commit directly to `dev` → PR from `dev` to `main`
+- **PRs can batch multiple issues**: merge several issue branches into `dev`, then one PR covers them all
+
+### Merging
+
+- **Feature branch → `dev`**: Claude can merge directly (no approval needed)
+- **`dev` → `main`**: after pushing, give Jamie the Cloudflare preview URL to review. Wait for explicit "all good merge" before merging the PR via `gh pr merge`
+
+### Review flow
+
+After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable markdown link:
+- **`dev` branch**: [https://dev-clumeral-game.jevawin.workers.dev](https://dev-clumeral-game.jevawin.workers.dev)
+- **Feature branches**: `https://issue-NUM-clumeral-game.jevawin.workers.dev` (e.g. [https://issue-77-clumeral-game.jevawin.workers.dev](https://issue-77-clumeral-game.jevawin.workers.dev))
+
 ## Deployment
 
-Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is picked up automatically by Pages Advanced Mode. No `wrangler.toml` needed.
+Push to `main` → GitHub → Cloudflare Workers auto-deploys. `_worker.js` is picked up automatically. No `wrangler.toml` needed.
+
+## Skills
+
+- `/add-to-roadmap` — when the user says "add to roadmap" or similar, invoke this skill to create a structured GitHub issue labelled `roadmap`, assigned to `jevawin`
+
+## Keeping CLAUDE.md current
+
+When making important decisions, structural changes, new conventions, or architectural choices during a conversation, add them to this file so future sessions have the full picture.
 
 ## Conventions
 
 - No framework, no bundler, no TypeScript — plain JS with ES modules
+- Icons: use [Lucide](https://lucide.dev/) for any iconography
+- Notifications: use toast/snackbar (auto-dismiss ~3s) for transient feedback — not modals
+- No PII: never collect, store, or transmit personally identifiable information
+- GitHub labels: lowercase for words (`roadmap`, `gameplay`), uppercase for acronyms/codes (`P1`, `P2`, `P3`, `UI/UX`)
 - `puzzle.js` is shared; never put UI code in it
 - `app.js` is UI only; never put filter/compute logic in it
 - DOM IDs are locked: `#cw`, `#cw-canvas`, `#cw-shape`, `#cw-shape2`, `#cw-inner`, `#cw-header`, `#cw-title`, `#cw-sub`, `#cw-card`, `#cw-plabel`, `#cw-digits`, `#d0`, `#d1`, `#d2`, `#cw-hint`, `#cw-keypad-wrap`, `#cw-keypad`, `#cw-submit-wrap`, `#cw-submit`, `#cw-save`, `#cw-ck`, `#cw-feedback`, `#cw-history`, `#cw-history-list`, `#cw-stats`, `#cw-next`, `#cw-next-number`, `#cw-again`, `#cw-foot-links`, `#cw-tog`, `#cw-htp-btn`, `#cw-foot`, `#cw-modal`, `#cw-modal-box`, `#cw-modal-close`, `#cw-modal-gotit`, `#octo-wrap`, `#octo`
