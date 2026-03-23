@@ -157,47 +157,54 @@ function renderClues(clues) {
 
 // ─── Feedback / history / stats ───────────────────────────────────────────────
 
-function renderFeedback(type, answer, tries) {
-  const el = document.getElementById("feedback");
-  if (!el) return;
+function renderFeedback(type, answer) {
+  const hint = document.getElementById("cw-hint");
+  const fb = document.getElementById("cw-feedback");
   if (type === "correct") {
-    const t = tries === 1 ? "1 try" : `${tries} tries`;
-    el.textContent = `You got it in ${t}! The answer was ${answer}.`;
-    el.className = "feedback feedback--correct";
-    el.style.display = "";
+    if (hint) hint.style.display = "none";
+    if (fb) {
+      fb.textContent = `Congratulations! ${answer} is the correct answer.`;
+      fb.className = "cw-feedback cw-feedback--correct";
+      fb.style.display = "";
+    }
   } else if (type === "incorrect") {
-    el.textContent = "Incorrect — try again.";
-    el.className = "feedback feedback--incorrect";
-    el.style.display = "";
+    if (hint) {
+      hint.textContent = "Incorrect — try again.";
+      hint.style.color = "var(--acc)";
+    }
+    if (fb) fb.style.display = "none";
   } else {
-    el.textContent = "";
-    el.className = "feedback";
-    el.style.display = "none";
+    if (hint) {
+      hint.textContent = "Tap a box to eliminate possible numbers.";
+      hint.style.color = "";
+    }
+    if (fb) {
+      fb.textContent = "";
+      fb.style.display = "none";
+    }
   }
 }
 
 function renderHistory(guesses) {
-  const label = document.getElementById("history-label");
-  const ul = document.getElementById("history");
-  if (!ul) return;
+  const wrap = document.getElementById("cw-history");
+  const ul = document.getElementById("cw-history-list");
+  if (!ul || !wrap) return;
   ul.innerHTML = "";
   if (guesses.length === 0) {
-    if (label) label.style.display = "none";
-    ul.style.display = "none";
+    wrap.style.display = "none";
     return;
   }
-  if (label) label.style.display = "";
-  ul.style.display = "";
+  wrap.style.display = "";
   for (const g of guesses) {
     const li = document.createElement("li");
     li.textContent = g;
-    li.className = "history-item";
+    li.className = "cw-history-item";
     ul.appendChild(li);
   }
 }
 
 function renderStats() {
-  const statsEl = document.getElementById("stats");
+  const statsEl = document.getElementById("cw-stats");
   if (!statsEl) return;
   const history = loadHistory();
   if (history.length === 0) {
@@ -207,13 +214,13 @@ function renderStats() {
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
   statsEl.innerHTML = `
-    <p class="stats-heading">Your stats</p>
-    <div class="stats-grid">
-      <div class="stats-item"><span class="stats-val">${history.length}</span><span class="stats-lbl">Played</span></div>
-      <div class="stats-item"><span class="stats-val">${avg}</span><span class="stats-lbl">Avg tries</span></div>
+    <p class="cw-stats-heading">Your stats</p>
+    <div class="cw-stats-grid">
+      <div class="cw-stats-item"><span class="cw-stats-val">${history.length}</span><span class="cw-stats-lbl">Played</span></div>
+      <div class="cw-stats-item"><span class="cw-stats-val">${avg}</span><span class="cw-stats-lbl">Avg tries</span></div>
     </div>
-    <p class="stats-last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
-    <div class="stats-bubbles">${last5.map((h) => `<span class="stats-bubble">${h.tries}</span>`).join("")}</div>
+    <p class="cw-stats-last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <div class="cw-stats-bubbles">${last5.map((h) => `<span class="cw-stats-bubble">${h.tries}</span>`).join("")}</div>
   `;
   statsEl.style.display = "";
 }
@@ -327,8 +334,8 @@ function checkSubmit() {
 
 function showNextPuzzle() {
   const num = puzzleNumber(todayLocal());
-  const np = document.getElementById("next-puzzle");
-  const nn = document.getElementById("next-number");
+  const np = document.getElementById("cw-next");
+  const nn = document.getElementById("cw-next-number");
   if (np && nn) {
     nn.textContent = num + 1;
     np.style.display = "";
@@ -337,10 +344,10 @@ function showNextPuzzle() {
 
 function showCompletedState(tries) {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
-  const fb = document.getElementById("feedback");
+  const fb = document.getElementById("cw-feedback");
   if (fb) {
     fb.textContent = `You already solved today's puzzle in ${t}!`;
-    fb.className = "feedback feedback--correct";
+    fb.className = "cw-feedback cw-feedback--correct";
     fb.style.display = "";
   }
   const hintEl = document.getElementById("cw-hint");
@@ -362,14 +369,14 @@ function startRandomPuzzle(puzzleData) {
   renderClues(clues);
 
   gameState = { answer, guesses: [], solved: false, isRandom: true };
-  renderFeedback(null, null, 0);
+  renderFeedback(null);
   renderHistory([]);
 
-  const statsEl = document.getElementById("stats");
+  const statsEl = document.getElementById("cw-stats");
   if (statsEl) statsEl.style.display = "none";
-  const npEl = document.getElementById("next-puzzle");
+  const npEl = document.getElementById("cw-next");
   if (npEl) npEl.style.display = "none";
-  const ragain = document.getElementById("random-again");
+  const ragain = document.getElementById("cw-again");
   if (ragain) ragain.style.display = "none";
   // No score saving for random puzzles
   const saveEl = document.getElementById("cw-save");
@@ -401,12 +408,12 @@ function startDailyPuzzle(puzzleData) {
   }
 
   gameState = { answer, guesses: [], solved: false };
-  renderFeedback(null, null, 0);
+  renderFeedback(null);
   renderHistory([]);
 
-  const statsEl = document.getElementById("stats");
+  const statsEl = document.getElementById("cw-stats");
   if (statsEl) statsEl.style.display = "none";
-  const npEl = document.getElementById("next-puzzle");
+  const npEl = document.getElementById("cw-next");
   if (npEl) npEl.style.display = "none";
 
   const hintEl = document.getElementById("cw-hint");
@@ -436,10 +443,14 @@ function handleGuess() {
 
   if (guess === gameState.answer) {
     gameState.solved = true;
-    renderFeedback("correct", gameState.answer, tries);
+    renderFeedback("correct", gameState.answer);
     closeKeypad();
+    const digitsEl = document.getElementById("cw-digits");
+    if (digitsEl) digitsEl.style.display = "none";
+    const submitWrap = document.getElementById("cw-submit-wrap");
+    if (submitWrap) submitWrap.classList.remove("visible");
     if (gameState.isRandom) {
-      const ragain = document.getElementById("random-again");
+      const ragain = document.getElementById("cw-again");
       if (ragain) ragain.style.display = "";
     } else {
       if (saveScore) {
@@ -450,7 +461,7 @@ function handleGuess() {
     }
   } else {
     gameState.guesses.push(guess);
-    renderFeedback("incorrect", null, 0);
+    renderFeedback("incorrect");
     renderHistory(gameState.guesses);
     // Reset all boxes to full possibles on wrong guess
     possibles = initPossibles();
