@@ -126,11 +126,21 @@ python3 -m http.server 8080
 - **Public-facing changes** (features, bug fixes, UI work): create `issue/NUM` branch from `dev` → build there → merge into `dev` → PR from `dev` to `main`
 - **Non-public-facing changes** (cleanup, config, docs): commit directly to `dev` → PR from `dev` to `main`
 - **PRs can batch multiple issues**: merge several issue branches into `dev`, then one PR covers them all
-- **Jamie merges PRs** into `main` when ready — this triggers deployment
+
+### Merging
+
+- **Feature branch → `dev`**: Claude can merge directly (no approval needed)
+- **`dev` → `main`**: after pushing, give Jamie the Cloudflare preview URL to review. Wait for explicit "all good merge" before merging the PR via `gh pr merge`
+
+### Review flow
+
+After pushing to a branch, give Jamie the Cloudflare preview URL:
+- **`dev` branch**: `dev-clumeral-game.jevawin.workers.dev`
+- **Feature branches**: `issue-NUM-clumeral-game.jevawin.workers.dev` (e.g. `issue-77-clumeral-game.jevawin.workers.dev`)
 
 ## Deployment
 
-Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is picked up automatically by Pages Advanced Mode. No `wrangler.toml` needed.
+Push to `main` → GitHub → Cloudflare Workers auto-deploys. `_worker.js` is picked up automatically. No `wrangler.toml` needed.
 
 ## Skills
 
