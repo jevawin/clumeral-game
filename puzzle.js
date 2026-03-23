@@ -36,9 +36,9 @@ const PROPERTIES = {
   sumAll:  { label: 'The sum of all three digits is',             type: 'numeric', compute: n => { const [a, b, c] = getDigits(n); return a + b + c; } },
 
   // Differences: 3 numeric properties
-  diffFS:  { label: 'The difference of the first and second digits is',  type: 'numeric', compute: n => { const [a, b]    = getDigits(n); return Math.abs(a - b); } },
-  diffFT:  { label: 'The difference of the first and third digits is',   type: 'numeric', compute: n => { const [a, , c]  = getDigits(n); return Math.abs(a - c); } },
-  diffST:  { label: 'The difference of the second and third digits is',  type: 'numeric', compute: n => { const [, b, c]  = getDigits(n); return Math.abs(b - c); } },
+  diffFS:  { label: 'The difference between the first and second digits is',  type: 'numeric', compute: n => { const [a, b]    = getDigits(n); return Math.abs(a - b); } },
+  diffFT:  { label: 'The difference between the first and third digits is',   type: 'numeric', compute: n => { const [a, , c]  = getDigits(n); return Math.abs(a - c); } },
+  diffST:  { label: 'The difference between the second and third digits is',  type: 'numeric', compute: n => { const [, b, c]  = getDigits(n); return Math.abs(b - c); } },
 
   // Products: 4 numeric properties
   prodFS:  { label: 'The product of the first and second digits is',  type: 'numeric', compute: n => { const [a, b]    = getDigits(n); return a * b; } },
@@ -123,7 +123,7 @@ export function runFilterLoop(rng = Math.random) {
 
     // Apply filter and record clue
     candidates = filtered;
-    clues.push({ label, operator, value: val });
+    clues.push({ propKey, label, operator, value: val });
     triedGroups.add(group);
   }
 
@@ -137,7 +137,7 @@ export function runFilterLoop(rng = Math.random) {
       const filtered = applyFilter(candidates, propKey, '=', val);
       if (filtered.length > 0 && filtered.length < candidates.length) {
         candidates = filtered;
-        clues.push({ label, operator: '=', value: val });
+        clues.push({ propKey, label, operator: '=', value: val });
         usedLabels.add(label);
       }
     }

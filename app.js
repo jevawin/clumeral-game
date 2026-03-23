@@ -9,6 +9,7 @@ import { launchConfetti } from './confetti.js';
 const EPOCH_DATE = "2026-03-08";
 const STORAGE_HISTORY = "dlng_history";
 const STORAGE_PREFS = "dlng_prefs";
+const STORAGE_THEME = "dlng_theme";
 const OPERATOR_SYMBOLS = { "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -92,29 +93,27 @@ function formatClueValue(value) {
   return value.toFixed(2);
 }
 
-function getClueTag(label) {
-  const l = label.toLowerCase();
-  if (l.includes("prime")) return "PRIME";
-  if (l.includes("square")) return "SQUARE";
-  if (l.includes("cube")) return "CUBE";
-  if (l.includes("triangular")) return "TRIG";
-  if (l.includes("sum")) return "SUM";
-  if (l.includes("difference")) return "DIFF";
-  if (l.includes("product")) return "PROD";
-  if (l.includes("mean")) return "MEAN";
-  if (l.includes("range")) return "RANGE";
+function getClueTag(propKey) {
+  if (propKey.includes("IsPrime"))      return "PRIME";
+  if (propKey.includes("IsSquare"))     return "SQUARE";
+  if (propKey.includes("IsCube"))       return "CUBE";
+  if (propKey.includes("IsTriangular")) return "TRIAN";
+  if (propKey.startsWith("sum"))        return "SUM";
+  if (propKey.startsWith("diff"))       return "DIFF";
+  if (propKey.startsWith("prod"))       return "PROD";
+  if (propKey.startsWith("mean"))       return "MEAN";
+  if (propKey === "range")              return "RANGE";
   return "?";
 }
 
-function getClueLitDigits(label) {
-  const l = label.toLowerCase();
-  if (l.includes("all three")) return [true, true, true];
-  if (l.includes("first and second")) return [true, true, false];
-  if (l.includes("first and third")) return [true, false, true];
-  if (l.includes("second and third")) return [false, true, true];
-  if (l.includes("first digit")) return [true, false, false];
-  if (l.includes("second digit")) return [false, true, false];
-  if (l.includes("third digit")) return [false, false, true];
+function digitPositions(propKey) {
+  if (propKey.endsWith("FS"))                           return [true, true, false];
+  if (propKey.endsWith("FT"))                           return [true, false, true];
+  if (propKey.endsWith("ST"))                           return [false, true, true];
+  if (propKey.endsWith("All") || propKey === "range")   return [true, true, true];
+  if (propKey.startsWith("first"))                      return [true, false, false];
+  if (propKey.startsWith("second"))                     return [false, true, false];
+  if (propKey.startsWith("third"))                      return [false, false, true];
   return [true, true, true];
 }
 
@@ -122,9 +121,9 @@ function renderClues(clues) {
   const container = document.querySelector(".cw-clue-container");
   if (!container) return;
   container.innerHTML = "";
-  for (const { label, operator, value } of clues) {
-    const tag = getClueTag(label);
-    const lit = getClueLitDigits(label);
+  for (const { propKey, label, operator, value } of clues) {
+    const tag = getClueTag(propKey);
+    const lit = digitPositions(propKey);
     const miniDigitsHtml = lit.map((on) => `<div class="md${on ? " lit" : ""}"></div>`).join("");
 
     let l1Text, l2Text;
@@ -133,8 +132,8 @@ function renderClues(clues) {
       const idx = label.indexOf(" is ");
       const subject = label.slice(0, idx);
       const predicate = label.slice(idx + 4);
-      l1Text = subject + " is" + (isAffirmative ? "" : " not");
-      l2Text = predicate;
+      l1Text = subject;
+      l2Text = "is" + (isAffirmative ? "" : " not") + " " + predicate;
     } else {
       l1Text = label;
       l2Text = `${OPERATOR_SYMBOLS[operator] ?? operator} ${formatClueValue(value)}`;
@@ -160,47 +159,54 @@ function renderClues(clues) {
 
 // ─── Feedback / history / stats ───────────────────────────────────────────────
 
-function renderFeedback(type, answer, tries) {
-  const el = document.getElementById("feedback");
-  if (!el) return;
+function renderFeedback(type, answer) {
+  const hint = document.getElementById("cw-hint");
+  const fb = document.getElementById("cw-feedback");
   if (type === "correct") {
-    const t = tries === 1 ? "1 try" : `${tries} tries`;
-    el.textContent = `You got it in ${t}! The answer was ${answer}.`;
-    el.className = "feedback feedback--correct";
-    el.style.display = "";
+    if (hint) hint.style.display = "none";
+    if (fb) {
+      fb.textContent = `Congratulations! ${answer} is the correct answer.`;
+      fb.className = "cw-feedback cw-feedback--correct";
+      fb.style.display = "";
+    }
   } else if (type === "incorrect") {
-    el.textContent = "Incorrect — try again.";
-    el.className = "feedback feedback--incorrect";
-    el.style.display = "";
+    if (hint) {
+      hint.textContent = "Incorrect — try again.";
+      hint.style.color = "var(--acc)";
+    }
+    if (fb) fb.style.display = "none";
   } else {
-    el.textContent = "";
-    el.className = "feedback";
-    el.style.display = "none";
+    if (hint) {
+      hint.textContent = "Tap a box to eliminate possible numbers.";
+      hint.style.color = "";
+    }
+    if (fb) {
+      fb.textContent = "";
+      fb.style.display = "none";
+    }
   }
 }
 
 function renderHistory(guesses) {
-  const label = document.getElementById("history-label");
-  const ul = document.getElementById("history");
-  if (!ul) return;
+  const wrap = document.getElementById("cw-history");
+  const ul = document.getElementById("cw-history-list");
+  if (!ul || !wrap) return;
   ul.innerHTML = "";
   if (guesses.length === 0) {
-    if (label) label.style.display = "none";
-    ul.style.display = "none";
+    wrap.style.display = "none";
     return;
   }
-  if (label) label.style.display = "";
-  ul.style.display = "";
+  wrap.style.display = "";
   for (const g of guesses) {
     const li = document.createElement("li");
     li.textContent = g;
-    li.className = "history-item";
+    li.className = "cw-history-item";
     ul.appendChild(li);
   }
 }
 
 function renderStats() {
-  const statsEl = document.getElementById("stats");
+  const statsEl = document.getElementById("cw-stats");
   if (!statsEl) return;
   const history = loadHistory();
   if (history.length === 0) {
@@ -210,13 +216,13 @@ function renderStats() {
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
   statsEl.innerHTML = `
-    <p class="stats-heading">Your stats</p>
-    <div class="stats-grid">
-      <div class="stats-item"><span class="stats-val">${history.length}</span><span class="stats-lbl">Played</span></div>
-      <div class="stats-item"><span class="stats-val">${avg}</span><span class="stats-lbl">Avg tries</span></div>
+    <p class="cw-stats-heading">Your stats</p>
+    <div class="cw-stats-grid">
+      <div class="cw-stats-item"><span class="cw-stats-val">${history.length}</span><span class="cw-stats-lbl">Played</span></div>
+      <div class="cw-stats-item"><span class="cw-stats-val">${avg}</span><span class="cw-stats-lbl">Avg tries</span></div>
     </div>
-    <p class="stats-last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
-    <div class="stats-bubbles">${last5.map((h) => `<span class="stats-bubble">${h.tries}</span>`).join("")}</div>
+    <p class="cw-stats-last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <div class="cw-stats-bubbles">${last5.map((h) => `<span class="cw-stats-bubble">${h.tries}</span>`).join("")}</div>
   `;
   statsEl.style.display = "";
 }
@@ -330,8 +336,8 @@ function checkSubmit() {
 
 function showNextPuzzle() {
   const num = puzzleNumber(todayLocal());
-  const np = document.getElementById("next-puzzle");
-  const nn = document.getElementById("next-number");
+  const np = document.getElementById("cw-next");
+  const nn = document.getElementById("cw-next-number");
   if (np && nn) {
     nn.textContent = num + 1;
     np.style.display = "";
@@ -340,10 +346,10 @@ function showNextPuzzle() {
 
 function showCompletedState(tries) {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
-  const fb = document.getElementById("feedback");
+  const fb = document.getElementById("cw-feedback");
   if (fb) {
     fb.textContent = `You already solved today's puzzle in ${t}!`;
-    fb.className = "feedback feedback--correct";
+    fb.className = "cw-feedback cw-feedback--correct";
     fb.style.display = "";
   }
   const hintEl = document.getElementById("cw-hint");
@@ -365,14 +371,14 @@ function startRandomPuzzle(puzzleData) {
   renderClues(clues);
 
   gameState = { answer, guesses: [], solved: false, isRandom: true };
-  renderFeedback(null, null, 0);
+  renderFeedback(null);
   renderHistory([]);
 
-  const statsEl = document.getElementById("stats");
+  const statsEl = document.getElementById("cw-stats");
   if (statsEl) statsEl.style.display = "none";
-  const npEl = document.getElementById("next-puzzle");
+  const npEl = document.getElementById("cw-next");
   if (npEl) npEl.style.display = "none";
-  const ragain = document.getElementById("random-again");
+  const ragain = document.getElementById("cw-again");
   if (ragain) ragain.style.display = "none";
   // No score saving for random puzzles
   const saveEl = document.getElementById("cw-save");
@@ -404,12 +410,12 @@ function startDailyPuzzle(puzzleData) {
   }
 
   gameState = { answer, guesses: [], solved: false };
-  renderFeedback(null, null, 0);
+  renderFeedback(null);
   renderHistory([]);
 
-  const statsEl = document.getElementById("stats");
+  const statsEl = document.getElementById("cw-stats");
   if (statsEl) statsEl.style.display = "none";
-  const npEl = document.getElementById("next-puzzle");
+  const npEl = document.getElementById("cw-next");
   if (npEl) npEl.style.display = "none";
 
   const hintEl = document.getElementById("cw-hint");
@@ -421,6 +427,7 @@ function startDailyPuzzle(puzzleData) {
   renderAllBoxes();
   closeKeypad();
   checkSubmit();
+  maybeAutoShowModal();
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
@@ -441,8 +448,12 @@ function handleGuess() {
     launchConfetti();
     renderFeedback("correct", gameState.answer, tries);
     closeKeypad();
+    const digitsEl = document.getElementById("cw-digits");
+    if (digitsEl) digitsEl.style.display = "none";
+    const submitWrap = document.getElementById("cw-submit-wrap");
+    if (submitWrap) submitWrap.classList.remove("visible");
     if (gameState.isRandom) {
-      const ragain = document.getElementById("random-again");
+      const ragain = document.getElementById("cw-again");
       if (ragain) ragain.style.display = "";
     } else {
       if (saveScore) {
@@ -453,7 +464,7 @@ function handleGuess() {
     }
   } else {
     gameState.guesses.push(guess);
-    renderFeedback("incorrect", null, 0);
+    renderFeedback("incorrect");
     renderHistory(gameState.guesses);
     // Reset all boxes to full possibles on wrong guess
     possibles = initPossibles();
@@ -489,6 +500,27 @@ async function loadPuzzle() {
   }
 }
 
+// ─── Canvas dot-grid ──────────────────────────────────────────────────────────
+
+function drawCanvas(dark) {
+  const canvas = document.getElementById("cw-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const dot = dark ? "rgba(255,253,247,0.07)" : "rgba(38,38,36,0.09)";
+  const gap = 24;
+  ctx.fillStyle = dot;
+  for (let x = gap; x < canvas.width; x += gap) {
+    for (let y = gap; y < canvas.height; y += gap) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
 // ─── Theme toggle ─────────────────────────────────────────────────────────────
 
 function initTheme() {
@@ -500,39 +532,64 @@ function initTheme() {
     root.classList.toggle("dark", dark);
     root.classList.toggle("light", !dark);
     togBtn.textContent = dark ? "Light" : "Dark";
+    togBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+    drawCanvas(dark);
   }
 
-  // Set initial label to reflect system preference
-  applyTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const saved = localStorage.getItem(STORAGE_THEME);
+  const isDark = saved !== null ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(isDark);
 
   togBtn.addEventListener("click", () => {
-    applyTheme(!root.classList.contains("dark"));
+    const newDark = !root.classList.contains("dark");
+    localStorage.setItem(STORAGE_THEME, newDark ? "dark" : "light");
+    applyTheme(newDark);
   });
+
+  window.addEventListener("resize", () => drawCanvas(root.classList.contains("dark")));
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
+let _openModal = null;
+
 function initModal() {
   const modal = document.getElementById("cw-modal");
   if (!modal) return;
+  const htpBtn = document.getElementById("cw-htp-btn");
 
   function openModal() {
+    localStorage.setItem("cw-htp-seen", "1");
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("open"));
   }
 
   function closeModal() {
     modal.classList.remove("open");
-    modal.addEventListener("transitionend", () => { modal.style.display = "none"; }, { once: true });
+    modal.addEventListener("transitionend", () => {
+      modal.style.display = "none";
+      if (htpBtn) htpBtn.focus();
+    }, { once: true });
   }
 
-  const htpBtn = document.getElementById("cw-htp-btn");
+  _openModal = openModal;
+
   const closeBtn = document.getElementById("cw-modal-close");
   const gotitBtn = document.getElementById("cw-modal-gotit");
   if (htpBtn) htpBtn.addEventListener("click", openModal);
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
+  });
+}
+
+function maybeAutoShowModal() {
+  if (localStorage.getItem("cw-htp-seen")) return;
+  if (loadHistory().length > 0) return;
+  if (!_openModal) return;
+  setTimeout(_openModal, 400);
 }
 
 // ─── Event listeners (module-level) ───────────────────────────────────────────
@@ -604,6 +661,234 @@ document.addEventListener("keydown", (e) => {
     closeKeypad();
   }
 });
+
+// ─── Octopus animations ───────────────────────────────────────────────────────
+
+const octoEl     = document.getElementById('octo');
+const octoWrapEl = document.getElementById('octo-wrap');
+const tlts       = [...document.querySelectorAll('.tlt')];
+
+// ── Eye tracking ──
+let eyeTX = 0, eyeTY = 0, eyeX = 0, eyeY = 0;
+let exprMode = 'round';
+
+const eyeLR  = document.getElementById('eyeL-r');
+const eyeRR  = document.getElementById('eyeR-r');
+const eyeLS  = document.getElementById('eyeL-s');
+const eyeRS  = document.getElementById('eyeR-s');
+const mouthH = document.getElementById('mouth-h');
+const mouthS = document.getElementById('mouth-s');
+
+document.addEventListener('mousemove', (e) => {
+  if (exprMode !== 'squint-glancing') {
+    const r  = octoEl.getBoundingClientRect();
+    const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+    eyeTX = cl((e.clientX - (r.left + r.width  / 2)) / 55, -1.8,  1.8);
+    eyeTY = cl((e.clientY - (r.top  + r.height / 2)) / 55, -1.5,  1.5);
+  }
+});
+
+(function trackEyes() {
+  eyeX += (eyeTX - eyeX) * 0.12;
+  eyeY += (eyeTY - eyeY) * 0.12;
+  eyeLR.setAttribute('cx', 19 + eyeX); eyeLR.setAttribute('cy', 15 + eyeY);
+  eyeRR.setAttribute('cx', 33 + eyeX); eyeRR.setAttribute('cy', 15 + eyeY);
+  eyeLS.setAttribute('transform', `translate(${eyeX},${eyeY})`);
+  eyeRS.setAttribute('transform', `translate(${eyeX},${eyeY})`);
+  requestAnimationFrame(trackEyes);
+})();
+
+// ── Blink / wink ──
+let winkLeft = true;
+function winkEye(eye, cb) {
+  const dur = 140, s = performance.now();
+  (function f(now) {
+    const t = Math.min((now - s) / dur, 1);
+    eye.setAttribute('r', Math.max(0.1, 3 * Math.abs(Math.cos(t * Math.PI))));
+    if (t < 1) requestAnimationFrame(f);
+    else { eye.setAttribute('r', 3); if (cb) cb(); }
+  })(performance.now());
+}
+function scheduleBlink() {
+  setTimeout(() => {
+    if (exprMode !== 'round') { scheduleBlink(); return; }
+    const fi = winkLeft ? eyeLR : eyeRR;
+    const se = winkLeft ? eyeRR : eyeLR;
+    winkLeft = !winkLeft;
+    winkEye(fi, () => setTimeout(() => winkEye(se, scheduleBlink), 200));
+  }, 2200 + Math.random() * 2000);
+}
+scheduleBlink();
+
+// ── Squint-glance ──
+function fadeExpr(toSquint, dur, onDone) {
+  const s = performance.now();
+  (function f(now) {
+    const t = Math.min((now - s) / dur, 1);
+    const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const ra = toSquint ? 1 - e : e;
+    const sa = toSquint ? e : 1 - e;
+    [eyeLR, eyeRR].forEach((el) => el.setAttribute('opacity', ra));
+    [eyeLS, eyeRS].forEach((el) => el.setAttribute('opacity', sa));
+    mouthH.setAttribute('opacity', ra);
+    mouthS.setAttribute('opacity', sa);
+    if (t < 1) requestAnimationFrame(f);
+    else {
+      [eyeLR, eyeRR].forEach((el) => el.setAttribute('opacity', toSquint ? '0' : '1'));
+      [eyeLS, eyeRS].forEach((el) => el.setAttribute('opacity', toSquint ? '1' : '0'));
+      mouthH.setAttribute('opacity', toSquint ? '0' : '1');
+      mouthS.setAttribute('opacity', toSquint ? '1' : '0');
+      if (onDone) onDone();
+    }
+  })(performance.now());
+}
+
+let squintBusy = false;
+function doSquint() {
+  if (squintBusy || exprMode !== 'round') return;
+  squintBusy = true; exprMode = 'transitioning';
+  eyeLR.setAttribute('r', '3'); eyeRR.setAttribute('r', '3');
+  fadeExpr(true, 260, () => {
+    exprMode = 'squint-glancing';
+    const glances = [{ tx: -1.5, ty: -0.6 }, { tx: 1.4, ty: -0.4 }, { tx: 0.3, ty: 0.9 }, { tx: 0, ty: 0 }];
+    let gi = 0;
+    function glance() {
+      if (gi >= glances.length) {
+        exprMode = 'transitioning';
+        eyeLS.removeAttribute('transform'); eyeRS.removeAttribute('transform');
+        fadeExpr(false, 260, () => { exprMode = 'round'; squintBusy = false; scheduleSquint(); });
+        return;
+      }
+      const g = glances[gi++];
+      const dur = 460 + Math.random() * 360;
+      const s = performance.now(), fx = eyeTX, fy = eyeTY;
+      (function mv(now) {
+        const t = Math.min((now - s) / dur, 1);
+        const e = 1 - Math.pow(1 - t, 3);
+        eyeTX = fx + (g.tx - fx) * e;
+        eyeTY = fy + (g.ty - fy) * e;
+        if (t < 1) requestAnimationFrame(mv);
+        else setTimeout(glance, 160 + Math.random() * 180);
+      })(performance.now());
+    }
+    glance();
+  });
+}
+function scheduleSquint() {
+  setTimeout(() => { if (exprMode === 'round') doSquint(); else scheduleSquint(); },
+    5000 + Math.random() * 5000);
+}
+scheduleSquint();
+
+// ── Spring bounce ──
+function springBounce(cb) {
+  const H = 56, dur = 660, s = performance.now();
+  (function f(now) {
+    const r = Math.min((now - s) / dur, 1);
+    let y = 0, sx = 1, sy = 1;
+    if (r < 0.38) {
+      const p = r / 0.38, e = 1 - Math.pow(1 - p, 3);
+      y = -e * H; sy = 1 + 0.10 * Math.sin(p * Math.PI); sx = 1 - 0.06 * Math.sin(p * Math.PI);
+    } else if (r < 0.78) {
+      const p = (r - 0.38) / 0.40;
+      y = -(1 - p * p) * H;
+    } else {
+      const p = (r - 0.78) / 0.22;
+      y = Math.exp(-13 * p) * Math.cos(Math.PI * p) * 10;
+      const sq = Math.exp(-9 * p);
+      sx = 1 + 0.28 * sq; sy = 1 - 0.22 * sq;
+    }
+    octoWrapEl.style.transform = `translateY(${y}px) scaleX(${sx}) scaleY(${sy})`;
+    if (r < 1) requestAnimationFrame(f);
+    else { octoWrapEl.style.transform = ''; if (cb) cb(); }
+  })(performance.now());
+}
+
+// ── Letter reveal ──
+let entryBusy = false, bobT = 0;
+
+function resetOcto() {
+  octoWrapEl.style.transition = 'none';
+  octoWrapEl.style.opacity    = '0';
+  octoWrapEl.style.transform  = 'translateY(-0.75rem)';
+}
+
+function revealOcto(onDone) {
+  void octoWrapEl.offsetWidth;
+  octoWrapEl.style.transition = 'opacity 0.2s ease-out, transform 0.4s cubic-bezier(.34,1.56,.64,1)';
+  octoWrapEl.style.opacity    = '1';
+  octoWrapEl.style.transform  = 'translateY(0)';
+  setTimeout(() => {
+    octoWrapEl.style.transition = '';
+    octoWrapEl.style.transform  = '';
+    if (onDone) onDone();
+  }, 420);
+}
+
+function resetLetters() {
+  tlts.forEach((l) => {
+    l.style.transition = 'none';
+    l.style.opacity    = '0';
+    l.style.transform  = 'translateY(10px)';
+  });
+}
+
+function revealLetters(onDone) {
+  tlts.forEach((l, i) => setTimeout(() => {
+    l.style.transition = 'opacity .15s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1)';
+    l.style.opacity    = '1';
+    l.style.transform  = 'translateY(0)';
+    if (i === tlts.length - 1) setTimeout(onDone, 120);
+  }, i * 80));
+}
+
+function watchLetters(dur) {
+  const s = performance.now();
+  (function f(now) {
+    const t  = Math.min((now - s) / dur, 1);
+    const li = Math.min(Math.floor(t * tlts.length), tlts.length - 1);
+    const el = tlts[li];
+    if (el && octoEl) {
+      const lr = el.getBoundingClientRect();
+      const or = octoEl.getBoundingClientRect();
+      if (lr.width > 0 && or.width > 0) {
+        eyeTX = Math.max(-1.8, Math.min(1.8, (lr.left + lr.width  / 2 - (or.left + or.width  / 2)) / 40));
+        eyeTY = Math.max(-1.5, Math.min(1.5, (lr.top  + lr.height / 2 - (or.top  + or.height / 2)) / 40));
+      }
+    }
+    if (t < 1) requestAnimationFrame(f);
+  })(performance.now());
+}
+
+function runEntry() {
+  if (entryBusy) return;
+  entryBusy = true;
+  resetLetters();
+  resetOcto();
+  revealOcto(() => {
+    setTimeout(() => {
+      const dur = tlts.length * 80 + 120;
+      watchLetters(dur);
+      revealLetters(() => setTimeout(() => springBounce(() => { entryBusy = false; }), 80));
+    }, 80);
+  });
+}
+
+octoWrapEl.addEventListener('click', () => { if (!entryBusy) runEntry(); });
+
+// ── Idle bob ──
+(function bob() {
+  if (!entryBusy) {
+    bobT += 0.030;
+    octoWrapEl.style.transform =
+      `translateY(${Math.sin(bobT) * 2.5}px) rotate(${Math.sin(bobT * 0.45) * 0.8}deg)`;
+  }
+  requestAnimationFrame(bob);
+})();
+
+(document.fonts ? document.fonts.ready : Promise.resolve())
+  .then(() => setTimeout(runEntry, 200))
+  .catch(() => setTimeout(runEntry, 500));
 
 initTheme();
 initModal();
