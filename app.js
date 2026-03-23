@@ -419,6 +419,7 @@ function startDailyPuzzle(puzzleData) {
   renderAllBoxes();
   closeKeypad();
   checkSubmit();
+  maybeAutoShowModal();
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
@@ -470,7 +471,6 @@ async function loadPuzzle() {
       startRandomPuzzle(window.PUZZLE_DATA);
     } else {
       startDailyPuzzle(window.PUZZLE_DATA);
-      maybeAutoShowModal();
     }
   } else {
     const { runFilterLoop, makeRng, dateSeedInt, todayLocal: tl, puzzleNumber: pn } =
@@ -483,7 +483,6 @@ async function loadPuzzle() {
       const today = tl();
       const { answer, clues } = runFilterLoop(makeRng(dateSeedInt(today)));
       startDailyPuzzle({ date: today, puzzleNumber: pn(today), answer, clues });
-      maybeAutoShowModal();
     }
   }
 }
@@ -540,6 +539,9 @@ function initModal() {
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
+  });
 }
 
 function maybeAutoShowModal() {
