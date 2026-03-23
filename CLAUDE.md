@@ -136,9 +136,17 @@ Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is pic
 
 - `/add-to-roadmap` — when the user says "add to roadmap" or similar, invoke this skill to create a structured GitHub issue labelled `roadmap`, assigned to `jevawin`
 
+## Keeping CLAUDE.md current
+
+When making important decisions, structural changes, new conventions, or architectural choices during a conversation, add them to this file so future sessions have the full picture.
+
 ## Conventions
 
 - No framework, no bundler, no TypeScript — plain JS with ES modules
+- Icons: use [Lucide](https://lucide.dev/) for any iconography
+- Notifications: use toast/snackbar (auto-dismiss ~3s) for transient feedback — not modals
+- No PII: never collect, store, or transmit personally identifiable information
+- GitHub labels: lowercase for words (`roadmap`, `gameplay`), uppercase for acronyms/codes (`P1`, `P2`, `P3`, `UI/UX`)
 - `puzzle.js` is shared; never put UI code in it
 - `app.js` is UI only; never put filter/compute logic in it
 - DOM IDs are locked: `#cw`, `#cw-canvas`, `#cw-shape`, `#cw-shape2`, `#cw-inner`, `#cw-header`, `#cw-title`, `#cw-sub`, `#cw-card`, `#cw-plabel`, `#cw-digits`, `#d0`, `#d1`, `#d2`, `#cw-hint`, `#cw-keypad-wrap`, `#cw-keypad`, `#cw-submit-wrap`, `#cw-submit`, `#cw-save`, `#cw-ck`, `#cw-feedback`, `#cw-history`, `#cw-history-list`, `#cw-stats`, `#cw-next`, `#cw-next-number`, `#cw-again`, `#cw-foot-links`, `#cw-tog`, `#cw-htp-btn`, `#cw-foot`, `#cw-modal`, `#cw-modal-box`, `#cw-modal-close`, `#cw-modal-gotit`, `#octo-wrap`, `#octo`
