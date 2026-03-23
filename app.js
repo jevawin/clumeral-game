@@ -2,6 +2,8 @@
 // Production: puzzle data is injected by _worker.js as window.PUZZLE_DATA.
 // Local dev (python -m http.server): falls back to importing puzzle.js directly.
 
+import { launchConfetti } from './confetti.js';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EPOCH_DATE = "2026-03-08";
@@ -436,6 +438,7 @@ function handleGuess() {
 
   if (guess === gameState.answer) {
     gameState.solved = true;
+    launchConfetti();
     renderFeedback("correct", gameState.answer, tries);
     closeKeypad();
     if (gameState.isRandom) {
