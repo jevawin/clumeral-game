@@ -74,6 +74,10 @@ Push to `main` triggers auto-deploy via Cloudflare Pages. The `_worker.js` is pi
 
 Issues and ideas tracked on [GitHub Issues](https://github.com/jevawin/clumeral-game/issues) with the `roadmap` label.
 
+## Trademark
+
+"Clumeral" is a trademark of Jamie Evawin. The MIT License grants rights to the source code, not to the Clumeral name, branding, or visual identity. You're welcome to use the code to build your own thing — just don't call it Clumeral.
+
 ## License
 
-All rights reserved.
+[MIT](LICENSE) - see LICENSE file for details.
