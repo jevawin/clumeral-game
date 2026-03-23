@@ -119,9 +119,22 @@ python3 -m http.server 8080
 # window.PUZZLE_DATA won't be set; app.js falls back to importing puzzle.js directly
 ```
 
+## Git Workflow
+
+**`main` is protected — never commit or push to it directly.** Not on GitHub, not locally.
+
+- **Public-facing changes** (features, bug fixes, UI work): create `issue/NUM` branch from `dev` → build there → merge into `dev` → PR from `dev` to `main`
+- **Non-public-facing changes** (cleanup, config, docs): commit directly to `dev` → PR from `dev` to `main`
+- **PRs can batch multiple issues**: merge several issue branches into `dev`, then one PR covers them all
+- **Jamie merges PRs** into `main` when ready — this triggers deployment
+
 ## Deployment
 
 Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is picked up automatically by Pages Advanced Mode. No `wrangler.toml` needed.
+
+## Skills
+
+- `/add-to-roadmap` — when the user says "add to roadmap" or similar, invoke this skill to create a structured GitHub issue labelled `roadmap`, assigned to `jevawin`
 
 ## Conventions
 
