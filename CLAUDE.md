@@ -134,9 +134,9 @@ python3 -m http.server 8080
 
 ### Review flow
 
-After pushing to a branch, give Jamie the Cloudflare preview URL:
-- **`dev` branch**: `dev-clumeral-game.jevawin.workers.dev`
-- **Feature branches**: `issue-NUM-clumeral-game.jevawin.workers.dev` (e.g. `issue-77-clumeral-game.jevawin.workers.dev`)
+After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable markdown link:
+- **`dev` branch**: [https://dev-clumeral-game.jevawin.workers.dev](https://dev-clumeral-game.jevawin.workers.dev)
+- **Feature branches**: `https://issue-NUM-clumeral-game.jevawin.workers.dev` (e.g. [https://issue-77-clumeral-game.jevawin.workers.dev](https://issue-77-clumeral-game.jevawin.workers.dev))
 
 ## Deployment
 
