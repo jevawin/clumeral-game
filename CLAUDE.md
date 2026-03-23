@@ -130,7 +130,7 @@ python3 -m http.server 8080
 ### Merging
 
 - **Feature branch → `dev`**: Claude can merge directly (no approval needed)
-- **`dev` → `main`**: after pushing, give Jamie the Cloudflare preview URL to review. Wait for explicit "all good merge" before merging the PR via `gh pr merge`
+- **`dev` → `main`**: after pushing, give Jamie the Cloudflare preview URL to review. Wait for explicit "all good merge" before merging the PR via `gh pr merge --squash`. Close the PR after merging if not already closed.
 
 ### Review flow
 
@@ -141,6 +141,9 @@ After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable 
 ## Deployment
 
 Push to `main` → GitHub → Cloudflare Workers auto-deploys. `_worker.js` is picked up automatically. No `wrangler.toml` needed.
+
+- **Production**: [https://clumeral.com](https://clumeral.com)
+- **Merge method**: squash only (merge commits disabled on the repo)
 
 ## Skills
 
