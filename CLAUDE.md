@@ -142,6 +142,7 @@ After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable 
 
 Push to `main` → GitHub → Cloudflare Workers auto-deploys. `_worker.js` is picked up automatically. No `wrangler.toml` needed.
 
+<<<<<<< HEAD
 - **Production**: [https://clumeral.com](https://clumeral.com)
 - **Merge method**: squash only (merge commits disabled on the repo)
 
