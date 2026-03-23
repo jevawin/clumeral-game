@@ -417,6 +417,7 @@ function startDailyPuzzle(puzzleData) {
   renderAllBoxes();
   closeKeypad();
   checkSubmit();
+  maybeAutoShowModal();
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
@@ -507,27 +508,45 @@ function initTheme() {
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
+let _openModal = null;
+
 function initModal() {
   const modal = document.getElementById("cw-modal");
   if (!modal) return;
+  const htpBtn = document.getElementById("cw-htp-btn");
 
   function openModal() {
+    localStorage.setItem("cw-htp-seen", "1");
     modal.style.display = "flex";
     requestAnimationFrame(() => modal.classList.add("open"));
   }
 
   function closeModal() {
     modal.classList.remove("open");
-    modal.addEventListener("transitionend", () => { modal.style.display = "none"; }, { once: true });
+    modal.addEventListener("transitionend", () => {
+      modal.style.display = "none";
+      if (htpBtn) htpBtn.focus();
+    }, { once: true });
   }
 
-  const htpBtn = document.getElementById("cw-htp-btn");
+  _openModal = openModal;
+
   const closeBtn = document.getElementById("cw-modal-close");
   const gotitBtn = document.getElementById("cw-modal-gotit");
   if (htpBtn) htpBtn.addEventListener("click", openModal);
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
+  });
+}
+
+function maybeAutoShowModal() {
+  if (localStorage.getItem("cw-htp-seen")) return;
+  if (loadHistory().length > 0) return;
+  if (!_openModal) return;
+  setTimeout(_openModal, 400);
 }
 
 // ─── Event listeners (module-level) ───────────────────────────────────────────
