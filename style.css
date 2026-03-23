@@ -1,415 +1,973 @@
-/* ============================================================
-   1. CSS Custom Properties
-   ============================================================ */
-
+/* ─────────────────────────────────────────
+   THEME TOKENS
+   light-dark() reads color-scheme.
+   JS sets :root.dark → color-scheme: dark
+   Default follows system preference.
+───────────────────────────────────────── */
 :root {
-  --bg-deep:    #0f0f1a;
-  --bg-card:    rgba(255, 255, 255, 0.06);
-  --accent:     #ff6d5a;
-  --accent-alt: #ff914d;
-  --text:       #e8e8f0;
-  --text-muted: #7a7a9a;
-  --green:      #4caf88;
-  --red:        #ff6d5a;
+  color-scheme: light dark;
+
+  /* ── Constants (same in both themes) ── */
+  --acc: #ff6d5a;
+  --tag-bg: rgba(255, 109, 90, 0.1);
+  --md-lit-bg: rgba(255, 109, 90, 0.12);
+  --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(255, 109, 90, 0.3);
+
+  /* ── Theme-sensitive ── */
+  --bg: light-dark(#f5edd8, #262624);
+  --sh1: light-dark(#e8a87c, #ff6d5a);
+  --sh2: light-dark(#c0543a, #c0543a);
+  --text: light-dark(#262624, #fffdf7);
+  --muted: light-dark(rgba(38, 38, 36, 0.55), rgba(255, 253, 247, 0.6));
+  --card-bg: light-dark(#fffdf7, #2e2e2c);
+  --card-sh: light-dark(0.25rem 0.25rem 0 rgba(38, 38, 36, 0.12), 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.3));
+  --surface: light-dark(#ffffff, #363634);
+  --border: light-dark(rgba(38, 38, 36, 0.12), rgba(255, 253, 247, 0.1));
+  --dig-sh: light-dark(0.1875rem 0.1875rem 0 rgba(38, 38, 36, 0.12), 0.1875rem 0.1875rem 0 rgba(0, 0, 0, 0.25));
+  --k-bg-elim: light-dark(#ffffff, #262624);
+  --k-txt-elim: light-dark(rgba(38, 38, 36, 0.25), rgba(255, 253, 247, 0.25));
+  --k-sh: light-dark(0.125rem 0.125rem 0 rgba(38, 38, 36, 0.12), 0.125rem 0.125rem 0 rgba(0, 0, 0, 0.25));
+  --div-col: light-dark(rgba(38, 38, 36, 0.35), rgba(255, 253, 247, 0.4));
+  --modal-bg: light-dark(#ffffff, #1e1e1c);
+  --modal-sh: light-dark(0 0.5rem 2.5rem rgba(26, 24, 48, 0.18), 0 0.5rem 2.5rem rgba(0, 0, 0, 0.5));
+}
+:root.dark {
+  color-scheme: dark;
+}
+:root.light {
+  color-scheme: light;
 }
 
-/* ============================================================
-   2. Reset / Base
-   ============================================================ */
-
-*, *::before, *::after {
+/* ─── Reset ─── */
+* {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* ============================================================
-   3. Body + Background
-   ============================================================ */
+html {
+  background-color: var(--bg);
+  transition: background-color 0.4s;
+}
 
 body {
-  background-color: var(--bg-deep);
-  background-image: radial-gradient(ellipse at top, #1a1a2e 0%, #0f0f1a 70%);
+  font-family: "DM Sans", system-ui, sans-serif;
   min-height: 100vh;
+  background-color: var(--bg);
+}
+
+/* ─── Wrapper ─── */
+#cw {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+#cw-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Background blobs ─── */
+#cw-shape {
+  position: fixed;
+  top: -8.75rem;
+  right: -7.5rem;
+  width: 28.75rem;
+  height: 28.75rem;
+  border-radius: 50%;
+  background-color: var(--sh1);
+  opacity: 0.11;
+  pointer-events: none;
+  z-index: 0;
+  transition: background-color 0.4s;
+}
+#cw-shape2 {
+  position: fixed;
+  bottom: -6.25rem;
+  left: -5rem;
+  width: 16.25rem;
+  height: 16.25rem;
+  border-radius: 50%;
+  background-color: var(--sh2);
+  opacity: 0.07;
+  pointer-events: none;
+  z-index: 0;
+  transition: background-color 0.4s;
+}
+
+/* ─── Inner column ─── */
+#cw-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 3rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Header row ─── */
+#cw-header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 0.625rem;
+}
+
+/* ─── Octopus ─── */
+#octo-wrap {
+  flex-shrink: 0;
+  cursor: pointer;
+  will-change: transform;
+  transform-origin: center bottom;
+  filter: drop-shadow(0.125rem 0.1875rem 0 rgba(38, 38, 36, 0.25));
+  opacity: 0;
+  margin-bottom: 0.15rem;
+}
+#octo-wrap svg {
+  overflow: visible;
+  display: block;
+  transition: filter 0.6s ease;
+}
+#octo.celebrate {
+  filter: hue-rotate(145deg) saturate(1.3);
+}
+#octo-wrap.celebrating {
+  animation: octo-fly 4.5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+@keyframes octo-fly {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+  12%  { transform: translate(40vw, 28vh) scale(1.9) rotate(25deg); }
+  30%  { transform: translate(62vw, 12vh) scale(1.4) rotate(-20deg); }
+  50%  { transform: translate(22vw, 52vh) scale(2.1) rotate(30deg); }
+  68%  { transform: translate(58vw, 42vh) scale(1.6) rotate(-15deg); }
+  85%  { transform: translate(12vw, 8vh) scale(1.3) rotate(10deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+}
+#octo-placeholder {
+  flex-shrink: 0;
+  width: 3.3125rem;
+  height: 3.25rem;
+  display: none;
+}
+
+/* ─── Title ─── */
+#cw-title {
+  margin: 0;
+  width: 100%;
   color: var(--text);
-  padding: 1.5rem;
-  gap: 1.25rem;
+  transition: color 0.4s;
+}
+#cw-title svg {
+  display: block;
+  width: auto;
+  height: 2.5rem;
+  overflow: visible;
+}
+.tlt {
+  display: inline-block;
+  color: var(--text);
+  opacity: 0;
+  transform: translateY(0.625rem);
+  transition: color 0.4s;
 }
 
-/* ============================================================
-   4. Game Title (outside card)
-   ============================================================ */
-
-.game-title {
-  font-family: 'Forum', Georgia, serif;
-  font-size: 2.25rem;
+/* ─── Subtitle ─── */
+#cw-sub {
+  font-size: 1rem;
   font-weight: 400;
-  color: #fff;
   text-align: center;
+  margin-bottom: 1.5rem;
+  line-height: 1.55;
+  color: var(--muted);
+  transition: color 0.4s;
 }
 
-.game-instructions {
-  font-family: 'Forum', Georgia, serif;
-  font-size: 1.5rem;
-  color: #fff;
-  text-align: center;
-  max-width: min(480px, 90vw);
-  line-height: 1.4;
+/* ─── Card ─── */
+#cw-card {
+  width: 100%;
+  border-radius: 0.375rem;
+  padding: 1.4rem 1.2rem;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-sh);
+  transition:
+    background-color 0.4s,
+    border-color 0.4s,
+    box-shadow 0.4s;
 }
 
-@media (min-width: 481px) {
-  .game-title {
-    font-size: 3rem;
-  }
-  .game-instructions {
-    font-size: 2rem;
-  }
+/* ─── Puzzle label ─── */
+#cw-plabel {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 1.125rem;
+  color: var(--muted);
+  transition: color 0.4s;
 }
 
-/* ============================================================
-   5. Frosted Glass Card
-   CRITICAL: both -webkit-backdrop-filter AND backdrop-filter required (UI-02)
-   ============================================================ */
-
-.card {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 2rem 2.5rem;
-  width: min(480px, 90vw);
-  -webkit-backdrop-filter: blur(12px);  /* Safari — required per UI-02 */
-  backdrop-filter: blur(12px);
+/* ─── Clues ─── */
+.cw-clue-container {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-
-/* ============================================================
-   6. Status Subtitle
-   ============================================================ */
-
-#status {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-weight: 400;
+.cw-clue {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0 0.8rem;
 }
-
-/* ============================================================
-   7. Clue List and Clue Rows
-   ============================================================ */
-
-#clues {
-  list-style: none;
+.cw-tag-cell {
   display: flex;
   flex-direction: column;
-  gap: 0;
-}
-
-.clue-row {
-  border-left: 3px solid var(--accent);
-  padding: 0.35rem 0 0.35rem 0.75rem;
-  margin-bottom: 0.4rem;
-  font-size: 0.95rem;
-  line-height: 1.4;
-}
-
-.clue-op {
-  color: var(--accent);
-}
-
-/* ============================================================
-   8. Input Row — inline desktop, stacked mobile
-   ============================================================ */
-
-.input-row {
-  display: flex;
+  align-items: stretch;
+  justify-content: center;
   gap: 0.5rem;
-  align-items: center;
+  align-self: stretch;
+  padding: 0.1875rem 0;
 }
-
-#guess {
-  flex: 1;
-  padding: 0.75rem 0.75rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: inherit;
+.cw-tag {
+  font-family: "Inconsolata", monospace;
   font-size: 1rem;
-  outline: none;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  height: 1.375rem;
+  line-height: 1.375rem;
+  border-radius: 0.125rem;
+  border: 1.5px solid;
+  padding: 0 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--tag-bg);
+  color: var(--acc);
+  border-color: var(--acc);
+  transition:
+    background-color 0.4s,
+    color 0.4s,
+    border-color 0.4s;
+}
+.mini-digits {
+  display: flex;
+  justify-content: space-between;
+  width: 4.5rem;
+}
+.md {
+  width: 1.375rem;
+  height: 1.375rem;
+  flex-shrink: 0;
+  border-radius: 0.0625rem;
+  border: 1px solid;
+  transition:
+    border-color 0.4s,
+    background-color 0.4s;
+}
+.md.lit {
+  border-color: var(--acc);
+  background-color: var(--md-lit-bg);
+}
+.md:not(.lit) {
+  border-color: var(--border);
+  background-color: var(--surface);
+}
+.cw-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.cw-l1 {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text);
+  transition: color 0.4s;
+}
+.cw-l2 {
+  font-size: 1.1875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--acc);
 }
 
-#guess:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(255, 109, 90, 0.25);
+/* ─── Digit entry boxes ─── */
+#cw-digits {
+  display: flex;
+  gap: 0.625rem;
+  margin-top: 0.625rem;
+  width: 100%;
+  height: 7rem;
+}
+.digit-box {
+  flex: 1;
+  height: 100%;
+  border-radius: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  background-color: var(--surface);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--dig-sh);
+  transition:
+    background-color 0.4s,
+    border-color 0.4s,
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+.digit-box.active {
+  border-color: var(--acc);
+  box-shadow: var(--dig-sh-act);
+}
+#cw-digits.digit-correct .digit-box {
+  background-color: rgba(76, 175, 136, 0.15);
+  border-color: rgba(76, 175, 136, 0.4);
+}
+.digit-box:active {
+  transform: translateY(0.0625rem) translateX(0.0625rem);
+  box-shadow: 0.0625rem 0.0625rem 0 rgba(38, 38, 36, 0.18) !important;
+}
+.digit-box .db-resolved {
+  font-family: "Inconsolata", monospace;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text);
+  transition: color 0.4s;
+}
+.db-possibles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  padding: 0.375rem;
+}
+.db-possibles.four-col {
+  grid-template-columns: repeat(4, 1fr);
+}
+.db-possibles .dc-mid {
+  grid-column: 2 / 4;
+}
+.db-possibles span {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition:
+    color 0.4s,
+    opacity 0.2s;
+}
+.db-possibles span.elim {
+  opacity: 0.12;
 }
 
-#guess:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+/* ─── Hint ─── */
+#cw-hint {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text);
+  transition: color 0.4s;
+  margin-bottom: 0.875rem;
 }
 
-#submit {
-  padding: 0.75rem 1.1rem;
-  background: var(--accent);
+/* ─── Keypad ─── */
+#cw-keypad-wrap {
+  width: 100%;
+  margin-top: 0.625rem;
+  display: none;
+}
+#cw-keypad-wrap.open {
+  display: block;
+}
+#cw-keypad-header {
+  display: none;
+}
+#cw-keypad,
+#demo-keypad {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4375rem;
+  width: 100%;
+}
+#demo-keypad {
+  grid-column: span 2;
+}
+.kbtn {
+  height: 3rem;
+  border-radius: 0.1875rem;
+  font-family: "Inconsolata", monospace;
+  font-size: 1.125rem;
+  font-weight: 500;
+  border: 1.5px solid;
+  cursor: pointer;
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--k-sh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.4s,
+    color 0.4s,
+    border-color 0.4s,
+    opacity 0.15s,
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+.kbtn.elim {
+  background-color: var(--k-bg-elim);
+  color: var(--k-txt-elim);
+  box-shadow: none;
+}
+.kbtn:active {
+  transform: translateY(0.125rem) translateX(0.125rem);
+  box-shadow: none !important;
+}
+
+/* ─── Submit ─── */
+#cw-submit-wrap {
+  width: 100%;
+  margin-top: 0.75rem;
+  display: none;
+}
+#cw-submit-wrap.visible {
+  display: block;
+}
+#cw-submit {
+  width: 100%;
+  height: 3.25rem;
+  border-radius: 0.1875rem;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   color: #fff;
   border: none;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease;
+  background-color: var(--acc);
+  box-shadow: 0.1875rem 0.1875rem 0 rgba(38, 38, 36, 0.18);
+  transition:
+    background-color 0.4s,
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+#cw-submit:active {
+  transform: translateY(0.125rem) translateX(0.125rem);
+  box-shadow: none;
 }
 
-#submit:hover:not(:disabled) {
-  background: var(--accent-alt);
+/* ─── Save row ─── */
+#cw-save {
+  display: none;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.875rem;
+  font-size: 1rem;
+  color: var(--muted);
+  transition: color 0.4s;
+}
+#cw-submit-wrap.visible + #cw-save {
+  display: flex;
+}
+#cw-save label {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  cursor: pointer;
+}
+#cw-save input[type="checkbox"] {
+  display: none;
+}
+#cw-save .check-icon {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+#cw-save .cookie-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  vertical-align: middle;
+}
+#cookie-icon {
+  stroke: var(--muted);
+  transition: stroke 0.4s;
 }
 
-#submit:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+/* ─── Feedback ─── */
+#cw-feedback {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 1rem;
+  transition: color 0.4s;
+}
+.cw-feedback--correct {
+  color: #4caf88;
 }
 
-@media (max-width: 480px) {
-  .input-row {
-    flex-direction: column;
-  }
-  .input-row input,
-  .input-row button {
-    width: 100%;
-  }
+/* ─── Guess history ─── */
+#cw-history {
+  margin-top: 0.875rem;
 }
-
-/* ============================================================
-   9. Feedback Message
-   ============================================================ */
-
-.feedback {
-  font-size: 0.95rem;
-  font-weight: 500;
-  min-height: 1.4rem;
-}
-
-.feedback--correct {
-  color: var(--green);
-}
-
-.feedback--incorrect {
-  color: var(--red);
-}
-
-/* ============================================================
-   10. Guess History
-   ============================================================ */
-
-#history-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  text-transform: uppercase;
+#cw-history-label {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 700;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  transition: color 0.4s;
 }
-
-#history {
+#cw-history-list {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.375rem;
+}
+.cw-history-item {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.125rem;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background-color: var(--surface);
+  transition:
+    color 0.4s,
+    background-color 0.4s,
+    border-color 0.4s;
 }
 
-.history-item {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  padding: 0.15rem 0;
+/* ─── Stats ─── */
+#cw-stats {
+  margin-top: 1rem;
 }
-
-/* ============================================================
-   11. Puzzle Label
-   ============================================================ */
-
-.puzzle-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
+.cw-stats-heading {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  transition: color 0.4s;
 }
-
-/* ============================================================
-   12. Save Row (score cookie checkbox)
-   ============================================================ */
-
-.save-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: -0.25rem;
-}
-
-.save-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  transition: color 0.15s ease;
-}
-
-.save-toggle[aria-checked="true"] {
-  color: var(--green);
-}
-
-.save-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
-}
-
-/* ============================================================
-   13. Stats
-   ============================================================ */
-
-.stats {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 0.85rem;
-}
-
-.stats-heading {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 0.6rem;
-}
-
-.stats-grid {
+.cw-stats-grid {
   display: flex;
   gap: 1.5rem;
   margin-bottom: 0.75rem;
 }
-
-.stats-item {
+.cw-stats-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.1rem;
 }
-
-.stats-val {
+.cw-stats-val {
+  font-family: "Inconsolata", monospace;
   font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 700;
   line-height: 1;
+  color: var(--text);
+  transition: color 0.4s;
 }
-
-.stats-lbl {
-  font-size: 0.7rem;
-  color: var(--text-muted);
+.cw-stats-lbl {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  transition: color 0.4s;
 }
-
-.stats-last-lbl {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-bottom: 0.4rem;
+.cw-stats-last-lbl {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 0.375rem;
+  transition: color 0.4s;
 }
-
-.stats-bubbles {
+.cw-stats-bubbles {
   display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  gap: 0.375rem;
 }
-
-.stats-bubble {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.cw-stats-bubble {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 600;
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: rgba(255, 109, 90, 0.12);
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-/* ============================================================
-   14. Next Puzzle
-   ============================================================ */
-
-.next-puzzle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  padding-top: 0.25rem;
-}
-
-/* ============================================================
-   15. Site Footer
-   ============================================================ */
-
-.site-footer {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
-  font-family: 'Forum', Georgia, serif;
+  justify-content: center;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition:
+    color 0.4s,
+    background-color 0.4s,
+    border-color 0.4s;
+}
+
+/* ─── Next puzzle ─── */
+#cw-next {
   font-size: 1rem;
-  color: #fff;
-  text-align: center;
+  margin-top: 0.875rem;
+  color: var(--muted);
+  transition: color 0.4s;
+}
+#cw-next-number {
+  font-family: "Inconsolata", monospace;
+  font-weight: 700;
+  color: var(--text);
+  transition: color 0.4s;
 }
 
-.footer-row {
-  display: flex;
+/* ─── Random again ─── */
+#cw-again {
+  margin-top: 0.875rem;
+}
+#cw-again-link {
+  color: var(--acc);
+  text-decoration: underline;
+  text-underline-offset: 0.1875rem;
+  font-size: 1rem;
+  transition: color 0.4s;
+}
+
+/* ─── Footer links row ─── */
+#cw-foot-links {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 0.35rem;
+  width: 100%;
+  margin-bottom: 0.375rem;
 }
-
-.footer-row--compact {
-  gap: 0.175rem;
+#cw-foot-links .ui-link:first-child {
+  justify-self: end;
+  padding-right: 0.625rem;
 }
-
-.footer-icon {
-  flex-shrink: 0;
-  vertical-align: middle;
+#cw-foot-links .ui-link:last-child {
+  justify-self: start;
+  padding-left: 0.625rem;
 }
-
-.footer-brand {
+.foot-div {
+  display: inline-block;
+  width: 0.125rem;
+  height: 0.9em;
+  background-color: var(--div-col);
+  transition: background-color 0.4s;
+}
+.ui-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.3125rem;
+  color: var(--acc);
 }
-
-.footer-link {
-  color: var(--accent);
-  text-decoration: none;
-  border-bottom: 1px solid var(--accent);
-  padding-bottom: 2px;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.footer-link:hover {
-  color: var(--accent-alt);
-  border-color: var(--accent-alt);
-}
-
-@keyframes heart-bounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-3px); }
-}
-
-.footer-heart {
+.ui-link svg {
+  width: 0.875rem;
+  height: 0.875rem;
   flex-shrink: 0;
-  animation: heart-bounce 1.6s ease-in-out infinite;
-  transform-origin: center;
+  stroke: var(--acc);
+  transition: stroke 0.4s;
+}
+#cw-tog,
+#cw-htp-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  border-bottom: 1px solid var(--acc);
+  color: var(--acc);
+  font-size: 1rem;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color 0.4s;
+}
+#cw-tog-icon {
+  display: inline-flex;
+}
+#cw-tog-icon .icon-sun {
+  display: none;
+}
+:root.dark #cw-tog-icon .icon-sun {
+  display: block;
+}
+:root.dark #cw-tog-icon .icon-moon {
+  display: none;
+}
+
+/* ─── Footer ─── */
+#cw-foot {
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1.9;
+  color: var(--muted);
+  transition: color 0.4s;
+}
+#cw-foot a {
+  text-decoration: underline;
+  text-underline-offset: 0.1875rem;
+  color: var(--acc);
+  transition: color 0.4s;
+}
+.foot-icon-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  vertical-align: middle;
+}
+.foot-icon-link svg {
+  color: var(--text);
+  transition: color 0.4s;
+}
+.foot-avatar {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Footer heart ─── */
+@keyframes heart-bounce {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  7% {
+    transform: translateY(-0.375rem) scale(1.15);
+  }
+  15% {
+    transform: translateY(0) scale(1);
+  }
+  22% {
+    transform: translateY(-0.21875rem) scale(1.08);
+  }
+  30% {
+    transform: translateY(0) scale(1);
+  }
+  37% {
+    transform: translateY(-0.09375rem) scale(1.04);
+  }
+  45% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+.footer-heart.bouncing {
+  animation: heart-bounce 2s ease-in-out;
+}
+
+/* ─── Floating octopus ─── */
+#octo-wrap.floating {
+  position: fixed;
+  z-index: 500;
+  cursor: grab;
+  margin: 0;
+}
+#octo-wrap.floating:active {
+  cursor: grabbing;
+}
+
+/* ─── Modal overlay ─── */
+#cw-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+#cw-modal.open {
+  opacity: 1;
+  pointer-events: all;
+}
+#cw-modal-box {
+  width: 100%;
+  max-width: 26rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 0.375rem;
+  padding: 1.75rem 1.5rem 1.5rem;
+  position: relative;
+  background-color: var(--modal-bg);
+  box-shadow: var(--modal-sh);
+  transform: translateY(0.75rem);
+  transition:
+    background-color 0.4s,
+    box-shadow 0.4s,
+    transform 0.25s;
+}
+#cw-modal.open #cw-modal-box {
+  transform: translateY(0);
+}
+#cw-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  color: var(--text);
+  opacity: 0.5;
+  transition:
+    color 0.4s,
+    opacity 0.2s;
+}
+#cw-modal-close:hover {
+  opacity: 1;
+}
+#cw-modal h2 {
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 1.625rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+  color: var(--text);
+  transition: color 0.4s;
+}
+#cw-modal .modal-sub {
+  font-size: 1rem;
+  margin-bottom: 1.125rem;
+  color: var(--muted);
+  transition: color 0.4s;
+}
+#cw-modal ul {
+  font-size: 1rem;
+  line-height: 1.6;
+  padding-left: 1.125rem;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+  transition: color 0.4s;
+}
+#cw-modal .modal-section-title {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+  color: var(--muted);
+  transition: color 0.4s;
+}
+
+/* ─── Modal example ─── */
+.modal-example {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.modal-step {
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+  }
+  display: grid;
+  align-items: center;
+  gap: 0.75rem;
+  grid-template-columns: 7rem auto;
+  grid-auto-rows: 7rem;
+  padding-bottom: 0.75rem;
+}
+.modal-step-label {
+  font-size: 1rem;
+  line-height: 1.4;
+  flex: 1;
+  color: var(--text);
+  transition: color 0.4s;
+}
+.modal-step-label strong {
+  color: var(--acc);
+}
+.mdb {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--dig-sh);
+  transition:
+    background-color 0.4s,
+    border-color 0.4s,
+    box-shadow 0.4s;
+}
+.mdb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  padding: 0.375rem;
+}
+.mdb-grid span {
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.5;
+  color: var(--text);
+  transition: color 0.4s;
+}
+.mdb-grid span.out {
+  opacity: 0.12;
+}
+.mdb-big {
+  font-family: "Inconsolata", monospace;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text);
+  transition: color 0.4s;
+  margin: auto;
+}
+.mdb-zero {
+  grid-column: 2;
+}
+#cw-modal-gotit {
+  width: 100%;
+  height: 3rem;
+  border-radius: 0.1875rem;
+  margin-top: 0.25rem;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  background-color: var(--acc);
+  box-shadow: 0.1875rem 0.1875rem 0 rgba(38, 38, 36, 0.25);
+  transition:
+    background-color 0.4s,
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+#cw-modal-gotit:active {
+  transform: translateY(0.125rem) translateX(0.125rem);
+  box-shadow: none;
 }

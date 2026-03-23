@@ -4,7 +4,7 @@
 
 **Clumeral** (clumeral.com) is a daily browser word puzzle game. A seeded random algorithm filters numbers 100–999 down to one answer using column-based clues. The player reads the clues and guesses the hidden number. New puzzle every day, same answer for everyone.
 
-Tagline: *Crack the three-digit number. New puzzle every day.*
+Tagline: *Work out the number from 100–999. New puzzle every day.*
 
 ## Project Files
 
@@ -14,7 +14,7 @@ Tagline: *Crack the three-digit number. New puzzle every day.*
 | `app.js` | Client UI — fetches puzzle from Worker (or local fallback), renders clues/feedback/history/stats, handles guesses |
 | `puzzle.js` | Shared logic — `PROPERTIES`, `PROPERTY_GROUPS`, `runFilterLoop`, `makeRng`, date helpers. Used by Worker and as local dev fallback |
 | `_worker.js` | Cloudflare Pages Advanced Mode Worker — intercepts `GET /`, injects `window.PUZZLE_DATA` into HTML, falls through to Pages assets for everything else |
-| `style.css` | All visual styling — dark theme, frosted glass card, clue rows, stats, responsive layout |
+| `style.css` | All visual styling — light/dark theme via `light-dark()`, card with offset shadow, clue rows, digit boxes, keypad, stats, modal |
 
 ## Architecture
 
@@ -74,24 +74,34 @@ Range:       ['range']
 
 - `dlng_history` — array of `{ date: "YYYY-MM-DD", tries: N }`, max 60 entries
 - `dlng_prefs` — `{ saveScore: boolean }`
+- `dlng_theme` — `"light"` or `"dark"` (user's theme preference)
+- `cw-htp-seen` — `"1"` if How to Play modal has been shown
 - Prefix `dlng_` = original game name "David Lark's Lame Number Game" — do not rename (persisted in existing user browsers)
 
 ## Design System
 
+Uses `light-dark()` for automatic theme switching. JS sets `:root.dark` or `:root.light` → `color-scheme` resolves the correct value.
+
 ```css
---bg-deep:    #0f0f1a   /* near-black background */
---bg-card:    rgba(255,255,255,0.06)  /* frosted glass — must be rgba for blur to show */
---accent:     #ff6d5a   /* coral — operators, borders, buttons */
---accent-alt: #ff914d   /* hover state */
---text:       #e8e8f0   /* primary text */
---text-muted: #7a7a9a   /* secondary text, labels */
---green:      #4caf88   /* correct feedback, checked save icon */
---red:        #ff6d5a   /* same as accent — incorrect feedback */
+/* ── Constants (same in both themes) ── */
+--acc:        #ff6d5a   /* coral — operators, borders, buttons */
+--tag-bg:     rgba(255, 109, 90, 0.1)
+--md-lit-bg:  rgba(255, 109, 90, 0.12)
+
+/* ── Theme-sensitive (light / dark) ── */
+--bg:         light-dark(#f5edd8, #262624)       /* page background */
+--text:       light-dark(#262624, #fffdf7)       /* primary text */
+--muted:      light-dark(rgba(38,38,36,0.55), rgba(255,253,247,0.6))
+--card-bg:    light-dark(#fffdf7, #2e2e2c)       /* card background */
+--card-sh:    light-dark(offset shadow light, offset shadow dark)
+--surface:    light-dark(#ffffff, #363634)        /* input/key backgrounds */
+--border:     light-dark(rgba(38,38,36,0.12), rgba(255,253,247,0.1))
+--modal-bg:   light-dark(#ffffff, #1e1e1c)
 ```
 
-- Font: Inter (Google Fonts CDN) with system-ui fallback
-- Card: frosted glass with **both** `-webkit-backdrop-filter` and `backdrop-filter` (Safari requires the prefixed version)
-- Responsive breakpoint: 480px — input/submit stack full-width
+- Font: DM Sans (body) + Inconsolata (monospace labels/digits) via Google Fonts CDN, with system-ui fallback
+- Card: offset shadow (`--card-sh`) with solid `--card-bg` background
+- Responsive: no fixed breakpoint — fluid layout via `max-width: 30rem`
 
 ## Clue Display Rules
 
@@ -118,6 +128,6 @@ Push to `main` → GitHub → Cloudflare Pages auto-deploys. `_worker.js` is pic
 - No framework, no bundler, no TypeScript — plain JS with ES modules
 - `puzzle.js` is shared; never put UI code in it
 - `app.js` is UI only; never put filter/compute logic in it
-- DOM IDs are locked: `#status`, `#clues`, `#guess`, `#submit`, `#history`, `#feedback`, `#history-label`
+- DOM IDs are locked: `#cw`, `#cw-canvas`, `#cw-shape`, `#cw-shape2`, `#cw-inner`, `#cw-header`, `#cw-title`, `#cw-sub`, `#cw-card`, `#cw-plabel`, `#cw-digits`, `#d0`, `#d1`, `#d2`, `#cw-hint`, `#cw-keypad-wrap`, `#cw-keypad`, `#cw-submit-wrap`, `#cw-submit`, `#cw-save`, `#cw-ck`, `#cw-feedback`, `#cw-history`, `#cw-history-list`, `#cw-stats`, `#cw-next`, `#cw-next-number`, `#cw-again`, `#cw-foot-links`, `#cw-tog`, `#cw-htp-btn`, `#cw-foot`, `#cw-modal`, `#cw-modal-box`, `#cw-modal-close`, `#cw-modal-gotit`, `#octo-wrap`, `#octo`
 - Event listeners attached at module level in `app.js` — never inside `startDailyPuzzle`
 - `gameState` is module-scoped `let` in `app.js` — not a `window` global
