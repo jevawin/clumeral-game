@@ -94,7 +94,7 @@ function getClueTag(propKey) {
   if (propKey.includes("IsPrime"))      return "PRIME";
   if (propKey.includes("IsSquare"))     return "SQUARE";
   if (propKey.includes("IsCube"))       return "CUBE";
-  if (propKey.includes("IsTriangular")) return "TRIG";
+  if (propKey.includes("IsTriangular")) return "TRIAN";
   if (propKey.startsWith("sum"))        return "SUM";
   if (propKey.startsWith("diff"))       return "DIFF";
   if (propKey.startsWith("prod"))       return "PROD";
@@ -129,8 +129,8 @@ function renderClues(clues) {
       const idx = label.indexOf(" is ");
       const subject = label.slice(0, idx);
       const predicate = label.slice(idx + 4);
-      l1Text = subject + " is" + (isAffirmative ? "" : " not");
-      l2Text = predicate;
+      l1Text = subject;
+      l2Text = "is" + (isAffirmative ? "" : " not") + " " + predicate;
     } else {
       l1Text = label;
       l2Text = `${OPERATOR_SYMBOLS[operator] ?? operator} ${formatClueValue(value)}`;
