@@ -11,6 +11,7 @@ const STORAGE_HISTORY = "dlng_history";
 const STORAGE_PREFS = "dlng_prefs";
 const STORAGE_THEME = "dlng_theme";
 const OPERATOR_SYMBOLS = { "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
+const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0kv6I7xacnvDvcw_lgM_gBF6TzvPtqNvAlnxM7UJi-sjMku8bSQKw/exec";
 
 // ─── Module state ─────────────────────────────────────────────────────────────
 
@@ -594,6 +595,189 @@ function maybeAutoShowModal() {
   setTimeout(_openModal, 400);
 }
 
+// ─── Toast ───────────────────────────────────────────────────────────────────
+
+function showToast(message, duration = 3000) {
+  const container = document.getElementById("cw-toast");
+  if (!container) return;
+  const el = document.createElement("div");
+  el.className = "cw-toast-msg";
+  el.textContent = message;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => {
+    el.classList.remove("show");
+    el.addEventListener("transitionend", () => el.remove(), { once: true });
+  }, duration);
+}
+
+// ─── Feedback modal ──────────────────────────────────────────────────────────
+
+function initFeedbackModal() {
+  const modal = document.getElementById("cw-fb-modal");
+  if (!modal) return;
+
+  const closeBtn = document.getElementById("cw-fb-modal-close");
+  const catBtns = modal.querySelectorAll(".fb-cat");
+  const msgEl = document.getElementById("cw-fb-msg");
+  const counterEl = document.getElementById("cw-fb-counter");
+  const metaEl = document.getElementById("cw-fb-meta");
+  const sendBtn = document.getElementById("cw-fb-send");
+  const headerBtn = document.getElementById("cw-fb-btn-header");
+  const footerBtn = document.getElementById("cw-fb-btn-footer");
+
+  let selectedCat = "general";
+  let sending = false;
+
+  function openFeedback() {
+    renderMeta();
+    modal.style.display = "flex";
+    requestAnimationFrame(() => modal.classList.add("open"));
+  }
+
+  function closeFeedback() {
+    modal.classList.remove("open");
+    modal.addEventListener("transitionend", () => {
+      modal.style.display = "none";
+    }, { once: true });
+  }
+
+  function resetForm() {
+    selectedCat = "general";
+    catBtns.forEach(b => b.classList.toggle("active", b.dataset.cat === "general"));
+    msgEl.value = "";
+    updateCounter();
+    sendBtn.disabled = false;
+    sending = false;
+  }
+
+  function updateCounter() {
+    const len = msgEl.value.length;
+    if (len >= 400) {
+      counterEl.textContent = `${len}/500`;
+      counterEl.classList.add("warn");
+      counterEl.style.display = "";
+    } else {
+      counterEl.textContent = "";
+      counterEl.style.display = "none";
+      counterEl.classList.remove("warn");
+    }
+  }
+
+  function collectMetadata() {
+    const ua = navigator.userAgent;
+    let browser = "Unknown";
+    const chromeMatch = ua.match(/Chrome\/([\d.]+)/);
+    const safariMatch = ua.match(/Version\/([\d.]+).*Safari/);
+    const firefoxMatch = ua.match(/Firefox\/([\d.]+)/);
+    const edgeMatch = ua.match(/Edg\/([\d.]+)/);
+
+    if (edgeMatch) browser = `Edge ${edgeMatch[1]}`;
+    else if (firefoxMatch) browser = `Firefox ${firefoxMatch[1]}`;
+    else if (chromeMatch) browser = `Chrome ${chromeMatch[1]}`;
+    else if (safariMatch) browser = `Safari ${safariMatch[1]}`;
+
+    let device = "Desktop";
+    if (/iPad/i.test(ua)) device = "iPad";
+    else if (/iPhone/i.test(ua)) device = "iPhone";
+    else if (/Android/i.test(ua)) device = /Mobi/i.test(ua) ? "Android Phone" : "Android Tablet";
+    else if (/Mobi/i.test(ua)) device = "Mobile";
+
+    const dateStr = todayLocal();
+    const pNum = puzzleNumber(dateStr);
+
+    return {
+      puzzleNumber: `#${pNum}`,
+      date: dateStr,
+      device,
+      browser,
+      userAgent: ua,
+    };
+  }
+
+  function renderMeta() {
+    const meta = collectMetadata();
+    metaEl.textContent = `Puzzle ${meta.puzzleNumber} · ${formatDate(meta.date)} · ${meta.device} · ${meta.browser}`;
+  }
+
+  // Category toggle
+  catBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedCat = btn.dataset.cat;
+      catBtns.forEach(b => b.classList.toggle("active", b === btn));
+    });
+  });
+
+  // Char counter
+  msgEl.addEventListener("input", updateCounter);
+
+  // Open triggers
+  if (headerBtn) headerBtn.addEventListener("click", openFeedback);
+  if (footerBtn) footerBtn.addEventListener("click", openFeedback);
+
+  // Close triggers
+  closeBtn.addEventListener("click", closeFeedback);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeFeedback(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) closeFeedback();
+  });
+
+  // Submit with retry
+  async function submitFeedback() {
+    if (sending) return;
+    const message = msgEl.value.trim();
+    if (!message) return;
+
+    sending = true;
+    sendBtn.disabled = true;
+
+    const meta = collectMetadata();
+    const payload = {
+      category: selectedCat,
+      message,
+      puzzleNumber: meta.puzzleNumber,
+      date: meta.date,
+      device: meta.device,
+      browser: meta.browser,
+      userAgent: meta.userAgent,
+    };
+
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const res = await fetch(FEEDBACK_URL, {
+          method: "POST",
+          mode: "no-cors",
+          body: JSON.stringify(payload),
+        });
+        // no-cors returns opaque response; if no error thrown, it succeeded
+        if (res.ok || res.type === "opaque") {
+          closeFeedback();
+          setTimeout(resetForm, 300);
+          showToast("Thanks! Feedback sent.");
+          return;
+        }
+      } catch (err) {
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+      }
+    }
+
+    // All retries exhausted
+    console.error("Feedback submission failed after retries", payload);
+    sending = false;
+    sendBtn.disabled = false;
+    showToast("Couldn't send feedback. Try again later.");
+  }
+
+  sendBtn.addEventListener("click", submitFeedback);
+
+  // Init counter hidden
+  updateCounter();
+}
+
 // ─── Event listeners (module-level) ───────────────────────────────────────────
 
 // Digit box clicks
@@ -993,4 +1177,5 @@ function sadOcto() {
 
 initTheme();
 initModal();
+initFeedbackModal();
 loadPuzzle();

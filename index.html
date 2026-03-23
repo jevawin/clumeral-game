@@ -25,6 +25,30 @@
       <div id="cw-shape"></div>
       <div id="cw-shape2"></div>
 
+      <!-- ── Feedback modal ── -->
+      <div id="cw-fb-modal" role="dialog" aria-modal="true" aria-labelledby="cw-fb-modal-title">
+        <div id="cw-fb-modal-box">
+          <button id="cw-fb-modal-close" aria-label="Close">✕</button>
+          <h2 id="cw-fb-modal-title">Send feedback</h2>
+          <p class="modal-sub">Let us know what you think.</p>
+
+          <div id="cw-fb-cats" role="radiogroup" aria-label="Feedback category">
+            <button class="fb-cat active" data-cat="general">General</button>
+            <button class="fb-cat" data-cat="bug">Bug</button>
+            <button class="fb-cat" data-cat="suggestion">Suggestion</button>
+            <button class="fb-cat" data-cat="praise">Praise</button>
+          </div>
+
+          <textarea id="cw-fb-msg" maxlength="500" rows="4" placeholder="Your message..."></textarea>
+          <div id="cw-fb-counter" class="fb-counter"></div>
+
+          <p class="fb-meta-label">This info will be sent with your feedback:</p>
+          <div id="cw-fb-meta" class="fb-meta"></div>
+
+          <button id="cw-fb-send">Send feedback</button>
+        </div>
+      </div>
+
       <!-- ── How to play modal ── -->
       <div id="cw-modal" role="dialog" aria-modal="true" aria-labelledby="cw-modal-title">
         <div id="cw-modal-box">
@@ -240,6 +264,13 @@
           New puzzle every day.
         </p>
 
+        <p id="cw-fb-header">
+          <button id="cw-fb-btn-header" class="fb-header-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v6"/><path d="M9 10h6"/></svg>
+            It's new! Please give feedback
+          </button>
+        </p>
+
         <!-- ── Puzzle card ── -->
         <div id="cw-card">
           <div id="cw-plabel">Puzzle #7 · 14 March 2026</div>
@@ -426,6 +457,11 @@
             </div>
             <span class="foot-div"></span>
             <div class="ui-link">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v6"/><path d="M9 10h6"/></svg>
+              <button id="cw-fb-btn-footer">Feedback</button>
+            </div>
+            <span class="foot-div"></span>
+            <div class="ui-link">
               <span id="cw-tog-icon">
                 <svg
                   class="icon-moon"
@@ -503,6 +539,8 @@
           and Dave
         </div>
       </div>
+
+      <div id="cw-toast" aria-live="polite"></div>
     </div>
 
     <script type="module" src="app.js"></script>
