@@ -90,29 +90,27 @@ function formatClueValue(value) {
   return value.toFixed(2);
 }
 
-function getClueTag(label) {
-  const l = label.toLowerCase();
-  if (l.includes("prime")) return "PRIME";
-  if (l.includes("square")) return "SQUARE";
-  if (l.includes("cube")) return "CUBE";
-  if (l.includes("triangular")) return "TRIG";
-  if (l.includes("sum")) return "SUM";
-  if (l.includes("difference")) return "DIFF";
-  if (l.includes("product")) return "PROD";
-  if (l.includes("mean")) return "MEAN";
-  if (l.includes("range")) return "RANGE";
+function getClueTag(propKey) {
+  if (propKey.includes("IsPrime"))      return "PRIME";
+  if (propKey.includes("IsSquare"))     return "SQUARE";
+  if (propKey.includes("IsCube"))       return "CUBE";
+  if (propKey.includes("IsTriangular")) return "TRIAN";
+  if (propKey.startsWith("sum"))        return "SUM";
+  if (propKey.startsWith("diff"))       return "DIFF";
+  if (propKey.startsWith("prod"))       return "PROD";
+  if (propKey.startsWith("mean"))       return "MEAN";
+  if (propKey === "range")              return "RANGE";
   return "?";
 }
 
-function getClueLitDigits(label) {
-  const l = label.toLowerCase();
-  if (l.includes("all three")) return [true, true, true];
-  if (l.includes("first and second")) return [true, true, false];
-  if (l.includes("first and third")) return [true, false, true];
-  if (l.includes("second and third")) return [false, true, true];
-  if (l.includes("first digit")) return [true, false, false];
-  if (l.includes("second digit")) return [false, true, false];
-  if (l.includes("third digit")) return [false, false, true];
+function digitPositions(propKey) {
+  if (propKey.endsWith("FS"))                           return [true, true, false];
+  if (propKey.endsWith("FT"))                           return [true, false, true];
+  if (propKey.endsWith("ST"))                           return [false, true, true];
+  if (propKey.endsWith("All") || propKey === "range")   return [true, true, true];
+  if (propKey.startsWith("first"))                      return [true, false, false];
+  if (propKey.startsWith("second"))                     return [false, true, false];
+  if (propKey.startsWith("third"))                      return [false, false, true];
   return [true, true, true];
 }
 
@@ -120,9 +118,9 @@ function renderClues(clues) {
   const container = document.querySelector(".cw-clue-container");
   if (!container) return;
   container.innerHTML = "";
-  for (const { label, operator, value } of clues) {
-    const tag = getClueTag(label);
-    const lit = getClueLitDigits(label);
+  for (const { propKey, label, operator, value } of clues) {
+    const tag = getClueTag(propKey);
+    const lit = digitPositions(propKey);
     const miniDigitsHtml = lit.map((on) => `<div class="md${on ? " lit" : ""}"></div>`).join("");
 
     let l1Text, l2Text;
@@ -131,8 +129,8 @@ function renderClues(clues) {
       const idx = label.indexOf(" is ");
       const subject = label.slice(0, idx);
       const predicate = label.slice(idx + 4);
-      l1Text = subject + " is" + (isAffirmative ? "" : " not");
-      l2Text = predicate;
+      l1Text = subject;
+      l2Text = "is" + (isAffirmative ? "" : " not") + " " + predicate;
     } else {
       l1Text = label;
       l2Text = `${OPERATOR_SYMBOLS[operator] ?? operator} ${formatClueValue(value)}`;
