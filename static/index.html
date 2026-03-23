@@ -6,18 +6,11 @@
     <title>Clumeral</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300..700&family=Inconsolata:wdth,wght@75..125,300..700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300..900&family=DM+Sans:wght@300..700&family=Inconsolata:wdth,wght@75..125,300..700&display=swap" rel="stylesheet" />
     <meta name="theme-color" content="#f5edd8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#262624" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="stylesheet" href="style.css" />
-    <script>
-      (function () {
-        var t = localStorage.getItem("dlng_theme");
-        if (!t) t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.classList.add(t);
-      })();
-    </script>
   </head>
   <body>
     <div id="cw">
@@ -28,7 +21,7 @@
       <!-- ── How to play modal ── -->
       <div id="cw-modal" role="dialog" aria-modal="true" aria-labelledby="cw-modal-title">
         <div id="cw-modal-box">
-          <button id="cw-modal-close" aria-label="Close">✕</button>
+          <button id="cw-modal-close" onclick="closeModal()" aria-label="Close">✕</button>
           <h2 id="cw-modal-title">How to Play</h2>
           <p class="modal-sub">Work out the 3-digit number using the maths clues.</p>
           <div class="modal-example">
@@ -94,14 +87,14 @@
               </p>
             </div>
           </div>
-          <button id="cw-modal-gotit">Got it</button>
+          <button id="cw-modal-gotit" onclick="closeModal()">Got it</button>
         </div>
       </div>
 
       <div id="cw-inner">
         <!-- ── Header row: octo + title ── -->
         <div id="cw-header">
-          <div id="octo-wrap" title="click to replay">
+          <div id="octo-wrap" onclick="replayEntry()" title="click to replay">
             <svg id="octo" width="53" height="52" viewBox="0 0 53 52" fill="none" xmlns="http://www.w3.org/2000/svg">
               <mask id="octo-mask" fill="white">
                 <path
@@ -345,7 +338,7 @@
 
           <!-- ── Submit ── -->
           <div id="cw-submit-wrap">
-            <button id="cw-submit">Submit</button>
+            <button id="cw-submit" onclick="submitAnswer()">Submit</button>
           </div>
 
           <!-- ── Save row ── -->
@@ -390,28 +383,6 @@
               cookie
             </label>
           </div>
-
-          <!-- ── Feedback ── -->
-          <p id="cw-feedback" style="display: none"></p>
-
-          <!-- ── Guess history ── -->
-          <div id="cw-history" style="display: none">
-            <p id="cw-history-label">Your guesses</p>
-            <ul id="cw-history-list"></ul>
-          </div>
-
-          <!-- ── Stats ── -->
-          <div id="cw-stats" style="display: none"></div>
-
-          <!-- ── Next puzzle ── -->
-          <p id="cw-next" style="display: none">
-            Puzzle <span id="cw-next-number"></span> is available tomorrow.
-          </p>
-
-          <!-- ── Random again ── -->
-          <p id="cw-again" style="display: none">
-            <a href="/random" id="cw-again-link">Play another random puzzle</a>
-          </p>
         </div>
 
         <div id="cw-foot">
@@ -422,7 +393,7 @@
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                 <path d="M12 17h.01" />
               </svg>
-              <button id="cw-htp-btn">How to play</button>
+              <button id="cw-htp-btn" onclick="openModal()">How to play</button>
             </div>
             <span class="foot-div"></span>
             <div class="ui-link">
@@ -464,7 +435,7 @@
                   <path d="m19.07 4.93-1.41 1.41" />
                 </svg>
               </span>
-              <button id="cw-tog">Dark</button>
+              <button id="cw-tog" onclick="toggleMode()">Dark</button>
             </div>
           </div>
           An experiment in AI-coding with Claude • Hosted on
@@ -505,6 +476,6 @@
       </div>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <script src="game.js"></script>
   </body>
 </html>
