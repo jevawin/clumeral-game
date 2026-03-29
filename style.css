@@ -299,6 +299,20 @@ body {
   color: var(--acc);
 }
 
+.recurring {
+  display: inline-block;
+  position: relative;
+}
+.recurring::after {
+  content: "·";
+  position: absolute;
+  left: 50%;
+  top: -0.55em;
+  transform: translateX(-50%);
+  font-size: 1.4em;
+  line-height: 1;
+}
+
 /* ─── Digit entry boxes ─── */
 #cw-digits {
   display: flex;
