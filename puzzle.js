@@ -143,7 +143,20 @@ export function runFilterLoop(rng = Math.random) {
     }
   }
 
-  return { answer: candidates[0], clues };
+  // Prune redundant clues — walk backward so tiebreakers are dropped first
+  const answer = candidates[0];
+  for (let i = clues.length - 1; i >= 0; i--) {
+    const without = [...clues.slice(0, i), ...clues.slice(i + 1)];
+    let remaining = Array.from({ length: 900 }, (_, j) => j + 100);
+    for (const c of without) {
+      remaining = applyFilter(remaining, c.propKey, c.operator, c.value);
+    }
+    if (remaining.length === 1 && remaining[0] === answer) {
+      clues.splice(i, 1);
+    }
+  }
+
+  return { answer, clues };
 }
 
 // ─── RNG + date helpers ───────────────────────────────────────────────────────
