@@ -10,7 +10,7 @@ const EPOCH_DATE = "2026-03-08";
 const STORAGE_HISTORY = "dlng_history";
 const STORAGE_PREFS = "dlng_prefs";
 const STORAGE_THEME = "dlng_theme";
-const OPERATOR_SYMBOLS = { "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
+const OPERATOR_SYMBOLS = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
 const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0kv6I7xacnvDvcw_lgM_gBF6TzvPtqNvAlnxM7UJi-sjMku8bSQKw/exec";
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -85,13 +85,15 @@ function todayEntry() {
 // ─── Clue helpers ─────────────────────────────────────────────────────────────
 
 function formatClueValue(value) {
-  if (typeof value !== "number" || !isFinite(value)) return String(value);
-  if (Number.isInteger(value)) return String(value);
+  if (typeof value !== "number" || !isFinite(value)) return { text: String(value) };
+  if (Number.isInteger(value)) return { text: String(value) };
   const frac = value - Math.floor(value);
-  if (Math.abs(frac - 1 / 3) < 1e-9) return Math.floor(value) + ".3\u0307";
-  if (Math.abs(frac - 2 / 3) < 1e-9) return Math.floor(value) + ".6\u0307";
-  if (value % 0.5 === 0) return String(value);
-  return value.toFixed(2);
+  if (Math.abs(frac - 1 / 3) < 1e-9)
+    return { html: Math.floor(value) + '.<span class="recurring">3</span>' };
+  if (Math.abs(frac - 2 / 3) < 1e-9)
+    return { html: Math.floor(value) + '.<span class="recurring">6</span>' };
+  if (value % 0.5 === 0) return { text: String(value) };
+  return { text: value.toFixed(2) };
 }
 
 function getClueTag(propKey) {
@@ -127,7 +129,7 @@ function renderClues(clues) {
     const lit = digitPositions(propKey);
     const miniDigitsHtml = lit.map((on) => `<div class="md${on ? " lit" : ""}"></div>`).join("");
 
-    let l1Text, l2Text;
+    let l1Text, l2Text, l2Html;
     if (typeof value === "boolean") {
       const isAffirmative = operator === "=" ? value : !value;
       const idx = label.indexOf(" is ");
@@ -137,7 +139,13 @@ function renderClues(clues) {
       l2Text = "is" + (isAffirmative ? "" : " not") + " " + predicate;
     } else {
       l1Text = label;
-      l2Text = `${OPERATOR_SYMBOLS[operator] ?? operator} ${formatClueValue(value)}`;
+      const formatted = formatClueValue(value);
+      const opSymbol = OPERATOR_SYMBOLS[operator] ?? operator;
+      if (formatted.html) {
+        l2Html = `${opSymbol} ${formatted.html}`;
+      } else {
+        l2Text = `${opSymbol} ${formatted.text}`;
+      }
     }
 
     const clueEl = document.createElement("div");
@@ -153,7 +161,11 @@ function renderClues(clues) {
       </div>
     `;
     clueEl.querySelector(".cw-l1").textContent = l1Text;
-    clueEl.querySelector(".cw-l2").textContent = l2Text;
+    if (l2Html) {
+      clueEl.querySelector(".cw-l2").innerHTML = l2Html;
+    } else {
+      clueEl.querySelector(".cw-l2").textContent = l2Text;
+    }
     container.appendChild(clueEl);
   }
 }

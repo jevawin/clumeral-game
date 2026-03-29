@@ -70,16 +70,43 @@ const PROPERTY_GROUPS = {
 
 // ─── Filter engine ────────────────────────────────────────────────────────────
 
+// Target: each clue keeps 15–40% of current candidates
+const KEEP_MIN = 0.15;
+const KEEP_MAX = 0.40;
+
 function applyFilter(candidates, propKey, operator, value) {
   const { compute } = PROPERTIES[propKey];
   return candidates.filter(n => {
     const v = compute(n);
     if (operator === '=')  return v === value;
     if (operator === '!=') return v !== value;
+    if (operator === '<')  return v < value;
+    if (operator === '>')  return v > value;
     if (operator === '<=') return v <= value;
     if (operator === '>=') return v >= value;
     return true;
   });
+}
+
+// Find all operator+value combos for a property that keep 15–40% of candidates
+function findGoodClues(candidates, propKey) {
+  const { type, compute } = PROPERTIES[propKey];
+  const uniqueVals = [...new Set(candidates.map(n => compute(n)))].sort((a, b) => a - b);
+  if (uniqueVals.length === 1) return [];
+
+  const ops = type === 'text' ? ['=', '!='] : ['<', '>', '=', '!='];
+  const good = [];
+
+  for (const op of ops) {
+    for (const val of uniqueVals) {
+      const filtered = applyFilter(candidates, propKey, op, val);
+      const keepRatio = filtered.length / candidates.length;
+      if (keepRatio >= KEEP_MIN && keepRatio <= KEEP_MAX) {
+        good.push({ operator: op, value: val, kept: filtered.length });
+      }
+    }
+  }
+  return good;
 }
 
 export function runFilterLoop(rng = Math.random) {
@@ -99,31 +126,21 @@ export function runFilterLoop(rng = Math.random) {
     // Pick a random property from that group
     const props = PROPERTY_GROUPS[group];
     const propKey = props[Math.floor(rng() * props.length)];
-    const { label, type, compute } = PROPERTIES[propKey];
+    const { label } = PROPERTIES[propKey];
 
-    // Compute all candidate values for this property
-    const allVals = candidates.map(n => compute(n));
+    // Find all operator+value combos in the sweet spot
+    const good = findGoodClues(candidates, propKey);
 
-    // Skip if all candidates share the same value (uninformative)
-    if (new Set(allVals).size === 1) {
+    // No good combo exists for this property — skip the group
+    if (good.length === 0) {
       triedGroups.add(group);
       continue;
     }
 
-    // Pick a random value from among the candidates
-    const val = allVals[Math.floor(rng() * allVals.length)];
-
-    // Pick operator appropriate to property type
-    const ops = type === 'text' ? ['=', '!='] : ['<=', '=', '!=', '>='];
-    const operator = ops[Math.floor(rng() * ops.length)];
-
-    // Skip if filter would eliminate all candidates
-    const filtered = applyFilter(candidates, propKey, operator, val);
-    if (filtered.length === 0) continue;
-
-    // Apply filter and record clue
-    candidates = filtered;
-    clues.push({ propKey, label, operator, value: val });
+    // Pick randomly from the good combos
+    const pick = good[Math.floor(rng() * good.length)];
+    candidates = applyFilter(candidates, propKey, pick.operator, pick.value);
+    clues.push({ propKey, label, operator: pick.operator, value: pick.value });
     triedGroups.add(group);
   }
 
