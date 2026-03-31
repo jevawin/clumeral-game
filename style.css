@@ -17,12 +17,12 @@
   --bg: light-dark(#f5edd8, #262624);
   --sh1: light-dark(#e8a87c, #ff6d5a);
   --sh2: light-dark(#c0543a, #c0543a);
-  --text: light-dark(#262624, #fffdf7);
-  --muted: light-dark(rgba(38, 38, 36, 0.55), rgba(255, 253, 247, 0.6));
-  --card-bg: light-dark(#fffdf7, #2e2e2c);
+  --text: light-dark(#262624, #f6f0e8);
+  --muted: light-dark(rgba(38, 38, 36, 0.55), rgba(246, 240, 232, 0.6));
+  --card-bg: light-dark(#f6f0e8, #2e2e2c);
   --card-sh: light-dark(0.25rem 0.25rem 0 rgba(38, 38, 36, 0.12), 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.3));
   --surface: light-dark(#ffffff, #363634);
-  --border: light-dark(rgba(38, 38, 36, 0.12), rgba(255, 253, 247, 0.1));
+  --border: light-dark(rgba(38, 38, 36, 0.12), rgba(246, 240, 232, 0.1));
   --dig-sh: light-dark(0.1875rem 0.1875rem 0 rgba(38, 38, 36, 0.12), 0.1875rem 0.1875rem 0 rgba(0, 0, 0, 0.25));
   --k-bg-elim: light-dark(#ffffff, #262624);
   --k-txt-elim: light-dark(rgba(38, 38, 36, 0.25), rgba(255, 253, 247, 0.25));
