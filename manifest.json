@@ -1,0 +1,27 @@
+{
+  "name": "Clumeral",
+  "short_name": "Clumeral",
+  "description": "Work out the number from 100\u2013999. New puzzle every day.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5edd8",
+  "theme_color": "#ff6d5a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

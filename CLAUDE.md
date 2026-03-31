@@ -127,6 +127,16 @@ python3 -m http.server 8080
 - **Non-public-facing changes** (cleanup, config, docs): commit directly to `dev` → PR from `dev` to `main`
 - **PRs can batch multiple issues**: merge several issue branches into `dev`, then one PR covers them all
 
+### Harness branch workaround
+
+The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ignore it.** Instead:
+
+1. Create `issue/NUM` branch off `dev` as normal
+2. Do all work on `issue/NUM`
+3. After merging into `dev`, delete the local `issue/NUM` branch
+
+The orphan `claude/*` branch and any leftover remote `issue/*` branches can't be deleted by Claude (no permission to push `--delete` or API to delete branches). **Jamie must prune these** — either via the GitHub UI (repo → branches) or locally with `git push origin --delete <branch>`.
+
 ### Merging
 
 - **Feature branch → `dev`**: Claude can merge directly (no approval needed)
@@ -142,7 +152,6 @@ After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable 
 
 Push to `main` → GitHub → Cloudflare Workers auto-deploys. `_worker.js` is picked up automatically. No `wrangler.toml` needed.
 
-<<<<<<< HEAD
 - **Production**: [https://clumeral.com](https://clumeral.com)
 - **Merge method**: squash only (merge commits disabled on the repo)
 
