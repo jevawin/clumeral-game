@@ -790,6 +790,12 @@ function initFeedbackModal() {
   updateCounter();
 }
 
+// ─── Service worker ───────────────────────────────────────────────────────────
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+
 // ─── Event listeners (module-level) ───────────────────────────────────────────
 
 // Digit box clicks
