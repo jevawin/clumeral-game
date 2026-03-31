@@ -669,7 +669,7 @@ body {
   align-items: center;
   gap: 1.25rem;
   width: 100%;
-  margin-bottom: 0.375rem;
+  margin-bottom: 0.75rem;
 }
 .ui-link {
   display: inline-flex;
@@ -712,7 +712,7 @@ body {
 
 /* ─── Footer ─── */
 #cw-foot {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   font-size: 1rem;
   text-align: center;
   line-height: 1.9;
