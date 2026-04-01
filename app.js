@@ -150,10 +150,11 @@ function renderClues(clues) {
 
     const clueEl = document.createElement("div");
     clueEl.className = "cw-clue";
+    clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="cw-tag-cell">
         <span class="cw-tag">${tag}</span>
-        <div class="mini-digits">${miniDigitsHtml}</div>
+        <div class="mini-digits" aria-hidden="true">${miniDigitsHtml}</div>
       </div>
       <div class="cw-lines">
         <div class="cw-l1"></div>
@@ -575,14 +576,14 @@ function initModal() {
 
   function openModal() {
     localStorage.setItem("cw-htp-seen", "1");
-    modal.style.display = "flex";
+    modal.showModal();
     requestAnimationFrame(() => modal.classList.add("open"));
   }
 
   function closeModal() {
     modal.classList.remove("open");
     modal.addEventListener("transitionend", () => {
-      modal.style.display = "none";
+      modal.close();
       if (htpBtn) htpBtn.focus();
     }, { once: true });
   }
@@ -595,9 +596,7 @@ function initModal() {
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
-  });
+  modal.addEventListener("cancel", (e) => { e.preventDefault(); closeModal(); });
 }
 
 function maybeAutoShowModal() {
@@ -643,20 +642,24 @@ function initFeedbackModal() {
 
   function openFeedback() {
     renderMeta();
-    modal.style.display = "flex";
+    modal.showModal();
     requestAnimationFrame(() => modal.classList.add("open"));
   }
 
   function closeFeedback() {
     modal.classList.remove("open");
     modal.addEventListener("transitionend", () => {
-      modal.style.display = "none";
+      modal.close();
     }, { once: true });
   }
 
   function resetForm() {
     selectedCat = "general";
-    catBtns.forEach(b => b.classList.toggle("active", b.dataset.cat === "general"));
+    catBtns.forEach(b => {
+      const isGeneral = b.dataset.cat === "general";
+      b.classList.toggle("active", isGeneral);
+      b.setAttribute("aria-checked", String(isGeneral));
+    });
     msgEl.value = "";
     updateCounter();
     sendBtn.disabled = false;
@@ -716,7 +719,11 @@ function initFeedbackModal() {
   catBtns.forEach(btn => {
     btn.addEventListener("click", () => {
       selectedCat = btn.dataset.cat;
-      catBtns.forEach(b => b.classList.toggle("active", b === btn));
+      catBtns.forEach(b => {
+        const selected = b === btn;
+        b.classList.toggle("active", selected);
+        b.setAttribute("aria-checked", String(selected));
+      });
     });
   });
 
@@ -730,9 +737,7 @@ function initFeedbackModal() {
   // Close triggers
   closeBtn.addEventListener("click", closeFeedback);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeFeedback(); });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal.classList.contains("open")) closeFeedback();
-  });
+  modal.addEventListener("cancel", (e) => { e.preventDefault(); closeFeedback(); });
 
   // Submit with retry
   async function submitFeedback() {

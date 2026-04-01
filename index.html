@@ -39,25 +39,27 @@
     </script>
   </head>
   <body>
+    <a href="#cw-card" class="skip-link">Skip to puzzle</a>
     <div id="cw">
-      <canvas id="cw-canvas"></canvas>
-      <div id="cw-shape"></div>
-      <div id="cw-shape2"></div>
+      <canvas id="cw-canvas" aria-hidden="true"></canvas>
+      <div id="cw-shape" aria-hidden="true"></div>
+      <div id="cw-shape2" aria-hidden="true"></div>
 
       <!-- ── Feedback modal ── -->
-      <div id="cw-fb-modal" role="dialog" aria-modal="true" aria-labelledby="cw-fb-modal-title">
+      <dialog id="cw-fb-modal" aria-labelledby="cw-fb-modal-title">
         <div id="cw-fb-modal-box">
           <button id="cw-fb-modal-close" aria-label="Close">✕</button>
           <h2 id="cw-fb-modal-title">Send feedback</h2>
           <p class="modal-sub">Let us know what you think.</p>
 
           <div id="cw-fb-cats" role="radiogroup" aria-label="Feedback category">
-            <button class="fb-cat active" data-cat="general">General</button>
-            <button class="fb-cat" data-cat="bug">Bug</button>
-            <button class="fb-cat" data-cat="suggestion">Suggestion</button>
-            <button class="fb-cat" data-cat="praise">Praise</button>
+            <button class="fb-cat active" data-cat="general" role="radio" aria-checked="true">General</button>
+            <button class="fb-cat" data-cat="bug" role="radio" aria-checked="false">Bug</button>
+            <button class="fb-cat" data-cat="suggestion" role="radio" aria-checked="false">Suggestion</button>
+            <button class="fb-cat" data-cat="praise" role="radio" aria-checked="false">Praise</button>
           </div>
 
+          <label for="cw-fb-msg" class="sr-only">Your feedback message</label>
           <textarea id="cw-fb-msg" maxlength="500" rows="4" placeholder="Your message..."></textarea>
           <div id="cw-fb-counter" class="fb-counter"></div>
 
@@ -66,10 +68,10 @@
 
           <button id="cw-fb-send">Send feedback</button>
         </div>
-      </div>
+      </dialog>
 
       <!-- ── How to play modal ── -->
-      <div id="cw-modal" role="dialog" aria-modal="true" aria-labelledby="cw-modal-title">
+      <dialog id="cw-modal" aria-labelledby="cw-modal-title">
         <div id="cw-modal-box">
           <button id="cw-modal-close" aria-label="Close">✕</button>
           <h2 id="cw-modal-title">How to Play</h2>
@@ -139,12 +141,12 @@
           </div>
           <button id="cw-modal-gotit">Got it</button>
         </div>
-      </div>
+      </dialog>
 
-      <div id="cw-inner">
+      <main id="cw-inner">
         <!-- ── Header row: octo + title ── -->
-        <div id="cw-header">
-          <div id="octo-wrap" title="click to replay">
+        <header id="cw-header">
+          <div id="octo-wrap" title="click to replay" aria-hidden="true">
             <svg id="octo" width="53" height="52" viewBox="0 0 53 52" fill="none" xmlns="http://www.w3.org/2000/svg">
               <mask id="octo-mask" fill="white">
                 <path
@@ -275,7 +277,7 @@
               </g>
             </svg>
           </h1>
-        </div>
+        </header>
 
         <p id="cw-sub">
           Work out the number from 100–999.
@@ -294,11 +296,11 @@
         <div id="cw-card">
           <div id="cw-plabel">Puzzle #7 · 14 March 2026</div>
 
-          <div class="cw-clue-container">
-            <div class="cw-clue">
+          <div class="cw-clue-container" role="list" aria-label="Puzzle clues">
+            <div class="cw-clue" role="listitem">
               <div class="cw-tag-cell">
                 <span class="cw-tag">CUBE</span>
-                <div class="mini-digits">
+                <div class="mini-digits" aria-hidden="true">
                   <div class="md"></div>
                   <div class="md"></div>
                   <div class="md lit"></div>
@@ -310,10 +312,10 @@
               </div>
             </div>
 
-            <div class="cw-clue">
+            <div class="cw-clue" role="listitem">
               <div class="cw-tag-cell">
                 <span class="cw-tag">RANGE</span>
-                <div class="mini-digits">
+                <div class="mini-digits" aria-hidden="true">
                   <div class="md lit"></div>
                   <div class="md lit"></div>
                   <div class="md lit"></div>
@@ -325,10 +327,10 @@
               </div>
             </div>
 
-            <div class="cw-clue">
+            <div class="cw-clue" role="listitem">
               <div class="cw-tag-cell">
                 <span class="cw-tag">MEAN</span>
-                <div class="mini-digits">
+                <div class="mini-digits" aria-hidden="true">
                   <div class="md lit"></div>
                   <div class="md lit"></div>
                   <div class="md lit"></div>
@@ -346,10 +348,10 @@
               </div>
             </div>
 
-            <div class="cw-clue">
+            <div class="cw-clue" role="listitem">
               <div class="cw-tag-cell">
                 <span class="cw-tag">SUM</span>
-                <div class="mini-digits">
+                <div class="mini-digits" aria-hidden="true">
                   <div class="md lit"></div>
                   <div class="md"></div>
                   <div class="md lit"></div>
@@ -361,10 +363,10 @@
               </div>
             </div>
 
-            <div class="cw-clue">
+            <div class="cw-clue" role="listitem">
               <div class="cw-tag-cell">
                 <span class="cw-tag">PROD</span>
-                <div class="mini-digits">
+                <div class="mini-digits" aria-hidden="true">
                   <div class="md"></div>
                   <div class="md lit"></div>
                   <div class="md lit"></div>
@@ -379,13 +381,13 @@
           <!-- /.cw-clue-container -->
 
           <!-- ── Hint ── -->
-          <div id="cw-hint" style="margin-top: 18px">Tap a box to eliminate possible numbers.</div>
+          <div id="cw-hint" style="margin-top: 18px" aria-live="polite">Tap a box to eliminate possible numbers.</div>
 
           <!-- ── Digit boxes ── -->
-          <div id="cw-digits">
-            <div class="digit-box" id="d0"></div>
-            <div class="digit-box" id="d1"></div>
-            <div class="digit-box" id="d2"></div>
+          <div id="cw-digits" role="group" aria-label="Digit entry boxes">
+            <div class="digit-box" id="d0" role="button" tabindex="0" aria-label="Hundreds digit"></div>
+            <div class="digit-box" id="d1" role="button" tabindex="0" aria-label="Tens digit"></div>
+            <div class="digit-box" id="d2" role="button" tabindex="0" aria-label="Units digit"></div>
           </div>
 
           <!-- ── Keypad ── -->
@@ -413,6 +415,7 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344" />
                 <path d="m9 11 3 3L22 4" />
@@ -429,6 +432,7 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 style="vertical-align: middle"
+                aria-hidden="true"
               >
                 <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" />
                 <path d="M8.5 8.5v.01" />
@@ -442,7 +446,7 @@
           </div>
 
           <!-- ── Feedback ── -->
-          <p id="cw-feedback" style="display: none"></p>
+          <p id="cw-feedback" style="display: none" aria-live="assertive"></p>
 
           <!-- ── Guess history ── -->
           <div id="cw-history" style="display: none">
@@ -464,10 +468,10 @@
           </p>
         </div>
 
-        <div id="cw-foot">
+        <footer id="cw-foot">
           <div id="cw-foot-links">
             <div class="ui-link">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                 <path d="M12 17h.01" />
@@ -479,7 +483,7 @@
               <button id="cw-fb-btn-footer">Feedback</button>
             </div>
             <div class="ui-link">
-              <span id="cw-tog-icon">
+              <span id="cw-tog-icon" aria-hidden="true">
                 <svg
                   class="icon-moon"
                   xmlns="http://www.w3.org/2000/svg"
@@ -554,8 +558,8 @@
             <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer" id="cw-fl">Jamie</a>
           </span>
           and Dave
-        </div>
-      </div>
+        </footer>
+      </main>
 
       <div id="cw-toast" aria-live="polite"></div>
     </div>
