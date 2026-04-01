@@ -83,15 +83,16 @@ Range:       ['range']
 Uses `light-dark()` for automatic theme switching. JS sets `:root.dark` or `:root.light` → `color-scheme` resolves the correct value.
 
 ```css
-/* ── Constants (same in both themes) ── */
---acc:        #ff6d5a   /* coral — operators, borders, buttons */
---tag-bg:     rgba(255, 109, 90, 0.1)
---md-lit-bg:  rgba(255, 109, 90, 0.12)
+/* ── Accent (theme-aware for WCAG AA contrast) ── */
+--acc:        light-dark(#bc3c2c, #ff8070)  /* text accent — 4.7:1 light, 5.6:1 dark */
+--acc-btn:    #bc3c2c                       /* button bg — white text 5.5:1 both themes */
+--tag-bg:     light-dark(rgba(188,60,44,0.08), rgba(255,128,112,0.1))
+--md-lit-bg:  light-dark(rgba(188,60,44,0.10), rgba(255,128,112,0.12))
 
 /* ── Theme-sensitive (light / dark) ── */
 --bg:         light-dark(#f5edd8, #262624)       /* page background */
---text:       light-dark(#262624, #fffdf7)       /* primary text */
---muted:      light-dark(rgba(38,38,36,0.55), rgba(255,253,247,0.6))
+--text:       light-dark(#262624, #f6f0e8)       /* primary text */
+--muted:      light-dark(rgba(38,38,36,0.70), rgba(246,240,232,0.6))
 --card-bg:    light-dark(#fffdf7, #2e2e2c)       /* card background */
 --card-sh:    light-dark(offset shadow light, offset shadow dark)
 --surface:    light-dark(#ffffff, #363634)        /* input/key backgrounds */
@@ -165,6 +166,7 @@ When making important decisions, structural changes, new conventions, or archite
 
 ## Conventions
 
+- **Accessibility**: all changes must meet WCAG 2.1 AA minimum — use semantic HTML, proper ARIA attributes, sufficient colour contrast (4.5:1 normal text, 3:1 large text / UI components), and keyboard navigability
 - No framework, no bundler, no TypeScript — plain JS with ES modules
 - Icons: use [Lucide](https://lucide.dev/) for any iconography
 - Notifications: use toast/snackbar (auto-dismiss ~3s) for transient feedback — not modals
