@@ -821,6 +821,7 @@ body {
 
 /* ─── Modal overlay ─── */
 #cw-modal {
+  display: none;
   border: none;
   background: transparent;
   padding: 1rem;
@@ -1046,6 +1047,7 @@ body {
 
 /* ─── Feedback modal ─── */
 #cw-fb-modal {
+  display: none;
   border: none;
   background: transparent;
   padding: 1rem;
