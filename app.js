@@ -348,11 +348,10 @@ function checkSubmit() {
 // ─── Game ─────────────────────────────────────────────────────────────────────
 
 function showNextPuzzle() {
-  const num = puzzleNumber(todayLocal());
   const np = document.getElementById("cw-next");
   const nn = document.getElementById("cw-next-number");
   if (np && nn) {
-    nn.textContent = num + 1;
+    nn.textContent = gameState.puzzleNum + 1;
     np.style.display = "";
   }
 }
@@ -418,11 +417,12 @@ function startDailyPuzzle(puzzleData) {
 
   const entry = todayEntry();
   if (entry) {
+    gameState = { answer, guesses: [], solved: true, puzzleNum: num };
     showCompletedState(entry.tries);
     return;
   }
 
-  gameState = { answer, guesses: [], solved: false };
+  gameState = { answer, guesses: [], solved: false, puzzleNum: num };
   renderFeedback(null);
   renderHistory([]);
 
