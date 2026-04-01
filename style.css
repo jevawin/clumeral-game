@@ -60,6 +60,7 @@ body {
 .skip-link {
   position: absolute;
   left: -999rem;
+  top: -999rem;
   z-index: 999;
   padding: 0.5rem 1rem;
   background-color: var(--acc-btn);
@@ -68,7 +69,7 @@ body {
   border-radius: 0.25rem;
   text-decoration: none;
 }
-.skip-link:focus {
+.skip-link:focus-visible {
   left: 1rem;
   top: 1rem;
 }
