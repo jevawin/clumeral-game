@@ -550,6 +550,7 @@ function initTheme() {
     togBtn.textContent = dark ? "Light" : "Dark";
     togBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
     drawCanvas(dark);
+    if (window._swapIcons && window._currentColour) window._swapIcons(window._currentColour);
   }
 
   const saved = localStorage.getItem(STORAGE_THEME);

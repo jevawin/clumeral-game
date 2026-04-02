@@ -26,7 +26,7 @@
     <meta name="twitter:description" content="Work out the number from 100–999. New puzzle every day." />
     <meta name="twitter:image" content="https://clumeral.com/og-image.png" />
 
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" href="icons/lime/dark/icon-192.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="stylesheet" href="style.css" />
@@ -575,6 +575,23 @@
           {name:'Lime',light:'#0a850a',dark:'#1ead52'},
           {name:'Violet',light:'#9a44ea',dark:'#b679f0'},
         ];
+
+        function getMode(){
+          const cl=document.documentElement.classList;
+          if(cl.contains('dark'))return'dark';
+          if(cl.contains('light'))return'light';
+          return window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+        }
+
+        window._swapIcons=function(colourName){
+          const mode=getMode();
+          const dir='icons/'+colourName.toLowerCase()+'/'+mode+'/';
+          const ati=document.querySelector('link[rel="apple-touch-icon"]');
+          if(ati)ati.href=dir+'apple-touch-icon.png';
+          const ico=document.querySelector('link[rel="icon"]');
+          if(ico){ico.type='image/png';ico.href=dir+'icon-192.png';}
+        };
+
         function applyTheme(t){
           const r=document.documentElement.style;
           r.setProperty('--acc',`light-dark(${t.light},${t.dark})`);
@@ -582,18 +599,14 @@
           r.setProperty('--tag-bg',`light-dark(${t.light}14,${t.dark}1a)`);
           r.setProperty('--md-lit-bg',`light-dark(${t.light}1a,${t.dark}1f)`);
           r.setProperty('--dig-sh-act',`0.1875rem 0.1875rem 0 ${t.light}4d`);
-          // Update favicon
-          const c=document.createElement('canvas');c.width=64;c.height=64;
-          const ctx=c.getContext('2d');
-          ctx.fillStyle=t.light;
-          ctx.beginPath();ctx.roundRect(0,0,64,64,12);ctx.fill();
-          ctx.fillStyle='#fff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-          ctx.fillText('?',32,34);
-          let link=document.querySelector('link[rel="icon"]');
-          if(link)link.href=c.toDataURL();
+          window._currentColour=t.name;
+          window._swapIcons(t.name);
         }
+
         const saved=localStorage.getItem('dlng_colour');
-        if(saved){const t=themes.find(x=>x.name===saved);if(t)applyTheme(t);}
+        const active=saved?themes.find(x=>x.name===saved):themes.find(x=>x.name==='Lime');
+        if(active)applyTheme(active);
+
         const wrap=document.getElementById('tmp-swatches');
         themes.forEach(t=>{
           const btn=document.createElement('button');
