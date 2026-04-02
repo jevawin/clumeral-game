@@ -177,31 +177,29 @@ body {
   75%      { fill: light-dark(#9a44ea, #b679f0); }
 }
 #octo-wrap.celebrating {
-  left: 50% !important;
-  top: 50% !important;
-  animation: octo-fly 5.5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  animation: octo-fly 5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
 @keyframes octo-fly {
   0% { /* enter from above */
     transform: translate(-50%, -50%) translateY(-55vh) scale(1) rotate(0deg);
   }
-  9% { /* arrive at centre */
+  10% { /* arrive at centre */
     transform: translate(-50%, -50%) scale(2) rotate(15deg);
   }
-  27% { /* top-right */
+  30% { /* top-right */
     transform: translate(-50%, -50%) translate(20vw, -18vh) scale(1.8) rotate(-20deg);
   }
-  45% { /* bottom-left */
+  50% { /* bottom-left */
     transform: translate(-50%, -50%) translate(-18vw, 18vh) scale(2.2) rotate(25deg);
   }
-  64% { /* bottom-right */
+  70% { /* bottom-right */
     transform: translate(-50%, -50%) translate(18vw, 15vh) scale(1.6) rotate(-15deg);
   }
-  82% { /* top-left */
+  85% { /* top-left */
     transform: translate(-50%, -50%) translate(-15vw, -15vh) scale(1.3) rotate(10deg);
   }
-  100% { /* exit above */
-    transform: translate(-50%, -50%) translateY(-55vh) scale(1) rotate(0deg);
+  100% { /* settle at centre */
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
   }
 }
 #octo-placeholder {

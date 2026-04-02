@@ -1097,7 +1097,13 @@ function celebrateOcto() {
   if (octoAnimating) return;
   octoAnimating = true;
 
+  const rect = octoWrapEl.getBoundingClientRect();
+  const origLeft = rect.left;
+  const origTop = rect.top;
+
   octoWrapEl.style.position = 'fixed';
+  octoWrapEl.style.left = '50%';
+  octoWrapEl.style.top = '50%';
   octoWrapEl.style.margin = '0';
 
   const ph = document.getElementById('octo-placeholder');
@@ -1107,24 +1113,37 @@ function celebrateOcto() {
   octoWrapEl.classList.add('celebrating');
   document.body.style.overflow = 'hidden';
 
-  setTimeout(reattachOcto, 5600);
-}
+  // After fly animation ends, transition back to header
+  setTimeout(() => {
+    octoWrapEl.style.transform = 'translate(-50%, -50%)';
+    octoWrapEl.classList.remove('celebrating');
+    octoEl.classList.remove('celebrate');
 
-function reattachOcto() {
-  octoWrapEl.classList.remove('celebrating');
-  octoEl.classList.remove('celebrate');
-  octoWrapEl.style.position = '';
-  octoWrapEl.style.margin = '';
+    requestAnimationFrame(() => {
+      octoWrapEl.style.transition = 'left 0.6s ease-in-out, top 0.6s ease-in-out, transform 0.6s ease-in-out';
+      octoWrapEl.style.left = origLeft + 'px';
+      octoWrapEl.style.top = origTop + 'px';
+      octoWrapEl.style.transform = '';
 
-  const ph = document.getElementById('octo-placeholder');
-  if (ph) ph.style.display = 'none';
+      setTimeout(() => {
+        octoWrapEl.style.position = '';
+        octoWrapEl.style.left = '';
+        octoWrapEl.style.top = '';
+        octoWrapEl.style.margin = '';
+        octoWrapEl.style.transition = '';
 
-  const digitsEl = document.getElementById('cw-digits');
-  if (digitsEl) digitsEl.style.display = 'none';
+        const ph = document.getElementById('octo-placeholder');
+        if (ph) ph.style.display = 'none';
 
-  document.body.style.overflow = '';
-  exprMode = 'round';
-  octoAnimating = false;
+        const digitsEl = document.getElementById('cw-digits');
+        if (digitsEl) digitsEl.style.display = 'none';
+
+        document.body.style.overflow = '';
+        exprMode = 'round';
+        octoAnimating = false;
+      }, 650);
+    });
+  }, 5100);
 }
 
 function sadOcto() {
