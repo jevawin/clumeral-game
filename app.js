@@ -1111,7 +1111,7 @@ function celebrateOcto() {
   octoWrapEl.classList.add('celebrating');
   document.body.style.overflow = 'hidden';
 
-  setTimeout(reattachOcto, 5000);
+  setTimeout(reattachOcto, 6000);
 }
 
 function reattachOcto() {
