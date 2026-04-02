@@ -294,35 +294,6 @@
 
         <!-- ── Puzzle card ── -->
         <div id="cw-card">
-          <!-- TEMP: colour swatches -->
-          <div id="tmp-swatches" style="display:flex;gap:0.4rem;margin-bottom:1rem;"></div>
-          <script>
-            (function(){
-              const themes = [
-                {name:'Berry',light:'#de1f46',dark:'#ea6c85'},
-                {name:'Blue',light:'#376ddb',dark:'#6393f2'},
-                {name:'Lime',light:'#0a850a',dark:'#1ead52'},
-                {name:'Violet',light:'#9a44ea',dark:'#b679f0'},
-              ];
-              const wrap=document.getElementById('tmp-swatches');
-              themes.forEach(t=>{
-                const btn=document.createElement('button');
-                btn.type='button';
-                btn.style.cssText='display:flex;align-items:center;gap:0.3rem;padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:0.25rem;background:var(--surface);cursor:pointer;flex:1;';
-                btn.innerHTML=`<div style="width:1.25rem;height:1.25rem;background:light-dark(${t.light},${t.dark});border-radius:0.2rem;flex-shrink:0;"></div><span style="color:light-dark(${t.light},${t.dark});font-weight:700;font-size:0.8rem;">${t.name}</span>`;
-                btn.addEventListener('click',()=>{
-                  const r=document.documentElement.style;
-                  r.setProperty('--acc',`light-dark(${t.light},${t.dark})`);
-                  r.setProperty('--acc-btn',t.light);
-                  r.setProperty('--tag-bg',`light-dark(${t.light}14,${t.dark}1a)`);
-                  r.setProperty('--md-lit-bg',`light-dark(${t.light}1a,${t.dark}1f)`);
-                  r.setProperty('--dig-sh-act',`0.1875rem 0.1875rem 0 ${t.light}4d`);
-                });
-                wrap.appendChild(btn);
-              });
-            })();
-          </script>
-          <!-- /TEMP -->
           <div id="cw-plabel">Puzzle #7 · 14 March 2026</div>
 
           <div class="cw-clue-container" role="list" aria-label="Puzzle clues">
@@ -495,6 +466,7 @@
           <p id="cw-again" style="display: none">
             <a href="/random" id="cw-again-link">Play another random puzzle</a>
           </p>
+
         </div>
 
         <footer id="cw-foot">
@@ -593,6 +565,35 @@
       <div id="cw-toast" aria-live="polite"></div>
     </div>
 
+    <!-- TEMP: colour swatches -->
+    <div id="tmp-swatches" style="display:flex;gap:0.4rem;max-width:30rem;margin:1rem auto;padding:0 1rem;"></div>
+    <script>
+      (function(){
+        const themes = [
+          {name:'Berry',light:'#de1f46',dark:'#ea6c85'},
+          {name:'Blue',light:'#376ddb',dark:'#6393f2'},
+          {name:'Lime',light:'#0a850a',dark:'#1ead52'},
+          {name:'Violet',light:'#9a44ea',dark:'#b679f0'},
+        ];
+        const wrap=document.getElementById('tmp-swatches');
+        themes.forEach(t=>{
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.style.cssText='display:flex;align-items:center;gap:0.3rem;padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:0.25rem;background:var(--surface);cursor:pointer;flex:1;';
+          btn.innerHTML=`<div style="width:1.25rem;height:1.25rem;background:light-dark(${t.light},${t.dark});border-radius:0.2rem;flex-shrink:0;"></div><span style="color:light-dark(${t.light},${t.dark});font-weight:700;font-size:0.8rem;">${t.name}</span>`;
+          btn.addEventListener('click',()=>{
+            const r=document.documentElement.style;
+            r.setProperty('--acc',`light-dark(${t.light},${t.dark})`);
+            r.setProperty('--acc-btn',t.light);
+            r.setProperty('--tag-bg',`light-dark(${t.light}14,${t.dark}1a)`);
+            r.setProperty('--md-lit-bg',`light-dark(${t.light}1a,${t.dark}1f)`);
+            r.setProperty('--dig-sh-act',`0.1875rem 0.1875rem 0 ${t.light}4d`);
+          });
+          wrap.appendChild(btn);
+        });
+      })();
+    </script>
+    <!-- /TEMP -->
     <script type="module" src="app.js"></script>
     <!-- TEMP: auto-refresh on file change -->
     <script>(async()=>{const f=['style.css','app.js','index.html'];const h={};for(const p of f){const r=await fetch(p,{method:'HEAD'});h[p]=r.headers.get('last-modified')}setInterval(async()=>{for(const p of f){try{const r=await fetch(p,{method:'HEAD'});const m=r.headers.get('last-modified');if(m!==h[p])location.reload()}catch{}}},500)})()</script>
