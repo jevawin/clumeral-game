@@ -402,7 +402,8 @@
 
           <!-- ── Save row ── -->
           <div id="cw-save">
-            <button type="button" id="cw-ck" aria-pressed="true">
+            <input type="checkbox" checked id="cw-ck" />
+            <label for="cw-ck">
               <svg
                 class="check-icon"
                 xmlns="http://www.w3.org/2000/svg"
@@ -410,13 +411,14 @@
                 height="16"
                 viewBox="0 0 24 24"
                 fill="none"
+                stroke="#4caf88"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 aria-hidden="true"
               >
-                <path class="ck-box" d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344" />
-                <path class="ck-tick" d="m9 11 3 3L22 4" />
+                <path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344" />
+                <path d="m9 11 3 3L22 4" />
               </svg>
               Keep my score in a
               <svg
@@ -440,7 +442,7 @@
                 <path d="M7 14v.01" />
               </svg>
               cookie
-            </button>
+            </label>
           </div>
 
           <!-- ── Feedback ── -->

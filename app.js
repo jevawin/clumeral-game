@@ -446,7 +446,7 @@ function startDailyPuzzle(puzzleData) {
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
   const ckEl = document.getElementById("cw-ck");
-  if (ckEl) ckEl.setAttribute("aria-pressed", String(saveScore));
+  if (ckEl) ckEl.checked = saveScore;
 }
 
 function handleGuess() {
@@ -817,12 +817,11 @@ for (let i = 0; i < 3; i++) {
 const cwSubmitEl = document.getElementById("cw-submit");
 if (cwSubmitEl) cwSubmitEl.addEventListener("click", handleGuess);
 
-// Save toggle button
+// Save checkbox
 const ckEl = document.getElementById("cw-ck");
 if (ckEl) {
-  ckEl.addEventListener("click", () => {
-    saveScore = !saveScore;
-    ckEl.setAttribute("aria-pressed", String(saveScore));
+  ckEl.addEventListener("change", () => {
+    saveScore = ckEl.checked;
     persistPrefs();
   });
 }
