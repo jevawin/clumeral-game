@@ -8,8 +8,8 @@
   color-scheme: light dark;
 
   /* ── Accent (theme-aware for WCAG AA contrast) ── */
-  --acc: light-dark(#de1f46, #ff8090);
-  --acc-btn: #de1f46;
+  --acc: light-dark(#de1f46, #ea6c85);
+  --acc-btn: light-dark(#de1f46, #ea6c85);
   --tag-bg: light-dark(rgba(222, 31, 70, 0.08), rgba(255, 128, 144, 0.1));
   --md-lit-bg: light-dark(rgba(222, 31, 70, 0.1), rgba(255, 128, 144, 0.12));
   --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(222, 31, 70, 0.3);
