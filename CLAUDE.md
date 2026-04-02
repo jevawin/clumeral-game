@@ -142,7 +142,7 @@ The orphan `claude/*` branch and any leftover remote work branches can't be dele
 
 ### Merging & deployment flow
 
-1. **Work branch → `staging`**: Claude can merge directly (no approval needed)
+1. **Work branch → `staging`**: Claude can merge directly (no approval needed). **After merging, switch back to the work branch** to continue work there — never commit directly to `staging`.
 2. **`staging` → `main`**: Claude creates a PR. **Jamie approves and merges in GitHub** — Claude must not merge this PR.
 
 ### Review flow
