@@ -470,6 +470,8 @@
         </div>
 
         <footer id="cw-foot">
+          <!-- TEMP: colour swatches -->
+          <div id="tmp-swatches" style="display:flex;gap:0.4rem;width:100%;"></div>
           <div id="cw-foot-links">
             <div class="ui-link">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -559,15 +561,14 @@
             <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer" id="cw-fl">Jamie</a>
           </span>
           and Dave
+          <div id="tmp-dev" style="display:none;justify-content:center;gap:1.25rem;width:100%;"></div>
         </footer>
       </main>
 
       <div id="cw-toast" aria-live="polite"></div>
     </div>
 
-    <!-- TEMP: colour swatches -->
-    <div id="tmp-swatches" style="display:flex;gap:0.4rem;max-width:30rem;margin:0 auto;padding:0 1rem;"></div>
-    <div id="tmp-dev" style="display:none;justify-content:center;gap:1.25rem;max-width:30rem;margin:0.75rem auto 0;padding:0 1rem;"></div>
+    <!-- TEMP: colour swatches (elements are inside #cw-foot) -->
     <script>
       (function(){
         const themes = [
@@ -625,10 +626,10 @@
           const dev=document.getElementById('tmp-dev');
           dev.style.display='flex';
           const mkLink=(label,fn)=>{
-            const a=document.createElement('a');
-            a.href='#';a.role='button';a.textContent=label;
-            a.style.cssText='color:var(--muted);font-size:1rem;';
-            a.addEventListener('click',e=>{e.preventDefault();fn();});
+            const a=document.createElement('button');
+            a.type='button';a.textContent=label;
+            a.style.cssText='background:none;border:none;border-bottom:1px solid var(--muted);color:var(--muted);font-size:1rem;padding:0;cursor:pointer;';
+            a.addEventListener('click',fn);
             dev.appendChild(a);
           };
           mkLink('Reset state',()=>{localStorage.clear();location.reload();});
