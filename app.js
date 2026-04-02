@@ -1097,12 +1097,8 @@ function celebrateOcto() {
   if (octoAnimating) return;
   octoAnimating = true;
 
-  const rect = octoWrapEl.getBoundingClientRect();
   octoWrapEl.style.position = 'fixed';
-  octoWrapEl.style.left = rect.left + 'px';
-  octoWrapEl.style.top = rect.top + 'px';
   octoWrapEl.style.margin = '0';
-  octoWrapEl.style.transform = '';
 
   const ph = document.getElementById('octo-placeholder');
   if (ph) ph.style.display = '';
@@ -1111,35 +1107,24 @@ function celebrateOcto() {
   octoWrapEl.classList.add('celebrating');
   document.body.style.overflow = 'hidden';
 
-  setTimeout(reattachOcto, 6000);
+  setTimeout(reattachOcto, 5600);
 }
 
 function reattachOcto() {
-  octoWrapEl.style.transition = 'opacity 0.35s';
-  octoWrapEl.style.opacity = '0';
+  octoWrapEl.classList.remove('celebrating');
+  octoEl.classList.remove('celebrate');
+  octoWrapEl.style.position = '';
+  octoWrapEl.style.margin = '';
 
-  setTimeout(() => {
-    octoWrapEl.classList.remove('celebrating');
-    octoEl.classList.remove('celebrate');
-    octoWrapEl.style.position = '';
-    octoWrapEl.style.left = '';
-    octoWrapEl.style.top = '';
-    octoWrapEl.style.margin = '';
+  const ph = document.getElementById('octo-placeholder');
+  if (ph) ph.style.display = 'none';
 
-    const ph = document.getElementById('octo-placeholder');
-    if (ph) ph.style.display = 'none';
+  const digitsEl = document.getElementById('cw-digits');
+  if (digitsEl) digitsEl.style.display = 'none';
 
-    const digitsEl = document.getElementById('cw-digits');
-    if (digitsEl) digitsEl.style.display = 'none';
-
-    document.body.style.overflow = '';
-    exprMode = 'round';
-
-    setTimeout(() => {
-      octoWrapEl.style.opacity = '1';
-      setTimeout(() => { octoWrapEl.style.transition = ''; octoAnimating = false; }, 350);
-    }, 50);
-  }, 350);
+  document.body.style.overflow = '';
+  exprMode = 'round';
+  octoAnimating = false;
 }
 
 function sadOcto() {
