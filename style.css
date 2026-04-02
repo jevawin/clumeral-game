@@ -203,6 +203,12 @@ body {
     transform: translate(-50%, -50%) scale(1) rotate(0deg);
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  #octo.celebrate > path:first-of-type,
+  #octo-wrap.celebrating {
+    animation: none;
+  }
+}
 #octo-placeholder {
   flex-shrink: 0;
   width: 3.3125rem;

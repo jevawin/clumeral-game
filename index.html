@@ -612,8 +612,9 @@
         themes.forEach(t=>{
           const btn=document.createElement('button');
           btn.type='button';
+          btn.setAttribute('aria-label','Set accent colour to '+t.name);
           btn.style.cssText='display:flex;align-items:center;gap:0.3rem;padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:0.25rem;background:var(--surface);cursor:pointer;flex:1;';
-          btn.innerHTML=`<div style="width:1.25rem;height:1.25rem;background:light-dark(${t.light},${t.dark});border-radius:0.2rem;flex-shrink:0;"></div><span style="color:light-dark(${t.light},${t.dark});font-weight:700;font-size:0.8rem;">${t.name}</span>`;
+          btn.innerHTML=`<div style="width:1.25rem;height:1.25rem;background:light-dark(${t.light},${t.dark});border-radius:0.2rem;flex-shrink:0;" aria-hidden="true"></div><span style="color:light-dark(${t.light},${t.dark});font-weight:700;font-size:0.8rem;">${t.name}</span>`;
           btn.addEventListener('click',()=>{
             applyTheme(t);
             localStorage.setItem('dlng_colour',t.name);
@@ -625,7 +626,7 @@
           dev.style.display='flex';
           const mkLink=(label,fn)=>{
             const a=document.createElement('a');
-            a.href='#';a.textContent=label;
+            a.href='#';a.role='button';a.textContent=label;
             a.style.cssText='color:var(--muted);font-size:1rem;';
             a.addEventListener('click',e=>{e.preventDefault();fn();});
             dev.appendChild(a);
