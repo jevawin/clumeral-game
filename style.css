@@ -15,7 +15,7 @@
   --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(222, 31, 70, 0.3);
 
   /* ── Theme-sensitive ── */
-  --bg: light-dark(#f7f3ec, #262624);
+  --bg: light-dark(#f5edd8, #262624);
   --sh1: light-dark(color-mix(in srgb, var(--acc) 40%, #f7f3ec), color-mix(in srgb, var(--acc) 50%, #262624));
   --sh2: light-dark(color-mix(in srgb, var(--acc) 60%, #f7f3ec), color-mix(in srgb, var(--acc) 40%, #262624));
   --text: light-dark(#262624, #f6f0e8);
