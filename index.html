@@ -575,6 +575,25 @@
           {name:'Lime',light:'#0a850a',dark:'#1ead52'},
           {name:'Violet',light:'#9a44ea',dark:'#b679f0'},
         ];
+        function applyTheme(t){
+          const r=document.documentElement.style;
+          r.setProperty('--acc',`light-dark(${t.light},${t.dark})`);
+          r.setProperty('--acc-btn',t.light);
+          r.setProperty('--tag-bg',`light-dark(${t.light}14,${t.dark}1a)`);
+          r.setProperty('--md-lit-bg',`light-dark(${t.light}1a,${t.dark}1f)`);
+          r.setProperty('--dig-sh-act',`0.1875rem 0.1875rem 0 ${t.light}4d`);
+          // Update favicon
+          const c=document.createElement('canvas');c.width=64;c.height=64;
+          const ctx=c.getContext('2d');
+          ctx.fillStyle=t.light;
+          ctx.beginPath();ctx.roundRect(0,0,64,64,12);ctx.fill();
+          ctx.fillStyle='#fff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillText('?',32,34);
+          let link=document.querySelector('link[rel="icon"]');
+          if(link)link.href=c.toDataURL();
+        }
+        const saved=localStorage.getItem('dlng_colour');
+        if(saved){const t=themes.find(x=>x.name===saved);if(t)applyTheme(t);}
         const wrap=document.getElementById('tmp-swatches');
         themes.forEach(t=>{
           const btn=document.createElement('button');
@@ -582,12 +601,8 @@
           btn.style.cssText='display:flex;align-items:center;gap:0.3rem;padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:0.25rem;background:var(--surface);cursor:pointer;flex:1;';
           btn.innerHTML=`<div style="width:1.25rem;height:1.25rem;background:light-dark(${t.light},${t.dark});border-radius:0.2rem;flex-shrink:0;"></div><span style="color:light-dark(${t.light},${t.dark});font-weight:700;font-size:0.8rem;">${t.name}</span>`;
           btn.addEventListener('click',()=>{
-            const r=document.documentElement.style;
-            r.setProperty('--acc',`light-dark(${t.light},${t.dark})`);
-            r.setProperty('--acc-btn',t.light);
-            r.setProperty('--tag-bg',`light-dark(${t.light}14,${t.dark}1a)`);
-            r.setProperty('--md-lit-bg',`light-dark(${t.light}1a,${t.dark}1f)`);
-            r.setProperty('--dig-sh-act',`0.1875rem 0.1875rem 0 ${t.light}4d`);
+            applyTheme(t);
+            localStorage.setItem('dlng_colour',t.name);
           });
           wrap.appendChild(btn);
         });

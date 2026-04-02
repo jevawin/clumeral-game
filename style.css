@@ -8,17 +8,17 @@
   color-scheme: light dark;
 
   /* ── Accent (theme-aware for WCAG AA contrast) ── */
-  --acc: light-dark(#de1f46, #ea6c85);
-  --acc-btn: #de1f46;
-  --tag-bg: light-dark(rgba(222, 31, 70, 0.08), rgba(255, 128, 144, 0.1));
-  --md-lit-bg: light-dark(rgba(222, 31, 70, 0.1), rgba(255, 128, 144, 0.12));
-  --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(222, 31, 70, 0.3);
+  --acc: light-dark(#0a850a, #1ead52);
+  --acc-btn: #0a850a;
+  --tag-bg: light-dark(rgba(10, 133, 10, 0.08), rgba(30, 173, 82, 0.1));
+  --md-lit-bg: light-dark(rgba(10, 133, 10, 0.1), rgba(30, 173, 82, 0.12));
+  --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(10, 133, 10, 0.3);
 
   /* ── Theme-sensitive ── */
   --bg: light-dark(color-mix(in srgb, var(--acc) 5%, white), color-mix(in srgb, var(--acc) 5%, #262624));
   --sh1: light-dark(color-mix(in srgb, var(--acc) 60%, white), color-mix(in srgb, var(--acc) 60%, #262624));
   --sh2: light-dark(color-mix(in srgb, var(--acc) 40%, white), color-mix(in srgb, var(--acc) 40%, #262624));
-  --text: light-dark(#262624, #f6f0e8);
+  --text: light-dark(#262624, #faf8f4);
   --muted: light-dark(rgba(38, 38, 36, 0.7), rgba(246, 240, 232, 0.6));
   --card-bg: light-dark(color-mix(in srgb, var(--acc) 1%, white), color-mix(in srgb, var(--acc) 1%, #2e2e2c));
   --card-sh: light-dark(0.25rem 0.25rem 0 rgba(38, 38, 36, 0.12), 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.3));
