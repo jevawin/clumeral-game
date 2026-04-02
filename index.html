@@ -566,7 +566,8 @@
     </div>
 
     <!-- TEMP: colour swatches -->
-    <div id="tmp-swatches" style="display:flex;gap:0.4rem;max-width:30rem;margin:1rem auto;padding:0 1rem;"></div>
+    <div id="tmp-swatches" style="display:flex;gap:0.4rem;max-width:30rem;margin:0 auto;padding:0 1rem;"></div>
+    <div id="tmp-dev" style="display:none;justify-content:center;gap:1.25rem;max-width:30rem;margin:0.75rem auto 0;padding:0 1rem;"></div>
     <script>
       (function(){
         const themes = [
@@ -619,6 +620,19 @@
           });
           wrap.appendChild(btn);
         });
+        if(location.hostname!=='clumeral.com'){
+          const dev=document.getElementById('tmp-dev');
+          dev.style.display='flex';
+          const mkLink=(label,fn)=>{
+            const a=document.createElement('a');
+            a.href='#';a.textContent=label;
+            a.style.cssText='color:var(--muted);font-size:1rem;';
+            a.addEventListener('click',e=>{e.preventDefault();fn();});
+            dev.appendChild(a);
+          };
+          mkLink('Reset state',()=>{localStorage.clear();location.reload();});
+          mkLink('Fill answer',()=>{if(window._devFillAnswer)window._devFillAnswer();});
+        }
       })();
     </script>
     <!-- /TEMP -->
