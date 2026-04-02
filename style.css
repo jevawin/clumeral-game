@@ -573,16 +573,16 @@ body {
   flex-shrink: 0;
   vertical-align: middle;
 }
-#cw-save .check-off {
+#cw-save:has(#cw-ck:checked) .check-on {
   display: inline;
 }
-#cw-save .check-on {
+#cw-save:has(#cw-ck:checked) .check-off {
   display: none;
 }
-#cw-ck:checked ~ label .check-off {
+#cw-save:has(#cw-ck:not(:checked)) .check-on {
   display: none;
 }
-#cw-ck:checked ~ label .check-on {
+#cw-save:has(#cw-ck:not(:checked)) .check-off {
   display: inline;
 }
 #cw-save .cookie-wrap {
