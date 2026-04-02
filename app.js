@@ -1131,6 +1131,7 @@ function celebrateOcto() {
         octoWrapEl.style.top = '';
         octoWrapEl.style.margin = '';
         octoWrapEl.style.transition = '';
+        octoWrapEl.style.opacity = '1';
 
         const ph = document.getElementById('octo-placeholder');
         if (ph) ph.style.display = 'none';
