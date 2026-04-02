@@ -15,7 +15,7 @@
   --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(10, 133, 10, 0.3);
 
   /* ── Theme-sensitive ── */
-  --bg: light-dark(color-mix(in srgb, var(--acc) 5%, white), color-mix(in srgb, var(--acc) 5%, #262624));
+  --bg: light-dark(color-mix(in srgb, var(--acc) 3%, white), color-mix(in srgb, var(--acc) 1%, #262624));
   --sh1: light-dark(color-mix(in srgb, var(--acc) 60%, white), color-mix(in srgb, var(--acc) 60%, #262624));
   --sh2: light-dark(color-mix(in srgb, var(--acc) 40%, white), color-mix(in srgb, var(--acc) 40%, #262624));
   --text: light-dark(#262624, #faf8f4);
@@ -171,35 +171,51 @@ body {
   animation: octo-colours 4s ease-in-out 0.5s infinite;
 }
 @keyframes octo-colours {
-  0%, 100% { fill: light-dark(#0a850a, #1ead52); }
-  25%      { fill: light-dark(#de1f46, #ea6c85); }
-  50%      { fill: light-dark(#376ddb, #6393f2); }
-  75%      { fill: light-dark(#9a44ea, #b679f0); }
+  0%,
+  100% {
+    fill: light-dark(#0a850a, #1ead52);
+  }
+  25% {
+    fill: light-dark(#de1f46, #ea6c85);
+  }
+  50% {
+    fill: light-dark(#376ddb, #6393f2);
+  }
+  75% {
+    fill: light-dark(#9a44ea, #b679f0);
+  }
 }
 #octo-wrap.celebrating {
   z-index: 9999;
   animation: octo-fly 5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
 @keyframes octo-fly {
-  0% { /* enter from above */
+  0% {
+    /* enter from above */
     transform: translate(-50%, -50%) translateY(-55vh) scale(1) rotate(0deg);
   }
-  10% { /* arrive at centre */
+  10% {
+    /* arrive at centre */
     transform: translate(-50%, -50%) scale(2) rotate(15deg);
   }
-  30% { /* top-right */
+  30% {
+    /* top-right */
     transform: translate(-50%, -50%) translate(35vw, -18vh) scale(1.8) rotate(-20deg);
   }
-  50% { /* bottom-left */
+  50% {
+    /* bottom-left */
     transform: translate(-50%, -50%) translate(-35vw, 18vh) scale(2.2) rotate(25deg);
   }
-  70% { /* bottom-right */
+  70% {
+    /* bottom-right */
     transform: translate(-50%, -50%) translate(30vw, 15vh) scale(1.6) rotate(-15deg);
   }
-  85% { /* top-left */
+  85% {
+    /* top-left */
     transform: translate(-50%, -50%) translate(-30vw, -15vh) scale(1.3) rotate(10deg);
   }
-  100% { /* settle at centre */
+  100% {
+    /* settle at centre */
     transform: translate(-50%, -50%) scale(1) rotate(0deg);
   }
 }
@@ -573,10 +589,18 @@ body {
   flex-shrink: 0;
   vertical-align: middle;
 }
-#cw-ck:not(:checked) ~ label .ck-on { display: none; }
-#cw-ck:not(:checked) ~ label .ck-off { display: inline; }
-#cw-ck:checked ~ label .ck-on { display: inline; }
-#cw-ck:checked ~ label .ck-off { display: none; }
+#cw-ck:not(:checked) ~ label .ck-on {
+  display: none;
+}
+#cw-ck:not(:checked) ~ label .ck-off {
+  display: inline;
+}
+#cw-ck:checked ~ label .ck-on {
+  display: inline;
+}
+#cw-ck:checked ~ label .ck-off {
+  display: none;
+}
 #cw-save .cookie-wrap {
   display: inline-flex;
   align-items: center;
