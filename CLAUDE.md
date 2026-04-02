@@ -124,30 +124,32 @@ python3 -m http.server 8080
 
 **`main` is protected — never commit or push to it directly.** Not on GitHub, not locally.
 
-- **Work linked to a GitHub issue**: commit directly to `dev` unless Jamie specifically asks for an `issue/NUM` branch
-- **Work not linked to an issue**: ask Jamie whether to work on `dev` or create its own branch — if Jamie says `dev`, commit there directly
-- **PRs can batch multiple issues**: merge several issue branches into `dev`, then one PR covers them all
+### Branches
+
+- **Branch naming**: all work branches use `dev/issue-NN` (linked to a GitHub issue) or `dev/name-related-to-work` (no issue)
+- **Base branch**: create work branches off `staging`
+- **Legacy branches**: `dev` and `colours` branches exist but are being retired — leave them as-is
 
 ### Harness branch workaround
 
 The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ignore it.** Instead:
 
-1. Create `issue/NUM` branch off `dev` as normal
-2. Do all work on `issue/NUM`
-3. After merging into `dev`, delete the local `issue/NUM` branch
+1. Create `dev/issue-NN` or `dev/name` branch off `staging`
+2. Do all work on that branch
+3. After merging into `staging`, delete the local work branch
 
-The orphan `claude/*` branch and any leftover remote `issue/*` branches can't be deleted by Claude (no permission to push `--delete` or API to delete branches). **Jamie must prune these** — either via the GitHub UI (repo → branches) or locally with `git push origin --delete <branch>`.
+The orphan `claude/*` branch and any leftover remote work branches can't be deleted by Claude (no permission to push `--delete` or API to delete branches). **Jamie must prune these** — either via the GitHub UI (repo → branches) or locally with `git push origin --delete <branch>`.
 
-### Merging
+### Merging & deployment flow
 
-- **Feature branch → `dev`**: Claude can merge directly (no approval needed)
-- **`dev` → `main`**: after pushing, give Jamie the Cloudflare preview URL to review. Wait for explicit "all good merge" before merging the PR via `gh pr merge --squash`. Close the PR after merging if not already closed.
+1. **Work branch → `staging`**: Claude can merge directly (no approval needed)
+2. **`staging` → `main`**: Claude creates a PR. **Jamie approves and merges in GitHub** — Claude must not merge this PR.
 
 ### Review flow
 
 After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable markdown link:
-- **`dev` branch**: [https://dev-clumeral-game.jevawin.workers.dev](https://dev-clumeral-game.jevawin.workers.dev)
-- **Feature branches**: `https://issue-NUM-clumeral-game.jevawin.workers.dev` (e.g. [https://issue-77-clumeral-game.jevawin.workers.dev](https://issue-77-clumeral-game.jevawin.workers.dev))
+- **`staging` branch**: [https://staging-clumeral-game.jevawin.workers.dev](https://staging-clumeral-game.jevawin.workers.dev)
+- **Feature branches**: `https://dev-name-clumeral-game.jevawin.workers.dev` (e.g. [https://dev-issue-77-clumeral-game.jevawin.workers.dev](https://dev-issue-77-clumeral-game.jevawin.workers.dev))
 
 ## Deployment
 
