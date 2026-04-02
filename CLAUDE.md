@@ -126,7 +126,13 @@ python3 -m http.server 8080
 
 ### Branches
 
-- **Branch naming**: all work branches use `dev/issue-NN` (linked to a GitHub issue) or `dev/name-related-to-work` (no issue)
+| Branch | Purpose | Commits |
+|--------|---------|---------|
+| `main` | Production | PRs from `staging` only (Jamie merges in GitHub) |
+| `staging` | Pre-production review | Merges from work branches only — **never commit directly** |
+| `dev/thing` | General work (no GitHub issue) | Direct commits OK |
+| `issue/NUM` | Work linked to a GitHub issue | Direct commits OK |
+
 - **Base branch**: create work branches off `staging`
 - **Legacy branches**: `dev` and `colours` branches exist but are being retired — leave them as-is
 
@@ -134,15 +140,15 @@ python3 -m http.server 8080
 
 The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ignore it.** Instead:
 
-1. Create `dev/issue-NN` or `dev/name` branch off `staging`
+1. Create `issue/NUM` or `dev/name` branch off `staging`
 2. Do all work on that branch
-3. After merging into `staging`, delete the local work branch
+3. After merging into `staging`, switch back to the work branch — do not stay on `staging`
 
 The orphan `claude/*` branch and any leftover remote work branches can't be deleted by Claude (no permission to push `--delete` or API to delete branches). **Jamie must prune these** — either via the GitHub UI (repo → branches) or locally with `git push origin --delete <branch>`.
 
 ### Merging & deployment flow
 
-1. **Work branch → `staging`**: Claude can merge directly (no approval needed). **After merging, switch back to the work branch** to continue work there — never commit directly to `staging`.
+1. **Work branch → `staging`**: Claude can merge directly (no approval needed). **After merging, switch back to the work branch** — never commit directly to `staging`.
 2. **`staging` → `main`**: Claude creates a PR. **Jamie approves and merges in GitHub** — Claude must not merge this PR.
 
 ### Review flow
