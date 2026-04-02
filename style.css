@@ -573,6 +573,18 @@ body {
   flex-shrink: 0;
   vertical-align: middle;
 }
+#cw-save .check-off {
+  display: inline;
+}
+#cw-save .check-on {
+  display: none;
+}
+#cw-ck:checked ~ label .check-off {
+  display: none;
+}
+#cw-ck:checked ~ label .check-on {
+  display: inline;
+}
 #cw-save .cookie-wrap {
   display: inline-flex;
   align-items: center;
