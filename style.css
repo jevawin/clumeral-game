@@ -268,21 +268,45 @@ body {
   gap: 1rem;
 }
 .cw-clue {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0 0.8rem;
 }
 .cw-tag-cell {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.5rem;
+  align-self: stretch;
+  padding: 0.1875rem 0;
 }
 .cw-tag {
-  display: none;
+  font-family: "Inconsolata", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  height: 1.375rem;
+  line-height: 1.375rem;
+  border-radius: 0.125rem;
+  border: 1.5px solid;
+  padding: 0 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: color-mix(in srgb, var(--acc) 5%, transparent);
+  color: var(--acc);
+  border-color: var(--acc);
+  transition:
+    background-color 0.4s,
+    color 0.4s,
+    border-color 0.4s;
 }
 .mini-digits {
   display: flex;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  margin-left: auto;
+  justify-content: space-between;
+  width: 4.5rem;
 }
 .md {
   width: 1.375rem;
@@ -296,19 +320,17 @@ body {
 }
 .md.lit {
   border-color: var(--acc);
-  background-color: var(--acc);
+  background-color: color-mix(in srgb, var(--acc) 50%, transparent);
 }
 .md:not(.lit) {
   border-color: var(--acc);
-  background-color: color-mix(in srgb, var(--acc) 20%, transparent);
+  background-color: color-mix(in srgb, var(--acc) 5%, transparent);
 }
 .cw-lines {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   justify-content: center;
-  flex: 1;
-  min-width: 0;
 }
 .cw-l1 {
   font-size: 1rem;
