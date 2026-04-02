@@ -560,31 +560,24 @@ body {
 #cw-submit-wrap.visible + #cw-save {
   display: flex;
 }
-#cw-save label {
+#cw-ck {
   display: flex;
   align-items: center;
   gap: 0.3125rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 1rem;
   cursor: pointer;
 }
-#cw-save input[type="checkbox"] {
-  display: none;
-}
-#cw-save .check-icon {
+#cw-ck .check-icon {
   flex-shrink: 0;
-  vertical-align: middle;
 }
-#cw-save:has(#cw-ck:checked) .check-on {
-  display: inline;
-}
-#cw-save:has(#cw-ck:checked) .check-off {
-  display: none;
-}
-#cw-save:has(#cw-ck:not(:checked)) .check-on {
-  display: none;
-}
-#cw-save:has(#cw-ck:not(:checked)) .check-off {
-  display: inline;
-}
+#cw-ck .ck-box { stroke: #4caf88; }
+#cw-ck .ck-tick { stroke: #4caf88; }
+#cw-ck[aria-pressed="false"] .ck-box { stroke: var(--muted); }
+#cw-ck[aria-pressed="false"] .ck-tick { display: none; }
 #cw-save .cookie-wrap {
   display: inline-flex;
   align-items: center;
