@@ -1207,3 +1207,32 @@ initTheme();
 initModal();
 initFeedbackModal();
 loadPuzzle();
+
+// ─── Local dev helpers ───────────────────────────────────────────────────────
+
+if (/^(localhost|127\.|192\.|10\.|0\.0\.0\.0)/.test(location.hostname)) {
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;gap:0.5rem;padding:0.5rem;background:rgba(0,0,0,0.85);z-index:9999;justify-content:center;';
+
+  const mkBtn = (label, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'padding:0.4rem 0.8rem;border:none;border-radius:0.25rem;background:#fff;color:#000;font:bold 0.8rem sans-serif;cursor:pointer;';
+    b.addEventListener('click', fn);
+    bar.appendChild(b);
+  };
+
+  mkBtn('Clear state', () => {
+    localStorage.clear();
+    location.reload();
+  });
+
+  mkBtn('Auto-answer', () => {
+    if (!gameState.answer) return;
+    const digits = [Math.floor(gameState.answer / 100), Math.floor((gameState.answer % 100) / 10), gameState.answer % 10];
+    digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
+    checkSubmit();
+  });
+
+  document.body.appendChild(bar);
+}
