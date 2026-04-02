@@ -542,12 +542,13 @@ function drawCanvas(dark) {
 function initTheme() {
   const root = document.documentElement;
   const togBtn = document.getElementById("cw-tog");
+  const togLabel = document.getElementById("cw-tog-label");
   if (!togBtn) return;
 
   function applyTheme(dark) {
     root.classList.toggle("dark", dark);
     root.classList.toggle("light", !dark);
-    togBtn.textContent = dark ? "Light" : "Dark";
+    if (togLabel) togLabel.textContent = dark ? "Light" : "Dark";
     togBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
     drawCanvas(dark);
     if (window._swapIcons && window._currentColour) window._swapIcons(window._currentColour);
