@@ -738,7 +738,6 @@ body {
   background: none;
   border: none;
   padding: 0;
-  border-bottom: 1px solid var(--acc);
   color: var(--acc);
   font-size: 1rem;
   line-height: 1.4;
@@ -751,6 +750,9 @@ body {
   flex-shrink: 0;
   stroke: var(--acc);
   transition: stroke 0.4s;
+}
+.ui-link > span:last-child {
+  border-bottom: 1px solid var(--acc);
 }
 #cw-tog-icon {
   display: inline-flex;
