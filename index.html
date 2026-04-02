@@ -624,7 +624,7 @@
           });
           wrap.appendChild(btn);
         });
-        if(location.hostname!=='clumeral.com'){
+        if(!['clumeral.com','staging-clumeral-game.jevawin.workers.dev'].includes(location.hostname)){
           const dev=document.getElementById('tmp-dev');
           dev.style.display='flex';
           const mkLink=(label,fn)=>{
