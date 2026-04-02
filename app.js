@@ -466,8 +466,6 @@ function handleGuess() {
     if (digitsEl) digitsEl.classList.add("digit-correct");
     const submitWrap = document.getElementById("cw-submit-wrap");
     if (submitWrap) submitWrap.classList.remove("visible");
-    const saveEl = document.getElementById("cw-save");
-    if (saveEl) saveEl.style.display = "flex";
     celebrateOcto();
     if (gameState.isRandom) {
       const ragain = document.getElementById("cw-again");
