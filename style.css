@@ -8,19 +8,19 @@
   color-scheme: light dark;
 
   /* ── Accent (theme-aware for WCAG AA contrast) ── */
-  --acc: light-dark(#bc3c2c, #ff8070);
-  --acc-btn: #bc3c2c;
-  --tag-bg: light-dark(rgba(188, 60, 44, 0.08), rgba(255, 128, 112, 0.1));
-  --md-lit-bg: light-dark(rgba(188, 60, 44, 0.10), rgba(255, 128, 112, 0.12));
-  --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(188, 60, 44, 0.3);
+  --acc: light-dark(#de1f46, #ff8090);
+  --acc-btn: #de1f46;
+  --tag-bg: light-dark(rgba(222, 31, 70, 0.08), rgba(255, 128, 144, 0.1));
+  --md-lit-bg: light-dark(rgba(222, 31, 70, 0.1), rgba(255, 128, 144, 0.12));
+  --dig-sh-act: 0.1875rem 0.1875rem 0 rgba(222, 31, 70, 0.3);
 
   /* ── Theme-sensitive ── */
-  --bg: light-dark(#f5edd8, #262624);
+  --bg: light-dark(#f7f3ec, #262624);
   --sh1: light-dark(#e8a87c, #ff6d5a);
   --sh2: light-dark(#c0543a, #c0543a);
   --text: light-dark(#262624, #f6f0e8);
-  --muted: light-dark(rgba(38, 38, 36, 0.70), rgba(246, 240, 232, 0.6));
-  --card-bg: light-dark(#f6f0e8, #2e2e2c);
+  --muted: light-dark(rgba(38, 38, 36, 0.7), rgba(246, 240, 232, 0.6));
+  --card-bg: light-dark(#faf8f4, #2e2e2c);
   --card-sh: light-dark(0.25rem 0.25rem 0 rgba(38, 38, 36, 0.12), 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.3));
   --surface: light-dark(#ffffff, #363634);
   --border: light-dark(rgba(38, 38, 36, 0.12), rgba(246, 240, 232, 0.1));
@@ -174,13 +174,27 @@ body {
   animation: octo-fly 4.5s cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
 @keyframes octo-fly {
-  0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
-  12%  { transform: translate(40vw, 28vh) scale(1.9) rotate(25deg); }
-  30%  { transform: translate(62vw, 12vh) scale(1.4) rotate(-20deg); }
-  50%  { transform: translate(22vw, 52vh) scale(2.1) rotate(30deg); }
-  68%  { transform: translate(58vw, 42vh) scale(1.6) rotate(-15deg); }
-  85%  { transform: translate(12vw, 8vh) scale(1.3) rotate(10deg); }
-  100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  12% {
+    transform: translate(40vw, 28vh) scale(1.9) rotate(25deg);
+  }
+  30% {
+    transform: translate(62vw, 12vh) scale(1.4) rotate(-20deg);
+  }
+  50% {
+    transform: translate(22vw, 52vh) scale(2.1) rotate(30deg);
+  }
+  68% {
+    transform: translate(58vw, 42vh) scale(1.6) rotate(-15deg);
+  }
+  85% {
+    transform: translate(12vw, 8vh) scale(1.3) rotate(10deg);
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
 }
 #octo-placeholder {
   flex-shrink: 0;
@@ -254,45 +268,21 @@ body {
   gap: 1rem;
 }
 .cw-clue {
-  display: grid;
-  grid-template-columns: 4.5rem 1fr;
-  gap: 0 0.8rem;
-}
-.cw-tag-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 0.5rem;
-  align-self: stretch;
-  padding: 0.1875rem 0;
-}
-.cw-tag {
-  font-family: "Inconsolata", monospace;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  height: 1.375rem;
-  line-height: 1.375rem;
-  border-radius: 0.125rem;
-  border: 1.5px solid;
-  padding: 0 0.25rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background-color: var(--tag-bg);
-  color: var(--text);
-  border-color: var(--acc);
-  transition:
-    background-color 0.4s,
-    color 0.4s,
-    border-color 0.4s;
+  gap: 0.8rem;
+}
+.cw-tag-cell {
+  display: none;
+}
+.cw-tag {
+  display: none;
 }
 .mini-digits {
   display: flex;
-  justify-content: space-between;
-  width: 4.5rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 .md {
   width: 1.375rem;
@@ -305,18 +295,20 @@ body {
     background-color 0.4s;
 }
 .md.lit {
-  border-color: var(--acc);
-  background-color: var(--md-lit-bg);
+  border-color: var(--acc-btn);
+  background-color: var(--acc-btn);
 }
 .md:not(.lit) {
-  border-color: var(--border);
-  background-color: var(--surface);
+  border-color: var(--acc);
+  background-color: color-mix(in srgb, var(--acc) 20%, transparent);
 }
 .cw-lines {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   justify-content: center;
+  flex: 1;
+  min-width: 0;
 }
 .cw-l1 {
   font-size: 1rem;

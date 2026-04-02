@@ -152,14 +152,11 @@ function renderClues(clues) {
     clueEl.className = "cw-clue";
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
-      <div class="cw-tag-cell">
-        <span class="cw-tag">${tag}</span>
-        <div class="mini-digits" aria-hidden="true">${miniDigitsHtml}</div>
-      </div>
       <div class="cw-lines">
         <div class="cw-l1"></div>
         <div class="cw-l2"></div>
       </div>
+      <div class="mini-digits" aria-hidden="true">${miniDigitsHtml}</div>
     `;
     clueEl.querySelector(".cw-l1").textContent = l1Text;
     if (l2Html) {

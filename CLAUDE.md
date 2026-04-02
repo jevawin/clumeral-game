@@ -124,8 +124,8 @@ python3 -m http.server 8080
 
 **`main` is protected — never commit or push to it directly.** Not on GitHub, not locally.
 
-- **Public-facing changes** (features, bug fixes, UI work): create `issue/NUM` branch from `dev` → build there → merge into `dev` → PR from `dev` to `main`
-- **Non-public-facing changes** (cleanup, config, docs): commit directly to `dev` → PR from `dev` to `main`
+- **Work linked to a GitHub issue**: commit directly to `dev` unless Jamie specifically asks for an `issue/NUM` branch
+- **Work not linked to an issue**: ask Jamie whether to work on `dev` or create its own branch — if Jamie says `dev`, commit there directly
 - **PRs can batch multiple issues**: merge several issue branches into `dev`, then one PR covers them all
 
 ### Harness branch workaround
