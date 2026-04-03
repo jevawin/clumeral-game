@@ -816,7 +816,7 @@
     transition: color 0.4s;
   }
 
-  #cw-next-number {
+  [data-next-number] {
     font-family: "Inconsolata", monospace;
     font-weight: 700;
     color: var(--text);
@@ -1019,7 +1019,7 @@
   /* ═══════════════════════════════════════
      How-to-play modal
      ═══════════════════════════════════════ */
-  #cw-modal {
+  [data-modal] {
     display: none;
     border: none;
     background: transparent;
@@ -1107,7 +1107,7 @@
       transform 0.25s;
   }
 
-  #cw-modal.open .modal__box {
+  [data-modal].open .modal__box {
     transform: translateY(0);
   }
 
@@ -1275,7 +1275,7 @@
   /* ═══════════════════════════════════════
      Feedback modal
      ═══════════════════════════════════════ */
-  #cw-fb-modal {
+  [data-fb-modal] {
     display: none;
     border: none;
     background: transparent;
@@ -1343,7 +1343,7 @@
       transform 0.25s;
   }
 
-  #cw-fb-modal.open .fb-modal__box {
+  [data-fb-modal].open .fb-modal__box {
     transform: translateY(0);
   }
 
@@ -1370,7 +1370,7 @@
   }
 
   /* ── Category pills ── */
-  #cw-fb-cats {
+  [data-fb-cats] {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -1400,7 +1400,7 @@
   }
 
   /* ── Textarea ── */
-  #cw-fb-msg {
+  [data-fb-msg] {
     display: block;
     inline-size: 100%;
     min-block-size: 6rem;

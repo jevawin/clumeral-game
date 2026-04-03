@@ -26,3 +26,4 @@ node_modules/
 *.log
 npm-debug.log*
 .wrangler/
+.vite/

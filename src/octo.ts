@@ -4,20 +4,20 @@
 
 // ─── DOM references ─────────────────────────────────────────────────────────
 
-const octoEl     = document.getElementById('octo');
-const octoWrapEl = document.getElementById('octo-wrap');
+const octoEl     = document.querySelector('[data-octo]') as HTMLElement | null;
+const octoWrapEl = document.querySelector('[data-octo-wrap]') as HTMLElement | null;
 const tlts       = [...document.querySelectorAll('.tlt')] as HTMLElement[];
 
 // ── Eye / mouth elements ──
-const eyeLR   = document.getElementById('eyeL-r');
-const eyeRR   = document.getElementById('eyeR-r');
-const eyeLS   = document.getElementById('eyeL-s');
-const eyeRS   = document.getElementById('eyeR-s');
-const eyeLX   = document.getElementById('eyeL-x');
-const eyeRX   = document.getElementById('eyeR-x');
-const mouthH  = document.getElementById('mouth-h');
-const mouthS  = document.getElementById('mouth-s');
-const mouthSad = document.getElementById('mouth-sad');
+const eyeLR   = document.querySelector('[data-eye="l-round"]') as HTMLElement | null;
+const eyeRR   = document.querySelector('[data-eye="r-round"]') as HTMLElement | null;
+const eyeLS   = document.querySelector('[data-eye="l-squint"]') as HTMLElement | null;
+const eyeRS   = document.querySelector('[data-eye="r-squint"]') as HTMLElement | null;
+const eyeLX   = document.querySelector('[data-eye="l-x"]') as HTMLElement | null;
+const eyeRX   = document.querySelector('[data-eye="r-x"]') as HTMLElement | null;
+const mouthH  = document.querySelector('[data-mouth="happy"]') as HTMLElement | null;
+const mouthS  = document.querySelector('[data-mouth="squint"]') as HTMLElement | null;
+const mouthSad = document.querySelector('[data-mouth="sad"]') as HTMLElement | null;
 
 // ─── Module state ───────────────────────────────────────────────────────────
 
@@ -252,7 +252,7 @@ export function celebrateOcto(): void {
   octoWrapEl.style.top = '50%';
   octoWrapEl.style.margin = '0';
 
-  const ph = document.getElementById('octo-placeholder');
+  const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
   if (ph) ph.classList.remove('hidden');
 
   octoEl.classList.add('celebrate');
@@ -282,10 +282,10 @@ export function celebrateOcto(): void {
         octoWrapEl.style.transition = '';
         octoWrapEl.style.opacity = '1';
 
-        const ph = document.getElementById('octo-placeholder');
+        const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
         if (ph) ph.classList.add('hidden');
 
-        const digitsEl = document.getElementById('cw-digits');
+        const digitsEl = document.querySelector('[data-digits]') as HTMLElement | null;
         if (digitsEl) digitsEl.classList.add('hidden');
 
         document.body.style.overflow = '';
