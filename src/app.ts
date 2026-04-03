@@ -7,6 +7,7 @@ import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
 import { initTheme } from './theme.ts';
 import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
+import { initColours } from './colours.ts';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -546,6 +547,7 @@ document.addEventListener("keydown", (e) => {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
+initColours();
 initTheme();
 const openModal = initModal();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);

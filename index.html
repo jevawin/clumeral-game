@@ -437,7 +437,7 @@
         </div>
 
         <footer class="footer">
-          <div id="tmp-swatches" style="display:flex;gap:0.4rem;width:100%;"></div>
+          <div class="swatch-list" data-swatches></div>
           <div class="footer__links" data-foot-links>
             <button data-htp-btn class="ui-link">
               <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
@@ -470,81 +470,13 @@
             </span>
             and Dave
           </div>
-          <div id="tmp-dev" style="display:none;justify-content:center;gap:1.25rem;width:100%;"></div>
+          <div class="dev-links hidden" data-dev-links></div>
         </footer>
       </main>
 
       <div id="cw-toast" class="toast" data-toast aria-live="polite"></div>
     </div>
 
-    <script>
-      (function(){
-        const themes = [
-          {name:'Berry',light:'#de1f46',dark:'#ea6c85'},
-          {name:'Blue',light:'#376ddb',dark:'#6393f2'},
-          {name:'Lime',light:'#0a850a',dark:'#1ead52'},
-          {name:'Violet',light:'#9a44ea',dark:'#b679f0'},
-        ];
-
-        function getMode(){
-          const cl=document.documentElement.classList;
-          if(cl.contains('dark'))return'dark';
-          if(cl.contains('light'))return'light';
-          return window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
-        }
-
-        window._swapIcons=function(colourName){
-          const mode=getMode();
-          const dir='icons/'+colourName.toLowerCase()+'/'+mode+'/';
-          const ati=document.querySelector('link[rel="apple-touch-icon"]');
-          if(ati)ati.href=dir+'apple-touch-icon.png';
-          const ico=document.querySelector('link[rel="icon"]');
-          if(ico){ico.type='image/png';ico.href=dir+'icon-192.png';}
-        };
-
-        function applyTheme(t){
-          const r=document.documentElement.style;
-          r.setProperty('--acc',`light-dark(${t.light},${t.dark})`);
-          r.setProperty('--acc-btn',t.light);
-          r.setProperty('--tag-bg',`light-dark(${t.light}14,${t.dark}1a)`);
-          r.setProperty('--md-lit-bg',`light-dark(${t.light}1a,${t.dark}1f)`);
-          r.setProperty('--dig-sh-act',`0.1875rem 0.1875rem 0 ${t.light}4d`);
-          window._currentColour=t.name;
-          window._swapIcons(t.name);
-        }
-
-        const saved=localStorage.getItem('dlng_colour');
-        const active=saved?themes.find(x=>x.name===saved):themes.find(x=>x.name==='Lime');
-        if(active)applyTheme(active);
-
-        const wrap=document.getElementById('tmp-swatches');
-        themes.forEach(t=>{
-          const btn=document.createElement('button');
-          btn.type='button';
-          btn.setAttribute('aria-label','Set accent colour to '+t.name);
-          btn.style.cssText='display:flex;align-items:center;gap:0.3rem;padding:0.3rem 0.5rem;border:1.5px solid var(--border);border-radius:0.25rem;background:var(--card-bg);cursor:pointer;flex:1;';
-          btn.innerHTML=`<div style="width:1.25rem;height:1.25rem;background:light-dark(${t.light},${t.dark});border-radius:0.2rem;flex-shrink:0;" aria-hidden="true"></div><span style="color:light-dark(${t.light},${t.dark});font-weight:700;font-size:0.8rem;">${t.name}</span>`;
-          btn.addEventListener('click',()=>{
-            applyTheme(t);
-            localStorage.setItem('dlng_colour',t.name);
-          });
-          wrap.appendChild(btn);
-        });
-        if(!['clumeral.com','staging-clumeral-game.jevawin.workers.dev'].includes(location.hostname)){
-          const dev=document.getElementById('tmp-dev');
-          dev.style.display='flex';
-          const mkLink=(label,fn)=>{
-            const a=document.createElement('button');
-            a.type='button';a.textContent=label;
-            a.style.cssText='background:none;border:none;border-bottom:1px solid var(--muted);color:var(--muted);font-size:1rem;padding:0;cursor:pointer;';
-            a.addEventListener('click',fn);
-            dev.appendChild(a);
-          };
-          mkLink('Reset state',()=>{localStorage.clear();location.reload();});
-          mkLink('Fill answer',()=>{if(window._devFillAnswer)window._devFillAnswer();});
-        }
-      })();
-    </script>
     <script type="module" src="/src/app.ts"></script>
   </body>
 </html>
