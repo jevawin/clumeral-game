@@ -8,7 +8,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite build && vite preview --host",
-    "deploy": "echo '❌ Do not deploy directly. Push to main and let CI deploy.' && exit 1"
+    "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
   },
   "repository": {
     "type": "git",

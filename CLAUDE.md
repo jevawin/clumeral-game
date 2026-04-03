@@ -156,7 +156,7 @@ The orphan `claude/*` branch and any leftover remote work branches can't be dele
 
 ### Deployment safety
 
-**NEVER run `wrangler deploy`, `npx wrangler deploy`, or any direct Cloudflare deployment command.** Deployment happens automatically when code is merged to `main`. The `npm run deploy` script is deliberately blocked as a safeguard. Use `npm run preview` for local testing.
+**NEVER run `wrangler deploy` or `npm run deploy` directly.** Deployment happens automatically via Cloudflare's Git integration when code is merged to `main`. Use `npm run preview` for local testing.
 
 ### Review flow
 
