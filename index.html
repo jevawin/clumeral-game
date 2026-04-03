@@ -40,15 +40,15 @@
   </head>
   <body>
     <a href="#cw-card" class="skip-link">Skip to puzzle</a>
-    <div id="cw">
-      <canvas id="cw-canvas" data-canvas aria-hidden="true"></canvas>
-      <div id="cw-shape" aria-hidden="true"></div>
-      <div id="cw-shape2" aria-hidden="true"></div>
+    <div id="cw" class="game">
+      <canvas id="cw-canvas" class="game__canvas" data-canvas aria-hidden="true"></canvas>
+      <div id="cw-shape" class="game__shape" aria-hidden="true"></div>
+      <div id="cw-shape2" class="game__shape game__shape--alt" aria-hidden="true"></div>
 
       <!-- ── Feedback modal ── -->
       <dialog id="cw-fb-modal" data-fb-modal aria-labelledby="cw-fb-modal-title">
-        <div id="cw-fb-modal-box" data-fb-modal-box>
-          <button id="cw-fb-modal-close" data-fb-modal-close aria-label="Close">✕</button>
+        <div id="cw-fb-modal-box" class="fb-modal__box" data-fb-modal-box>
+          <button id="cw-fb-modal-close" class="fb-modal__close" data-fb-modal-close aria-label="Close">✕</button>
           <h2 id="cw-fb-modal-title">Send feedback</h2>
           <p class="modal-sub">Let us know what you think.</p>
 
@@ -66,14 +66,14 @@
           <p class="fb-meta-label">This info will be sent with your feedback:</p>
           <div id="cw-fb-meta" data-fb-meta class="fb-meta"></div>
 
-          <button id="cw-fb-send" data-fb-send>Send feedback</button>
+          <button id="cw-fb-send" class="fb-modal__send" data-fb-send>Send feedback</button>
         </div>
       </dialog>
 
       <!-- ── How to play modal ── -->
       <dialog id="cw-modal" data-modal aria-labelledby="cw-modal-title">
-        <div id="cw-modal-box" data-modal-box>
-          <button id="cw-modal-close" data-modal-close aria-label="Close">✕</button>
+        <div id="cw-modal-box" class="modal__box" data-modal-box>
+          <button id="cw-modal-close" class="modal__close" data-modal-close aria-label="Close">✕</button>
           <h2 id="cw-modal-title">How to Play</h2>
           <p class="modal-sub">Work out the 3-digit number using the maths clues.</p>
           <div class="modal-example">
@@ -117,7 +117,7 @@
                 <strong>remove them</strong>
                 as possibilities.
               </p>
-              <div id="demo-keypad">
+              <div id="demo-keypad" class="demo-keypad">
                 <button class="kbtn">0</button>
                 <button class="kbtn elim">1</button>
                 <button class="kbtn">2</button>
@@ -139,14 +139,14 @@
               </p>
             </div>
           </div>
-          <button id="cw-modal-gotit" data-modal-gotit>Got it</button>
+          <button id="cw-modal-gotit" class="modal__gotit" data-modal-gotit>Got it</button>
         </div>
       </dialog>
 
-      <main id="cw-inner">
+      <main id="cw-inner" class="game__inner">
         <!-- ── Header row: octo + title ── -->
-        <header id="cw-header">
-          <div id="octo-wrap" data-octo-wrap title="click to replay" aria-hidden="true">
+        <header id="cw-header" class="header">
+          <div id="octo-wrap" class="octo" data-octo-wrap title="click to replay" aria-hidden="true">
             <svg id="octo" data-octo width="53" height="52" viewBox="0 0 53 52" fill="none" xmlns="http://www.w3.org/2000/svg">
               <mask id="octo-mask" fill="white">
                 <path
@@ -191,9 +191,9 @@
               </g>
             </svg>
           </div>
-          <div id="octo-placeholder" data-octo-placeholder></div>
+          <div id="octo-placeholder" class="octo__placeholder" data-octo-placeholder></div>
           <!-- ── Title ── -->
-          <h1 id="cw-title">
+          <h1 id="cw-title" class="title">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 218 43" fill="currentColor" aria-label="Clumeral">
               <!-- C -->
               <g class="tlt">
@@ -279,13 +279,13 @@
           </h1>
         </header>
 
-        <p id="cw-sub">
+        <p id="cw-sub" class="subtitle">
           Work out the number from 100–999.
           <br />
           New puzzle every day.
         </p>
 
-        <p id="cw-fb-header">
+        <p id="cw-fb-header" class="fb-header">
           <button id="cw-fb-btn-header" data-fb-header-btn class="fb-header-link">
             <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
             It's new! Please give feedback
@@ -293,50 +293,50 @@
         </p>
 
         <!-- ── Puzzle card ── -->
-        <div id="cw-card">
-          <div id="cw-plabel" data-plabel>Puzzle #7 · 14 March 2026</div>
+        <div id="cw-card" class="card">
+          <div id="cw-plabel" class="card__label" data-plabel>Puzzle #7 · 14 March 2026</div>
 
-          <div class="cw-clue-container" role="list" aria-label="Puzzle clues">
-            <div class="cw-clue" role="listitem">
+          <div class="clue-list" role="list" aria-label="Puzzle clues">
+            <div class="clue" role="listitem">
               <div class="cw-tag-cell">
-                <span class="cw-tag">CUBE</span>
-                <div class="mini-digits" aria-hidden="true">
-                  <div class="md"></div>
-                  <div class="md"></div>
-                  <div class="md lit"></div>
+                <span class="clue__tag">CUBE</span>
+                <div class="clue__digits" aria-hidden="true">
+                  <div class="clue__digit"></div>
+                  <div class="clue__digit"></div>
+                  <div class="clue__digit lit"></div>
                 </div>
               </div>
-              <div class="cw-lines">
+              <div class="clue__lines">
                 <div class="cw-l1">The third digit is</div>
                 <div class="cw-l2">a cube number</div>
               </div>
             </div>
 
-            <div class="cw-clue" role="listitem">
+            <div class="clue" role="listitem">
               <div class="cw-tag-cell">
-                <span class="cw-tag">RANGE</span>
-                <div class="mini-digits" aria-hidden="true">
-                  <div class="md lit"></div>
-                  <div class="md lit"></div>
-                  <div class="md lit"></div>
+                <span class="clue__tag">RANGE</span>
+                <div class="clue__digits" aria-hidden="true">
+                  <div class="clue__digit lit"></div>
+                  <div class="clue__digit lit"></div>
+                  <div class="clue__digit lit"></div>
                 </div>
               </div>
-              <div class="cw-lines">
+              <div class="clue__lines">
                 <div class="cw-l1">The range of all three digits is</div>
                 <div class="cw-l2">= 5</div>
               </div>
             </div>
 
-            <div class="cw-clue" role="listitem">
+            <div class="clue" role="listitem">
               <div class="cw-tag-cell">
-                <span class="cw-tag">MEAN</span>
-                <div class="mini-digits" aria-hidden="true">
-                  <div class="md lit"></div>
-                  <div class="md lit"></div>
-                  <div class="md lit"></div>
+                <span class="clue__tag">MEAN</span>
+                <div class="clue__digits" aria-hidden="true">
+                  <div class="clue__digit lit"></div>
+                  <div class="clue__digit lit"></div>
+                  <div class="clue__digit lit"></div>
                 </div>
               </div>
-              <div class="cw-lines">
+              <div class="clue__lines">
                 <div class="cw-l1">The mean of all three digits is</div>
                 <div class="cw-l2">
                   ≠ 2.
@@ -348,31 +348,31 @@
               </div>
             </div>
 
-            <div class="cw-clue" role="listitem">
+            <div class="clue" role="listitem">
               <div class="cw-tag-cell">
-                <span class="cw-tag">SUM</span>
-                <div class="mini-digits" aria-hidden="true">
-                  <div class="md lit"></div>
-                  <div class="md"></div>
-                  <div class="md lit"></div>
+                <span class="clue__tag">SUM</span>
+                <div class="clue__digits" aria-hidden="true">
+                  <div class="clue__digit lit"></div>
+                  <div class="clue__digit"></div>
+                  <div class="clue__digit lit"></div>
                 </div>
               </div>
-              <div class="cw-lines">
+              <div class="clue__lines">
                 <div class="cw-l1">The sum of the 1st and 3rd digits is</div>
                 <div class="cw-l2">≤ 2</div>
               </div>
             </div>
 
-            <div class="cw-clue" role="listitem">
+            <div class="clue" role="listitem">
               <div class="cw-tag-cell">
-                <span class="cw-tag">PROD</span>
-                <div class="mini-digits" aria-hidden="true">
-                  <div class="md"></div>
-                  <div class="md lit"></div>
-                  <div class="md lit"></div>
+                <span class="clue__tag">PROD</span>
+                <div class="clue__digits" aria-hidden="true">
+                  <div class="clue__digit"></div>
+                  <div class="clue__digit lit"></div>
+                  <div class="clue__digit lit"></div>
                 </div>
               </div>
-              <div class="cw-lines">
+              <div class="clue__lines">
                 <div class="cw-l1">The product of the 2nd and 3rd digits is</div>
                 <div class="cw-l2">≤ 0</div>
               </div>
@@ -381,27 +381,27 @@
           <!-- /.cw-clue-container -->
 
           <!-- ── Hint ── -->
-          <div id="cw-hint" data-hint aria-live="polite">Tap a box to eliminate possible numbers.</div>
+          <div id="cw-hint" class="card__hint" data-hint aria-live="polite">Tap a box to eliminate possible numbers.</div>
 
           <!-- ── Digit boxes ── -->
-          <div id="cw-digits" data-digits role="group" aria-label="Digit entry boxes">
+          <div id="cw-digits" class="digits" data-digits role="group" aria-label="Digit entry boxes">
             <div class="digit-box" id="d0" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit"></div>
             <div class="digit-box" id="d1" data-digit="1" role="button" tabindex="0" aria-label="Tens digit"></div>
             <div class="digit-box" id="d2" data-digit="2" role="button" tabindex="0" aria-label="Units digit"></div>
           </div>
 
           <!-- ── Keypad ── -->
-          <div id="cw-keypad-wrap" data-keypad-wrap>
-            <div id="cw-keypad" data-keypad></div>
+          <div id="cw-keypad-wrap" class="keypad" data-keypad-wrap>
+            <div id="cw-keypad" class="keypad__grid" data-keypad></div>
           </div>
 
           <!-- ── Submit ── -->
-          <div id="cw-submit-wrap" data-submit-wrap>
-            <button id="cw-submit" data-submit>Submit</button>
+          <div id="cw-submit-wrap" class="submit" data-submit-wrap>
+            <button id="cw-submit" class="submit__btn" data-submit>Submit</button>
           </div>
 
           <!-- ── Save row ── -->
-          <div id="cw-save" data-save>
+          <div id="cw-save" class="save" data-save>
             <input type="checkbox" checked id="cw-ck" data-save-check />
             <label for="cw-ck">
               <svg class="check-icon ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
@@ -413,33 +413,33 @@
           </div>
 
           <!-- ── Feedback ── -->
-          <p id="cw-feedback" data-feedback class="hidden" aria-live="assertive"></p>
+          <p id="cw-feedback" data-feedback class="feedback hidden" aria-live="assertive"></p>
 
           <!-- ── Guess history ── -->
-          <div id="cw-history" data-history class="hidden">
-            <p id="cw-history-label">Your guesses</p>
-            <ul id="cw-history-list" data-history-list></ul>
+          <div id="cw-history" data-history class="history hidden">
+            <p id="cw-history-label" class="history__label">Your guesses</p>
+            <ul id="cw-history-list" class="history__list" data-history-list></ul>
           </div>
 
           <!-- ── Stats ── -->
-          <div id="cw-stats" data-stats class="hidden"></div>
+          <div id="cw-stats" data-stats class="stats hidden"></div>
 
           <!-- ── Next puzzle ── -->
-          <p id="cw-next" data-next class="hidden">
+          <p id="cw-next" data-next class="next-puzzle hidden">
             Puzzle <span id="cw-next-number" data-next-number></span> is available tomorrow.
           </p>
 
           <!-- ── Random again ── -->
-          <p id="cw-again" data-again class="hidden">
+          <p id="cw-again" data-again class="play-again hidden">
             <a href="/random" id="cw-again-link">Play another random puzzle</a>
           </p>
 
         </div>
 
-        <footer id="cw-foot">
+        <footer id="cw-foot" class="footer">
           <!-- TEMP: colour swatches -->
           <div id="tmp-swatches" style="display:flex;gap:0.4rem;width:100%;"></div>
-          <div id="cw-foot-links" data-foot-links>
+          <div id="cw-foot-links" class="footer__links" data-foot-links>
             <button id="cw-htp-btn" data-htp-btn class="ui-link">
               <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
               <span>How to play</span>
@@ -449,14 +449,14 @@
               <span>Feedback</span>
             </button>
             <button id="cw-tog" data-theme-toggle class="ui-link">
-              <span id="cw-tog-icon" data-theme-icon aria-hidden="true">
+              <span id="cw-tog-icon" class="theme-icon" data-theme-icon aria-hidden="true">
                 <svg class="icon-moon" width="24" height="24"><use href="/sprites.svg#icon-moon"/></svg>
                 <svg class="icon-sun" width="24" height="24"><use href="/sprites.svg#icon-sun"/></svg>
               </span>
               <span id="cw-tog-label" data-theme-label>Dark</span>
             </button>
           </div>
-          <div id="cw-foot-body" data-foot-body>
+          <div id="cw-foot-body" class="footer__body" data-foot-body>
             An experiment in AI-coding with Claude • Hosted on
             <span class="foot-icon-link">
               <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-github"/></svg>
@@ -475,7 +475,7 @@
         </footer>
       </main>
 
-      <div id="cw-toast" data-toast aria-live="polite"></div>
+      <div id="cw-toast" class="toast" data-toast aria-live="polite"></div>
     </div>
 
     <!-- TEMP: colour swatches (elements are inside #cw-foot) -->
