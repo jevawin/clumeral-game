@@ -177,6 +177,33 @@ Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → a
 
 - `/add-to-roadmap` — when the user says "add to roadmap" or similar, invoke this skill to create a structured GitHub issue labelled `roadmap`, assigned to `jevawin`
 
+## Process Directives
+
+### Session management
+
+- **Hand off after 3 PRs** or when context compression is detected (responses get vaguer, repeat themselves, miss things)
+- **Handoff summary**: update `PROGRESS.md` with what was completed, what's next, decisions made, blockers, and current branch state
+- `PROGRESS.md` is the living document — the next session reads it to pick up where the last left off
+
+### Review gates
+
+For non-trivial changes (new features, changed logic, refactored modules), run the full review gate before creating a PR. Trivial changes (typos, formatting, config tweaks) can skip DA but should still get a self-review pass.
+
+**Review order matters — never skip or reorder:**
+
+1. **DA Review** — spin up a subagent in fresh context to review all changed files. Follow `docs/DA-REVIEW.md` checklist item by item. Medium+ findings must be fixed before proceeding.
+2. **Self-Review** — read every changed file (`git diff staging...HEAD`) and run through `docs/SELF-REVIEW.md`. Catches line-level accuracy issues the DA misses.
+3. **Create PR** — only after both reviews pass.
+
+### Living checklists
+
+`docs/DA-REVIEW.md` and `docs/SELF-REVIEW.md` are living documents. When a review (or Jamie) catches something the checklist should have spotted, add the specific check immediately.
+
+### Context management
+
+- Use subagents for exploration and DA reviews (protect main context window)
+- DA reviews must run in fresh context — the agent that wrote the code should not be the same context that reviews it
+
 ## Testing notes
 
 - **Safari tab navigation**: Safari requires **Option+Tab** to tab through all interactive elements (buttons, links, inputs). If Jamie reports "tabbing is broken", remind him to check Option+Tab before investigating.
