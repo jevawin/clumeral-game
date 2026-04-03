@@ -48,7 +48,7 @@ export function maybeAutoShowModal(openModal: (() => void) | null): void {
 // ─── Toast ──────────────────────────────────────────────────────────────────
 
 export function showToast(message: string, duration: number = 3000): void {
-  const container = document.getElementById("cw-toast");
+  const container = document.querySelector('[data-toast]') as HTMLElement | null;
   if (!container) return;
   const el = document.createElement("div");
   el.className = "toast__msg";
