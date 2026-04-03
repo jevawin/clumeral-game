@@ -120,13 +120,13 @@ function digitPositions(propKey) {
 }
 
 function renderClues(clues) {
-  const container = document.querySelector(".cw-clue-container");
+  const container = document.querySelector(".clue-list");
   if (!container) return;
   container.innerHTML = "";
   for (const { propKey, label, operator, value } of clues) {
     const tag = getClueTag(propKey);
     const lit = digitPositions(propKey);
-    const miniDigitsHtml = lit.map((on) => `<div class="md${on ? " lit" : ""}"></div>`).join("");
+    const miniDigitsHtml = lit.map((on) => `<div class="clue__digit${on ? " lit" : ""}"></div>`).join("");
 
     let l1Text, l2Text, l2Html;
     if (typeof value === "boolean") {
@@ -148,14 +148,14 @@ function renderClues(clues) {
     }
 
     const clueEl = document.createElement("div");
-    clueEl.className = "cw-clue";
+    clueEl.className = "clue";
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="cw-tag-cell">
-        <span class="cw-tag">${tag}</span>
-        <div class="mini-digits" aria-hidden="true">${miniDigitsHtml}</div>
+        <span class="clue__tag">${tag}</span>
+        <div class="clue__digits" aria-hidden="true">${miniDigitsHtml}</div>
       </div>
-      <div class="cw-lines">
+      <div class="clue__lines">
         <div class="cw-l1"></div>
         <div class="cw-l2"></div>
       </div>
@@ -176,18 +176,18 @@ function renderFeedback(type, answer) {
   const hint = document.getElementById("cw-hint");
   const fb = document.getElementById("cw-feedback");
   if (type === "correct") {
-    if (hint) hint.style.display = "none";
+    if (hint) hint.classList.add("hidden");
     if (fb) {
       fb.textContent = `Congratulations! ${answer} is the correct answer.`;
-      fb.className = "cw-feedback cw-feedback--correct";
-      fb.style.display = "";
+      fb.className = "feedback feedback--correct";
+      fb.classList.remove("hidden");
     }
   } else if (type === "incorrect") {
     if (hint) {
       hint.textContent = "Incorrect — try again.";
       hint.style.color = "var(--acc)";
     }
-    if (fb) fb.style.display = "none";
+    if (fb) fb.classList.add("hidden");
   } else {
     if (hint) {
       hint.textContent = "Tap a box to eliminate possible numbers.";
@@ -195,7 +195,7 @@ function renderFeedback(type, answer) {
     }
     if (fb) {
       fb.textContent = "";
-      fb.style.display = "none";
+      fb.classList.add("hidden");
     }
   }
 }
@@ -206,14 +206,14 @@ function renderHistory(guesses) {
   if (!ul || !wrap) return;
   ul.innerHTML = "";
   if (guesses.length === 0) {
-    wrap.style.display = "none";
+    wrap.classList.add("hidden");
     return;
   }
-  wrap.style.display = "";
+  wrap.classList.remove("hidden");
   for (const g of guesses) {
     const li = document.createElement("li");
     li.textContent = g;
-    li.className = "cw-history-item";
+    li.className = "history__item";
     ul.appendChild(li);
   }
 }
@@ -223,21 +223,21 @@ function renderStats() {
   if (!statsEl) return;
   const history = loadHistory();
   if (history.length === 0) {
-    statsEl.style.display = "none";
+    statsEl.classList.add("hidden");
     return;
   }
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
   statsEl.innerHTML = `
-    <p class="cw-stats-heading">Your stats</p>
-    <div class="cw-stats-grid">
-      <div class="cw-stats-item"><span class="cw-stats-val">${history.length}</span><span class="cw-stats-lbl">Played</span></div>
-      <div class="cw-stats-item"><span class="cw-stats-val">${avg}</span><span class="cw-stats-lbl">Avg tries</span></div>
+    <p class="stats__heading">Your stats</p>
+    <div class="stats__grid">
+      <div class="stats__item"><span class="stats__val">${history.length}</span><span class="stats__lbl">Played</span></div>
+      <div class="stats__item"><span class="stats__val">${avg}</span><span class="stats__lbl">Avg tries</span></div>
     </div>
-    <p class="cw-stats-last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
-    <div class="cw-stats-bubbles">${last5.map((h) => `<span class="cw-stats-bubble">${h.tries}</span>`).join("")}</div>
+    <p class="stats__last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <div class="stats__bubbles">${last5.map((h) => `<span class="stats__bubble">${h.tries}</span>`).join("")}</div>
   `;
-  statsEl.style.display = "";
+  statsEl.classList.remove("hidden");
 }
 
 // ─── Digit boxes ──────────────────────────────────────────────────────────────
@@ -248,24 +248,24 @@ function renderBox(i) {
   const s = possibles[i];
 
   if (s.size === 1) {
-    el.innerHTML = `<span class="db-resolved">${[...s][0]}</span>`;
+    el.innerHTML = `<span class="digit-box__resolved">${[...s][0]}</span>`;
   } else if (i === 0) {
     // 3×3 grid for hundreds box (digits 1–9)
     const spans = [1, 2, 3, 4, 5, 6, 7, 8, 9]
       .map((d) => `<span${s.has(d) ? "" : ' class="elim"'}>${d}</span>`)
       .join("");
-    el.innerHTML = `<div class="db-possibles">${spans}</div>`;
+    el.innerHTML = `<div class="digit-box__grid">${spans}</div>`;
   } else {
     // 4-col grid for tens/units boxes (digits 0–9); 5 and 8 span 2 cols
     const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
       .map((d) => {
         const isMid = d === 5 || d === 8;
         const isElim = !s.has(d);
-        const cls = [isMid && "dc-mid", isElim && "elim"].filter(Boolean).join(" ");
+        const cls = [isMid && "digit-box__mid", isElim && "elim"].filter(Boolean).join(" ");
         return `<span${cls ? ` class="${cls}"` : ""}>${d}</span>`;
       })
       .join("");
-    el.innerHTML = `<div class="db-possibles four-col">${spans}</div>`;
+    el.innerHTML = `<div class="digit-box__grid four-col">${spans}</div>`;
   }
 
   el.classList.toggle("active", i === activeBox);
@@ -286,7 +286,7 @@ function buildKeypad() {
   for (const d of digits) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "kbtn" + (possibles[activeBox].has(d) ? "" : " elim");
+    btn.className = "keypad__btn" + (possibles[activeBox].has(d) ? "" : " elim");
     btn.textContent = d;
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
     btn.addEventListener("click", () => toggleDigit(d));
@@ -352,7 +352,7 @@ function showNextPuzzle() {
   const nn = document.getElementById("cw-next-number");
   if (np && nn) {
     nn.textContent = gameState.puzzleNum + 1;
-    np.style.display = "";
+    np.classList.remove("hidden");
   }
 }
 
@@ -361,13 +361,13 @@ function showCompletedState(tries) {
   const fb = document.getElementById("cw-feedback");
   if (fb) {
     fb.textContent = `You already solved today's puzzle in ${t}!`;
-    fb.className = "cw-feedback cw-feedback--correct";
-    fb.style.display = "";
+    fb.className = "feedback feedback--correct";
+    fb.classList.remove("hidden");
   }
   const hintEl = document.getElementById("cw-hint");
-  if (hintEl) hintEl.style.display = "none";
+  if (hintEl) hintEl.classList.add("hidden");
   const digitsEl = document.getElementById("cw-digits");
-  if (digitsEl) digitsEl.style.display = "none";
+  if (digitsEl) digitsEl.classList.add("hidden");
   const submitWrap = document.getElementById("cw-submit-wrap");
   if (submitWrap) submitWrap.classList.remove("visible");
   renderStats();
@@ -387,19 +387,19 @@ function startRandomPuzzle(puzzleData) {
   renderHistory([]);
 
   const statsEl = document.getElementById("cw-stats");
-  if (statsEl) statsEl.style.display = "none";
+  if (statsEl) statsEl.classList.add("hidden");
   const npEl = document.getElementById("cw-next");
-  if (npEl) npEl.style.display = "none";
+  if (npEl) npEl.classList.add("hidden");
   const ragain = document.getElementById("cw-again");
-  if (ragain) ragain.style.display = "none";
+  if (ragain) ragain.classList.add("hidden");
   // No score saving for random puzzles
   const saveEl = document.getElementById("cw-save");
-  if (saveEl) saveEl.style.display = "none";
+  if (saveEl) saveEl.classList.add("hidden");
 
   const hintEl = document.getElementById("cw-hint");
-  if (hintEl) hintEl.style.display = "";
+  if (hintEl) hintEl.classList.remove("hidden");
   const digitsEl = document.getElementById("cw-digits");
-  if (digitsEl) digitsEl.style.display = "";
+  if (digitsEl) digitsEl.classList.remove("hidden");
 
   possibles = initPossibles();
   renderAllBoxes();
@@ -427,14 +427,14 @@ function startDailyPuzzle(puzzleData) {
   renderHistory([]);
 
   const statsEl = document.getElementById("cw-stats");
-  if (statsEl) statsEl.style.display = "none";
+  if (statsEl) statsEl.classList.add("hidden");
   const npEl = document.getElementById("cw-next");
-  if (npEl) npEl.style.display = "none";
+  if (npEl) npEl.classList.add("hidden");
 
   const hintEl = document.getElementById("cw-hint");
-  if (hintEl) hintEl.style.display = "";
+  if (hintEl) hintEl.classList.remove("hidden");
   const digitsEl = document.getElementById("cw-digits");
-  if (digitsEl) digitsEl.style.display = "";
+  if (digitsEl) digitsEl.classList.remove("hidden");
 
   possibles = initPossibles();
   renderAllBoxes();
@@ -468,7 +468,7 @@ function handleGuess() {
     celebrateOcto();
     if (gameState.isRandom) {
       const ragain = document.getElementById("cw-again");
-      if (ragain) ragain.style.display = "";
+      if (ragain) ragain.classList.remove("hidden");
     } else {
       if (saveScore) {
         recordGame(todayLocal(), tries);
@@ -672,10 +672,10 @@ function initFeedbackModal() {
     if (len >= 400) {
       counterEl.textContent = `${len}/500`;
       counterEl.classList.add("warn");
-      counterEl.style.display = "";
+      counterEl.classList.remove("hidden");
     } else {
       counterEl.textContent = "";
-      counterEl.style.display = "none";
+      counterEl.classList.add("hidden");
       counterEl.classList.remove("warn");
     }
   }
@@ -1107,7 +1107,7 @@ function celebrateOcto() {
   octoWrapEl.style.margin = '0';
 
   const ph = document.getElementById('octo-placeholder');
-  if (ph) ph.style.display = '';
+  if (ph) ph.classList.remove('hidden');
 
   octoEl.classList.add('celebrate');
   octoWrapEl.classList.add('celebrating');
@@ -1134,10 +1134,10 @@ function celebrateOcto() {
         octoWrapEl.style.opacity = '1';
 
         const ph = document.getElementById('octo-placeholder');
-        if (ph) ph.style.display = 'none';
+        if (ph) ph.classList.add('hidden');
 
         const digitsEl = document.getElementById('cw-digits');
-        if (digitsEl) digitsEl.style.display = 'none';
+        if (digitsEl) digitsEl.classList.add('hidden');
 
         document.body.style.overflow = '';
         exprMode = 'round';
