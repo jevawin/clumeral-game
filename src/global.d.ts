@@ -1,15 +1,4 @@
-interface PuzzleData {
-  date?: string;
-  puzzleNumber?: number;
-  answer: number;
-  clues: Array<{
-    propKey: string;
-    label: string;
-    operator: string;
-    value: number | boolean;
-  }>;
-  isRandom?: boolean;
-}
+import type { PuzzleData } from './types.ts';
 
 declare global {
   interface Window {

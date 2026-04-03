@@ -2,15 +2,15 @@
 // Puzzle data is injected by the Worker as window.PUZZLE_DATA.
 
 import { launchConfetti } from './confetti.ts';
+import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
+import { initTheme } from './theme.ts';
+import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
+import { celebrateOcto, sadOcto } from './octo.ts';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EPOCH_DATE = "2026-03-08";
-const STORAGE_HISTORY = "dlng_history";
-const STORAGE_PREFS = "dlng_prefs";
-const STORAGE_THEME = "dlng_theme";
 const OPERATOR_SYMBOLS = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
-const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0kv6I7xacnvDvcw_lgM_gBF6TzvPtqNvAlnxM7UJi-sjMku8bSQKw/exec";
 
 // ─── Module state ─────────────────────────────────────────────────────────────
 
@@ -48,33 +48,7 @@ function formatDate(dateStr) {
   });
 }
 
-// ─── Storage ──────────────────────────────────────────────────────────────────
-
-function loadPrefs() {
-  try {
-    return { saveScore: true, ...JSON.parse(localStorage.getItem(STORAGE_PREFS) || "{}") };
-  } catch {
-    return { saveScore: true };
-  }
-}
-
-function persistPrefs() {
-  localStorage.setItem(STORAGE_PREFS, JSON.stringify({ saveScore }));
-}
-
-function loadHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_HISTORY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-function recordGame(dateStr, tries) {
-  const history = loadHistory().filter((h) => h.date !== dateStr);
-  history.unshift({ date: dateStr, tries });
-  localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history.slice(0, 60)));
-}
+// ─── Storage helper (uses todayLocal, stays in app.ts) ───────────────────────
 
 function todayEntry() {
   const today = todayLocal();
@@ -172,7 +146,7 @@ function renderClues(clues) {
 
 // ─── Feedback / history / stats ───────────────────────────────────────────────
 
-function renderFeedback(type, answer) {
+function renderFeedback(type, answer?) {
   const hint = document.getElementById("cw-hint");
   const fb = document.getElementById("cw-feedback");
   if (type === "correct") {
@@ -374,6 +348,23 @@ function showCompletedState(tries) {
   showNextPuzzle();
 }
 
+function resetPuzzleUI() {
+  renderFeedback(null);
+  renderHistory([]);
+  const statsEl = document.getElementById("cw-stats");
+  if (statsEl) statsEl.classList.add("hidden");
+  const npEl = document.getElementById("cw-next");
+  if (npEl) npEl.classList.add("hidden");
+  const hintEl = document.getElementById("cw-hint");
+  if (hintEl) hintEl.classList.remove("hidden");
+  const digitsEl = document.getElementById("cw-digits");
+  if (digitsEl) digitsEl.classList.remove("hidden");
+  possibles = initPossibles();
+  renderAllBoxes();
+  closeKeypad();
+  checkSubmit();
+}
+
 function startRandomPuzzle(puzzleData) {
   const { answer, clues } = puzzleData;
 
@@ -383,28 +374,13 @@ function startRandomPuzzle(puzzleData) {
   renderClues(clues);
 
   gameState = { answer, guesses: [], solved: false, isRandom: true };
-  renderFeedback(null);
-  renderHistory([]);
+  resetPuzzleUI();
 
-  const statsEl = document.getElementById("cw-stats");
-  if (statsEl) statsEl.classList.add("hidden");
-  const npEl = document.getElementById("cw-next");
-  if (npEl) npEl.classList.add("hidden");
   const ragain = document.getElementById("cw-again");
   if (ragain) ragain.classList.add("hidden");
   // No score saving for random puzzles
   const saveEl = document.getElementById("cw-save");
   if (saveEl) saveEl.classList.add("hidden");
-
-  const hintEl = document.getElementById("cw-hint");
-  if (hintEl) hintEl.classList.remove("hidden");
-  const digitsEl = document.getElementById("cw-digits");
-  if (digitsEl) digitsEl.classList.remove("hidden");
-
-  possibles = initPossibles();
-  renderAllBoxes();
-  closeKeypad();
-  checkSubmit();
 }
 
 function startDailyPuzzle(puzzleData) {
@@ -423,24 +399,8 @@ function startDailyPuzzle(puzzleData) {
   }
 
   gameState = { answer, guesses: [], solved: false, puzzleNum: num };
-  renderFeedback(null);
-  renderHistory([]);
-
-  const statsEl = document.getElementById("cw-stats");
-  if (statsEl) statsEl.classList.add("hidden");
-  const npEl = document.getElementById("cw-next");
-  if (npEl) npEl.classList.add("hidden");
-
-  const hintEl = document.getElementById("cw-hint");
-  if (hintEl) hintEl.classList.remove("hidden");
-  const digitsEl = document.getElementById("cw-digits");
-  if (digitsEl) digitsEl.classList.remove("hidden");
-
-  possibles = initPossibles();
-  renderAllBoxes();
-  closeKeypad();
-  checkSubmit();
-  maybeAutoShowModal();
+  resetPuzzleUI();
+  maybeAutoShowModal(openModal);
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
@@ -491,9 +451,7 @@ function handleGuess() {
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
-async function loadPuzzle() {
-  const isRandomRoute = window.location.pathname === "/random";
-
+function loadPuzzle() {
   if (window.PUZZLE_DATA) {
     if (window.PUZZLE_DATA.isRandom) {
       startRandomPuzzle(window.PUZZLE_DATA);
@@ -501,299 +459,12 @@ async function loadPuzzle() {
       startDailyPuzzle(window.PUZZLE_DATA);
     }
   } else {
-    const { runFilterLoop, makeRng, dateSeedInt, todayLocal: tl, puzzleNumber: pn } =
-      await import("./worker/puzzle.ts");
-    if (isRandomRoute) {
-      const seed = Math.floor(Math.random() * 0xffffffff);
-      const { answer, clues } = runFilterLoop(makeRng(seed));
-      startRandomPuzzle({ answer, clues, isRandom: true });
-    } else {
-      const today = tl();
-      const { answer, clues } = runFilterLoop(makeRng(dateSeedInt(today)));
-      startDailyPuzzle({ date: today, puzzleNumber: pn(today), answer, clues });
+    const fb = document.getElementById("cw-feedback");
+    if (fb) {
+      fb.textContent = 'Puzzle data not available. Please refresh the page.';
+      fb.classList.remove('hidden');
     }
   }
-}
-
-// ─── Canvas dot-grid ──────────────────────────────────────────────────────────
-
-function drawCanvas(dark) {
-  const canvas = document.getElementById("cw-canvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const dot = dark ? "rgba(255,253,247,0.07)" : "rgba(38,38,36,0.09)";
-  const gap = 24;
-  ctx.fillStyle = dot;
-  for (let x = gap; x < canvas.width; x += gap) {
-    for (let y = gap; y < canvas.height; y += gap) {
-      ctx.beginPath();
-      ctx.arc(x, y, 1, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-// ─── Theme toggle ─────────────────────────────────────────────────────────────
-
-function initTheme() {
-  const root = document.documentElement;
-  const togBtn = document.getElementById("cw-tog");
-  const togLabel = document.getElementById("cw-tog-label");
-  if (!togBtn) return;
-
-  function applyTheme(dark) {
-    root.classList.toggle("dark", dark);
-    root.classList.toggle("light", !dark);
-    if (togLabel) togLabel.textContent = dark ? "Light" : "Dark";
-    togBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
-    drawCanvas(dark);
-    if (window._swapIcons && window._currentColour) window._swapIcons(window._currentColour);
-  }
-
-  const saved = localStorage.getItem(STORAGE_THEME);
-  const isDark = saved !== null ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(isDark);
-
-  togBtn.addEventListener("click", () => {
-    const newDark = !root.classList.contains("dark");
-    localStorage.setItem(STORAGE_THEME, newDark ? "dark" : "light");
-    applyTheme(newDark);
-  });
-
-  window.addEventListener("resize", () => drawCanvas(root.classList.contains("dark")));
-}
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
-
-let _openModal = null;
-
-function initModal() {
-  const modal = document.getElementById("cw-modal");
-  if (!modal) return;
-  const htpBtn = document.getElementById("cw-htp-btn");
-
-  function openModal() {
-    localStorage.setItem("cw-htp-seen", "1");
-    modal.showModal();
-    requestAnimationFrame(() => modal.classList.add("open"));
-  }
-
-  function closeModal() {
-    modal.classList.remove("open");
-    modal.addEventListener("transitionend", () => {
-      modal.close();
-      if (htpBtn) htpBtn.focus();
-    }, { once: true });
-  }
-
-  _openModal = openModal;
-
-  const closeBtn = document.getElementById("cw-modal-close");
-  const gotitBtn = document.getElementById("cw-modal-gotit");
-  if (htpBtn) htpBtn.addEventListener("click", openModal);
-  if (closeBtn) closeBtn.addEventListener("click", closeModal);
-  if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
-  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-  modal.addEventListener("cancel", (e) => { e.preventDefault(); closeModal(); });
-}
-
-function maybeAutoShowModal() {
-  if (localStorage.getItem("cw-htp-seen")) return;
-  if (loadHistory().length > 0) return;
-  if (!_openModal) return;
-  setTimeout(_openModal, 400);
-}
-
-// ─── Toast ───────────────────────────────────────────────────────────────────
-
-function showToast(message, duration = 3000) {
-  const container = document.getElementById("cw-toast");
-  if (!container) return;
-  const el = document.createElement("div");
-  el.className = "cw-toast-msg";
-  el.textContent = message;
-  container.appendChild(el);
-  requestAnimationFrame(() => el.classList.add("show"));
-  setTimeout(() => {
-    el.classList.remove("show");
-    el.addEventListener("transitionend", () => el.remove(), { once: true });
-  }, duration);
-}
-
-// ─── Feedback modal ──────────────────────────────────────────────────────────
-
-function initFeedbackModal() {
-  const modal = document.getElementById("cw-fb-modal");
-  if (!modal) return;
-
-  const closeBtn = document.getElementById("cw-fb-modal-close");
-  const catBtns = modal.querySelectorAll(".fb-cat");
-  const msgEl = document.getElementById("cw-fb-msg");
-  const counterEl = document.getElementById("cw-fb-counter");
-  const metaEl = document.getElementById("cw-fb-meta");
-  const sendBtn = document.getElementById("cw-fb-send");
-  const headerBtn = document.getElementById("cw-fb-btn-header");
-  const footerBtn = document.getElementById("cw-fb-btn-footer");
-
-  let selectedCat = "general";
-  let sending = false;
-
-  function openFeedback() {
-    renderMeta();
-    modal.showModal();
-    requestAnimationFrame(() => modal.classList.add("open"));
-  }
-
-  function closeFeedback() {
-    modal.classList.remove("open");
-    modal.addEventListener("transitionend", () => {
-      modal.close();
-    }, { once: true });
-  }
-
-  function resetForm() {
-    selectedCat = "general";
-    catBtns.forEach(b => {
-      const isGeneral = b.dataset.cat === "general";
-      b.classList.toggle("active", isGeneral);
-      b.setAttribute("aria-checked", String(isGeneral));
-    });
-    msgEl.value = "";
-    updateCounter();
-    sendBtn.disabled = false;
-    sending = false;
-  }
-
-  function updateCounter() {
-    const len = msgEl.value.length;
-    if (len >= 400) {
-      counterEl.textContent = `${len}/500`;
-      counterEl.classList.add("warn");
-      counterEl.classList.remove("hidden");
-    } else {
-      counterEl.textContent = "";
-      counterEl.classList.add("hidden");
-      counterEl.classList.remove("warn");
-    }
-  }
-
-  function collectMetadata() {
-    const ua = navigator.userAgent;
-    let browser = "Unknown";
-    const chromeMatch = ua.match(/Chrome\/([\d.]+)/);
-    const safariMatch = ua.match(/Version\/([\d.]+).*Safari/);
-    const firefoxMatch = ua.match(/Firefox\/([\d.]+)/);
-    const edgeMatch = ua.match(/Edg\/([\d.]+)/);
-
-    if (edgeMatch) browser = `Edge ${edgeMatch[1]}`;
-    else if (firefoxMatch) browser = `Firefox ${firefoxMatch[1]}`;
-    else if (chromeMatch) browser = `Chrome ${chromeMatch[1]}`;
-    else if (safariMatch) browser = `Safari ${safariMatch[1]}`;
-
-    let device = "Desktop";
-    if (/iPad/i.test(ua)) device = "iPad";
-    else if (/iPhone/i.test(ua)) device = "iPhone";
-    else if (/Android/i.test(ua)) device = /Mobi/i.test(ua) ? "Android Phone" : "Android Tablet";
-    else if (/Mobi/i.test(ua)) device = "Mobile";
-
-    const dateStr = todayLocal();
-    const pNum = puzzleNumber(dateStr);
-
-    return {
-      puzzleNumber: `#${pNum}`,
-      date: dateStr,
-      device,
-      browser,
-      userAgent: ua,
-    };
-  }
-
-  function renderMeta() {
-    const meta = collectMetadata();
-    metaEl.textContent = `Puzzle ${meta.puzzleNumber} · ${formatDate(meta.date)} · ${meta.device} · ${meta.browser}`;
-  }
-
-  // Category toggle
-  catBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      selectedCat = btn.dataset.cat;
-      catBtns.forEach(b => {
-        const selected = b === btn;
-        b.classList.toggle("active", selected);
-        b.setAttribute("aria-checked", String(selected));
-      });
-    });
-  });
-
-  // Char counter
-  msgEl.addEventListener("input", updateCounter);
-
-  // Open triggers
-  if (headerBtn) headerBtn.addEventListener("click", openFeedback);
-  if (footerBtn) footerBtn.addEventListener("click", openFeedback);
-
-  // Close triggers
-  closeBtn.addEventListener("click", closeFeedback);
-  modal.addEventListener("click", (e) => { if (e.target === modal) closeFeedback(); });
-  modal.addEventListener("cancel", (e) => { e.preventDefault(); closeFeedback(); });
-
-  // Submit with retry
-  async function submitFeedback() {
-    if (sending) return;
-    const message = msgEl.value.trim();
-    if (!message) return;
-
-    sending = true;
-    sendBtn.disabled = true;
-
-    const meta = collectMetadata();
-    const payload = {
-      category: selectedCat,
-      message,
-      puzzleNumber: meta.puzzleNumber,
-      date: meta.date,
-      device: meta.device,
-      browser: meta.browser,
-      userAgent: meta.userAgent,
-    };
-
-    const MAX_RETRIES = 3;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const res = await fetch(FEEDBACK_URL, {
-          method: "POST",
-          mode: "no-cors",
-          body: JSON.stringify(payload),
-        });
-        // no-cors returns opaque response; if no error thrown, it succeeded
-        if (res.ok || res.type === "opaque") {
-          closeFeedback();
-          setTimeout(resetForm, 300);
-          showToast("Thanks! Feedback sent.");
-          return;
-        }
-      } catch (err) {
-        if (attempt < MAX_RETRIES) {
-          await new Promise(r => setTimeout(r, 1000 * attempt));
-          continue;
-        }
-      }
-    }
-
-    // All retries exhausted
-    console.error("Feedback submission failed after retries", payload);
-    sending = false;
-    sendBtn.disabled = false;
-    showToast("Couldn't send feedback. Try again later.");
-  }
-
-  sendBtn.addEventListener("click", submitFeedback);
-
-  // Init counter hidden
-  updateCounter();
 }
 
 // ─── Service worker ───────────────────────────────────────────────────────────
@@ -819,7 +490,7 @@ const ckEl = document.getElementById("cw-ck");
 if (ckEl) {
   ckEl.addEventListener("change", () => {
     saveScore = ckEl.checked;
-    persistPrefs();
+    persistPrefs(saveScore);
   });
 }
 
@@ -872,341 +543,11 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// ─── Octopus animations ───────────────────────────────────────────────────────
-
-const octoEl     = document.getElementById('octo');
-const octoWrapEl = document.getElementById('octo-wrap');
-const tlts       = [...document.querySelectorAll('.tlt')];
-
-// ── Eye tracking ──
-let eyeTX = 0, eyeTY = 0, eyeX = 0, eyeY = 0;
-let exprMode = 'round';
-
-const eyeLR   = document.getElementById('eyeL-r');
-const eyeRR   = document.getElementById('eyeR-r');
-const eyeLS   = document.getElementById('eyeL-s');
-const eyeRS   = document.getElementById('eyeR-s');
-const eyeLX   = document.getElementById('eyeL-x');
-const eyeRX   = document.getElementById('eyeR-x');
-const mouthH  = document.getElementById('mouth-h');
-const mouthS  = document.getElementById('mouth-s');
-const mouthSad = document.getElementById('mouth-sad');
-
-let octoAnimating = false;
-
-document.addEventListener('mousemove', (e) => {
-  if (exprMode !== 'squint-glancing') {
-    const r  = octoEl.getBoundingClientRect();
-    const cl = (v, a, b) => Math.max(a, Math.min(b, v));
-    eyeTX = cl((e.clientX - (r.left + r.width  / 2)) / 55, -1.8,  1.8);
-    eyeTY = cl((e.clientY - (r.top  + r.height / 2)) / 55, -1.5,  1.5);
-  }
-});
-
-(function trackEyes() {
-  eyeX += (eyeTX - eyeX) * 0.12;
-  eyeY += (eyeTY - eyeY) * 0.12;
-  eyeLR.setAttribute('cx', 19 + eyeX); eyeLR.setAttribute('cy', 15 + eyeY);
-  eyeRR.setAttribute('cx', 33 + eyeX); eyeRR.setAttribute('cy', 15 + eyeY);
-  eyeLS.setAttribute('transform', `translate(${eyeX},${eyeY})`);
-  eyeRS.setAttribute('transform', `translate(${eyeX},${eyeY})`);
-  requestAnimationFrame(trackEyes);
-})();
-
-// ── Blink / wink ──
-let winkLeft = true;
-function winkEye(eye, cb) {
-  const dur = 140, s = performance.now();
-  (function f(now) {
-    const t = Math.min((now - s) / dur, 1);
-    eye.setAttribute('r', Math.max(0.1, 3 * Math.abs(Math.cos(t * Math.PI))));
-    if (t < 1) requestAnimationFrame(f);
-    else { eye.setAttribute('r', 3); if (cb) cb(); }
-  })(performance.now());
-}
-function scheduleBlink() {
-  setTimeout(() => {
-    if (exprMode !== 'round') { scheduleBlink(); return; }
-    const fi = winkLeft ? eyeLR : eyeRR;
-    const se = winkLeft ? eyeRR : eyeLR;
-    winkLeft = !winkLeft;
-    winkEye(fi, () => setTimeout(() => winkEye(se, scheduleBlink), 200));
-  }, 2200 + Math.random() * 2000);
-}
-scheduleBlink();
-
-// ── Squint-glance ──
-function fadeExpr(toSquint, dur, onDone) {
-  const s = performance.now();
-  (function f(now) {
-    const t = Math.min((now - s) / dur, 1);
-    const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    const ra = toSquint ? 1 - e : e;
-    const sa = toSquint ? e : 1 - e;
-    [eyeLR, eyeRR].forEach((el) => el.setAttribute('opacity', ra));
-    [eyeLS, eyeRS].forEach((el) => el.setAttribute('opacity', sa));
-    mouthH.setAttribute('opacity', ra);
-    mouthS.setAttribute('opacity', sa);
-    if (t < 1) requestAnimationFrame(f);
-    else {
-      [eyeLR, eyeRR].forEach((el) => el.setAttribute('opacity', toSquint ? '0' : '1'));
-      [eyeLS, eyeRS].forEach((el) => el.setAttribute('opacity', toSquint ? '1' : '0'));
-      mouthH.setAttribute('opacity', toSquint ? '0' : '1');
-      mouthS.setAttribute('opacity', toSquint ? '1' : '0');
-      if (onDone) onDone();
-    }
-  })(performance.now());
-}
-
-let squintBusy = false;
-function doSquint() {
-  if (squintBusy || exprMode !== 'round') return;
-  squintBusy = true; exprMode = 'transitioning';
-  eyeLR.setAttribute('r', '3'); eyeRR.setAttribute('r', '3');
-  fadeExpr(true, 260, () => {
-    exprMode = 'squint-glancing';
-    const glances = [{ tx: -1.5, ty: -0.6 }, { tx: 1.4, ty: -0.4 }, { tx: 0.3, ty: 0.9 }, { tx: 0, ty: 0 }];
-    let gi = 0;
-    function glance() {
-      if (gi >= glances.length) {
-        exprMode = 'transitioning';
-        eyeLS.removeAttribute('transform'); eyeRS.removeAttribute('transform');
-        fadeExpr(false, 260, () => { exprMode = 'round'; squintBusy = false; scheduleSquint(); });
-        return;
-      }
-      const g = glances[gi++];
-      const dur = 460 + Math.random() * 360;
-      const s = performance.now(), fx = eyeTX, fy = eyeTY;
-      (function mv(now) {
-        const t = Math.min((now - s) / dur, 1);
-        const e = 1 - Math.pow(1 - t, 3);
-        eyeTX = fx + (g.tx - fx) * e;
-        eyeTY = fy + (g.ty - fy) * e;
-        if (t < 1) requestAnimationFrame(mv);
-        else setTimeout(glance, 160 + Math.random() * 180);
-      })(performance.now());
-    }
-    glance();
-  });
-}
-function scheduleSquint() {
-  setTimeout(() => { if (exprMode === 'round') doSquint(); else scheduleSquint(); },
-    5000 + Math.random() * 5000);
-}
-scheduleSquint();
-
-// ── Spring bounce ──
-function springBounce(cb) {
-  const H = 56, dur = 660, s = performance.now();
-  (function f(now) {
-    const r = Math.min((now - s) / dur, 1);
-    let y = 0, sx = 1, sy = 1;
-    if (r < 0.38) {
-      const p = r / 0.38, e = 1 - Math.pow(1 - p, 3);
-      y = -e * H; sy = 1 + 0.10 * Math.sin(p * Math.PI); sx = 1 - 0.06 * Math.sin(p * Math.PI);
-    } else if (r < 0.78) {
-      const p = (r - 0.38) / 0.40;
-      y = -(1 - p * p) * H;
-    } else {
-      const p = (r - 0.78) / 0.22;
-      y = Math.exp(-13 * p) * Math.cos(Math.PI * p) * 10;
-      const sq = Math.exp(-9 * p);
-      sx = 1 + 0.28 * sq; sy = 1 - 0.22 * sq;
-    }
-    octoWrapEl.style.transform = `translateY(${y}px) scaleX(${sx}) scaleY(${sy})`;
-    if (r < 1) requestAnimationFrame(f);
-    else { octoWrapEl.style.transform = ''; if (cb) cb(); }
-  })(performance.now());
-}
-
-// ── Letter reveal ──
-let entryBusy = false, bobT = 0;
-
-function resetOcto() {
-  octoWrapEl.style.transition = 'none';
-  octoWrapEl.style.opacity    = '0';
-  octoWrapEl.style.transform  = 'translateY(-0.75rem)';
-}
-
-function revealOcto(onDone) {
-  void octoWrapEl.offsetWidth;
-  octoWrapEl.style.transition = 'opacity 0.2s ease-out, transform 0.4s cubic-bezier(.34,1.56,.64,1)';
-  octoWrapEl.style.opacity    = '1';
-  octoWrapEl.style.transform  = 'translateY(0)';
-  setTimeout(() => {
-    octoWrapEl.style.transition = '';
-    octoWrapEl.style.transform  = '';
-    if (onDone) onDone();
-  }, 420);
-}
-
-function resetLetters() {
-  tlts.forEach((l) => {
-    l.style.transition = 'none';
-    l.style.opacity    = '0';
-    l.style.transform  = 'translateY(10px)';
-  });
-}
-
-function revealLetters(onDone) {
-  tlts.forEach((l, i) => setTimeout(() => {
-    l.style.transition = 'opacity .15s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1)';
-    l.style.opacity    = '1';
-    l.style.transform  = 'translateY(0)';
-    if (i === tlts.length - 1) setTimeout(onDone, 120);
-  }, i * 80));
-}
-
-function watchLetters(dur) {
-  const s = performance.now();
-  (function f(now) {
-    const t  = Math.min((now - s) / dur, 1);
-    const li = Math.min(Math.floor(t * tlts.length), tlts.length - 1);
-    const el = tlts[li];
-    if (el && octoEl) {
-      const lr = el.getBoundingClientRect();
-      const or = octoEl.getBoundingClientRect();
-      if (lr.width > 0 && or.width > 0) {
-        eyeTX = Math.max(-1.8, Math.min(1.8, (lr.left + lr.width  / 2 - (or.left + or.width  / 2)) / 40));
-        eyeTY = Math.max(-1.5, Math.min(1.5, (lr.top  + lr.height / 2 - (or.top  + or.height / 2)) / 40));
-      }
-    }
-    if (t < 1) requestAnimationFrame(f);
-  })(performance.now());
-}
-
-function runEntry() {
-  if (entryBusy) return;
-  entryBusy = true;
-  resetLetters();
-  resetOcto();
-  revealOcto(() => {
-    setTimeout(() => {
-      const dur = tlts.length * 80 + 120;
-      watchLetters(dur);
-      revealLetters(() => setTimeout(() => springBounce(() => { entryBusy = false; }), 80));
-    }, 80);
-  });
-}
-
-octoWrapEl.addEventListener('click', () => { if (!entryBusy && !octoAnimating) runEntry(); });
-
-// ── Correct / wrong animations ──
-
-function celebrateOcto() {
-  if (octoAnimating) return;
-  octoAnimating = true;
-
-  const rect = octoWrapEl.getBoundingClientRect();
-  const origLeft = rect.left;
-  const origTop = rect.top;
-
-  octoWrapEl.style.position = 'fixed';
-  octoWrapEl.style.left = '50%';
-  octoWrapEl.style.top = '50%';
-  octoWrapEl.style.margin = '0';
-
-  const ph = document.getElementById('octo-placeholder');
-  if (ph) ph.classList.remove('hidden');
-
-  octoEl.classList.add('celebrate');
-  octoWrapEl.classList.add('celebrating');
-  document.body.style.overflow = 'hidden';
-
-  // After fly animation ends, transition back to header
-  setTimeout(() => {
-    octoWrapEl.style.transform = 'translate(-50%, -50%)';
-    octoWrapEl.classList.remove('celebrating');
-    octoEl.classList.remove('celebrate');
-
-    requestAnimationFrame(() => {
-      octoWrapEl.style.transition = 'left 0.6s ease-in-out, top 0.6s ease-in-out, transform 0.6s ease-in-out';
-      octoWrapEl.style.left = origLeft + 'px';
-      octoWrapEl.style.top = origTop + 'px';
-      octoWrapEl.style.transform = '';
-
-      setTimeout(() => {
-        octoWrapEl.style.position = '';
-        octoWrapEl.style.left = '';
-        octoWrapEl.style.top = '';
-        octoWrapEl.style.margin = '';
-        octoWrapEl.style.transition = '';
-        octoWrapEl.style.opacity = '1';
-
-        const ph = document.getElementById('octo-placeholder');
-        if (ph) ph.classList.add('hidden');
-
-        const digitsEl = document.getElementById('cw-digits');
-        if (digitsEl) digitsEl.classList.add('hidden');
-
-        document.body.style.overflow = '';
-        exprMode = 'round';
-        octoAnimating = false;
-      }, 650);
-    });
-  }, 5100);
-}
-
-function sadOcto() {
-  if (octoAnimating) return;
-  octoAnimating = true;
-  exprMode = 'sad';
-
-  // Show X-eyes and sad mouth
-  eyeLR.style.opacity = '0';
-  eyeRR.style.opacity = '0';
-  eyeLS.style.opacity = '0';
-  eyeRS.style.opacity = '0';
-  mouthH.style.opacity = '0';
-  mouthS.style.opacity = '0';
-  eyeLX.style.opacity = '1';
-  eyeRX.style.opacity = '1';
-  mouthSad.style.opacity = '1';
-
-  // Tilt sideways
-  octoWrapEl.style.transition = 'transform 0.3s ease-out';
-  octoWrapEl.style.transform = 'rotate(-80deg) translateY(20px)';
-
-  setTimeout(() => {
-    // Spring back
-    octoWrapEl.style.transition = 'transform 0.45s cubic-bezier(.34,1.56,.64,1)';
-    octoWrapEl.style.transform = '';
-
-    setTimeout(() => {
-      // Restore face
-      octoWrapEl.style.transition = '';
-      eyeLR.style.opacity = '1';
-      eyeRR.style.opacity = '1';
-      eyeLS.style.opacity = '';
-      eyeRS.style.opacity = '';
-      mouthH.style.opacity = '1';
-      mouthS.style.opacity = '';
-      eyeLX.style.opacity = '0';
-      eyeRX.style.opacity = '0';
-      mouthSad.style.opacity = '0';
-      exprMode = 'round';
-      octoAnimating = false;
-    }, 450);
-  }, 1800);
-}
-
-// ── Idle bob ──
-(function bob() {
-  if (!entryBusy && !octoAnimating) {
-    bobT += 0.030;
-    octoWrapEl.style.transform =
-      `translateY(${Math.sin(bobT) * 2.5}px) rotate(${Math.sin(bobT * 0.45) * 0.8}deg)`;
-  }
-  requestAnimationFrame(bob);
-})();
-
-(document.fonts ? document.fonts.ready : Promise.resolve())
-  .then(() => setTimeout(runEntry, 200))
-  .catch(() => setTimeout(runEntry, 500));
+// ─── Init ─────────────────────────────────────────────────────────────────────
 
 initTheme();
-initModal();
-initFeedbackModal();
+const openModal = initModal();
+initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
 
 // ─── Dev helpers (non-production only) ───────────────────────────────────────
