@@ -177,6 +177,10 @@ Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → a
 
 - `/add-to-roadmap` — when the user says "add to roadmap" or similar, invoke this skill to create a structured GitHub issue labelled `roadmap`, assigned to `jevawin`
 
+## Testing notes
+
+- **Safari tab navigation**: Safari requires **Option+Tab** to tab through all interactive elements (buttons, links, inputs). If Jamie reports "tabbing is broken", remind him to check Option+Tab before investigating.
+
 ## Keeping CLAUDE.md current
 
 When making important decisions, structural changes, new conventions, or architectural choices during a conversation, add them to this file so future sessions have the full picture.
