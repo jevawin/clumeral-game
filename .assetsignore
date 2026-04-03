@@ -1,2 +1,4 @@
-_worker.js
 wrangler.jsonc
+tsconfig.json
+vite.config.ts
+src/

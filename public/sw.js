@@ -1,11 +1,6 @@
-const CACHE_NAME = 'clumeral-v1';
+const CACHE_NAME = 'clumeral-v2';
 const STATIC_ASSETS = [
   '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/puzzle.js',
-  '/confetti.js',
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',

@@ -29,7 +29,7 @@
     <link rel="icon" type="image/png" href="icons/lime/dark/icon-192.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="/src/style.css" />
     <script>
       (function () {
         var t = localStorage.getItem("dlng_theme");
@@ -655,7 +655,7 @@
       })();
     </script>
     <!-- /TEMP -->
-    <script type="module" src="app.js"></script>
+    <script type="module" src="/src/app.ts"></script>
     <!-- TEMP: auto-refresh on file change -->
     <script>(async()=>{const f=['style.css','app.js','index.html'];const h={};for(const p of f){const r=await fetch(p,{method:'HEAD'});h[p]=r.headers.get('last-modified')}setInterval(async()=>{for(const p of f){try{const r=await fetch(p,{method:'HEAD'});const m=r.headers.get('last-modified');if(m!==h[p])location.reload()}catch{}}},500)})()</script>
   </body>

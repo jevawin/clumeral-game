@@ -1,8 +1,7 @@
-// Clumeral — app.js
-// Production: puzzle data is injected by _worker.js as window.PUZZLE_DATA.
-// Local dev (python -m http.server): falls back to importing puzzle.js directly.
+// Clumeral — app.ts
+// Puzzle data is injected by the Worker as window.PUZZLE_DATA.
 
-import { launchConfetti } from './confetti.js';
+import { launchConfetti } from './confetti.ts';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -503,7 +502,7 @@ async function loadPuzzle() {
     }
   } else {
     const { runFilterLoop, makeRng, dateSeedInt, todayLocal: tl, puzzleNumber: pn } =
-      await import("./puzzle.js");
+      await import("./worker/puzzle.ts");
     if (isRandomRoute) {
       const seed = Math.floor(Math.random() * 0xffffffff);
       const { answer, clues } = runFilterLoop(makeRng(seed));

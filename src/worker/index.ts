@@ -1,8 +1,6 @@
-// _worker.js — Cloudflare Pages Advanced Mode Worker
-// Intercepts GET / to inject today's puzzle data into the HTML.
-// All other requests (style.css, app.js, puzzle.js, etc.) are served from Pages assets.
+// Worker entry point — intercepts GET / and /random to inject puzzle data into HTML.
 
-import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber } from './puzzle.js';
+import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber } from './puzzle.ts';
 
 export default {
   async fetch(request, env) {
