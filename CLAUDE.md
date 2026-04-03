@@ -154,6 +154,10 @@ The orphan `claude/*` branch and any leftover remote work branches can't be dele
 1. **Work branch → `staging`**: Claude can merge directly (no approval needed). **After merging, switch back to the work branch** — never commit directly to `staging`.
 2. **`staging` → `main`**: Claude creates a PR. **Jamie approves and merges in GitHub** — Claude must not merge this PR.
 
+### Deployment safety
+
+**NEVER run `wrangler deploy`, `npx wrangler deploy`, or any direct Cloudflare deployment command.** Deployment happens automatically when code is merged to `main`. The `npm run deploy` script is deliberately blocked as a safeguard. Use `npm run preview` for local testing.
+
 ### Review flow
 
 After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable markdown link:
