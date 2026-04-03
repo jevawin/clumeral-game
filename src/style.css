@@ -339,7 +339,7 @@
     gap: 0 0.8rem;
   }
 
-  .cw-tag-cell {
+  .clue__tag-cell {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -406,7 +406,7 @@
     justify-content: center;
   }
 
-  .cw-l1 {
+  .clue__line1 {
     font-size: 1rem;
     font-weight: 400;
     line-height: 1.35;
@@ -414,7 +414,7 @@
     transition: color 0.4s;
   }
 
-  .cw-l2 {
+  .clue__line2 {
     font-size: 1.1875rem;
     font-weight: 700;
     line-height: 1.2;
@@ -536,10 +536,6 @@
     &.open {
       display: block;
     }
-  }
-
-  #cw-keypad-header {
-    display: none;
   }
 
   .keypad__grid,
@@ -701,7 +697,7 @@
     margin-block-start: 0.875rem;
   }
 
-  #cw-history-label {
+  .history__label {
     font-family: "Inconsolata", monospace;
     font-size: 1rem;
     font-weight: 700;
@@ -834,7 +830,7 @@
     margin-block-start: 0.875rem;
   }
 
-  #cw-again-link {
+  .play-again__link {
     color: var(--acc);
     text-decoration: underline;
     text-underline-offset: 0.1875rem;
@@ -1467,7 +1463,7 @@
     pointer-events: none;
   }
 
-  .cw-toast-msg {
+  .toast__msg {
     padding: 0.75rem 1.25rem;
     border-radius: 0.375rem;
     background-color: var(--text);

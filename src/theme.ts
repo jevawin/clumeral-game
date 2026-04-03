@@ -4,7 +4,7 @@
 const STORAGE_THEME = "dlng_theme";
 
 export function drawCanvas(dark: boolean): void {
-  const canvas = document.getElementById("cw-canvas") as HTMLCanvasElement | null;
+  const canvas = document.querySelector('[data-canvas]') as HTMLCanvasElement | null;
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -25,8 +25,8 @@ export function drawCanvas(dark: boolean): void {
 
 export function initTheme(): void {
   const root = document.documentElement;
-  const togBtn = document.getElementById("cw-tog");
-  const togLabel = document.getElementById("cw-tog-label");
+  const togBtn = document.querySelector('[data-theme-toggle]') as HTMLElement | null;
+  const togLabel = document.querySelector('[data-theme-label]') as HTMLElement | null;
   if (!togBtn) return;
 
   function applyTheme(dark: boolean) {

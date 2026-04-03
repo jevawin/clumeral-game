@@ -8,10 +8,10 @@ const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0k
 // ─── How-to-Play modal ──────────────────────────────────────────────────────
 
 export function initModal(): (() => void) | null {
-  const modalEl = document.getElementById("cw-modal") as HTMLDialogElement | null;
+  const modalEl = document.querySelector('[data-modal]') as HTMLDialogElement | null;
   if (!modalEl) return null;
   const modal: HTMLDialogElement = modalEl;
-  const htpBtn = document.getElementById("cw-htp-btn");
+  const htpBtn = document.querySelector('[data-htp-btn]') as HTMLElement | null;
 
   function openModal() {
     localStorage.setItem("cw-htp-seen", "1");
@@ -27,8 +27,8 @@ export function initModal(): (() => void) | null {
     }, { once: true });
   }
 
-  const closeBtn = document.getElementById("cw-modal-close");
-  const gotitBtn = document.getElementById("cw-modal-gotit");
+  const closeBtn = document.querySelector('[data-modal-close]');
+  const gotitBtn = document.querySelector('[data-modal-gotit]');
   if (htpBtn) htpBtn.addEventListener("click", openModal);
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
@@ -51,7 +51,7 @@ export function showToast(message: string, duration: number = 3000): void {
   const container = document.getElementById("cw-toast");
   if (!container) return;
   const el = document.createElement("div");
-  el.className = "cw-toast-msg";
+  el.className = "toast__msg";
   el.textContent = message;
   container.appendChild(el);
   requestAnimationFrame(() => el.classList.add("show"));
@@ -68,18 +68,18 @@ export function initFeedbackModal(
   puzzleNumber: (dateStr: string) => number,
   formatDate: (dateStr: string) => string,
 ): void {
-  const fbModalEl = document.getElementById("cw-fb-modal") as HTMLDialogElement | null;
+  const fbModalEl = document.querySelector('[data-fb-modal]') as HTMLDialogElement | null;
   if (!fbModalEl) return;
   const modal: HTMLDialogElement = fbModalEl;
 
-  const closeBtn = document.getElementById("cw-fb-modal-close");
+  const closeBtn = document.querySelector('[data-fb-modal-close]');
   const catBtns = modal.querySelectorAll(".fb-cat") as NodeListOf<HTMLButtonElement>;
-  const msgEl = document.getElementById("cw-fb-msg") as HTMLTextAreaElement | null;
-  const counterEl = document.getElementById("cw-fb-counter");
-  const metaEl = document.getElementById("cw-fb-meta");
-  const sendBtn = document.getElementById("cw-fb-send") as HTMLButtonElement | null;
-  const headerBtn = document.getElementById("cw-fb-btn-header");
-  const footerBtn = document.getElementById("cw-fb-btn-footer");
+  const msgEl = document.querySelector('[data-fb-msg]') as HTMLTextAreaElement | null;
+  const counterEl = document.querySelector('[data-fb-counter]');
+  const metaEl = document.querySelector('[data-fb-meta]');
+  const sendBtn = document.querySelector('[data-fb-send]') as HTMLButtonElement | null;
+  const headerBtn = document.querySelector('[data-fb-header-btn]');
+  const footerBtn = document.querySelector('[data-fb-btn]');
 
   let selectedCat = "general";
   let sending = false;

@@ -149,17 +149,17 @@ function renderClues(clues: ClueData[]): void {
     clueEl.className = "clue";
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
-      <div class="cw-tag-cell">
+      <div class="clue__tag-cell">
         <span class="clue__tag">${tag}</span>
         <div class="clue__digits" aria-hidden="true">${miniDigitsHtml}</div>
       </div>
       <div class="clue__lines">
-        <div class="cw-l1"></div>
-        <div class="cw-l2"></div>
+        <div class="clue__line1"></div>
+        <div class="clue__line2"></div>
       </div>
     `;
-    const l1El = clueEl.querySelector(".cw-l1");
-    const l2El = clueEl.querySelector(".cw-l2");
+    const l1El = clueEl.querySelector(".clue__line1");
+    const l2El = clueEl.querySelector(".clue__line2");
     if (l1El) l1El.textContent = l1Text ?? "";
     if (l2El) {
       if (l2Html) {
@@ -240,7 +240,7 @@ function renderStats() {
 // ─── Digit boxes ──────────────────────────────────────────────────────────────
 
 function renderBox(i: number): void {
-  const el = document.getElementById(`d${i}`);
+  const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
   if (!el) return;
   const s = possibles[i];
 
@@ -480,7 +480,7 @@ if ('serviceWorker' in navigator) {
 
 // Digit box clicks
 for (let i = 0; i < 3; i++) {
-  const box = document.getElementById(`d${i}`);
+  const box = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
   if (box) box.addEventListener("click", ((idx) => () => selectBox(idx))(i));
 }
 
