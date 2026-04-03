@@ -6,27 +6,30 @@
 
 Tagline: *Work out the number from 100–999. New puzzle every day.*
 
-## Project Files
+## Project Structure
 
-| File | Purpose |
-|------|---------|
-| `index.html` | Game shell — title, instructions, card, clue list, input, save-row, stats, next-puzzle |
-| `app.js` | Client UI — fetches puzzle from Worker (or local fallback), renders clues/feedback/history/stats, handles guesses |
-| `puzzle.js` | Shared logic — `PROPERTIES`, `PROPERTY_GROUPS`, `runFilterLoop`, `makeRng`, date helpers. Used by Worker and as local dev fallback |
-| `_worker.js` | Cloudflare Pages Advanced Mode Worker — intercepts `GET /`, injects `window.PUZZLE_DATA` into HTML, falls through to Pages assets for everything else |
-| `style.css` | All visual styling — light/dark theme via `light-dark()`, card with offset shadow, clue rows, digit boxes, keypad, stats, modal |
+```
+src/
+  worker/index.ts      Cloudflare Worker — intercepts GET /, injects PUZZLE_DATA
+  worker/puzzle.ts     Puzzle generation logic (server-only)
+  app.ts               Client UI — renders clues/feedback/history/stats, handles guesses
+  confetti.ts          Confetti animation on correct answer
+  style.css            All visual styling
+public/                Static assets copied as-is (icons, images, manifest, sw.js)
+index.html             Game shell (Vite entry point)
+vite.config.ts         Vite + Cloudflare plugin config
+wrangler.jsonc         Cloudflare Worker config
+```
 
 ## Architecture
 
-**No framework, no build step.** Pure HTML/CSS/JS. `puzzle.js` is an ES module (no bundler).
+**Vite + TypeScript.** ES modules in dev, bundled for production. Cloudflare Worker runs via `@cloudflare/vite-plugin`.
 
 ### How it works
 
-1. `index.html` loads `app.js` as `type="module"`
-2. `app.js` calls `loadPuzzle()`:
-   - **Production**: fetches `WORKER_URL` → receives `{ date, puzzleNumber, answer, clues }` JSON
-   - **Local dev** (`localhost`): dynamically imports `puzzle.js` and runs `runFilterLoop` directly in-browser
-3. `startDailyPuzzle(puzzleData)` renders clues and initialises game state
+1. Worker intercepts `GET /` and `/random`, generates puzzle, injects `window.PUZZLE_DATA` into HTML
+2. `index.html` loads `src/app.ts` as `type="module"`
+3. `app.ts` reads `window.PUZZLE_DATA` and calls `startDailyPuzzle()`
 
 ### puzzle.js structure
 
@@ -115,9 +118,9 @@ Uses `light-dark()` for automatic theme switching. JS sets `:root.dark` or `:roo
 ## Dev Server
 
 ```bash
-python3 -m http.server 8080
-# open http://localhost:8080
-# window.PUZZLE_DATA won't be set; app.js falls back to importing puzzle.js directly
+npm run dev
+# Vite dev server with Worker running in Cloudflare Workers runtime
+# PUZZLE_DATA is injected by the Worker, same as production
 ```
 
 ## Git Workflow
@@ -151,6 +154,10 @@ The orphan `claude/*` branch and any leftover remote work branches can't be dele
 1. **Work branch → `staging`**: Claude can merge directly (no approval needed). **After merging, switch back to the work branch** — never commit directly to `staging`.
 2. **`staging` → `main`**: Claude creates a PR. **Jamie approves and merges in GitHub** — Claude must not merge this PR.
 
+### Deployment safety
+
+**NEVER run `wrangler deploy` or `npm run deploy` directly.** Deployment happens automatically via Cloudflare's Git integration when code is merged to `main`. Use `npm run preview` for local testing.
+
 ### Review flow
 
 After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable markdown link:
@@ -159,10 +166,12 @@ After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable 
 
 ## Deployment
 
-Push to `main` → GitHub → Cloudflare Workers auto-deploys. `_worker.js` is picked up automatically. No `wrangler.toml` needed.
+Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → auto-deploys from `dist/client`.
 
 - **Production**: [https://clumeral.com](https://clumeral.com)
 - **Merge method**: squash only (merge commits disabled on the repo)
+- **Build command**: `npm run build`
+- **Output directory**: `dist/client`
 
 ## Skills
 

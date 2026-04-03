@@ -1,0 +1,29 @@
+{
+  "name": "clumeral-game",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Work out the number from 100-999. New puzzle every day.",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite build && vite preview --host",
+    "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jevawin/clumeral-game.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jevawin/clumeral-game/issues"
+  },
+  "homepage": "https://clumeral.com",
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.31.0",
+    "@cloudflare/workers-types": "^4.20260403.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3",
+    "wrangler": "^4.80.0"
+  }
+}

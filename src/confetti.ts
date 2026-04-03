@@ -15,8 +15,17 @@ export function launchConfetti() {
     "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
   document.body.appendChild(canvas);
 
-  const ctx = canvas.getContext("2d");
-  const particles = [];
+  const ctxOrNull = canvas.getContext("2d");
+  if (!ctxOrNull) return;
+  const ctx = ctxOrNull;
+
+  interface Particle {
+    x: number; y: number; vx: number; vy: number;
+    w: number; h: number; colour: string;
+    wobble: number; wobbleSpeed: number; wobbleAmp: number;
+    rotation: number; rotationSpeed: number;
+  }
+  const particles: Particle[] = [];
 
   for (let i = 0; i < PIECE_COUNT; i++) {
     particles.push({
@@ -35,10 +44,10 @@ export function launchConfetti() {
     });
   }
 
-  let rafId;
+  let rafId: number;
   const start = performance.now();
 
-  function tick(now) {
+  function tick(now: number) {
     const elapsed = now - start;
     if (elapsed > DURATION_MS) {
       cancelAnimationFrame(rafId);
