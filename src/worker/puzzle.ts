@@ -6,7 +6,7 @@ const SQUARES     = new Set([0, 1, 4, 9]);
 const CUBES       = new Set([0, 1, 8]);
 const TRIANGULARS = new Set([0, 1, 3, 6]);
 
-function getDigits(n) {
+function getDigits(n: number): [number, number, number] {
   return [Math.floor(n / 100), Math.floor((n % 100) / 10), n % 10];
 }
 
@@ -14,50 +14,56 @@ function getDigits(n) {
 // type:'text'    → value is boolean; operators: = !=
 // type:'numeric' → value is number;  operators: <= = != >=
 
-const PROPERTIES = {
+interface PropertyDef {
+  label: string;
+  type: string;
+  compute: (n: number) => number | boolean;
+}
+
+const PROPERTIES: Record<string, PropertyDef> = {
   // Specials: 3 digits × 4 traits = 12 boolean properties
-  firstIsPrime:       { label: 'The first digit is a prime number',       type: 'text',    compute: n => PRIMES.has(getDigits(n)[0]) },
-  firstIsSquare:      { label: 'The first digit is a square number',      type: 'text',    compute: n => SQUARES.has(getDigits(n)[0]) },
-  firstIsCube:        { label: 'The first digit is a cube number',        type: 'text',    compute: n => CUBES.has(getDigits(n)[0]) },
-  firstIsTriangular:  { label: 'The first digit is a triangular number',  type: 'text',    compute: n => TRIANGULARS.has(getDigits(n)[0]) },
-  secondIsPrime:      { label: 'The second digit is a prime number',      type: 'text',    compute: n => PRIMES.has(getDigits(n)[1]) },
-  secondIsSquare:     { label: 'The second digit is a square number',     type: 'text',    compute: n => SQUARES.has(getDigits(n)[1]) },
-  secondIsCube:       { label: 'The second digit is a cube number',       type: 'text',    compute: n => CUBES.has(getDigits(n)[1]) },
-  secondIsTriangular: { label: 'The second digit is a triangular number', type: 'text',    compute: n => TRIANGULARS.has(getDigits(n)[1]) },
-  thirdIsPrime:       { label: 'The third digit is a prime number',       type: 'text',    compute: n => PRIMES.has(getDigits(n)[2]) },
-  thirdIsSquare:      { label: 'The third digit is a square number',      type: 'text',    compute: n => SQUARES.has(getDigits(n)[2]) },
-  thirdIsCube:        { label: 'The third digit is a cube number',        type: 'text',    compute: n => CUBES.has(getDigits(n)[2]) },
-  thirdIsTriangular:  { label: 'The third digit is a triangular number',  type: 'text',    compute: n => TRIANGULARS.has(getDigits(n)[2]) },
+  firstIsPrime:       { label: 'The first digit is a prime number',       type: 'text',    compute: (n: number) => PRIMES.has(getDigits(n)[0]) },
+  firstIsSquare:      { label: 'The first digit is a square number',      type: 'text',    compute: (n: number) => SQUARES.has(getDigits(n)[0]) },
+  firstIsCube:        { label: 'The first digit is a cube number',        type: 'text',    compute: (n: number) => CUBES.has(getDigits(n)[0]) },
+  firstIsTriangular:  { label: 'The first digit is a triangular number',  type: 'text',    compute: (n: number) => TRIANGULARS.has(getDigits(n)[0]) },
+  secondIsPrime:      { label: 'The second digit is a prime number',      type: 'text',    compute: (n: number) => PRIMES.has(getDigits(n)[1]) },
+  secondIsSquare:     { label: 'The second digit is a square number',     type: 'text',    compute: (n: number) => SQUARES.has(getDigits(n)[1]) },
+  secondIsCube:       { label: 'The second digit is a cube number',       type: 'text',    compute: (n: number) => CUBES.has(getDigits(n)[1]) },
+  secondIsTriangular: { label: 'The second digit is a triangular number', type: 'text',    compute: (n: number) => TRIANGULARS.has(getDigits(n)[1]) },
+  thirdIsPrime:       { label: 'The third digit is a prime number',       type: 'text',    compute: (n: number) => PRIMES.has(getDigits(n)[2]) },
+  thirdIsSquare:      { label: 'The third digit is a square number',      type: 'text',    compute: (n: number) => SQUARES.has(getDigits(n)[2]) },
+  thirdIsCube:        { label: 'The third digit is a cube number',        type: 'text',    compute: (n: number) => CUBES.has(getDigits(n)[2]) },
+  thirdIsTriangular:  { label: 'The third digit is a triangular number',  type: 'text',    compute: (n: number) => TRIANGULARS.has(getDigits(n)[2]) },
 
   // Sums: 4 numeric properties
-  sumFS:   { label: 'The sum of the first and second digits is',  type: 'numeric', compute: n => { const [a, b]    = getDigits(n); return a + b; } },
-  sumFT:   { label: 'The sum of the first and third digits is',   type: 'numeric', compute: n => { const [a, , c]  = getDigits(n); return a + c; } },
-  sumST:   { label: 'The sum of the second and third digits is',  type: 'numeric', compute: n => { const [, b, c]  = getDigits(n); return b + c; } },
-  sumAll:  { label: 'The sum of all three digits is',             type: 'numeric', compute: n => { const [a, b, c] = getDigits(n); return a + b + c; } },
+  sumFS:   { label: 'The sum of the first and second digits is',  type: 'numeric', compute: (n: number) => { const [a, b]    = getDigits(n); return a + b; } },
+  sumFT:   { label: 'The sum of the first and third digits is',   type: 'numeric', compute: (n: number) => { const [a, , c]  = getDigits(n); return a + c; } },
+  sumST:   { label: 'The sum of the second and third digits is',  type: 'numeric', compute: (n: number) => { const [, b, c]  = getDigits(n); return b + c; } },
+  sumAll:  { label: 'The sum of all three digits is',             type: 'numeric', compute: (n: number) => { const [a, b, c] = getDigits(n); return a + b + c; } },
 
   // Differences: 3 numeric properties
-  diffFS:  { label: 'The difference between the first and second digits is',  type: 'numeric', compute: n => { const [a, b]    = getDigits(n); return Math.abs(a - b); } },
-  diffFT:  { label: 'The difference between the first and third digits is',   type: 'numeric', compute: n => { const [a, , c]  = getDigits(n); return Math.abs(a - c); } },
-  diffST:  { label: 'The difference between the second and third digits is',  type: 'numeric', compute: n => { const [, b, c]  = getDigits(n); return Math.abs(b - c); } },
+  diffFS:  { label: 'The difference between the first and second digits is',  type: 'numeric', compute: (n: number) => { const [a, b]    = getDigits(n); return Math.abs(a - b); } },
+  diffFT:  { label: 'The difference between the first and third digits is',   type: 'numeric', compute: (n: number) => { const [a, , c]  = getDigits(n); return Math.abs(a - c); } },
+  diffST:  { label: 'The difference between the second and third digits is',  type: 'numeric', compute: (n: number) => { const [, b, c]  = getDigits(n); return Math.abs(b - c); } },
 
   // Products: 4 numeric properties
-  prodFS:  { label: 'The product of the first and second digits is',  type: 'numeric', compute: n => { const [a, b]    = getDigits(n); return a * b; } },
-  prodFT:  { label: 'The product of the first and third digits is',   type: 'numeric', compute: n => { const [a, , c]  = getDigits(n); return a * c; } },
-  prodST:  { label: 'The product of the second and third digits is',  type: 'numeric', compute: n => { const [, b, c]  = getDigits(n); return b * c; } },
-  prodAll: { label: 'The product of all three digits is',             type: 'numeric', compute: n => { const [a, b, c] = getDigits(n); return a * b * c; } },
+  prodFS:  { label: 'The product of the first and second digits is',  type: 'numeric', compute: (n: number) => { const [a, b]    = getDigits(n); return a * b; } },
+  prodFT:  { label: 'The product of the first and third digits is',   type: 'numeric', compute: (n: number) => { const [a, , c]  = getDigits(n); return a * c; } },
+  prodST:  { label: 'The product of the second and third digits is',  type: 'numeric', compute: (n: number) => { const [, b, c]  = getDigits(n); return b * c; } },
+  prodAll: { label: 'The product of all three digits is',             type: 'numeric', compute: (n: number) => { const [a, b, c] = getDigits(n); return a * b * c; } },
 
   // Means: 4 numeric properties
-  meanFS:  { label: 'The mean of the first and second digits is',  type: 'numeric', compute: n => { const [a, b]    = getDigits(n); return (a + b) / 2; } },
-  meanFT:  { label: 'The mean of the first and third digits is',   type: 'numeric', compute: n => { const [a, , c]  = getDigits(n); return (a + c) / 2; } },
-  meanST:  { label: 'The mean of the second and third digits is',  type: 'numeric', compute: n => { const [, b, c]  = getDigits(n); return (b + c) / 2; } },
-  meanAll: { label: 'The mean of all three digits is',             type: 'numeric', compute: n => { const [a, b, c] = getDigits(n); return (a + b + c) / 3; } },
+  meanFS:  { label: 'The mean of the first and second digits is',  type: 'numeric', compute: (n: number) => { const [a, b]    = getDigits(n); return (a + b) / 2; } },
+  meanFT:  { label: 'The mean of the first and third digits is',   type: 'numeric', compute: (n: number) => { const [a, , c]  = getDigits(n); return (a + c) / 2; } },
+  meanST:  { label: 'The mean of the second and third digits is',  type: 'numeric', compute: (n: number) => { const [, b, c]  = getDigits(n); return (b + c) / 2; } },
+  meanAll: { label: 'The mean of all three digits is',             type: 'numeric', compute: (n: number) => { const [a, b, c] = getDigits(n); return (a + b + c) / 3; } },
 
   // Range: 1 numeric property
-  range:   { label: 'The range of all three digits is',           type: 'numeric', compute: n => { const [a, b, c] = getDigits(n); return Math.max(a, b, c) - Math.min(a, b, c); } },
+  range:   { label: 'The range of all three digits is',           type: 'numeric', compute: (n: number) => { const [a, b, c] = getDigits(n); return Math.max(a, b, c) - Math.min(a, b, c); } },
 };
 
 // 6 groups — one filter drawn per group per main loop iteration
-const PROPERTY_GROUPS = {
+const PROPERTY_GROUPS: Record<string, string[]> = {
   Specials:    ['firstIsPrime', 'firstIsSquare', 'firstIsCube', 'firstIsTriangular',
                 'secondIsPrime', 'secondIsSquare', 'secondIsCube', 'secondIsTriangular',
                 'thirdIsPrime', 'thirdIsSquare', 'thirdIsCube', 'thirdIsTriangular'],
@@ -74,9 +80,9 @@ const PROPERTY_GROUPS = {
 const KEEP_MIN = 0.15;
 const KEEP_MAX = 0.40;
 
-function applyFilter(candidates, propKey, operator, value) {
+function applyFilter(candidates: number[], propKey: string, operator: string, value: number | boolean): number[] {
   const { compute } = PROPERTIES[propKey];
-  return candidates.filter(n => {
+  return candidates.filter((n: number) => {
     const v = compute(n);
     if (operator === '=')  return v === value;
     if (operator === '!=') return v !== value;
@@ -89,9 +95,9 @@ function applyFilter(candidates, propKey, operator, value) {
 }
 
 // Find all operator+value combos for a property that keep 15–40% of candidates
-function findGoodClues(candidates, propKey) {
+function findGoodClues(candidates: number[], propKey: string) {
   const { type, compute } = PROPERTIES[propKey];
-  const uniqueVals = [...new Set(candidates.map(n => compute(n)))].sort((a, b) => a - b);
+  const uniqueVals = [...new Set(candidates.map((n: number) => compute(n)))].sort((a, b) => Number(a) - Number(b));
   if (uniqueVals.length === 1) return [];
 
   const ops = type === 'text' ? ['=', '!='] : ['<', '>', '=', '!='];
@@ -109,9 +115,9 @@ function findGoodClues(candidates, propKey) {
   return good;
 }
 
-export function runFilterLoop(rng = Math.random) {
-  let candidates = Array.from({ length: 900 }, (_, i) => i + 100);
-  const clues = [];
+export function runFilterLoop(rng: () => number = Math.random) {
+  let candidates: number[] = Array.from({ length: 900 }, (_, i) => i + 100);
+  const clues: { propKey: string; label: string; operator: string; value: number | boolean }[] = [];
   const triedGroups = new Set();
   const groupNames = Object.keys(PROPERTY_GROUPS);
   let iterations = 0;
@@ -165,7 +171,7 @@ export function runFilterLoop(rng = Math.random) {
 
 // ─── RNG + date helpers ───────────────────────────────────────────────────────
 
-export function makeRng(seed) {
+export function makeRng(seed: number) {
   let s = seed >>> 0;
   return function () {
     s = (s + 0x6D2B79F5) >>> 0;
@@ -180,13 +186,13 @@ export function todayLocal() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function dateSeedInt(dateStr) {
+export function dateSeedInt(dateStr: string): number {
   return parseInt(dateStr.replace(/-/g, ''), 10);
 }
 
 const EPOCH_DATE = '2026-03-08';
 
-export function puzzleNumber(dateStr) {
-  const ms = new Date(dateStr + 'T00:00:00') - new Date(EPOCH_DATE + 'T00:00:00');
+export function puzzleNumber(dateStr: string): number {
+  const ms = new Date(dateStr + 'T00:00:00').getTime() - new Date(EPOCH_DATE + 'T00:00:00').getTime();
   return Math.max(1, Math.floor(ms / 86400000) + 1);
 }

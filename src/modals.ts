@@ -8,8 +8,9 @@ const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0k
 // ─── How-to-Play modal ──────────────────────────────────────────────────────
 
 export function initModal(): (() => void) | null {
-  const modal = document.getElementById("cw-modal") as HTMLDialogElement | null;
-  if (!modal) return null;
+  const modalEl = document.getElementById("cw-modal") as HTMLDialogElement | null;
+  if (!modalEl) return null;
+  const modal: HTMLDialogElement = modalEl;
   const htpBtn = document.getElementById("cw-htp-btn");
 
   function openModal() {
@@ -67,8 +68,9 @@ export function initFeedbackModal(
   puzzleNumber: (dateStr: string) => number,
   formatDate: (dateStr: string) => string,
 ): void {
-  const modal = document.getElementById("cw-fb-modal") as HTMLDialogElement | null;
-  if (!modal) return;
+  const fbModalEl = document.getElementById("cw-fb-modal") as HTMLDialogElement | null;
+  if (!fbModalEl) return;
+  const modal: HTMLDialogElement = fbModalEl;
 
   const closeBtn = document.getElementById("cw-fb-modal-close");
   const catBtns = modal.querySelectorAll(".fb-cat") as NodeListOf<HTMLButtonElement>;
@@ -102,13 +104,14 @@ export function initFeedbackModal(
       b.classList.toggle("active", isGeneral);
       b.setAttribute("aria-checked", String(isGeneral));
     });
-    msgEl.value = "";
+    if (msgEl) msgEl.value = "";
     updateCounter();
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
     sending = false;
   }
 
   function updateCounter() {
+    if (!msgEl || !counterEl) return;
     const len = msgEl.value.length;
     if (len >= 400) {
       counterEl.textContent = `${len}/500`;
@@ -153,6 +156,7 @@ export function initFeedbackModal(
   }
 
   function renderMeta() {
+    if (!metaEl) return;
     const meta = collectMetadata();
     metaEl.textContent = `Puzzle ${meta.puzzleNumber} · ${formatDate(meta.date)} · ${meta.device} · ${meta.browser}`;
   }
@@ -160,7 +164,7 @@ export function initFeedbackModal(
   // Category toggle
   catBtns.forEach(btn => {
     btn.addEventListener("click", () => {
-      selectedCat = btn.dataset.cat;
+      selectedCat = btn.dataset.cat ?? "general";
       catBtns.forEach(b => {
         const selected = b === btn;
         b.classList.toggle("active", selected);
@@ -170,20 +174,20 @@ export function initFeedbackModal(
   });
 
   // Char counter
-  msgEl.addEventListener("input", updateCounter);
+  if (msgEl) msgEl.addEventListener("input", updateCounter);
 
   // Open triggers
   if (headerBtn) headerBtn.addEventListener("click", openFeedback);
   if (footerBtn) footerBtn.addEventListener("click", openFeedback);
 
   // Close triggers
-  closeBtn.addEventListener("click", closeFeedback);
+  if (closeBtn) closeBtn.addEventListener("click", closeFeedback);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeFeedback(); });
   modal.addEventListener("cancel", (e) => { e.preventDefault(); closeFeedback(); });
 
   // Submit with retry
   async function submitFeedback() {
-    if (sending) return;
+    if (sending || !msgEl || !sendBtn) return;
     const message = msgEl.value.trim();
     if (!message) return;
 
@@ -227,11 +231,11 @@ export function initFeedbackModal(
     // All retries exhausted
     console.error("Feedback submission failed after retries", payload);
     sending = false;
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
     showToast("Couldn't send feedback. Try again later.");
   }
 
-  sendBtn.addEventListener("click", submitFeedback);
+  if (sendBtn) sendBtn.addEventListener("click", submitFeedback);
 
   // Init counter hidden
   updateCounter();

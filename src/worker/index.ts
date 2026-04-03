@@ -2,8 +2,12 @@
 
 import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber } from './puzzle.ts';
 
+interface Env {
+  ASSETS: { fetch: (req: Request) => Promise<Response> };
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
     if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
@@ -42,8 +46,9 @@ export default {
         return new Response(injected, {
           headers: { 'Content-Type': 'text/html; charset=utf-8' },
         });
-      } catch (err) {
-        return new Response(`/random error: ${err.message}\n${err.stack}`, { status: 500 });
+      } catch (err: unknown) {
+        const e = err instanceof Error ? err : new Error(String(err));
+        return new Response(`/random error: ${e.message}\n${e.stack}`, { status: 500 });
       }
     }
 

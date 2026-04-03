@@ -7,6 +7,7 @@ export function drawCanvas(dark: boolean): void {
   const canvas = document.getElementById("cw-canvas") as HTMLCanvasElement | null;
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return;
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -32,7 +33,7 @@ export function initTheme(): void {
     root.classList.toggle("dark", dark);
     root.classList.toggle("light", !dark);
     if (togLabel) togLabel.textContent = dark ? "Light" : "Dark";
-    togBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+    togBtn!.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
     drawCanvas(dark);
     if (window._swapIcons && window._currentColour) window._swapIcons(window._currentColour);
   }

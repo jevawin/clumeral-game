@@ -1,6 +1,7 @@
 // Clumeral — app.ts
 // Puzzle data is injected by the Worker as window.PUZZLE_DATA.
 
+import type { GameState, ClueData } from './types.ts';
 import { launchConfetti } from './confetti.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
 import { initTheme } from './theme.ts';
@@ -10,7 +11,7 @@ import { celebrateOcto, sadOcto } from './octo.ts';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EPOCH_DATE = "2026-03-08";
-const OPERATOR_SYMBOLS = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
+const OPERATOR_SYMBOLS: Record<string, string> = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
 
 // ─── DOM cache ───────────────────────────────────────────────────────────────
 
@@ -38,10 +39,10 @@ const dom = {
 
 // ─── Module state ─────────────────────────────────────────────────────────────
 
-let gameState = { answer: null, guesses: [], solved: false };
+let gameState: GameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
 
-function initPossibles() {
+function initPossibles(): Set<number>[] {
   return [
     new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]),          // hundreds: no zero
     new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -49,8 +50,8 @@ function initPossibles() {
   ];
 }
 
-let possibles = initPossibles();
-let activeBox = null; // 0 | 1 | 2 | null
+let possibles: Set<number>[] = initPossibles();
+let activeBox: number | null = null; // 0 | 1 | 2 | null
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -59,12 +60,12 @@ function todayLocal() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function puzzleNumber(dateStr) {
-  const ms = new Date(dateStr + "T00:00:00") - new Date(EPOCH_DATE + "T00:00:00");
+function puzzleNumber(dateStr: string): number {
+  const ms = new Date(dateStr + "T00:00:00").getTime() - new Date(EPOCH_DATE + "T00:00:00").getTime();
   return Math.max(1, Math.floor(ms / 86400000) + 1);
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr: string): string {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
@@ -81,7 +82,7 @@ function todayEntry() {
 
 // ─── Clue helpers ─────────────────────────────────────────────────────────────
 
-function formatClueValue(value) {
+function formatClueValue(value: number | boolean): { text?: string; html?: string } {
   if (typeof value !== "number" || !isFinite(value)) return { text: String(value) };
   if (Number.isInteger(value)) return { text: String(value) };
   const frac = value - Math.floor(value);
@@ -93,7 +94,7 @@ function formatClueValue(value) {
   return { text: value.toFixed(2) };
 }
 
-function getClueTag(propKey) {
+function getClueTag(propKey: string): string {
   if (propKey.includes("IsPrime"))      return "PRIME";
   if (propKey.includes("IsSquare"))     return "SQUARE";
   if (propKey.includes("IsCube"))       return "CUBE";
@@ -106,7 +107,7 @@ function getClueTag(propKey) {
   return "?";
 }
 
-function digitPositions(propKey) {
+function digitPositions(propKey: string): boolean[] {
   if (propKey.endsWith("FS"))                           return [true, true, false];
   if (propKey.endsWith("FT"))                           return [true, false, true];
   if (propKey.endsWith("ST"))                           return [false, true, true];
@@ -117,7 +118,7 @@ function digitPositions(propKey) {
   return [true, true, true];
 }
 
-function renderClues(clues) {
+function renderClues(clues: ClueData[]): void {
   if (!dom.clueList) return;
   dom.clueList.innerHTML = "";
   for (const { propKey, label, operator, value } of clues) {
@@ -157,11 +158,15 @@ function renderClues(clues) {
         <div class="cw-l2"></div>
       </div>
     `;
-    clueEl.querySelector(".cw-l1").textContent = l1Text;
-    if (l2Html) {
-      clueEl.querySelector(".cw-l2").innerHTML = l2Html;
-    } else {
-      clueEl.querySelector(".cw-l2").textContent = l2Text;
+    const l1El = clueEl.querySelector(".cw-l1");
+    const l2El = clueEl.querySelector(".cw-l2");
+    if (l1El) l1El.textContent = l1Text ?? "";
+    if (l2El) {
+      if (l2Html) {
+        l2El.innerHTML = l2Html;
+      } else {
+        l2El.textContent = l2Text ?? "";
+      }
     }
     dom.clueList.appendChild(clueEl);
   }
@@ -169,7 +174,7 @@ function renderClues(clues) {
 
 // ─── Feedback / history / stats ───────────────────────────────────────────────
 
-function renderFeedback(type, answer?) {
+function renderFeedback(type: string | null, answer?: number): void {
   if (type === "correct") {
     dom.hint?.classList.add("hidden");
     if (dom.feedback) {
@@ -195,7 +200,7 @@ function renderFeedback(type, answer?) {
   }
 }
 
-function renderHistory(guesses) {
+function renderHistory(guesses: number[]): void {
   if (!dom.historyList || !dom.history) return;
   dom.historyList.innerHTML = "";
   if (guesses.length === 0) {
@@ -205,7 +210,7 @@ function renderHistory(guesses) {
   dom.history.classList.remove("hidden");
   for (const g of guesses) {
     const li = document.createElement("li");
-    li.textContent = g;
+    li.textContent = String(g);
     li.className = "history__item";
     dom.historyList.appendChild(li);
   }
@@ -234,7 +239,7 @@ function renderStats() {
 
 // ─── Digit boxes ──────────────────────────────────────────────────────────────
 
-function renderBox(i) {
+function renderBox(i: number): void {
   const el = document.getElementById(`d${i}`);
   if (!el) return;
   const s = possibles[i];
@@ -278,7 +283,7 @@ function buildKeypad() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "keypad__btn" + (possibles[activeBox].has(d) ? "" : " elim");
-    btn.textContent = d;
+    btn.textContent = String(d);
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
     btn.addEventListener("click", () => toggleDigit(d));
     dom.keypad.appendChild(btn);
@@ -296,7 +301,7 @@ function closeKeypad() {
 }
 
 // Single mutation path for both keypad click and keyboard — prevents double-firing
-function toggleDigit(digit) {
+function toggleDigit(digit: number): void {
   if (activeBox === null) return;
   const s = possibles[activeBox];
   if (s.has(digit)) {
@@ -310,7 +315,7 @@ function toggleDigit(digit) {
   checkSubmit();
 }
 
-function openBox(i) {
+function openBox(i: number): void {
   activeBox = i;
   renderAllBoxes();
   buildKeypad();
@@ -318,7 +323,7 @@ function openBox(i) {
 }
 
 // Called by click: toggles same box closed, otherwise switches to new box
-function selectBox(i) {
+function selectBox(i: number): void {
   if (gameState.solved) return;
   if (activeBox === i) {
     activeBox = null;
@@ -337,12 +342,12 @@ function checkSubmit() {
 
 function showNextPuzzle() {
   if (dom.next && dom.nextNumber) {
-    dom.nextNumber.textContent = gameState.puzzleNum + 1;
+    dom.nextNumber.textContent = String((gameState.puzzleNum ?? 0) + 1);
     dom.next.classList.remove("hidden");
   }
 }
 
-function showCompletedState(tries) {
+function showCompletedState(tries: number): void {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
     dom.feedback.textContent = `You already solved today's puzzle in ${t}!`;
@@ -369,7 +374,7 @@ function resetPuzzleUI() {
   checkSubmit();
 }
 
-function startRandomPuzzle(puzzleData) {
+function startRandomPuzzle(puzzleData: { answer: number; clues: ClueData[] }): void {
   const { answer, clues } = puzzleData;
 
   if (dom.plabel) dom.plabel.textContent = "Random puzzle";
@@ -384,7 +389,7 @@ function startRandomPuzzle(puzzleData) {
   dom.save?.classList.add("hidden");
 }
 
-function startDailyPuzzle(puzzleData) {
+function startDailyPuzzle(puzzleData: { date: string; puzzleNumber: number; answer: number; clues: ClueData[] }): void {
   const { date, puzzleNumber: num, answer, clues } = puzzleData;
 
   if (dom.plabel) dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
@@ -418,7 +423,7 @@ function handleGuess() {
   if (guess === gameState.answer) {
     gameState.solved = true;
     launchConfetti();
-    renderFeedback("correct", gameState.answer, tries);
+    renderFeedback("correct", gameState.answer ?? undefined);
     closeKeypad();
     dom.digits?.classList.add("digit-correct");
     dom.submitWrap?.classList.remove("visible");
@@ -452,7 +457,10 @@ function loadPuzzle() {
     if (window.PUZZLE_DATA.isRandom) {
       startRandomPuzzle(window.PUZZLE_DATA);
     } else {
-      startDailyPuzzle(window.PUZZLE_DATA);
+      const pd = window.PUZZLE_DATA;
+      if (pd.date && pd.puzzleNumber !== undefined) {
+        startDailyPuzzle({ date: pd.date, puzzleNumber: pd.puzzleNumber, answer: pd.answer, clues: pd.clues });
+      }
     }
   } else {
     if (dom.feedback) {
