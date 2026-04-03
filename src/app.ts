@@ -12,6 +12,30 @@ import { celebrateOcto, sadOcto } from './octo.ts';
 const EPOCH_DATE = "2026-03-08";
 const OPERATOR_SYMBOLS = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
 
+// ─── DOM cache ───────────────────────────────────────────────────────────────
+
+const $ = (sel: string) => document.querySelector(sel);
+
+const dom = {
+  hint: $('[data-hint]') as HTMLElement | null,
+  feedback: $('[data-feedback]') as HTMLElement | null,
+  digits: $('[data-digits]') as HTMLElement | null,
+  keypadWrap: $('[data-keypad-wrap]') as HTMLElement | null,
+  keypad: $('[data-keypad]') as HTMLElement | null,
+  submitWrap: $('[data-submit-wrap]') as HTMLElement | null,
+  submitBtn: $('[data-submit]') as HTMLButtonElement | null,
+  save: $('[data-save]') as HTMLElement | null,
+  saveCheck: $('[data-save-check]') as HTMLInputElement | null,
+  stats: $('[data-stats]') as HTMLElement | null,
+  next: $('[data-next]') as HTMLElement | null,
+  nextNumber: $('[data-next-number]') as HTMLElement | null,
+  again: $('[data-again]') as HTMLElement | null,
+  plabel: $('[data-plabel]') as HTMLElement | null,
+  history: $('[data-history]') as HTMLElement | null,
+  historyList: $('[data-history-list]') as HTMLElement | null,
+  clueList: $('.clue-list') as HTMLElement | null,
+};
+
 // ─── Module state ─────────────────────────────────────────────────────────────
 
 let gameState = { answer: null, guesses: [], solved: false };
@@ -94,9 +118,8 @@ function digitPositions(propKey) {
 }
 
 function renderClues(clues) {
-  const container = document.querySelector(".clue-list");
-  if (!container) return;
-  container.innerHTML = "";
+  if (!dom.clueList) return;
+  dom.clueList.innerHTML = "";
   for (const { propKey, label, operator, value } of clues) {
     const tag = getClueTag(propKey);
     const lit = digitPositions(propKey);
@@ -140,69 +163,64 @@ function renderClues(clues) {
     } else {
       clueEl.querySelector(".cw-l2").textContent = l2Text;
     }
-    container.appendChild(clueEl);
+    dom.clueList.appendChild(clueEl);
   }
 }
 
 // ─── Feedback / history / stats ───────────────────────────────────────────────
 
 function renderFeedback(type, answer?) {
-  const hint = document.getElementById("cw-hint");
-  const fb = document.getElementById("cw-feedback");
   if (type === "correct") {
-    if (hint) hint.classList.add("hidden");
-    if (fb) {
-      fb.textContent = `Congratulations! ${answer} is the correct answer.`;
-      fb.className = "feedback feedback--correct";
-      fb.classList.remove("hidden");
+    dom.hint?.classList.add("hidden");
+    if (dom.feedback) {
+      dom.feedback.textContent = `Congratulations! ${answer} is the correct answer.`;
+      dom.feedback.className = "feedback feedback--correct";
+      dom.feedback.classList.remove("hidden");
     }
   } else if (type === "incorrect") {
-    if (hint) {
-      hint.textContent = "Incorrect — try again.";
-      hint.style.color = "var(--acc)";
+    if (dom.hint) {
+      dom.hint.textContent = "Incorrect — try again.";
+      dom.hint.style.color = "var(--acc)";
     }
-    if (fb) fb.classList.add("hidden");
+    dom.feedback?.classList.add("hidden");
   } else {
-    if (hint) {
-      hint.textContent = "Tap a box to eliminate possible numbers.";
-      hint.style.color = "";
+    if (dom.hint) {
+      dom.hint.textContent = "Tap a box to eliminate possible numbers.";
+      dom.hint.style.color = "";
     }
-    if (fb) {
-      fb.textContent = "";
-      fb.classList.add("hidden");
+    if (dom.feedback) {
+      dom.feedback.textContent = "";
+      dom.feedback.classList.add("hidden");
     }
   }
 }
 
 function renderHistory(guesses) {
-  const wrap = document.getElementById("cw-history");
-  const ul = document.getElementById("cw-history-list");
-  if (!ul || !wrap) return;
-  ul.innerHTML = "";
+  if (!dom.historyList || !dom.history) return;
+  dom.historyList.innerHTML = "";
   if (guesses.length === 0) {
-    wrap.classList.add("hidden");
+    dom.history.classList.add("hidden");
     return;
   }
-  wrap.classList.remove("hidden");
+  dom.history.classList.remove("hidden");
   for (const g of guesses) {
     const li = document.createElement("li");
     li.textContent = g;
     li.className = "history__item";
-    ul.appendChild(li);
+    dom.historyList.appendChild(li);
   }
 }
 
 function renderStats() {
-  const statsEl = document.getElementById("cw-stats");
-  if (!statsEl) return;
+  if (!dom.stats) return;
   const history = loadHistory();
   if (history.length === 0) {
-    statsEl.classList.add("hidden");
+    dom.stats.classList.add("hidden");
     return;
   }
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
-  statsEl.innerHTML = `
+  dom.stats.innerHTML = `
     <p class="stats__heading">Your stats</p>
     <div class="stats__grid">
       <div class="stats__item"><span class="stats__val">${history.length}</span><span class="stats__lbl">Played</span></div>
@@ -211,7 +229,7 @@ function renderStats() {
     <p class="stats__last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
     <div class="stats__bubbles">${last5.map((h) => `<span class="stats__bubble">${h.tries}</span>`).join("")}</div>
   `;
-  statsEl.classList.remove("hidden");
+  dom.stats.classList.remove("hidden");
 }
 
 // ─── Digit boxes ──────────────────────────────────────────────────────────────
@@ -252,11 +270,10 @@ function renderAllBoxes() {
 }
 
 function buildKeypad() {
-  const kp = document.getElementById("cw-keypad");
-  if (!kp || activeBox === null) return;
+  if (!dom.keypad || activeBox === null) return;
   // Box 0 (hundreds) cannot be 0
   const digits = activeBox === 0 ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  kp.innerHTML = "";
+  dom.keypad.innerHTML = "";
   for (const d of digits) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -264,18 +281,16 @@ function buildKeypad() {
     btn.textContent = d;
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
     btn.addEventListener("click", () => toggleDigit(d));
-    kp.appendChild(btn);
+    dom.keypad.appendChild(btn);
   }
 }
 
 function openKeypad() {
-  const wrap = document.getElementById("cw-keypad-wrap");
-  if (wrap) wrap.classList.add("open");
+  dom.keypadWrap?.classList.add("open");
 }
 
 function closeKeypad() {
-  const wrap = document.getElementById("cw-keypad-wrap");
-  if (wrap) wrap.classList.remove("open");
+  dom.keypadWrap?.classList.remove("open");
   activeBox = null;
   renderAllBoxes();
 }
@@ -315,35 +330,28 @@ function selectBox(i) {
 
 function checkSubmit() {
   const allResolved = possibles.every((s) => s.size === 1);
-  const wrap = document.getElementById("cw-submit-wrap");
-  if (wrap) wrap.classList.toggle("visible", allResolved);
+  dom.submitWrap?.classList.toggle("visible", allResolved);
 }
 
 // ─── Game ─────────────────────────────────────────────────────────────────────
 
 function showNextPuzzle() {
-  const np = document.getElementById("cw-next");
-  const nn = document.getElementById("cw-next-number");
-  if (np && nn) {
-    nn.textContent = gameState.puzzleNum + 1;
-    np.classList.remove("hidden");
+  if (dom.next && dom.nextNumber) {
+    dom.nextNumber.textContent = gameState.puzzleNum + 1;
+    dom.next.classList.remove("hidden");
   }
 }
 
 function showCompletedState(tries) {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
-  const fb = document.getElementById("cw-feedback");
-  if (fb) {
-    fb.textContent = `You already solved today's puzzle in ${t}!`;
-    fb.className = "feedback feedback--correct";
-    fb.classList.remove("hidden");
+  if (dom.feedback) {
+    dom.feedback.textContent = `You already solved today's puzzle in ${t}!`;
+    dom.feedback.className = "feedback feedback--correct";
+    dom.feedback.classList.remove("hidden");
   }
-  const hintEl = document.getElementById("cw-hint");
-  if (hintEl) hintEl.classList.add("hidden");
-  const digitsEl = document.getElementById("cw-digits");
-  if (digitsEl) digitsEl.classList.add("hidden");
-  const submitWrap = document.getElementById("cw-submit-wrap");
-  if (submitWrap) submitWrap.classList.remove("visible");
+  dom.hint?.classList.add("hidden");
+  dom.digits?.classList.add("hidden");
+  dom.submitWrap?.classList.remove("visible");
   renderStats();
   showNextPuzzle();
 }
@@ -351,14 +359,10 @@ function showCompletedState(tries) {
 function resetPuzzleUI() {
   renderFeedback(null);
   renderHistory([]);
-  const statsEl = document.getElementById("cw-stats");
-  if (statsEl) statsEl.classList.add("hidden");
-  const npEl = document.getElementById("cw-next");
-  if (npEl) npEl.classList.add("hidden");
-  const hintEl = document.getElementById("cw-hint");
-  if (hintEl) hintEl.classList.remove("hidden");
-  const digitsEl = document.getElementById("cw-digits");
-  if (digitsEl) digitsEl.classList.remove("hidden");
+  dom.stats?.classList.add("hidden");
+  dom.next?.classList.add("hidden");
+  dom.hint?.classList.remove("hidden");
+  dom.digits?.classList.remove("hidden");
   possibles = initPossibles();
   renderAllBoxes();
   closeKeypad();
@@ -368,26 +372,22 @@ function resetPuzzleUI() {
 function startRandomPuzzle(puzzleData) {
   const { answer, clues } = puzzleData;
 
-  const plabel = document.getElementById("cw-plabel");
-  if (plabel) plabel.textContent = "Random puzzle";
+  if (dom.plabel) dom.plabel.textContent = "Random puzzle";
 
   renderClues(clues);
 
   gameState = { answer, guesses: [], solved: false, isRandom: true };
   resetPuzzleUI();
 
-  const ragain = document.getElementById("cw-again");
-  if (ragain) ragain.classList.add("hidden");
+  dom.again?.classList.add("hidden");
   // No score saving for random puzzles
-  const saveEl = document.getElementById("cw-save");
-  if (saveEl) saveEl.classList.add("hidden");
+  dom.save?.classList.add("hidden");
 }
 
 function startDailyPuzzle(puzzleData) {
   const { date, puzzleNumber: num, answer, clues } = puzzleData;
 
-  const plabel = document.getElementById("cw-plabel");
-  if (plabel) plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
+  if (dom.plabel) dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
 
   renderClues(clues);
 
@@ -404,8 +404,7 @@ function startDailyPuzzle(puzzleData) {
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
-  const ckEl = document.getElementById("cw-ck");
-  if (ckEl) ckEl.checked = saveScore;
+  if (dom.saveCheck) dom.saveCheck.checked = saveScore;
 }
 
 function handleGuess() {
@@ -421,14 +420,11 @@ function handleGuess() {
     launchConfetti();
     renderFeedback("correct", gameState.answer, tries);
     closeKeypad();
-    const digitsEl = document.getElementById("cw-digits");
-    if (digitsEl) digitsEl.classList.add("digit-correct");
-    const submitWrap = document.getElementById("cw-submit-wrap");
-    if (submitWrap) submitWrap.classList.remove("visible");
+    dom.digits?.classList.add("digit-correct");
+    dom.submitWrap?.classList.remove("visible");
     celebrateOcto();
     if (gameState.isRandom) {
-      const ragain = document.getElementById("cw-again");
-      if (ragain) ragain.classList.remove("hidden");
+      dom.again?.classList.remove("hidden");
     } else {
       if (saveScore) {
         recordGame(todayLocal(), tries);
@@ -459,10 +455,9 @@ function loadPuzzle() {
       startDailyPuzzle(window.PUZZLE_DATA);
     }
   } else {
-    const fb = document.getElementById("cw-feedback");
-    if (fb) {
-      fb.textContent = 'Puzzle data not available. Please refresh the page.';
-      fb.classList.remove('hidden');
+    if (dom.feedback) {
+      dom.feedback.textContent = 'Puzzle data not available. Please refresh the page.';
+      dom.feedback.classList.remove('hidden');
     }
   }
 }
@@ -482,14 +477,12 @@ for (let i = 0; i < 3; i++) {
 }
 
 // Submit button
-const cwSubmitEl = document.getElementById("cw-submit");
-if (cwSubmitEl) cwSubmitEl.addEventListener("click", handleGuess);
+dom.submitBtn?.addEventListener("click", handleGuess);
 
 // Save checkbox
-const ckEl = document.getElementById("cw-ck");
-if (ckEl) {
-  ckEl.addEventListener("change", () => {
-    saveScore = ckEl.checked;
+if (dom.saveCheck) {
+  dom.saveCheck.addEventListener("change", () => {
+    saveScore = dom.saveCheck!.checked;
     persistPrefs(saveScore);
   });
 }
