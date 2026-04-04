@@ -1175,9 +1175,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding-block-end: 0.5rem;
+    padding-block-end: 1.25rem;
     border-block-end: 1px solid var(--border);
-    margin-block-end: 0.5rem;
+    margin-block-end: 1.25rem;
   }
 
   .modal-section--last {
