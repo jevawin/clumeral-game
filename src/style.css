@@ -329,15 +329,16 @@
      Clues
      ═══════════════════════════════════════ */
   .clue-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    row-gap: 1rem;
+    column-gap: 0.8rem;
   }
 
   .clue {
     display: grid;
-    grid-template-columns: 5.75rem 1fr;
-    gap: 0 0.8rem;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
   }
 
   .clue__tag-cell {
