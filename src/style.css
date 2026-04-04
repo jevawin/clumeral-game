@@ -483,6 +483,10 @@
     }
   }
 
+  .digits.digit-correct {
+    pointer-events: none;
+  }
+
   .digits.digit-correct .digit-box {
     background-color: light-dark(rgba(46, 139, 87, 0.12), rgba(76, 195, 140, 0.14));
     border-color: light-dark(rgba(46, 139, 87, 0.4), rgba(76, 195, 140, 0.35));
@@ -689,6 +693,12 @@
     line-height: 1.35;
     margin-block-start: 1rem;
     transition: color 0.4s;
+  }
+
+  .feedback__icon {
+    vertical-align: -0.2em;
+    margin-inline-end: 0.3em;
+    flex-shrink: 0;
   }
 
   .feedback--correct {

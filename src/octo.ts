@@ -286,7 +286,7 @@ export function celebrateOcto(): void {
         if (ph) ph.classList.add('hidden');
 
         const digitsEl = document.querySelector('[data-digits]') as HTMLElement | null;
-        if (digitsEl) digitsEl.classList.add('hidden');
+        if (digitsEl) digitsEl.classList.add('digit-correct');
 
         document.body.style.overflow = '';
         exprMode = 'round';
