@@ -188,15 +188,14 @@ function renderFeedback(type: string | null, answer?: number): void {
       dom.feedback.classList.remove("hidden");
     }
   } else if (type === "incorrect") {
-    if (dom.hint) {
-      dom.hint.innerHTML = `${ICON_CROSS} Incorrect — try again.`;
-      dom.hint.classList.add("hint--incorrect");
+    if (dom.feedback) {
+      dom.feedback.innerHTML = `${ICON_CROSS} Incorrect — try again.`;
+      dom.feedback.className = "feedback feedback--incorrect";
+      dom.feedback.classList.remove("hidden");
     }
-    dom.feedback?.classList.add("hidden");
   } else {
     if (dom.hint) {
       dom.hint.textContent = "Tap a box to eliminate possible numbers.";
-      dom.hint.classList.remove("hint--incorrect");
     }
     if (dom.feedback) {
       dom.feedback.textContent = "";

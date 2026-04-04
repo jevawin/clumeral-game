@@ -324,13 +324,6 @@
     margin-block-start: 18px;
   }
 
-  .hint--incorrect {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--acc);
-    font-weight: 600;
-  }
 
   /* ═══════════════════════════════════════
      Clues
@@ -708,7 +701,14 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: light-dark(#2e8b57, #4cc990);
+    color: light-dark(#1a7a3a, #4cc990);
+  }
+
+  .feedback--incorrect {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: light-dark(#c03030, #f07070);
   }
 
   /* ═══════════════════════════════════════
