@@ -1085,10 +1085,9 @@
 
     & .modal-sub {
       font-size: 1rem;
-      margin-block-end: 1.5rem;
+      margin-block-end: 2.5rem;
       color: var(--muted);
       transition: color 0.4s;
-      padding-block-end: 0;
     }
 
     & ul {
@@ -1159,7 +1158,7 @@
   .modal-example {
     display: flex;
     flex-direction: column;
-    margin-block-end: 1.25rem;
+    margin-block-end: 2.5rem;
   }
 
   .htp-clue {
