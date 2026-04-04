@@ -351,9 +351,9 @@ export function sadOcto(): void {
   const rect = octoWrapEl.getBoundingClientRect();
   const origLeft = rect.left + rect.width / 2;
   const origTop = rect.top;
-  // At 90° rotation (around center), bottom edge = top + height/2 + width/2
-  // We want that flush with viewport bottom, so:
-  const restTop = window.innerHeight - rect.height / 2 - rect.width / 2;
+  // transform-origin is center bottom, so at 90° the lowest point
+  // is at top + height + width/2. We want that flush with viewport bottom.
+  const restTop = window.innerHeight - rect.height - rect.width / 2;
   const fallDist = restTop - rect.top;
 
   octoWrapEl.style.position = 'fixed';
