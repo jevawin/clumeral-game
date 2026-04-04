@@ -131,7 +131,7 @@ npm run dev
 
 | Branch | Purpose | Commits |
 |--------|---------|---------|
-| `main` | Production | PRs from `staging` only (Jamie merges in GitHub) |
+| `main` | Production | PRs from `staging` only (the user merges in GitHub) |
 | `staging` | Pre-production review | Merges from approved work branches only — **protected, never commit directly** |
 | `dev/thing` | General work (no GitHub issue) | Direct commits OK |
 | `issue/NUM` | Work linked to a GitHub issue | Direct commits OK |
@@ -147,19 +147,19 @@ The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ign
 2. Do all work on that branch
 3. After merging into `staging`, switch back to the work branch — do not stay on `staging`
 
-The orphan `claude/*` branch and any leftover remote work branches can't be deleted by Claude (no permission to push `--delete` or API to delete branches). **Jamie must prune these** — either via the GitHub UI (repo → branches) or locally with `git push origin --delete <branch>`.
+The orphan `claude/*` branch and any leftover remote work branches can't be deleted by Claude (no permission to push `--delete` or API to delete branches). **The repo owner must prune these** — either via the GitHub UI (repo → branches) or locally with `git push origin --delete <branch>`.
 
 ### Workflow
 
 1. **Build** — Claude creates `issue/NUM` or `dev/name` branches off `staging`, commits work, pushes, and provides the Cloudflare preview URL for each branch
-2. **Branch review** — Jamie tests each branch via its preview URL as work progresses
-3. **Merge to staging** — Claude waits for Jamie's explicit approval, then merges approved branches into `staging`, creates a PR from `staging` → `main`, and provides both the staging preview URL and the PR link
-4. **Final review** — Jamie tests staging with all branches combined
-5. **Ship** — Jamie merges the PR to `main` from GitHub
+2. **Branch review** — the user tests each branch via its preview URL as work progresses
+3. **Merge to staging** — Claude waits for the user's explicit approval, then merges approved branches into `staging`, creates a PR from `staging` → `main`, and provides both the staging preview URL and the PR link
+4. **Final review** — the user tests staging with all branches combined
+5. **Ship** — the user merges the PR to `main` from GitHub
 
 **Key rules:**
-- **Never merge to `main`** — Jamie does this from GitHub. No exceptions unless Jamie explicitly grants override permission with a stated reason.
-- **Never merge to `staging` without approval** — wait for Jamie to confirm each branch
+- **Never merge to `main`** — the user does this from GitHub. No exceptions unless the user explicitly grants override permission with a stated reason.
+- **Never merge to `staging` without approval** — wait for the user to confirm each branch
 - After merging to `staging`, switch back to the work branch — never commit directly to `staging`
 - **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic via Cloudflare Git integration on merge to `main`
 
@@ -204,7 +204,7 @@ For non-trivial changes (new features, changed logic, refactored modules), run t
 
 ### Living checklists
 
-`docs/DA-REVIEW.md` and `docs/SELF-REVIEW.md` are living documents. When a review (or Jamie) catches something the checklist should have spotted, add the specific check immediately.
+`docs/DA-REVIEW.md` and `docs/SELF-REVIEW.md` are living documents. When a review (or the user) catches something the checklist should have spotted, add the specific check immediately.
 
 ### Context management
 
@@ -213,7 +213,7 @@ For non-trivial changes (new features, changed logic, refactored modules), run t
 
 ## Testing notes
 
-- **Safari tab navigation**: Safari requires **Option+Tab** to tab through all interactive elements (buttons, links, inputs). If Jamie reports "tabbing is broken", remind him to check Option+Tab before investigating.
+- **Safari tab navigation**: Safari requires **Option+Tab** to tab through all interactive elements (buttons, links, inputs). If the user reports "tabbing is broken", remind them to check Option+Tab before investigating.
 
 ## Keeping CLAUDE.md current
 
