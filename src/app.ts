@@ -186,13 +186,13 @@ function renderFeedback(type: string | null, answer?: number): void {
   } else if (type === "incorrect") {
     if (dom.hint) {
       dom.hint.textContent = "Incorrect — try again.";
-      dom.hint.style.color = "var(--acc)";
+      dom.hint.classList.add("hint--incorrect");
     }
     dom.feedback?.classList.add("hidden");
   } else {
     if (dom.hint) {
       dom.hint.textContent = "Tap a box to eliminate possible numbers.";
-      dom.hint.style.color = "";
+      dom.hint.classList.remove("hint--incorrect");
     }
     if (dom.feedback) {
       dom.feedback.textContent = "";
