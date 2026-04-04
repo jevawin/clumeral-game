@@ -132,7 +132,7 @@ npm run dev
 | Branch | Purpose | Commits |
 |--------|---------|---------|
 | `main` | Production | PRs from `staging` only (Jamie merges in GitHub) |
-| `staging` | Pre-production review | Merges from work branches only — **never commit directly** |
+| `staging` | Pre-production review | Merges from approved work branches only — **protected, never commit directly** |
 | `dev/thing` | General work (no GitHub issue) | Direct commits OK |
 | `issue/NUM` | Work linked to a GitHub issue | Direct commits OK |
 
@@ -149,20 +149,27 @@ The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ign
 
 The orphan `claude/*` branch and any leftover remote work branches can't be deleted by Claude (no permission to push `--delete` or API to delete branches). **Jamie must prune these** — either via the GitHub UI (repo → branches) or locally with `git push origin --delete <branch>`.
 
-### Merging & deployment flow
+### Workflow
 
-1. **Work branch → `staging`**: Claude can merge directly (no approval needed). **After merging, switch back to the work branch** — never commit directly to `staging`.
-2. **`staging` → `main`**: Claude creates a PR. **Jamie approves and merges in GitHub** — Claude must not merge this PR.
+1. **Build** — Claude creates `issue/NUM` or `dev/name` branches off `staging`, commits work, pushes, and provides the Cloudflare preview URL for each branch
+2. **Branch review** — Jamie tests each branch via its preview URL as work progresses
+3. **Merge to staging** — Claude waits for Jamie's explicit approval, then merges approved branches into `staging`, creates a PR from `staging` → `main`, and provides both the staging preview URL and the PR link
+4. **Final review** — Jamie tests staging with all branches combined
+5. **Ship** — Jamie merges the PR to `main` from GitHub
 
-### Deployment safety
+**Key rules:**
+- **Never merge to `main`** — Jamie does this from GitHub. No exceptions unless Jamie explicitly grants override permission with a stated reason.
+- **Never merge to `staging` without approval** — wait for Jamie to confirm each branch
+- After merging to `staging`, switch back to the work branch — never commit directly to `staging`
+- **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic via Cloudflare Git integration on merge to `main`
 
-**NEVER run `wrangler deploy` or `npm run deploy` directly.** Deployment happens automatically via Cloudflare's Git integration when code is merged to `main`. Use `npm run preview` for local testing.
+### Cloudflare preview URLs
 
-### Review flow
+Provide these as clickable markdown links after pushing:
+- **Feature branches**: `https://{branch}-clumeral-game.jevawin.workers.dev` (e.g. [https://issue-109-clumeral-game.jevawin.workers.dev](https://issue-109-clumeral-game.jevawin.workers.dev))
+- **Staging**: [https://staging-clumeral-game.jevawin.workers.dev](https://staging-clumeral-game.jevawin.workers.dev)
 
-After pushing to a branch, give Jamie the Cloudflare preview URL as a clickable markdown link:
-- **`staging` branch**: [https://staging-clumeral-game.jevawin.workers.dev](https://staging-clumeral-game.jevawin.workers.dev)
-- **Feature branches**: `https://dev-name-clumeral-game.jevawin.workers.dev` (e.g. [https://dev-issue-77-clumeral-game.jevawin.workers.dev](https://dev-issue-77-clumeral-game.jevawin.workers.dev))
+No need to link PRs for branch → staging — just the Cloudflare branch URL. When approved and merged, provide the staging URL **and** the `staging` → `main` PR URL.
 
 ## Deployment
 
