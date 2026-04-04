@@ -47,14 +47,14 @@ Orphan `claude/*` branches and leftover remote work branches can't be deleted by
 
 1. **Build** — Claude creates `issue/NUM` or `dev/name` branches off `staging`, commits work, pushes, and provides the Cloudflare preview URL for each branch
 2. **Branch review** — the user tests each branch via its preview URL as work progresses
-3. **PR to staging** — Claude waits for the user's explicit approval, then creates a PR from the work branch into `staging` and provides the Cloudflare branch URL. The user squash-merges in GitHub.
+3. **Merge to staging** — on the user's approval, Claude creates a PR from the work branch into `staging` and squash-merges it via `gh pr merge --squash`. Then provides the staging preview URL.
 4. **PR to main** — once staging has all approved branches, Claude creates a PR from `staging` → `main` and provides the staging preview URL and PR link
 5. **Final review** — the user tests staging with all branches combined
 6. **Ship** — the user merges the PR to `main` from GitHub
 
 **Key rules:**
-- **Never merge to `main` or `staging`** — both are protected; the user squash-merges PRs from GitHub. No exceptions unless the user explicitly grants override permission with a stated reason.
-- **Never create PRs to `staging` without approval** — wait for the user to confirm each branch
+- **Never merge to `main`** — the user does this from GitHub. No exceptions unless the user explicitly grants override permission with a stated reason.
+- **Merge to `staging` only after user approval** — Claude can squash-merge via `gh pr merge --squash` once the user confirms the branch
 - **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic via Cloudflare Git integration on merge to `main`
 
 ### Cloudflare preview URLs
