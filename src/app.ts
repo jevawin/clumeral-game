@@ -175,24 +175,27 @@ function renderClues(clues: ClueData[]): void {
 
 // ─── Feedback / history / stats ───────────────────────────────────────────────
 
+const ICON_CHECK = `<svg class="feedback__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-ck"><circle cx="12" cy="12" r="10" fill="white"/><path d="m9 12 2 2 4-4" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-ck)"/></svg>`;
+
+const ICON_CROSS = `<svg class="feedback__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-cx"><circle cx="12" cy="12" r="10" fill="white"/><path d="m15 9-6 6M9 9l6 6" stroke="black" stroke-width="2.5" stroke-linecap="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-cx)"/></svg>`;
+
 function renderFeedback(type: string | null, answer?: number): void {
   if (type === "correct") {
     dom.hint?.classList.add("hidden");
     if (dom.feedback) {
-      dom.feedback.textContent = `Congratulations! ${answer} is the correct answer.`;
+      dom.feedback.innerHTML = `${ICON_CHECK} Congratulations! ${answer} is the correct answer.`;
       dom.feedback.className = "feedback feedback--correct";
       dom.feedback.classList.remove("hidden");
     }
   } else if (type === "incorrect") {
-    if (dom.hint) {
-      dom.hint.textContent = "Incorrect — try again.";
-      dom.hint.style.color = "var(--acc)";
+    if (dom.feedback) {
+      dom.feedback.innerHTML = `${ICON_CROSS} Incorrect — try again.`;
+      dom.feedback.className = "feedback feedback--incorrect";
+      dom.feedback.classList.remove("hidden");
     }
-    dom.feedback?.classList.add("hidden");
   } else {
     if (dom.hint) {
       dom.hint.textContent = "Tap a box to eliminate possible numbers.";
-      dom.hint.style.color = "";
     }
     if (dom.feedback) {
       dom.feedback.textContent = "";
@@ -304,6 +307,7 @@ function closeKeypad() {
 // Single mutation path for both keypad click and keyboard — prevents double-firing
 function toggleDigit(digit: number): void {
   if (activeBox === null) return;
+  renderFeedback(null);
   const s = possibles[activeBox];
   if (s.has(digit)) {
     if (s.size === 1) return; // guard: cannot eliminate last digit
@@ -351,12 +355,17 @@ function showNextPuzzle() {
 function showCompletedState(tries: number): void {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
-    dom.feedback.textContent = `You already solved today's puzzle in ${t}!`;
+    dom.feedback.innerHTML = `${ICON_CHECK} You already solved today's puzzle in ${t}!`;
     dom.feedback.className = "feedback feedback--correct";
     dom.feedback.classList.remove("hidden");
   }
+  // Show the answer digits in the boxes
+  if (gameState.answer != null) {
+    const digits = [Math.floor(gameState.answer / 100), Math.floor((gameState.answer % 100) / 10), gameState.answer % 10];
+    digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
+  }
   dom.hint?.classList.add("hidden");
-  dom.digits?.classList.add("hidden");
+  dom.digits?.classList.add("digit-correct");
   dom.submitWrap?.classList.remove("visible");
   renderStats();
   showNextPuzzle();
@@ -368,7 +377,7 @@ function resetPuzzleUI() {
   dom.stats?.classList.add("hidden");
   dom.next?.classList.add("hidden");
   dom.hint?.classList.remove("hidden");
-  dom.digits?.classList.remove("hidden");
+  dom.digits?.classList.remove("hidden", "digit-correct");
   possibles = initPossibles();
   renderAllBoxes();
   closeKeypad();
@@ -443,11 +452,8 @@ function handleGuess() {
     renderFeedback("incorrect");
     renderHistory(gameState.guesses);
     sadOcto();
-    // Reset all boxes to full possibles on wrong guess
-    possibles = initPossibles();
-    renderAllBoxes();
-    closeKeypad();
-    checkSubmit();
+    // Keep digits filled but hide submit — user can tap a box to change their guess
+    dom.submitWrap?.classList.remove("visible");
   }
 }
 

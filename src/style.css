@@ -189,7 +189,7 @@
     }
   }
 
-  #octo.celebrate > path:first-of-type {
+  [data-octo].celebrate > path:first-of-type {
     animation: octo-colours 4s ease-in-out 0.5s infinite;
   }
 
@@ -234,7 +234,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #octo.celebrate > path:first-of-type,
+    [data-octo].celebrate > path:first-of-type,
     .octo.celebrating {
       animation: none;
     }
@@ -323,6 +323,7 @@
     margin-block-end: 0.875rem;
     margin-block-start: 18px;
   }
+
 
   /* ═══════════════════════════════════════
      Clues
@@ -478,9 +479,13 @@
     }
   }
 
+  .digits.digit-correct {
+    pointer-events: none;
+  }
+
   .digits.digit-correct .digit-box {
-    background-color: rgba(76, 175, 136, 0.15);
-    border-color: rgba(76, 175, 136, 0.4);
+    background-color: light-dark(rgba(46, 139, 87, 0.12), rgba(76, 195, 140, 0.14));
+    border-color: light-dark(rgba(46, 139, 87, 0.4), rgba(76, 195, 140, 0.35));
   }
 
   .digit-box__resolved {
@@ -686,8 +691,24 @@
     transition: color 0.4s;
   }
 
+  .feedback__icon {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+  }
+
   .feedback--correct {
-    color: #4caf88;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: light-dark(#1a7a3a, #4cc990);
+  }
+
+  .feedback--incorrect {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: light-dark(#c03030, #f07070);
   }
 
   /* ═══════════════════════════════════════
