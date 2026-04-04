@@ -325,6 +325,9 @@
   }
 
   .hint--incorrect {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--acc);
     font-weight: 600;
   }
@@ -696,12 +699,15 @@
   }
 
   .feedback__icon {
-    vertical-align: -0.2em;
-    margin-inline-end: 0.3em;
     flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
   }
 
   .feedback--correct {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     color: light-dark(#2e8b57, #4cc990);
   }
 
