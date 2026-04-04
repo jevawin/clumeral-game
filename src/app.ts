@@ -355,9 +355,14 @@ function showNextPuzzle() {
 function showCompletedState(tries: number): void {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
-    dom.feedback.textContent = `You already solved today's puzzle in ${t}!`;
+    dom.feedback.innerHTML = `${ICON_CHECK} You already solved today's puzzle in ${t}!`;
     dom.feedback.className = "feedback feedback--correct";
     dom.feedback.classList.remove("hidden");
+  }
+  // Show the answer digits in the boxes
+  if (gameState.answer != null) {
+    const digits = [Math.floor(gameState.answer / 100), Math.floor((gameState.answer % 100) / 10), gameState.answer % 10];
+    digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
   }
   dom.hint?.classList.add("hidden");
   dom.digits?.classList.add("digit-correct");
