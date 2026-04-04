@@ -1222,6 +1222,7 @@
   .htp-clue {
     padding: 0;
     grid-template-columns: max-content 1fr;
+    gap: 0 0.8rem;
   }
 
   .modal-steps {
