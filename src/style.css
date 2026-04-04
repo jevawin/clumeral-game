@@ -1169,7 +1169,21 @@
   .modal-steps {
     display: flex;
     flex-direction: column;
-    gap: 0.625rem;
+  }
+
+  .modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-block-end: 0.625rem;
+    border-block-end: 1px solid var(--border);
+    margin-block-end: 0.625rem;
+  }
+
+  .modal-section--last {
+    padding-block-end: 0;
+    border-block-end: none;
+    margin-block-end: 0;
   }
 
   .modal-footer {
