@@ -1198,7 +1198,6 @@
     display: flex;
     align-items: center;
     gap: 0.625rem;
-    justify-content: center;
   }
 
   .htp-box {
