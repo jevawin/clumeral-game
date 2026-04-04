@@ -351,7 +351,10 @@ export function sadOcto(): void {
   const rect = octoWrapEl.getBoundingClientRect();
   const origLeft = rect.left + rect.width / 2;
   const origTop = rect.top;
-  const fallDist = window.innerHeight - rect.top - rect.height;
+  // At 90° rotation (around center), bottom edge = top + height/2 + width/2
+  // We want that flush with viewport bottom, so:
+  const restTop = window.innerHeight - rect.height / 2 - rect.width / 2;
+  const fallDist = restTop - rect.top;
 
   octoWrapEl.style.position = 'fixed';
   octoWrapEl.style.left = origLeft + 'px';
@@ -365,13 +368,9 @@ export function sadOcto(): void {
   const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
   if (ph) ph.classList.remove('hidden');
 
-  // Animate fall + bounce, then settle at bottom on side
+  // Animate fall + bounce, then settle on side
   sadBounce(octoWrapEl, fallDist, () => {
     if (!octoWrapEl) return;
-    // Snap to bottom: 0 so it's flush
-    octoWrapEl.style.top = '';
-    octoWrapEl.style.bottom = '0';
-    octoWrapEl.style.transform = 'translateX(-50%) rotate(90deg)';
 
     // Pause 1s dead, then wake up
     setTimeout(() => {
@@ -394,10 +393,8 @@ export function sadOcto(): void {
         // Zip back up: animate to original position, straighten up
         setTimeout(() => {
           if (!octoWrapEl) return;
-          octoWrapEl.style.bottom = '';
-          octoWrapEl.style.top = origTop + 'px';
-          octoWrapEl.style.transition = 'top 0.4s cubic-bezier(.6,0,.7,.2), transform 0.4s cubic-bezier(.6,0,.7,.2)';
-          octoWrapEl.style.transform = 'translateX(-50%) rotate(0deg)';
+          octoWrapEl.style.transition = 'transform 0.4s cubic-bezier(.6,0,.7,.2)';
+          octoWrapEl.style.transform = `translateX(-50%) translateY(0px) rotate(0deg)`;
 
           // Restore to normal flow
           setTimeout(() => {
@@ -405,7 +402,6 @@ export function sadOcto(): void {
             octoWrapEl.style.position = '';
             octoWrapEl.style.left = '';
             octoWrapEl.style.top = '';
-            octoWrapEl.style.bottom = '';
             octoWrapEl.style.margin = '';
             octoWrapEl.style.transform = '';
             octoWrapEl.style.transition = '';
