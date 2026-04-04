@@ -73,70 +73,66 @@
       <!-- ── How to play modal ── -->
       <dialog data-modal aria-labelledby="cw-modal-title">
         <div class="modal__box" data-modal-box>
-          <button class="modal__close" data-modal-close aria-label="Close">✕</button>
           <h2 id="cw-modal-title">How to Play</h2>
-          <p class="modal-sub">Work out the 3-digit number using the maths clues.</p>
+          <p class="modal-sub">The clues define a single, 3-digit number from 100–999. New puzzle every day.</p>
           <div class="modal-example">
-            <div class="modal-step">
-              <div class="digit-box">
-                <div class="digit-box__grid">
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span>5</span>
-                  <span>6</span>
-                  <span>7</span>
-                  <span>8</span>
-                  <span>9</span>
+            <div class="modal-steps">
+              <div class="modal-section">
+                <p class="modal-step-label">1. Read the clues — tap <svg class="htp-info-icon" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
+                <div class="clue htp-clue">
+                  <div class="clue__tag-cell">
+                    <span class="clue__tag"><span>PRIME</span><svg class="clue__tag-icon" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg></span>
+                    <div class="clue__digits" aria-hidden="true">
+                      <span class="clue__digit lit"></span>
+                      <span class="clue__digit"></span>
+                      <span class="clue__digit"></span>
+                    </div>
+                  </div>
+                  <div class="clue__lines">
+                    <div class="clue__line1">The first digit</div>
+                    <div class="clue__line2">is a prime number</div>
+                  </div>
                 </div>
               </div>
-              <p class="modal-step-label">
-                1. A box starts with
-                <strong>all possible digits</strong>
-                . Tap it to open the keypad.
-              </p>
-            </div>
-            <div class="modal-step">
-              <div class="digit-box">
-                <div class="digit-box__grid four-col">
-                  <span>0</span>
-                  <span class="elim">1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span class="digit-box__mid elim">5</span>
-                  <span>6</span>
-                  <span class="elim">7</span>
-                  <span class="digit-box__mid">8</span>
-                  <span class="elim">9</span>
+              <div class="modal-section">
+                <p class="modal-step-label">2. Open the digit boxes, remove ineligible digits</p>
+                <div class="htp-worked">
+                  <div class="digit-box htp-box">
+                    <div class="digit-box__grid">
+                      <span>1</span>
+                      <span>2</span>
+                      <span>3</span>
+                      <span>4</span>
+                      <span>5</span>
+                      <span>6</span>
+                      <span>7</span>
+                      <span>8</span>
+                      <span>9</span>
+                    </div>
+                  </div>
+                  <span class="htp-arrow" aria-hidden="true">→</span>
+                  <div class="htp-keypad-wrap">
+                    <div class="htp-keypad">
+                      <span class="htp-key elim">0</span>
+                      <span class="htp-key elim">1</span>
+                      <span class="htp-key">2</span>
+                      <span class="htp-key">3</span>
+                      <span class="htp-key elim">4</span>
+                      <span class="htp-key">5</span>
+                      <span class="htp-key elim">6</span>
+                      <span class="htp-key">7</span>
+                      <span class="htp-key elim">8</span>
+                      <span class="htp-key elim">9</span>
+                    </div>
+                    <span class="htp-keypad-hint">Tap to remove</span>
+                  </div>
+                  <span class="htp-arrow" aria-hidden="true">→</span>
+                  <div class="digit-box htp-box"><span class="digit-box__resolved">5</span></div>
                 </div>
               </div>
-              <p class="modal-step-label">
-                2. Tap numbers on the keypad to
-                <strong>remove them</strong>
-                as possibilities.
-              </p>
-              <div class="demo-keypad">
-                <button class="keypad__btn">0</button>
-                <button class="keypad__btn elim">1</button>
-                <button class="keypad__btn">2</button>
-                <button class="keypad__btn">3</button>
-                <button class="keypad__btn">4</button>
-                <button class="keypad__btn elim">5</button>
-                <button class="keypad__btn">6</button>
-                <button class="keypad__btn elim">7</button>
-                <button class="keypad__btn">8</button>
-                <button class="keypad__btn elim">9</button>
+              <div class="modal-section modal-section--last">
+                <p class="modal-step-label">3. When 1 digit remains in each, submit your answer</p>
               </div>
-            </div>
-            <div class="modal-step">
-              <div class="digit-box"><span class="digit-box__resolved">5</span></div>
-              <p class="modal-step-label">
-                3. When
-                <strong>one number remains</strong>
-                it fills the box. Do this for all three digits, then submit.
-              </p>
             </div>
           </div>
           <button class="modal__gotit" data-modal-gotit>Got it</button>

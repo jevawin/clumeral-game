@@ -86,6 +86,16 @@ Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → a
 - **Handoff summary**: update `PROGRESS.md` with what was completed, what's next, decisions made, blockers, and current branch state
 - `PROGRESS.md` is the living document — the next session reads it to pick up where the last left off
 
+### Plan before building
+
+When picking up an issue or starting any new piece of work, follow this lightweight flow before writing code:
+
+1. **Ask** — ask the user short questions about how they want to approach it. Use the interactive Q&A format with recommendations, e.g. "How should we handle X?" `[option A (recommended)]` `[option B]` `[other]`. Keep it to 2–4 questions max — enough to resolve ambiguity, not an interrogation.
+2. **Plan** — once the approach is clear, present a brief bullet-point plan (what changes, which files, how). Ask if they want to dig deeper or crack on.
+3. **Build** — execute on approval.
+
+Never skip straight to writing code, even outside of plan mode.
+
 ### Review gates
 
 For non-trivial changes (new features, changed logic, refactored modules), run the full review gate before creating a PR. Trivial changes (typos, formatting, config tweaks) can skip DA but should still get a self-review pass.
