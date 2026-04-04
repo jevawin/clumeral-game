@@ -307,6 +307,7 @@ function closeKeypad() {
 // Single mutation path for both keypad click and keyboard — prevents double-firing
 function toggleDigit(digit: number): void {
   if (activeBox === null) return;
+  renderFeedback(null);
   const s = possibles[activeBox];
   if (s.has(digit)) {
     if (s.size === 1) return; // guard: cannot eliminate last digit
@@ -451,11 +452,8 @@ function handleGuess() {
     renderFeedback("incorrect");
     renderHistory(gameState.guesses);
     sadOcto();
-    // Reset all boxes to full possibles on wrong guess
-    possibles = initPossibles();
-    renderAllBoxes();
-    closeKeypad();
-    checkSubmit();
+    // Keep digits filled but hide submit — user can tap a box to change their guess
+    dom.submitWrap?.classList.remove("visible");
   }
 }
 
