@@ -75,67 +75,42 @@
         <div class="modal__box" data-modal-box>
           <button class="modal__close" data-modal-close aria-label="Close">✕</button>
           <h2 id="cw-modal-title">How to Play</h2>
-          <p class="modal-sub">Work out the 3-digit number using the maths clues.</p>
+          <p class="modal-sub">Solve maths clues about the digits in a 3-digit number from 100–999.</p>
           <div class="modal-example">
             <div class="modal-step">
-              <div class="digit-box">
-                <div class="digit-box__grid">
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span>5</span>
-                  <span>6</span>
-                  <span>7</span>
-                  <span>8</span>
-                  <span>9</span>
-                </div>
+              <div class="htp-clue-example">
+                <span class="clue-tag">PRIME</span>
+                <span>The first digit <strong>is a prime number</strong></span>
               </div>
               <p class="modal-step-label">
-                1. A box starts with
-                <strong>all possible digits</strong>
-                . Tap it to open the keypad.
+                1. <strong>Read the clues</strong> — each one tells you something about a digit or combination of digits. Operators: <strong>≤</strong>&nbsp;less than or equal, <strong>≥</strong>&nbsp;greater than or equal, <strong>≠</strong>&nbsp;not equal.
               </p>
             </div>
             <div class="modal-step">
-              <div class="digit-box">
-                <div class="digit-box__grid four-col">
-                  <span>0</span>
-                  <span class="elim">1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span class="digit-box__mid elim">5</span>
-                  <span>6</span>
-                  <span class="elim">7</span>
-                  <span class="digit-box__mid">8</span>
-                  <span class="elim">9</span>
+              <div class="htp-worked">
+                <div class="digit-box htp-box">
+                  <div class="digit-box__grid">
+                    <span class="elim">1</span>
+                    <span>2</span>
+                    <span>3</span>
+                    <span class="elim">4</span>
+                    <span>5</span>
+                    <span class="elim">6</span>
+                    <span>7</span>
+                    <span class="elim">8</span>
+                    <span class="elim">9</span>
+                  </div>
                 </div>
+                <span class="htp-arrow" aria-hidden="true">→</span>
+                <div class="digit-box htp-box"><span class="digit-box__resolved">5</span></div>
               </div>
               <p class="modal-step-label">
-                2. Tap numbers on the keypad to
-                <strong>remove them</strong>
-                as possibilities.
+                2. <strong>Eliminate digits</strong> — "first digit is prime" means 2, 3, 5 or 7. Tap the box, remove the rest. When one remains, it locks in.
               </p>
-              <div class="demo-keypad">
-                <button class="keypad__btn">0</button>
-                <button class="keypad__btn elim">1</button>
-                <button class="keypad__btn">2</button>
-                <button class="keypad__btn">3</button>
-                <button class="keypad__btn">4</button>
-                <button class="keypad__btn elim">5</button>
-                <button class="keypad__btn">6</button>
-                <button class="keypad__btn elim">7</button>
-                <button class="keypad__btn">8</button>
-                <button class="keypad__btn elim">9</button>
-              </div>
             </div>
-            <div class="modal-step">
-              <div class="digit-box"><span class="digit-box__resolved">5</span></div>
+            <div class="modal-step modal-step--last">
               <p class="modal-step-label">
-                3. When
-                <strong>one number remains</strong>
-                it fills the box. Do this for all three digits, then submit.
+                3. <strong>Solve all three digits</strong> and hit submit. Same puzzle for everyone, new one every day.
               </p>
             </div>
           </div>

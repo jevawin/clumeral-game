@@ -1158,21 +1158,54 @@
   .modal-example {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-block-end: 1.25rem;
+    gap: 0.625rem;
+    margin-block-end: 1rem;
   }
 
   .modal-step {
-    display: grid;
-    align-items: center;
-    gap: 0.75rem;
-    grid-template-columns: 7rem auto;
-    grid-auto-rows: 7rem;
-    padding-block-end: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-block-end: 0.625rem;
 
     &:not(:last-child) {
       border-block-end: 1px solid var(--border);
     }
+  }
+
+  .modal-step--last {
+    padding-block-end: 0;
+  }
+
+  .htp-clue-example {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.25rem;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: background-color 0.4s, border-color 0.4s, color 0.4s;
+  }
+
+  .htp-worked {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    justify-content: center;
+  }
+
+  .htp-box {
+    inline-size: 5rem;
+    block-size: 5rem;
+  }
+
+  .htp-arrow {
+    font-size: 1.25rem;
+    color: var(--muted);
   }
 
   .modal-step-label {
