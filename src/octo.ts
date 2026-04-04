@@ -301,8 +301,9 @@ export function sadOcto(): void {
   octoAnimating = true;
   exprMode = 'sad';
 
-  // Show X-eyes and sad mouth
   const setOpacity = (el: HTMLElement | null, val: string) => { if (el) el.style.opacity = val; };
+
+  // Show X-eyes and sad mouth
   setOpacity(eyeLR as HTMLElement | null, '0');
   setOpacity(eyeRR as HTMLElement | null, '0');
   setOpacity(eyeLS as HTMLElement | null, '0');
@@ -313,33 +314,99 @@ export function sadOcto(): void {
   setOpacity(eyeRX as HTMLElement | null, '1');
   setOpacity(mouthSad as HTMLElement | null, '1');
 
-  // Tilt sideways
-  octoWrapEl.style.transition = 'transform 0.3s ease-out';
-  octoWrapEl.style.transform = 'rotate(-80deg) translateY(20px)';
+  // Save original position, switch to fixed
+  const rect = octoWrapEl.getBoundingClientRect();
+  const origLeft = rect.left + rect.width / 2;
+  const origTop = rect.top;
+  const bottomY = window.innerHeight - rect.height - 20;
 
-  setTimeout(() => {
+  octoWrapEl.style.position = 'fixed';
+  octoWrapEl.style.left = origLeft + 'px';
+  octoWrapEl.style.top = origTop + 'px';
+  octoWrapEl.style.margin = '0';
+  octoWrapEl.style.transform = 'translateX(-50%)';
+  octoWrapEl.style.zIndex = '9999';
+
+  const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
+  if (ph) ph.classList.remove('hidden');
+
+  // Fall down to bottom of screen
+  requestAnimationFrame(() => {
     if (!octoWrapEl) return;
-    // Spring back
-    octoWrapEl.style.transition = 'transform 0.45s cubic-bezier(.34,1.56,.64,1)';
-    octoWrapEl.style.transform = '';
+    octoWrapEl.style.transition = 'top 0.5s cubic-bezier(.55,0,.85,.25)';
+    octoWrapEl.style.top = bottomY + 'px';
 
+    // Bounce 1
     setTimeout(() => {
       if (!octoWrapEl) return;
-      // Restore face
-      octoWrapEl.style.transition = '';
-      setOpacity(eyeLR as HTMLElement | null, '1');
-      setOpacity(eyeRR as HTMLElement | null, '1');
-      setOpacity(eyeLS as HTMLElement | null, '');
-      setOpacity(eyeRS as HTMLElement | null, '');
-      setOpacity(mouthH as HTMLElement | null, '1');
-      setOpacity(mouthS as HTMLElement | null, '');
-      setOpacity(eyeLX as HTMLElement | null, '0');
-      setOpacity(eyeRX as HTMLElement | null, '0');
-      setOpacity(mouthSad as HTMLElement | null, '0');
-      exprMode = 'round';
-      octoAnimating = false;
-    }, 450);
-  }, 1800);
+      octoWrapEl.style.transition = 'top 0.2s cubic-bezier(.34,1.56,.64,1)';
+      octoWrapEl.style.top = (bottomY - 30) + 'px';
+
+      // Bounce 1 land
+      setTimeout(() => {
+        if (!octoWrapEl) return;
+        octoWrapEl.style.transition = 'top 0.15s cubic-bezier(.55,0,.85,.25)';
+        octoWrapEl.style.top = bottomY + 'px';
+
+        // Bounce 2 (smaller)
+        setTimeout(() => {
+          if (!octoWrapEl) return;
+          octoWrapEl.style.transition = 'top 0.15s cubic-bezier(.34,1.56,.64,1)';
+          octoWrapEl.style.top = (bottomY - 10) + 'px';
+
+          // Bounce 2 land
+          setTimeout(() => {
+            if (!octoWrapEl) return;
+            octoWrapEl.style.transition = 'top 0.1s cubic-bezier(.55,0,.85,.25)';
+            octoWrapEl.style.top = bottomY + 'px';
+
+            // Pause 1s, then wake up
+            setTimeout(() => {
+              if (!octoWrapEl) return;
+
+              // Wake up: blink then restore face
+              setOpacity(eyeLX as HTMLElement | null, '0');
+              setOpacity(eyeRX as HTMLElement | null, '0');
+              setOpacity(mouthSad as HTMLElement | null, '0');
+
+              // Brief blink (eyes closed)
+              setTimeout(() => {
+                setOpacity(eyeLR as HTMLElement | null, '1');
+                setOpacity(eyeRR as HTMLElement | null, '1');
+                setOpacity(mouthH as HTMLElement | null, '1');
+                setOpacity(eyeLS as HTMLElement | null, '');
+                setOpacity(eyeRS as HTMLElement | null, '');
+                setOpacity(mouthS as HTMLElement | null, '');
+                exprMode = 'round';
+
+                // Zip back up to original position
+                setTimeout(() => {
+                  if (!octoWrapEl) return;
+                  octoWrapEl.style.transition = 'top 0.4s cubic-bezier(.6,0,.7,.2)';
+                  octoWrapEl.style.top = origTop + 'px';
+
+                  // Restore to normal flow
+                  setTimeout(() => {
+                    if (!octoWrapEl) return;
+                    octoWrapEl.style.position = '';
+                    octoWrapEl.style.left = '';
+                    octoWrapEl.style.top = '';
+                    octoWrapEl.style.margin = '';
+                    octoWrapEl.style.transform = '';
+                    octoWrapEl.style.transition = '';
+                    octoWrapEl.style.zIndex = '';
+
+                    if (ph) ph.classList.add('hidden');
+                    octoAnimating = false;
+                  }, 450);
+                }, 200);
+              }, 150);
+            }, 1000);
+          }, 150);
+        }, 150);
+      }, 200);
+    }, 500);
+  });
 }
 
 // ─── Idle bob ───────────────────────────────────────────────────────────────
