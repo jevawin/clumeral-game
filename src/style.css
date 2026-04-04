@@ -1215,9 +1215,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
+    justify-content: space-between;
     flex: 1;
     min-inline-size: 0;
+    align-self: stretch;
   }
 
   .htp-keypad {
@@ -1228,7 +1229,7 @@
   }
 
   .htp-keypad-hint {
-    font-size: 0.625rem;
+    font-size: 1rem;
     color: var(--muted);
     text-align: center;
     transition: color 0.4s;
