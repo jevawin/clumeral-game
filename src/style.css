@@ -1162,33 +1162,26 @@
     margin-block-end: 1rem;
   }
 
-  .modal-step {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding-block-end: 0.625rem;
-
-    &:not(:last-child) {
-      border-block-end: 1px solid var(--border);
-    }
-  }
-
-  .modal-step--last {
-    padding-block-end: 0;
-  }
-
-  .htp-clue-example {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    line-height: 1.35;
+  .htp-clue {
     padding: 0.5rem 0.625rem;
     border-radius: 0.25rem;
     background-color: var(--surface);
     border: 1px solid var(--border);
-    color: var(--text);
-    transition: background-color 0.4s, border-color 0.4s, color 0.4s;
+    transition: background-color 0.4s, border-color 0.4s;
+  }
+
+  .modal-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .modal-footer {
+    font-size: 0.875rem;
+    color: var(--muted);
+    text-align: center;
+    margin-block-start: 0.25rem;
+    transition: color 0.4s;
   }
 
   .htp-worked {
@@ -1210,15 +1203,10 @@
   }
 
   .modal-step-label {
-    font-size: 1rem;
+    font-size: 0.9375rem;
     line-height: 1.4;
-    flex: 1;
     color: var(--text);
     transition: color 0.4s;
-
-    & strong {
-      color: var(--acc);
-    }
   }
 
   .mdb {

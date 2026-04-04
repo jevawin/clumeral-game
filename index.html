@@ -75,18 +75,19 @@
         <div class="modal__box" data-modal-box>
           <button class="modal__close" data-modal-close aria-label="Close">✕</button>
           <h2 id="cw-modal-title">How to Play</h2>
-          <p class="modal-sub">Solve maths clues about the digits in a 3-digit number from 100–999.</p>
+          <p class="modal-sub">The combined clues define a single, 3-digit number from 100–999.</p>
           <div class="modal-example">
-            <div class="modal-step">
-              <div class="htp-clue-example">
-                <span class="clue-tag">PRIME</span>
-                <span>The first digit <strong>is a prime number</strong></span>
+            <div class="clue htp-clue">
+              <div class="clue__tag-cell">
+                <span class="clue__tag">PRIME</span>
               </div>
-              <p class="modal-step-label">
-                1. <strong>Read the clues</strong> — each one tells you something about a digit or combination of digits. Operators: <strong>≤</strong>&nbsp;less than or equal, <strong>≥</strong>&nbsp;greater than or equal, <strong>≠</strong>&nbsp;not equal.
-              </p>
+              <div class="clue__lines">
+                <div class="clue__line1">The first digit</div>
+                <div class="clue__line2">is a prime number</div>
+              </div>
             </div>
-            <div class="modal-step">
+            <div class="modal-steps">
+              <p class="modal-step-label">1. Read a clue or combination of clues to eliminate digits</p>
               <div class="htp-worked">
                 <div class="digit-box htp-box">
                   <div class="digit-box__grid">
@@ -104,15 +105,10 @@
                 <span class="htp-arrow" aria-hidden="true">→</span>
                 <div class="digit-box htp-box"><span class="digit-box__resolved">5</span></div>
               </div>
-              <p class="modal-step-label">
-                2. <strong>Eliminate digits</strong> — "first digit is prime" means 2, 3, 5 or 7. Tap the box, remove the rest. When one remains, it locks in.
-              </p>
+              <p class="modal-step-label">2. Tap a digit box, then tap to remove numbers from it</p>
+              <p class="modal-step-label">3. When each box shows a single digit, submit your answer</p>
             </div>
-            <div class="modal-step modal-step--last">
-              <p class="modal-step-label">
-                3. <strong>Solve all three digits</strong> and hit submit. Same puzzle for everyone, new one every day.
-              </p>
-            </div>
+            <p class="modal-footer">Come back tomorrow for another puzzle!</p>
           </div>
           <button class="modal__gotit" data-modal-gotit>Got it</button>
         </div>
