@@ -39,7 +39,7 @@ Create work branches off `staging`. Legacy branches (`dev`, `colours`) are being
 
 ### Harness branch workaround
 
-The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ignore it.** Create `issue/NUM` or `dev/name` off `staging` instead. After merging into `staging`, switch back to the work branch.
+The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ignore it.** Create `issue/NUM` or `dev/name` off `staging` instead.
 
 Orphan `claude/*` branches and leftover remote work branches can't be deleted by Claude. **The repo owner must prune these** via the GitHub UI or `git push origin --delete <branch>`.
 
@@ -47,14 +47,14 @@ Orphan `claude/*` branches and leftover remote work branches can't be deleted by
 
 1. **Build** — Claude creates `issue/NUM` or `dev/name` branches off `staging`, commits work, pushes, and provides the Cloudflare preview URL for each branch
 2. **Branch review** — the user tests each branch via its preview URL as work progresses
-3. **Merge to staging** — Claude waits for the user's explicit approval, then merges approved branches into `staging`, creates a PR from `staging` → `main`, and provides both the staging preview URL and the PR link
-4. **Final review** — the user tests staging with all branches combined
-5. **Ship** — the user merges the PR to `main` from GitHub
+3. **PR to staging** — Claude waits for the user's explicit approval, then creates a PR from the work branch into `staging` and provides the Cloudflare branch URL. The user squash-merges in GitHub.
+4. **PR to main** — once staging has all approved branches, Claude creates a PR from `staging` → `main` and provides the staging preview URL and PR link
+5. **Final review** — the user tests staging with all branches combined
+6. **Ship** — the user merges the PR to `main` from GitHub
 
 **Key rules:**
-- **Never merge to `main`** — the user does this from GitHub. No exceptions unless the user explicitly grants override permission with a stated reason.
-- **Never merge to `staging` without approval** — wait for the user to confirm each branch
-- After merging to `staging`, switch back to the work branch — never commit directly to `staging`
+- **Never merge to `main` or `staging`** — both are protected; the user squash-merges PRs from GitHub. No exceptions unless the user explicitly grants override permission with a stated reason.
+- **Never create PRs to `staging` without approval** — wait for the user to confirm each branch
 - **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic via Cloudflare Git integration on merge to `main`
 
 ### Cloudflare preview URLs
@@ -63,7 +63,7 @@ Provide these as clickable markdown links after pushing:
 - **Feature branches**: `https://{branch}-clumeral-game.jevawin.workers.dev` (e.g. [https://issue-109-clumeral-game.jevawin.workers.dev](https://issue-109-clumeral-game.jevawin.workers.dev))
 - **Staging**: [https://staging-clumeral-game.jevawin.workers.dev](https://staging-clumeral-game.jevawin.workers.dev)
 
-No need to link PRs for branch → staging — just the Cloudflare branch URL. When approved and merged, provide the staging URL **and** the `staging` → `main` PR URL.
+When presenting a branch for approval, provide the Cloudflare branch URL. When all branches are merged to staging, provide the staging URL **and** the `staging` → `main` PR URL.
 
 ## Deployment
 
