@@ -119,6 +119,64 @@ function digitPositions(propKey: string): boolean[] {
   return [true, true, true];
 }
 
+const TAG_TIPS: Record<string, string> = {
+  PRIME: "Can only be divided by 1 and itself: 2, 3, 5, 7",
+  SQUARE: "A number multiplied by itself: 0, 1, 4, 9, 16, 25\u2026",
+  CUBE: "A number multiplied by itself three times: 0, 1, 8, 27, 64, 125\u2026",
+  TRIAN: "Numbers that form a triangle pattern: 1, 3, 6, 10, 15, 21, 28\u2026",
+  SUM: "The digits added together",
+  DIFF: "The difference between two digits",
+  PROD: "The digits multiplied together",
+  MEAN: "The average of the digits",
+  RANGE: "The largest digit minus the smallest",
+};
+
+function showTagTip(tag: string, anchor: HTMLElement): void {
+  closeTagTip();
+  const tip = TAG_TIPS[tag];
+  if (!tip) return;
+
+  const popover = document.createElement("div");
+  popover.className = "tag-tip";
+  popover.setAttribute("role", "tooltip");
+  popover.innerHTML = `
+    <p class="tag-tip__text">${tip}</p>
+    <button class="tag-tip__close" aria-label="Close">
+      <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-circle-x"/></svg>
+      Close
+    </button>
+  `;
+
+  anchor.closest(".clue__tag-cell")!.appendChild(popover);
+
+  const closeBtn = popover.querySelector(".tag-tip__close")!;
+  closeBtn.addEventListener("click", closeTagTip);
+
+  const onOutside = (e: Event) => {
+    if (!popover.contains(e.target as Node) && e.target !== anchor) closeTagTip();
+  };
+  const onEscape = (e: KeyboardEvent) => { if (e.key === "Escape") closeTagTip(); };
+
+  setTimeout(() => {
+    document.addEventListener("click", onOutside);
+    document.addEventListener("keydown", onEscape);
+  }, 0);
+
+  popover.dataset.cleanup = "true";
+  (popover as any)._cleanup = () => {
+    document.removeEventListener("click", onOutside);
+    document.removeEventListener("keydown", onEscape);
+  };
+}
+
+function closeTagTip(): void {
+  const existing = document.querySelector(".tag-tip");
+  if (existing) {
+    (existing as any)._cleanup?.();
+    existing.remove();
+  }
+}
+
 function renderClues(clues: ClueData[]): void {
   if (!dom.clueList) return;
   dom.clueList.innerHTML = "";
@@ -151,7 +209,10 @@ function renderClues(clues: ClueData[]): void {
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="clue__tag-cell">
-        <span class="clue__tag">${tag}</span>
+        <button class="clue__tag" type="button" aria-label="${tag} — tap for definition">
+          <span>${tag}</span>
+          <svg class="clue__tag-icon" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
+        </button>
         <div class="clue__digits" aria-hidden="true">${miniDigitsHtml}</div>
       </div>
       <div class="clue__lines">
@@ -159,6 +220,10 @@ function renderClues(clues: ClueData[]): void {
         <div class="clue__line2"></div>
       </div>
     `;
+
+    const tagBtn = clueEl.querySelector(".clue__tag") as HTMLButtonElement;
+    tagBtn.addEventListener("click", () => showTagTip(tag, tagBtn));
+
     const l1El = clueEl.querySelector(".clue__line1");
     const l2El = clueEl.querySelector(".clue__line2");
     if (l1El) l1El.textContent = l1Text ?? "";
