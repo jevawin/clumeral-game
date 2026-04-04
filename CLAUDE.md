@@ -88,7 +88,13 @@ Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → a
 
 ### Plan before building
 
-When picking up an issue or starting any new piece of work, **always present a brief plan first** — a few bullet points covering what will change and how. Ask the user if they want to plan further or crack on. Never go straight into writing code, even outside of plan mode.
+When picking up an issue or starting any new piece of work, follow this lightweight flow before writing code:
+
+1. **Ask** — ask the user short questions about how they want to approach it. Use the interactive Q&A format with recommendations, e.g. "How should we handle X?" `[option A (recommended)]` `[option B]` `[other]`. Keep it to 2–4 questions max — enough to resolve ambiguity, not an interrogation.
+2. **Plan** — once the approach is clear, present a brief bullet-point plan (what changes, which files, how). Ask if they want to dig deeper or crack on.
+3. **Build** — execute on approval.
+
+Never skip straight to writing code, even outside of plan mode.
 
 ### Review gates
 
