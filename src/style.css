@@ -1142,7 +1142,7 @@
 
     & .modal-sub {
       font-size: 1rem;
-      margin-block-end: 1.125rem;
+      margin-block-end: 2.5rem;
       color: var(--muted);
       transition: color 0.4s;
     }
@@ -1215,33 +1215,107 @@
   .modal-example {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    margin-block-end: 2.5rem;
+  }
+
+  .htp-clue {
+    padding: 0;
+  }
+
+  .modal-steps {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-block-end: 1.25rem;
+    border-block-end: 1px solid var(--border);
     margin-block-end: 1.25rem;
   }
 
-  .modal-step {
-    display: grid;
-    align-items: center;
-    gap: 0.75rem;
-    grid-template-columns: 7rem auto;
-    grid-auto-rows: 7rem;
-    padding-block-end: 0.75rem;
+  .modal-section--last {
+    padding-block-end: 0;
+    border-block-end: none;
+    margin-block-end: 0;
+  }
 
-    &:not(:last-child) {
-      border-block-end: 1px solid var(--border);
+  .modal-footer {
+    font-size: 0.875rem;
+    color: var(--muted);
+    text-align: center;
+    margin-block-start: 0.25rem;
+    transition: color 0.4s;
+  }
+
+  .htp-worked {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+  }
+
+  .htp-box {
+    flex: 1;
+    aspect-ratio: 1;
+    min-inline-size: 0;
+  }
+
+  .htp-arrow {
+    font-size: 1.25rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .htp-keypad-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    min-inline-size: 0;
+    align-self: stretch;
+  }
+
+  .htp-keypad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.125rem;
+    inline-size: 100%;
+  }
+
+  .htp-keypad-hint {
+    font-size: 1rem;
+    color: var(--muted);
+    text-align: center;
+    transition: color 0.4s;
+  }
+
+  .htp-key {
+    font-family: "Inconsolata", monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.5;
+    border-radius: 0.125rem;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: background-color 0.4s, border-color 0.4s, color 0.4s;
+
+    &.elim {
+      opacity: 0.2;
+      text-decoration: line-through;
     }
   }
 
   .modal-step-label {
-    font-size: 1rem;
+    font-size: 0.9375rem;
     line-height: 1.4;
-    flex: 1;
     color: var(--text);
     transition: color 0.4s;
-
-    & strong {
-      color: var(--acc);
-    }
   }
 
   .mdb {
