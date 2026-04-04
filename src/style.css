@@ -1199,8 +1199,9 @@
   }
 
   .htp-box {
-    inline-size: 5rem;
-    block-size: 5rem;
+    flex: none;
+    inline-size: 5.5rem;
+    block-size: 5.5rem;
   }
 
   .htp-arrow {
