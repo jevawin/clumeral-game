@@ -296,13 +296,47 @@ export function celebrateOcto(): void {
   }, 5100);
 }
 
+function sadBounce(el: HTMLElement, fallDist: number, onDone: () => void): void {
+  // Physics-based fall + damped bounce using requestAnimationFrame
+  const gravity = 4800;   // px/s²
+  const restitution = 0.3; // bounce damping
+  const minBounce = 2;     // stop bouncing below this height
+  let y = 0, velocity = 0, landed = false;
+  let prev = performance.now();
+
+  (function frame(now: number) {
+    const dt = Math.min((now - prev) / 1000, 0.033); // cap at ~30fps delta
+    prev = now;
+    velocity += gravity * dt;
+    y += velocity * dt;
+
+    if (y >= fallDist) {
+      y = fallDist;
+      landed = true;
+      velocity = -velocity * restitution;
+      if (Math.abs(velocity) < minBounce * gravity * 0.01) {
+        y = fallDist;
+        el.style.transform = `translateX(-50%) translateY(${y}px) rotate(90deg)`;
+        onDone();
+        return;
+      }
+    }
+
+    // Rotate to 90° during initial fall, lock at 90° once landed
+    const rot = landed ? 90 : Math.min(y / fallDist, 1) * 90;
+    el.style.transform = `translateX(-50%) translateY(${y}px) rotate(${rot}deg)`;
+    requestAnimationFrame(frame);
+  })(performance.now());
+}
+
 export function sadOcto(): void {
   if (octoAnimating || !octoWrapEl) return;
   octoAnimating = true;
   exprMode = 'sad';
 
-  // Show X-eyes and sad mouth
   const setOpacity = (el: HTMLElement | null, val: string) => { if (el) el.style.opacity = val; };
+
+  // Show X-eyes and sad mouth
   setOpacity(eyeLR as HTMLElement | null, '0');
   setOpacity(eyeRR as HTMLElement | null, '0');
   setOpacity(eyeLS as HTMLElement | null, '0');
@@ -313,33 +347,75 @@ export function sadOcto(): void {
   setOpacity(eyeRX as HTMLElement | null, '1');
   setOpacity(mouthSad as HTMLElement | null, '1');
 
-  // Tilt sideways
-  octoWrapEl.style.transition = 'transform 0.3s ease-out';
-  octoWrapEl.style.transform = 'rotate(-80deg) translateY(20px)';
+  // Save original position, switch to fixed at current spot
+  const rect = octoWrapEl.getBoundingClientRect();
+  const origLeft = rect.left + rect.width / 2;
+  const origTop = rect.top;
+  // transform-origin is center bottom, so at 90° the lowest point
+  // is at top + height + width/2. We want that flush with viewport bottom.
+  const restTop = window.innerHeight - rect.height - rect.width / 2;
+  const fallDist = restTop - rect.top;
 
-  setTimeout(() => {
+  octoWrapEl.style.position = 'fixed';
+  octoWrapEl.style.left = origLeft + 'px';
+  octoWrapEl.style.top = origTop + 'px';
+  octoWrapEl.style.bottom = '';
+  octoWrapEl.style.margin = '0';
+  octoWrapEl.style.transform = 'translateX(-50%)';
+  octoWrapEl.style.transition = 'none';
+  octoWrapEl.style.zIndex = '9999';
+
+  const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
+  if (ph) ph.classList.remove('hidden');
+
+  // Animate fall + bounce, then settle on side
+  sadBounce(octoWrapEl, fallDist, () => {
     if (!octoWrapEl) return;
-    // Spring back
-    octoWrapEl.style.transition = 'transform 0.45s cubic-bezier(.34,1.56,.64,1)';
-    octoWrapEl.style.transform = '';
 
+    // Pause 1s dead, then wake up
+    const wakeY = fallDist - window.innerHeight * 0.01;
     setTimeout(() => {
       if (!octoWrapEl) return;
-      // Restore face
-      octoWrapEl.style.transition = '';
-      setOpacity(eyeLR as HTMLElement | null, '1');
-      setOpacity(eyeRR as HTMLElement | null, '1');
-      setOpacity(eyeLS as HTMLElement | null, '');
-      setOpacity(eyeRS as HTMLElement | null, '');
-      setOpacity(mouthH as HTMLElement | null, '1');
-      setOpacity(mouthS as HTMLElement | null, '');
+
+      // Wake up: lift slightly and rotate upright
+      octoWrapEl.style.transition = 'transform 0.4s cubic-bezier(.34,1.56,.64,1)';
+      octoWrapEl.style.transform = `translateX(-50%) translateY(${wakeY}px) rotate(0deg)`;
+
+      // Restore face as it rights itself
       setOpacity(eyeLX as HTMLElement | null, '0');
       setOpacity(eyeRX as HTMLElement | null, '0');
       setOpacity(mouthSad as HTMLElement | null, '0');
+      setOpacity(eyeLR as HTMLElement | null, '1');
+      setOpacity(eyeRR as HTMLElement | null, '1');
+      setOpacity(mouthH as HTMLElement | null, '1');
+      setOpacity(eyeLS as HTMLElement | null, '');
+      setOpacity(eyeRS as HTMLElement | null, '');
+      setOpacity(mouthS as HTMLElement | null, '');
       exprMode = 'round';
-      octoAnimating = false;
-    }, 450);
-  }, 1800);
+
+      // Pause upright for 0.5s, then zip back up
+      setTimeout(() => {
+        if (!octoWrapEl) return;
+        octoWrapEl.style.transition = 'transform 0.4s cubic-bezier(.6,0,.7,.2)';
+        octoWrapEl.style.transform = `translateX(-50%) translateY(0px) rotate(0deg)`;
+
+        // Restore to normal flow
+        setTimeout(() => {
+          if (!octoWrapEl) return;
+          octoWrapEl.style.position = '';
+          octoWrapEl.style.left = '';
+          octoWrapEl.style.top = '';
+          octoWrapEl.style.margin = '';
+          octoWrapEl.style.transform = '';
+          octoWrapEl.style.transition = '';
+          octoWrapEl.style.zIndex = '';
+
+          if (ph) ph.classList.add('hidden');
+          octoAnimating = false;
+        }, 450);
+      }, 900);
+    }, 1000);
+  });
 }
 
 // ─── Idle bob ───────────────────────────────────────────────────────────────
