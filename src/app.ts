@@ -120,15 +120,15 @@ function digitPositions(propKey: string): boolean[] {
 }
 
 const TAG_TIPS: Record<string, string> = {
-  PRIME: "Can only be divided by 1 and itself: 2, 3, 5, 7",
-  SQUARE: "A number multiplied by itself: 0, 1, 4, 9, 16, 25\u2026",
-  CUBE: "A number multiplied by itself three times: 0, 1, 8, 27, 64, 125\u2026",
-  TRIAN: "Numbers that form a triangle pattern: 1, 3, 6, 10, 15, 21, 28\u2026",
-  SUM: "The digits added together",
-  DIFF: "The difference between two digits",
-  PROD: "The digits multiplied together",
-  MEAN: "The average of the digits",
-  RANGE: "The largest digit minus the smallest",
+  PRIME: "Only divisible by 1 and itself",
+  SQUARE: "Square root is an integer",
+  CUBE: "Cube root is an integer",
+  TRIAN: "Sum of consecutive numbers from 0",
+  SUM: "Digits added together",
+  DIFF: "Smaller of the digits subtracted from larger",
+  PROD: "Digits multiplied together",
+  MEAN: "Sum of, divided by count of digits",
+  RANGE: "Largest digit minus the smallest",
 };
 
 function showTagTip(tag: string, anchor: HTMLElement): void {
