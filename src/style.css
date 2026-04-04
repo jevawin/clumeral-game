@@ -336,7 +336,7 @@
 
   .clue {
     display: grid;
-    grid-template-columns: minmax(4.5rem, auto) 1fr;
+    grid-template-columns: 5.75rem 1fr;
     gap: 0 0.8rem;
   }
 
