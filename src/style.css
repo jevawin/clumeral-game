@@ -434,6 +434,7 @@
   .clue__digits {
     display: flex;
     justify-content: space-between;
+    gap: 2.5px;
   }
 
   .clue__digit {
