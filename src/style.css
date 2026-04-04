@@ -1200,9 +1200,9 @@
   }
 
   .htp-box {
-    flex: none;
-    inline-size: 5.5rem;
-    block-size: 5.5rem;
+    flex: 1;
+    aspect-ratio: 1;
+    min-inline-size: 0;
   }
 
   .htp-arrow {
@@ -1215,8 +1215,8 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0.125rem;
-    inline-size: 5.5rem;
-    flex-shrink: 0;
+    flex: 1;
+    min-inline-size: 0;
   }
 
   .htp-key {
