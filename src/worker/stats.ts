@@ -156,7 +156,7 @@ export function renderDashboard(
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Inconsolata:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: light dark; }
+  :root { color-scheme: light dark; --acc: light-dark(#bc3c2c, #ff8070); }
   :root.dark { color-scheme: dark; }
   :root.light { color-scheme: light; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -189,8 +189,7 @@ export function renderDashboard(
     background: #bc3c2c;
     color: #fff;
   }
-  --acc: light-dark(#bc3c2c, #ff8070);
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 1rem; margin-block-end: 2.5rem; }
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-block-end: 2.5rem; }
   .card {
     background: light-dark(#fffdf7, #2e2e2c);
     border-radius: 0.375rem;
