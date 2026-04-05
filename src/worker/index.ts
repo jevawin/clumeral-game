@@ -83,21 +83,43 @@ export default {
 
     // GET /api/stats — JSON stats data
     if (request.method === 'GET' && url.pathname === '/api/stats') {
-      const days = Math.min(Number(url.searchParams.get('period') || 90), 90);
-      const stats = await getStats(env, days);
-      return new Response(JSON.stringify(stats), {
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' },
-      });
+      try {
+        if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
+          return new Response('Analytics secrets not configured', { status: 503 });
+        }
+        const days = Math.min(Number(url.searchParams.get('period') || 90), 90);
+        const stats = await getStats(env, days);
+        return new Response(JSON.stringify(stats), {
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' },
+        });
+      } catch (err: unknown) {
+        const e = err instanceof Error ? err : new Error(String(err));
+        return new Response(`Stats error: ${e.message}`, { status: 500 });
+      }
     }
 
     // GET /stats — rendered dashboard
     if (request.method === 'GET' && url.pathname === '/stats') {
-      const days = Number(url.searchParams.get('period') || 0);
-      const stats = await getStats(env, days > 0 ? Math.min(days, 90) : 0);
-      const html = renderDashboard(stats, days > 0 ? Math.min(days, 90) : 0);
-      return new Response(html, {
-        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'max-age=300' },
-      });
+      try {
+        if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
+          return new Response('Analytics secrets not configured. Set CF_ACCOUNT_ID and CF_API_TOKEN as Worker secrets.', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' },
+          });
+        }
+        const days = Number(url.searchParams.get('period') || 0);
+        const stats = await getStats(env, days > 0 ? Math.min(days, 90) : 0);
+        const html = renderDashboard(stats, days > 0 ? Math.min(days, 90) : 0);
+        return new Response(html, {
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'max-age=300' },
+        });
+      } catch (err: unknown) {
+        const e = err instanceof Error ? err : new Error(String(err));
+        return new Response(`Stats error: ${e.message}\n${e.stack}`, {
+          status: 500,
+          headers: { 'Content-Type': 'text/plain' },
+        });
+      }
     }
 
     return env.ASSETS.fetch(request);
