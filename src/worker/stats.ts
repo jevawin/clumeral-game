@@ -187,7 +187,7 @@ export function renderDashboard(
     color: #fff;
   }
   --acc: light-dark(#bc3c2c, #ff8070);
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; margin-block-end: 1.5rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 0.75rem; margin-block-end: 2rem; }
   .card {
     background: light-dark(#fffdf7, #2e2e2c);
     border-radius: 0.375rem;
@@ -197,8 +197,8 @@ export function renderDashboard(
   }
   .card__val { font-family: "Inconsolata", monospace; font-size: 2rem; font-weight: 700; }
   .card__label { font-size: 0.8125rem; color: light-dark(rgba(38,38,36,0.7), rgba(246,240,232,0.6)); margin-block-start: 0.25rem; }
-  section { margin-block-end: 1.5rem; }
-  h2 { font-size: 1.125rem; margin-block-end: 0.75rem; }
+  section { margin-block-end: 2rem; }
+  h2 { font-size: 1.125rem; margin-block-end: 1rem; }
   .chart-wrap { overflow-x: auto; }
   .chart-wrap svg { display: block; }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
