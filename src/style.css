@@ -610,18 +610,9 @@
   .keypad__grid,
   .demo-keypad {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 0.4375rem;
     inline-size: 100%;
-  }
-
-  .keypad__btn {
-    grid-column: span 3;
-  }
-
-  .keypad__btn:nth-child(-n+3),
-  .keypad__btn:nth-child(n+8) {
-    grid-column: span 4;
   }
 
   .demo-keypad {
