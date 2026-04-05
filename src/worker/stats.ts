@@ -36,7 +36,7 @@ function intervalClause(days: number): string {
 export async function getStats(env: Env, days: number) {
   const where = intervalClause(days);
 
-  const [events, daily, uniqueUsers, guessDistribution] = await Promise.all([
+  const [events, daily, uniqueUsers, newUsers, guessDistribution] = await Promise.all([
     // Event totals by type
     query(
       env,
@@ -47,10 +47,15 @@ export async function getStats(env: Env, days: number) {
       env,
       `SELECT toStartOfDay(timestamp) AS day, blob1 AS event, COUNT() AS count FROM clumeral ${where} GROUP BY day, event ORDER BY day ASC`,
     ),
-    // Unique users
+    // Unique users (all puzzle_start events)
     query(
       env,
-      `SELECT COUNT(DISTINCT blob2) AS total, SUM(CASE WHEN double2 = 1 THEN 1 ELSE 0 END) AS new_users FROM clumeral ${where} AND blob1 = 'puzzle_start'`,
+      `SELECT COUNT(DISTINCT blob2) AS total FROM clumeral ${where} AND blob1 = 'puzzle_start'`,
+    ),
+    // New users (double2 = 1 means new)
+    query(
+      env,
+      `SELECT COUNT(DISTINCT blob2) AS total FROM clumeral ${where} AND blob1 = 'puzzle_start' AND double2 = 1`,
     ),
     // Guess distribution for completed puzzles
     query(
@@ -59,7 +64,7 @@ export async function getStats(env: Env, days: number) {
     ),
   ]);
 
-  return { events, daily, uniqueUsers, guessDistribution };
+  return { events, daily, uniqueUsers, newUsers, guessDistribution };
 }
 
 export function renderDashboard(
@@ -76,8 +81,8 @@ export function renderDashboard(
   const incorrectGuesses = (eventMap.get("incorrect_guess") ?? 0);
   const completionRate = totalPlays > 0 ? ((completions / totalPlays) * 100).toFixed(1) : "0";
   const uniqueTotal = Number(stats.uniqueUsers.data[0]?.total ?? 0);
-  const newUsers = Number(stats.uniqueUsers.data[0]?.new_users ?? 0);
-  const returningUsers = uniqueTotal - newUsers;
+  const newUsersCount = Number(stats.newUsers.data[0]?.total ?? 0);
+  const returningUsers = uniqueTotal - newUsersCount;
 
   // Daily plays for chart
   const dailyPlays = new Map<string, number>();
@@ -209,7 +214,7 @@ export function renderDashboard(
 
   <div class="cards">
     <div class="card"><div class="card__val">${uniqueTotal}</div><div class="card__label">Unique users</div></div>
-    <div class="card"><div class="card__val">${newUsers}</div><div class="card__label">New users</div></div>
+    <div class="card"><div class="card__val">${newUsersCount}</div><div class="card__label">New users</div></div>
     <div class="card"><div class="card__val">${returningUsers}</div><div class="card__label">Returning</div></div>
     <div class="card"><div class="card__val">${totalPlays}</div><div class="card__label">Puzzles played</div></div>
     <div class="card"><div class="card__val">${completions}</div><div class="card__label">Completed</div></div>
