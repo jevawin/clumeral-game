@@ -71,6 +71,7 @@ export async function getStats(env: Env, days: number, hostname: string) {
 export function renderDashboard(
   stats: Awaited<ReturnType<typeof getStats>>,
   days: number,
+  hostname: string,
 ): string {
   const eventMap = new Map<string, number>();
   for (const row of stats.events.data) {
@@ -168,6 +169,7 @@ export function renderDashboard(
     margin: 0 auto;
   }
   h1 { font-size: 1.5rem; margin-block-end: 0.25rem; }
+  .domain-label { font-family: "Inconsolata", monospace; font-size: 0.875rem; color: light-dark(rgba(38,38,36,0.5), rgba(246,240,232,0.4)); margin-block-end: 0.5rem; }
   .period-label { color: light-dark(rgba(38,38,36,0.7), rgba(246,240,232,0.6)); margin-block-end: 1rem; }
   .period-nav { display: flex; gap: 0.5rem; margin-block-end: 1.5rem; }
   .period-nav a {
@@ -188,7 +190,7 @@ export function renderDashboard(
     color: #fff;
   }
   --acc: light-dark(#bc3c2c, #ff8070);
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 0.75rem; margin-block-end: 2rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 1rem; margin-block-end: 2.5rem; }
   .card {
     background: light-dark(#fffdf7, #2e2e2c);
     border-radius: 0.375rem;
@@ -209,6 +211,7 @@ export function renderDashboard(
 </head>
 <body>
   <h1>Clumeral Stats</h1>
+  <p class="domain-label">${hostname}</p>
   <p class="period-label">${periodLabel}</p>
   <nav class="period-nav">${periodLinks}</nav>
 

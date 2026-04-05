@@ -109,7 +109,7 @@ export default {
         }
         const days = Math.min(Number(url.searchParams.get('period') || 90), 90) || 90;
         const stats = await getStats(env, days, url.hostname);
-        const html = renderDashboard(stats, days);
+        const html = renderDashboard(stats, days, url.hostname);
         return new Response(html, {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'max-age=300' },
         });
