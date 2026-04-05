@@ -136,12 +136,11 @@ export function renderDashboard(
     )
     .join("");
 
-  const periodLabel = days > 0 ? `Last ${days} days` : "All time (90 day max)";
-  const periodLinks = [30, 60, 90, 0]
+  const periodLabel = `Last ${days} days`;
+  const periodLinks = [30, 60, 90]
     .map((d) => {
-      const label = d > 0 ? `${d}d` : "All";
       const active = d === days ? ' class="active"' : "";
-      return `<a href="/stats${d > 0 ? `?period=${d}` : ""}"${active}>${label}</a>`;
+      return `<a href="/stats?period=${d}"${active}>${d}d</a>`;
     })
     .join("");
 

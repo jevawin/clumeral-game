@@ -107,9 +107,9 @@ export default {
             headers: { 'Content-Type': 'text/plain' },
           });
         }
-        const days = Number(url.searchParams.get('period') || 0);
-        const stats = await getStats(env, days > 0 ? Math.min(days, 90) : 0);
-        const html = renderDashboard(stats, days > 0 ? Math.min(days, 90) : 0);
+        const days = Math.min(Number(url.searchParams.get('period') || 90), 90) || 90;
+        const stats = await getStats(env, days);
+        const html = renderDashboard(stats, days);
         return new Response(html, {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'max-age=300' },
         });
