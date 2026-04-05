@@ -89,21 +89,6 @@
     background-color: var(--bg);
   }
 
-  /* ─── Safari status bar tint (sampled by iOS Safari) ─── */
-  .safari-tint {
-    position: fixed;
-    inset-block-start: 0;
-    inset-inline: 0;
-    block-size: 1px;
-    background-color: #f5edd8;
-    z-index: 9999;
-    pointer-events: none;
-  }
-
-  :root.dark .safari-tint {
-    background-color: #262624;
-  }
-
   /* ─── Canvas ─── */
   .game__canvas {
     position: fixed;

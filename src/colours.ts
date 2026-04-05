@@ -42,7 +42,7 @@ function applyTheme(theme: ColourTheme): void {
   r.setProperty('--dig-sh-act', `0.1875rem 0.1875rem 0 ${theme.light}4d`);
   window._currentColour = theme.name;
   swapIcons(theme.name);
-  syncThemeColor();
+  syncThemeColor(getMode() === 'dark');
 }
 
 function renderSwatches(): void {
