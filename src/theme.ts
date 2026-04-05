@@ -4,11 +4,12 @@
 const STORAGE_THEME = "dlng_theme";
 
 export function syncThemeColor(): void {
-  const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-  if (!meta) return;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(el => el.remove());
   const bg = getComputedStyle(document.documentElement).backgroundColor;
-  meta.setAttribute('content', bg + 'fe');
-  requestAnimationFrame(() => meta.setAttribute('content', bg));
+  const meta = document.createElement('meta');
+  meta.name = 'theme-color';
+  meta.content = bg;
+  document.head.appendChild(meta);
 }
 
 export function drawCanvas(dark: boolean): void {
