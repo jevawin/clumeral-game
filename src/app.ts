@@ -9,6 +9,28 @@ import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { initColours } from './colours.ts';
 
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+function getUid(): string {
+  let uid = localStorage.getItem("dlng_uid");
+  if (!uid) {
+    uid = crypto.randomUUID();
+    localStorage.setItem("dlng_uid", uid);
+  }
+  return uid;
+}
+
+const analyticsUid = getUid();
+const isNewUser = !localStorage.getItem("dlng_history");
+
+function track(event: string, value?: number, source?: string): void {
+  fetch("/api/event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event, uid: analyticsUid, value, newUser: isNewUser, source }),
+  }).catch(() => {});
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EPOCH_DATE = "2026-03-08";
@@ -135,6 +157,7 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
   closeTagTip();
   const tip = TAG_TIPS[tag];
   if (!tip) return;
+  track("tooltip_opened");
 
   const popover = document.createElement("div");
   popover.className = "tag-tip";
@@ -458,6 +481,7 @@ function startRandomPuzzle(puzzleData: { answer: number; clues: ClueData[] }): v
 
   gameState = { answer, guesses: [], solved: false, isRandom: true };
   resetPuzzleUI();
+  track("puzzle_start");
 
   dom.again?.classList.add("hidden");
   // No score saving for random puzzles
@@ -480,7 +504,12 @@ function startDailyPuzzle(puzzleData: { date: string; puzzleNumber: number; answ
 
   gameState = { answer, guesses: [], solved: false, puzzleNum: num };
   resetPuzzleUI();
+  track("puzzle_start");
+  const htpWasSeen = localStorage.getItem("cw-htp-seen");
   maybeAutoShowModal(openModal);
+  if (!htpWasSeen && localStorage.getItem("cw-htp-seen")) {
+    track("htp_opened", undefined, "auto");
+  }
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
@@ -497,6 +526,7 @@ function handleGuess() {
 
   if (guess === gameState.answer) {
     gameState.solved = true;
+    track("puzzle_complete", tries);
     launchConfetti();
     renderFeedback("correct", gameState.answer ?? undefined);
     closeKeypad();
@@ -514,6 +544,7 @@ function handleGuess() {
     }
   } else {
     gameState.guesses.push(guess);
+    track("incorrect_guess");
     renderFeedback("incorrect");
     renderHistory(gameState.guesses);
     sadOcto();
@@ -546,6 +577,9 @@ function loadPuzzle() {
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data?.type === 'SW_UPDATED') window.location.reload();
+  });
 }
 
 // ─── Event listeners (module-level) ───────────────────────────────────────────
@@ -623,6 +657,21 @@ initTheme();
 const openModal = initModal();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
+
+// ─── Analytics event listeners ───────────────────────────────────────────────
+
+// HTP modal: opened (manual via button click)
+document.querySelector('[data-htp-btn]')?.addEventListener('click', () => track('htp_opened', undefined, 'manual'));
+// HTP modal: dismissed
+document.querySelector('[data-modal-gotit]')?.addEventListener('click', () => track('htp_dismissed'));
+// Feedback submitted
+document.querySelector('[data-fb-send]')?.addEventListener('click', () => track('feedback_submitted'));
+// Theme toggle
+document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => track('theme_toggle'));
+// Colour change (event delegation — buttons are created dynamically)
+document.querySelector('[data-swatches]')?.addEventListener('click', (e) => {
+  if ((e.target as Element).closest('.swatch-btn')) track('colour_change');
+});
 
 // ─── Dev helpers (non-production only) ───────────────────────────────────────
 
