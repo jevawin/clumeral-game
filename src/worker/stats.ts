@@ -22,12 +22,15 @@ async function query(env: Env, sql: string): Promise<QueryResult> {
       body: sql,
     },
   );
-  if (!res.ok) throw new Error(`Analytics query failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Analytics query failed: ${res.status} ${body}`);
+  }
   return res.json() as Promise<QueryResult>;
 }
 
 function intervalClause(days: number): string {
-  return days > 0 ? `WHERE timestamp > NOW() - INTERVAL '${days}' DAY` : "";
+  return days > 0 ? `WHERE timestamp > NOW() - INTERVAL '${days}' DAY` : "WHERE 1=1";
 }
 
 export async function getStats(env: Env, days: number) {
