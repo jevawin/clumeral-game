@@ -149,7 +149,7 @@ const TAG_TIPS: Record<string, string> = {
   SUM: "Digits added together",
   DIFF: "Smaller of the digits subtracted from larger",
   PROD: "Digits multiplied together",
-  MEAN: "Sum of, divided by count of digits",
+  MEAN: "Sum of digits divided by how many digits",
   RANGE: "Largest digit minus the smallest",
 };
 

@@ -1014,6 +1014,13 @@
     display: block;
   }
 
+  .footer__copyright {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    transition: color 0.4s;
+  }
+
   /* ─── Footer heart ─── */
   @keyframes heart-bounce {
     0% {
