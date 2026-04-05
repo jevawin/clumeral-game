@@ -41,7 +41,7 @@ Create work branches off `staging`. Legacy branches (`dev`, `colours`) are being
 
 The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ignore it.** Create `issue/NUM` or `dev/name` off `staging` instead.
 
-After merging, delete remote branches via `gh api -X DELETE "repos/jevawin/clumeral-game/git/refs/heads/BRANCH"` and run `git remote prune origin` to clean up local tracking refs.
+Remote branches are auto-deleted by GitHub on PR merge. After merging, run `git remote prune origin` and delete the local branch to keep things clean.
 
 ### Workflow
 
