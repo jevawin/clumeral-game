@@ -361,7 +361,7 @@ function renderAllBoxes() {
 
 function buildKeypad() {
   if (!dom.keypad || activeBox === null) return;
-  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
   dom.keypad.innerHTML = "";
   for (const d of digits) {
     const btn = document.createElement("button");
