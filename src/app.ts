@@ -338,18 +338,13 @@ function renderBox(i: number): void {
 
   if (s.size === 1) {
     el.innerHTML = `<span class="digit-box__resolved">${[...s][0]}</span>`;
-  } else if (i === 0) {
-    // 3×3 grid for hundreds box (digits 1–9)
-    const spans = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-      .map((d) => `<span${s.has(d) ? "" : ' class="elim"'}>${d}</span>`)
-      .join("");
-    el.innerHTML = `<div class="digit-box__grid">${spans}</div>`;
   } else {
-    // 4-col grid for tens/units boxes (digits 0–9); 5 and 8 span 2 cols
+    // 4-col grid for all boxes (digits 0–9); 5 and 8 span 2 cols
+    // Box 0 (hundreds): 0 is always eliminated since numbers are 100–999
     const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
       .map((d) => {
         const isMid = d === 5 || d === 8;
-        const isElim = !s.has(d);
+        const isElim = (i === 0 && d === 0) || !s.has(d);
         const cls = [isMid && "digit-box__mid", isElim && "elim"].filter(Boolean).join(" ");
         return `<span${cls ? ` class="${cls}"` : ""}>${d}</span>`;
       })
