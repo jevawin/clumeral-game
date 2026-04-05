@@ -1,10 +1,10 @@
-const CACHE_NAME = 'clumeral-v2';
+const CACHE_NAME = 'clumeral-__BUILD_HASH__';
 const STATIC_ASSETS = [
-  '/',
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
-  '/manifest.json'
+  '/manifest.json',
+  '/sprites.svg'
 ];
 
 self.addEventListener('install', (e) => {
@@ -22,6 +22,12 @@ self.addEventListener('activate', (e) => {
         keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
       ))
       .then(() => self.clients.claim())
+      .then(() => {
+        // Notify all clients that a new version is active
+        self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+        });
+      })
   );
 });
 
@@ -42,7 +48,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Cache-first for same-origin static assets
+  // Stale-while-revalidate for same-origin static assets
   if (url.origin === self.location.origin) {
     e.respondWith(
       caches.match(e.request).then((cached) => {
