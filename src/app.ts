@@ -341,7 +341,7 @@ function renderBox(i: number): void {
   } else {
     // 3-4-3 grid for all boxes (1-9 then 0)
     // Box 0 (hundreds): 0 is always eliminated since numbers are 100–999
-    const spans = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+    const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
       .map((d) => {
         const isElim = (i === 0 && d === 0) || !s.has(d);
         return `<span${isElim ? ' class="elim"' : ""}>${d}</span>`;
@@ -361,7 +361,7 @@ function renderAllBoxes() {
 
 function buildKeypad() {
   if (!dom.keypad || activeBox === null) return;
-  const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   dom.keypad.innerHTML = "";
   for (const d of digits) {
     const btn = document.createElement("button");
