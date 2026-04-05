@@ -29,12 +29,13 @@ async function query(env: Env, sql: string): Promise<QueryResult> {
   return res.json() as Promise<QueryResult>;
 }
 
-function intervalClause(days: number): string {
-  return days > 0 ? `WHERE timestamp > NOW() - INTERVAL '${days}' DAY` : "WHERE 1=1";
+function whereClause(days: number, hostname: string): string {
+  const time = days > 0 ? `timestamp > NOW() - INTERVAL '${days}' DAY` : "1=1";
+  return `WHERE ${time} AND blob4 = '${hostname}'`;
 }
 
-export async function getStats(env: Env, days: number) {
-  const where = intervalClause(days);
+export async function getStats(env: Env, days: number, hostname: string) {
+  const where = whereClause(days, hostname);
 
   const [events, daily, uniqueUsers, newUsers, guessDistribution] = await Promise.all([
     // Event totals by type

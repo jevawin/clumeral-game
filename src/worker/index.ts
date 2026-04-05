@@ -72,7 +72,7 @@ export default {
         }
         env.ANALYTICS.writeDataPoint({
           indexes: [event],
-          blobs: [event, uid, source ?? ''],
+          blobs: [event, uid, source ?? '', url.hostname],
           doubles: [value ?? 0, newUser ? 1 : 0],
         });
         return new Response('ok', { status: 202 });
@@ -88,7 +88,7 @@ export default {
           return new Response('Analytics secrets not configured', { status: 503 });
         }
         const days = Math.min(Number(url.searchParams.get('period') || 90), 90);
-        const stats = await getStats(env, days);
+        const stats = await getStats(env, days, url.hostname);
         return new Response(JSON.stringify(stats), {
           headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' },
         });
@@ -108,7 +108,7 @@ export default {
           });
         }
         const days = Math.min(Number(url.searchParams.get('period') || 90), 90) || 90;
-        const stats = await getStats(env, days);
+        const stats = await getStats(env, days, url.hostname);
         const html = renderDashboard(stats, days);
         return new Response(html, {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'max-age=300' },
