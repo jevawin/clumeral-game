@@ -69,12 +69,12 @@
 
   :root.dark {
     color-scheme: dark;
-    background-color: #262624;
+    --bg: #262624;
   }
 
   :root.light {
     color-scheme: light;
-    background-color: #f5edd8;
+    --bg: #f5edd8;
   }
 }
 

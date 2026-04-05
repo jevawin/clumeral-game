@@ -4,11 +4,8 @@
 const STORAGE_THEME = "dlng_theme";
 
 export function syncThemeColor(dark: boolean): void {
-  document.querySelectorAll('meta[name="theme-color"]').forEach(el => el.remove());
-  const meta = document.createElement('meta');
-  meta.name = 'theme-color';
-  meta.content = dark ? '#262624' : '#f5edd8';
-  document.head.appendChild(meta);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', dark ? '#262624' : '#f5edd8');
 }
 
 export function drawCanvas(dark: boolean): void {
