@@ -100,7 +100,7 @@
   /* ─── Background blobs ─── */
   .game__shape {
     position: fixed;
-    inset-block-start: -8.75rem;
+    inset-block-start: 0.25rem;
     inset-inline-end: -7.5rem;
     inline-size: 28.75rem;
     block-size: 28.75rem;
@@ -114,6 +114,8 @@
 
   .game__shape--alt {
     position: fixed;
+    inset-block-start: auto;
+    inset-inline-end: auto;
     inset-block-end: -6.25rem;
     inset-inline-start: -5rem;
     inline-size: 16.25rem;
