@@ -1,5 +1,3 @@
-import { syncThemeColor } from './theme';
-
 // Colour theme system — accent colour picker, icon swapping, dev helpers.
 
 const STORAGE_COLOUR = 'dlng_colour';
@@ -42,7 +40,6 @@ function applyTheme(theme: ColourTheme): void {
   r.setProperty('--dig-sh-act', `0.1875rem 0.1875rem 0 ${theme.light}4d`);
   window._currentColour = theme.name;
   swapIcons(theme.name);
-  syncThemeColor(getMode() === 'dark');
 }
 
 function renderSwatches(): void {

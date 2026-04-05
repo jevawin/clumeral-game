@@ -3,11 +3,6 @@
 
 const STORAGE_THEME = "dlng_theme";
 
-export function syncThemeColor(dark: boolean): void {
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#262624' : '#f5edd8');
-}
-
 export function drawCanvas(dark: boolean): void {
   const canvas = document.querySelector('[data-canvas]') as HTMLCanvasElement | null;
   if (!canvas) return;
@@ -41,7 +36,6 @@ export function initTheme(): void {
     togBtn!.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
     drawCanvas(dark);
     if (window._swapIcons && window._currentColour) window._swapIcons(window._currentColour);
-    syncThemeColor(dark);
   }
 
   const saved = localStorage.getItem(STORAGE_THEME);
