@@ -363,16 +363,20 @@ function renderAllBoxes() {
 
 function buildKeypad() {
   if (!dom.keypad || activeBox === null) return;
-  // Box 0 (hundreds) cannot be 0
-  const digits = activeBox === 0 ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   dom.keypad.innerHTML = "";
   for (const d of digits) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "keypad__btn" + (possibles[activeBox].has(d) ? "" : " elim");
+    const disabled = activeBox === 0 && d === 0;
+    btn.className = "keypad__btn" + (disabled || !possibles[activeBox].has(d) ? " elim" : "");
     btn.textContent = String(d);
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
-    btn.addEventListener("click", () => toggleDigit(d));
+    if (disabled) {
+      btn.disabled = true;
+    } else {
+      btn.addEventListener("click", () => toggleDigit(d));
+    }
     dom.keypad.appendChild(btn);
   }
 }
