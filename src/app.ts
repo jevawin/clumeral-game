@@ -338,20 +338,13 @@ function renderBox(i: number): void {
 
   if (s.size === 1) {
     el.innerHTML = `<span class="digit-box__resolved">${[...s][0]}</span>`;
-  } else if (i === 0) {
-    // 3×3 grid for hundreds box (digits 1–9)
-    const spans = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-      .map((d) => `<span${s.has(d) ? "" : ' class="elim"'}>${d}</span>`)
-      .join("");
-    el.innerHTML = `<div class="digit-box__grid">${spans}</div>`;
   } else {
-    // 4-col grid for tens/units boxes (digits 0–9); 5 and 8 span 2 cols
+    // 3-4-3 grid for all boxes (1-9 then 0)
+    // Box 0 (hundreds): 0 is always eliminated since numbers are 100–999
     const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
       .map((d) => {
-        const isMid = d === 5 || d === 8;
-        const isElim = !s.has(d);
-        const cls = [isMid && "digit-box__mid", isElim && "elim"].filter(Boolean).join(" ");
-        return `<span${cls ? ` class="${cls}"` : ""}>${d}</span>`;
+        const isElim = (i === 0 && d === 0) || !s.has(d);
+        return `<span${isElim ? ' class="elim"' : ""}>${d}</span>`;
       })
       .join("");
     el.innerHTML = `<div class="digit-box__grid four-col">${spans}</div>`;
@@ -368,16 +361,20 @@ function renderAllBoxes() {
 
 function buildKeypad() {
   if (!dom.keypad || activeBox === null) return;
-  // Box 0 (hundreds) cannot be 0
-  const digits = activeBox === 0 ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   dom.keypad.innerHTML = "";
   for (const d of digits) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "keypad__btn" + (possibles[activeBox].has(d) ? "" : " elim");
+    const disabled = activeBox === 0 && d === 0;
+    btn.className = "keypad__btn" + (disabled || !possibles[activeBox].has(d) ? " elim" : "");
     btn.textContent = String(d);
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
-    btn.addEventListener("click", () => toggleDigit(d));
+    if (disabled) {
+      btn.disabled = true;
+    } else {
+      btn.addEventListener("click", () => toggleDigit(d));
+    }
     dom.keypad.appendChild(btn);
   }
 }
