@@ -61,7 +61,7 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
     max-width: 32rem;
     margin: 0 auto;
   }
-  a { color: var(--acc); }
+  a { color: var(--acc); text-decoration: none; border-block-end: 1px solid currentColor; padding-block-end: 0.125rem; }
   .back { font-size: 1rem; margin-block-end: 1rem; display: inline-block; }
   h1 { font-size: 1.5rem; margin-block-end: 0.25rem; }
   .subtitle {
@@ -112,8 +112,6 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
   }
   td:first-child a {
     color: var(--acc);
-    text-decoration: underline;
-    text-underline-offset: 0.15em;
   }
   .num-col { font-family: "Inconsolata", monospace; font-weight: 600; text-align: right; }
   th.num-header { text-align: right; }
@@ -121,8 +119,6 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
     font-family: "DM Sans", system-ui, sans-serif;
     font-weight: 600;
     font-size: 1rem;
-    text-decoration: underline;
-    text-underline-offset: 0.15em;
   }
   tr.row { cursor: pointer; transition: background 0.1s; }
   tr.row:hover { background: light-dark(rgba(10,133,10,0.04), rgba(30,173,82,0.06)); }
