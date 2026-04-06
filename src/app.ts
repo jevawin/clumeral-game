@@ -85,7 +85,7 @@ function todayLocal() {
 }
 
 function puzzleNumber(dateStr: string): number {
-  const ms = new Date(dateStr + "T00:00:00").getTime() - new Date(EPOCH_DATE + "T00:00:00").getTime();
+  const ms = new Date(dateStr + "T00:00:00Z").getTime() - new Date(EPOCH_DATE + "T00:00:00Z").getTime();
   return Math.max(1, Math.floor(ms / 86400000) + 1);
 }
 

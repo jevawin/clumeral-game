@@ -227,7 +227,7 @@ export default {
           .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k.name) && k.name <= today)
           .map(async k => {
             const p = await env.PUZZLES.get<StoredPuzzle>(k.name, 'json');
-            return p ? { num: p.puzzleNumber, date: k.name, clues: p.clues.length } : null;
+            return p ? { num: puzzleNumber(k.name), date: k.name, clues: p.clues.length } : null;
           })
       );
       // Include today if not yet in KV
