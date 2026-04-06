@@ -196,3 +196,9 @@ export function puzzleNumber(dateStr: string): number {
   const ms = new Date(dateStr + 'T00:00:00').getTime() - new Date(EPOCH_DATE + 'T00:00:00').getTime();
   return Math.max(1, Math.floor(ms / 86400000) + 1);
 }
+
+export function puzzleDate(num: number): string {
+  const epoch = new Date(EPOCH_DATE + 'T00:00:00');
+  const d = new Date(epoch.getTime() + (num - 1) * 86400000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}

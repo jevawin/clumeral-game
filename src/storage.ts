@@ -29,5 +29,5 @@ export function loadHistory(): HistoryEntry[] {
 export function recordGame(dateStr: string, tries: number, answer?: number): void {
   const history = loadHistory().filter((h) => h.date !== dateStr);
   history.unshift({ date: dateStr, tries, ...(answer != null && { answer }) });
-  localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history.slice(0, 60)));
+  localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history));
 }
