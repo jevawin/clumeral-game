@@ -1049,9 +1049,8 @@
 
   .foot-icon-link {
     display: inline-flex;
-    align-items: flex-start;
+    align-items: baseline;
     gap: 0.25rem;
-    vertical-align: middle;
 
     & svg {
       color: var(--text);
