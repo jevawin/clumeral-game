@@ -718,7 +718,8 @@ document.querySelector('[data-swatches]')?.addEventListener('click', (e) => {
 
 window._devFillAnswer = async () => {
   try {
-    const res = await fetch('/api/dev/answer');
+    const params = gameState.token ? `?token=${encodeURIComponent(gameState.token)}` : '';
+    const res = await fetch(`/api/dev/answer${params}`);
     if (!res.ok) return;
     const { answer } = await res.json() as { answer: number };
     const digits = [Math.floor(answer / 100), Math.floor((answer % 100) / 10), answer % 10];

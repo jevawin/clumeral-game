@@ -126,9 +126,17 @@ export default {
       return handleGuess(request, env);
     }
 
-    // Dev-only: return today's answer (blocked on production domain)
+    // Dev-only: return the answer for the current puzzle (blocked on production domain)
     if (request.method === 'GET' && url.pathname === '/api/dev/answer') {
       if (url.hostname === 'clumeral.com') return new Response('Not found', { status: 404 });
+      const token = url.searchParams.get('token');
+      if (token) {
+        const seed = await verifyToken(token, env.HMAC_SECRET);
+        if (seed === null) return json({ error: 'Invalid token' }, 400);
+        const rng = makeRng(seed);
+        const { answer } = runFilterLoop(rng);
+        return json({ answer });
+      }
       const today = todayLocal();
       const puzzle = await getDailyPuzzle(env, today);
       return json({ answer: puzzle.answer });
