@@ -71,7 +71,7 @@ function renderDevLinks(): void {
   const addBtn = (label: string, fn: () => void): void => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'dev-links__btn';
+    btn.className = 'text-link text-link--muted';
     btn.textContent = label;
     btn.addEventListener('click', fn);
     dev.appendChild(btn);

@@ -471,7 +471,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
   if (dom.feedback) {
     if (replayDate) {
       const fDate = formatDate(replayDate);
-      dom.feedback.innerHTML = `${ICON_CHECK} You solved this puzzle in ${t}!<br><span class="feedback__note">Stats up to ${fDate} · <a href="/">Go to latest puzzle</a></span>`;
+      dom.feedback.innerHTML = `${ICON_CHECK} You solved this puzzle in ${t}!<br><span class="feedback__note">Stats up to ${fDate} · <a href="/" class="text-link">Go to latest puzzle</a></span>`;
     } else {
       dom.feedback.innerHTML = `${ICON_CHECK} You already solved today's puzzle in ${t}!`;
     }

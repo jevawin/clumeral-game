@@ -29,8 +29,6 @@
   :where(a) {
     text-decoration: none;
     color: inherit;
-    border-block-end: 1px solid currentColor;
-    padding-block-end: 0.125rem;
   }
 
   :where(:focus-visible) {
@@ -850,10 +848,6 @@
     color: var(--muted);
   }
 
-  .feedback__note a {
-    color: var(--acc);
-  }
-
   .feedback--incorrect {
     display: flex;
     align-items: center;
@@ -1007,12 +1001,6 @@
     margin-block-start: 0.875rem;
   }
 
-  .play-again__link {
-    color: var(--acc);
-    font-size: 1rem;
-    transition: color 0.4s;
-  }
-
   /* ═══════════════════════════════════════
      Footer links row
      ═══════════════════════════════════════ */
@@ -1024,42 +1012,6 @@
     inline-size: 100%;
   }
 
-  .ui-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3125rem;
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--acc);
-    font-size: 1rem;
-    line-height: 1.4;
-    cursor: pointer;
-    transition: color 0.4s;
-
-    & svg {
-      width: 0.875rem;
-      height: 0.875rem;
-      flex-shrink: 0;
-      stroke: var(--acc);
-      transition: stroke 0.4s;
-    }
-
-    &:is(button) > span:last-child {
-      border-block-end: 1px solid currentColor;
-      padding-block-end: 0.125rem;
-    }
-
-    &:is(a) {
-      border-block-end: none;
-      padding-block-end: 0;
-    }
-
-    &:is(a) > span:last-child {
-      border-block-end: 1px solid currentColor;
-      padding-block-end: 0.125rem;
-    }
-  }
 
   .theme-icon {
     display: inline-flex;
@@ -1093,10 +1045,6 @@
     color: var(--muted);
     transition: color 0.4s;
 
-    & a {
-      color: var(--acc);
-      transition: color 0.4s;
-    }
   }
 
   .foot-icon-link {
@@ -1195,15 +1143,6 @@
     inline-size: 100%;
   }
 
-  .dev-links__btn {
-    background: none;
-    border: none;
-    border-block-end: 1px solid var(--muted);
-    color: var(--muted);
-    font-size: 1rem;
-    padding: 0;
-    cursor: pointer;
-  }
 
   /* ═══════════════════════════════════════
      How-to-play modal
@@ -1521,27 +1460,6 @@
     margin-block-end: 0.75rem;
   }
 
-  .fb-header-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3125rem;
-    background: none;
-    border: none;
-    border-block-end: 1px solid var(--muted);
-    color: var(--muted);
-    font-family: "DM Sans", system-ui, sans-serif;
-    font-size: 1rem;
-    line-height: 1.4;
-    padding: 0;
-    cursor: pointer;
-    transition: color 0.4s;
-
-    & svg {
-      flex-shrink: 0;
-      stroke: var(--muted);
-      transition: stroke 0.4s;
-    }
-  }
 
   /* ═══════════════════════════════════════
      Feedback modal
@@ -1826,6 +1744,50 @@
     border: 0;
   }
 
+  /* ─── Unified text link ───
+     Works on <a> and <button>. Underline via border on the element
+     itself — no child spans needed. Colour set by the parent or
+     overridden with a modifier (--link-color).
+     Icon links: use with inline-flex + gap for icon + text. */
+  .text-link {
+    display: inline;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--link-color, var(--acc));
+    cursor: pointer;
+    border-block-end: 1px solid currentColor;
+    padding-block-end: 0.125rem;
+    transition: color 0.4s;
+  }
+
+  /* Icon variant: border goes on text span, not the whole element */
+  .text-link--icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    border-block-end: none;
+    padding-block-end: 0;
+
+    & svg {
+      width: 0.875rem;
+      height: 0.875rem;
+      flex-shrink: 0;
+      stroke: currentColor;
+      transition: stroke 0.4s;
+    }
+
+    & > span:last-child {
+      border-block-end: 1px solid currentColor;
+      padding-block-end: 0.125rem;
+    }
+  }
+
+  .text-link--muted {
+    --link-color: var(--muted);
+  }
+
   .skip-link {
     position: absolute;
     inset-inline-start: -999rem;
@@ -1836,7 +1798,6 @@
     color: #fff;
     font-weight: 600;
     border-radius: 0.25rem;
-    border-block-end: none;
 
     &:focus-visible {
       inset-inline-start: 1rem;
