@@ -11,5 +11,14 @@
       "binding": "ANALYTICS",
       "dataset": "clumeral"
     }
-  ]
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "PUZZLES",
+      "id": "d07cfc9a455943e3839967475925a468"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 0 * * *"]
+  }
 }

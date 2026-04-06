@@ -502,6 +502,48 @@
   }
 
   /* ═══════════════════════════════════════
+     Clue skeleton (loading state)
+     ═══════════════════════════════════════ */
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .clue-skeleton {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: center;
+  }
+
+  .clue-skeleton__tag {
+    width: 4rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite ease-in-out;
+  }
+
+  .clue-skeleton__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .clue-skeleton__line {
+    height: 0.85rem;
+    border-radius: 0.25rem;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite ease-in-out;
+  }
+
+  .clue-skeleton__line--long { width: 80%; }
+  .clue-skeleton__line--short { width: 40%; }
+
+  /* ═══════════════════════════════════════
      Digit entry boxes
      ═══════════════════════════════════════ */
   .digits {
