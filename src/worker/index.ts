@@ -1,9 +1,10 @@
 // Worker entry point — serves API routes for puzzle data and guess validation.
 // The answer is never sent to the client.
 
-import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber } from './puzzle.ts';
+import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber, puzzleDate } from './puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
 import { getStats, renderDashboard } from './stats.ts';
+import { renderPuzzlesPage } from './puzzles.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -126,6 +127,17 @@ export default {
       return handleGuess(request, env);
     }
 
+    // GET /api/puzzle/:num — return clues for a specific puzzle number (no answer)
+    const puzzleByNum = url.pathname.match(/^\/api\/puzzle\/(\d+)$/);
+    if (request.method === 'GET' && puzzleByNum) {
+      const num = parseInt(puzzleByNum[1], 10);
+      if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
+      const date = puzzleDate(num);
+      if (date > todayLocal()) return json({ error: 'Puzzle not available yet' }, 400);
+      const puzzle = await getDailyPuzzle(env, date);
+      return json({ date, puzzleNumber: num, clues: puzzle.clues });
+    }
+
     // Dev-only: return the answer for the current puzzle (blocked on production domain)
     if (request.method === 'GET' && url.pathname === '/api/dev/answer') {
       if (url.hostname === 'clumeral.com') return new Response('Not found', { status: 404 });
@@ -201,6 +213,39 @@ export default {
           headers: { 'Content-Type': 'text/plain' },
         });
       }
+    }
+
+    // ── Puzzles ──
+
+    // GET /puzzles — Worker-rendered puzzle history page
+    if (request.method === 'GET' && url.pathname === '/puzzles') {
+      const today = todayLocal();
+      const todayNum = puzzleNumber(today);
+      const keys = await env.PUZZLES.list();
+      const puzzles = await Promise.all(
+        keys.keys
+          .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k.name) && k.name <= today)
+          .map(async k => {
+            const p = await env.PUZZLES.get<StoredPuzzle>(k.name, 'json');
+            return p ? { num: puzzleNumber(k.name), date: k.name, clues: p.clues.length } : null;
+          })
+      );
+      // Include today if not yet in KV
+      const dates = new Set(keys.keys.map(k => k.name));
+      if (!dates.has(today)) {
+        const p = await getDailyPuzzle(env, today);
+        puzzles.push({ num: todayNum, date: today, clues: p.clues.length });
+      }
+      const valid = puzzles.filter((p): p is NonNullable<typeof p> => p !== null);
+      const html = renderPuzzlesPage(valid);
+      return new Response(html, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    }
+
+    // GET /puzzles/:num — serve game HTML for replay
+    if (request.method === 'GET' && /^\/puzzles\/\d+$/.test(url.pathname)) {
+      return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
     }
 
     // ── Static pages ──

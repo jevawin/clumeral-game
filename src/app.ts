@@ -85,7 +85,7 @@ function todayLocal() {
 }
 
 function puzzleNumber(dateStr: string): number {
-  const ms = new Date(dateStr + "T00:00:00").getTime() - new Date(EPOCH_DATE + "T00:00:00").getTime();
+  const ms = new Date(dateStr + "T00:00:00Z").getTime() - new Date(EPOCH_DATE + "T00:00:00Z").getTime();
   return Math.max(1, Math.floor(ms / 86400000) + 1);
 }
 
@@ -337,6 +337,27 @@ function renderStats() {
   dom.stats.classList.remove("hidden");
 }
 
+function renderStatsUpTo(upToDate: string) {
+  if (!dom.stats) return;
+  const history = loadHistory().filter(h => h.date <= upToDate);
+  if (history.length === 0) {
+    dom.stats.classList.add("hidden");
+    return;
+  }
+  const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
+  const last5 = history.slice(0, 5);
+  dom.stats.innerHTML = `
+    <p class="stats__heading">Your stats <span class="stats__note">up to ${formatDate(upToDate)}</span></p>
+    <div class="stats__grid">
+      <div class="stats__item"><span class="stats__val">${history.length}</span><span class="stats__lbl">Played</span></div>
+      <div class="stats__item"><span class="stats__val">${avg}</span><span class="stats__lbl">Avg tries</span></div>
+    </div>
+    <p class="stats__last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <div class="stats__bubbles">${last5.map((h) => `<span class="stats__bubble">${h.tries}</span>`).join("")}</div>
+  `;
+  dom.stats.classList.remove("hidden");
+}
+
 // ─── Digit boxes ──────────────────────────────────────────────────────────────
 
 function renderBox(i: number): void {
@@ -445,10 +466,15 @@ function showNextPuzzle() {
   }
 }
 
-function showCompletedState(tries: number): void {
+function showCompletedState(tries: number, replayDate?: string): void {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
-    dom.feedback.innerHTML = `${ICON_CHECK} You already solved today's puzzle in ${t}!`;
+    if (replayDate) {
+      const fDate = formatDate(replayDate);
+      dom.feedback.innerHTML = `${ICON_CHECK} You solved this puzzle in ${t}!<br><span class="feedback__note">Stats up to ${fDate} · <a href="/" class="text-link">Go to latest puzzle</a></span>`;
+    } else {
+      dom.feedback.innerHTML = `${ICON_CHECK} You already solved today's puzzle in ${t}!`;
+    }
     dom.feedback.className = "feedback feedback--correct";
     dom.feedback.classList.remove("hidden");
   }
@@ -460,8 +486,12 @@ function showCompletedState(tries: number): void {
   dom.hint?.classList.add("hidden");
   dom.digits?.classList.add("digit-correct");
   dom.submitWrap?.classList.remove("visible");
-  renderStats();
-  showNextPuzzle();
+  if (replayDate) {
+    renderStatsUpTo(replayDate);
+  } else {
+    renderStats();
+  }
+  if (!replayDate) showNextPuzzle();
 }
 
 function resetPuzzleUI() {
@@ -516,6 +546,38 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
   if (dom.saveCheck) dom.saveCheck.checked = saveScore;
 }
 
+function startReplayPuzzle(date: string, num: number, clues: ClueData[]): void {
+  // Show archived puzzle label above the puzzle number
+  if (dom.plabel) {
+    const label = document.createElement("div");
+    label.className = "card__archive-label";
+    label.innerHTML = `<svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
+    dom.plabel.parentElement?.insertBefore(label, dom.plabel);
+    dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
+  }
+
+  renderClues(clues);
+
+  // Check if already solved
+  const entry = loadHistory().find(h => h.date === date);
+  if (entry) {
+    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, puzzleNum: num, date };
+    showCompletedState(entry.tries, date);
+    dom.save?.classList.add("hidden");
+    return;
+  }
+
+  gameState = { answer: null, guesses: [], solved: false, puzzleNum: num, date };
+  resetPuzzleUI();
+  track("puzzle_start");
+
+  // Save score for replays
+  const prefs = loadPrefs();
+  saveScore = prefs.saveScore;
+  if (dom.saveCheck) dom.saveCheck.checked = saveScore;
+  dom.again?.classList.add("hidden");
+}
+
 async function handleGuess() {
   if (gameState.solved || submitting) return;
   if (!possibles.every((s) => s.size === 1)) return;
@@ -565,8 +627,8 @@ async function handleGuess() {
       if (gameState.isRandom) {
         dom.again?.classList.remove("hidden");
       } else {
-        if (saveScore) {
-          recordGame(todayLocal(), tries, guess);
+        if (saveScore && gameState.date) {
+          recordGame(gameState.date, tries, guess);
           renderStats();
         }
         showNextPuzzle();
@@ -590,8 +652,18 @@ async function handleGuess() {
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 async function loadPuzzle() {
-  const isRandom = window.location.pathname === '/random';
-  const endpoint = isRandom ? '/api/puzzle/random' : '/api/puzzle';
+  const path = window.location.pathname;
+  const isRandom = path === '/random';
+  const replayMatch = path.match(/^\/puzzles\/(\d+)$/);
+
+  let endpoint: string;
+  if (isRandom) {
+    endpoint = '/api/puzzle/random';
+  } else if (replayMatch) {
+    endpoint = `/api/puzzle/${replayMatch[1]}`;
+  } else {
+    endpoint = '/api/puzzle';
+  }
 
   try {
     const res = await fetch(endpoint);
@@ -601,6 +673,8 @@ async function loadPuzzle() {
 
     if (isRandom) {
       startRandomPuzzle(data.clues, data.token);
+    } else if (replayMatch) {
+      startReplayPuzzle(data.date, data.puzzleNumber, data.clues);
     } else {
       startDailyPuzzle(data.date, data.puzzleNumber, data.clues);
     }

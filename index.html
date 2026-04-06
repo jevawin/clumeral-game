@@ -69,10 +69,10 @@
         </div>
       </dialog>
 
-      <!-- ── How to play modal ── -->
+      <!-- ── Guide modal ── -->
       <dialog data-modal aria-labelledby="cw-modal-title">
         <div class="modal__box" data-modal-box>
-          <h2 id="cw-modal-title">How to Play</h2>
+          <h2 id="cw-modal-title">Guide</h2>
           <p class="modal-sub">The clues define a single, 3-digit number from 100–999. New puzzle every day.</p>
           <div class="modal-example">
             <div class="modal-steps">
@@ -282,9 +282,9 @@
         </p>
 
         <p class="fb-header">
-          <button data-fb-header-btn class="fb-header-link">
+          <button data-fb-header-btn class="text-link text-link--icon text-link--muted">
             <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
-            It's new! Please give feedback
+            <span>It's new! Please give feedback</span>
           </button>
         </p>
 
@@ -382,7 +382,7 @@
 
           <!-- ── Random again ── -->
           <p data-again class="play-again hidden">
-            <a href="/random" class="play-again__link">Play another random puzzle</a>
+            <a href="/random" class="text-link">Play another random puzzle</a>
           </p>
 
         </div>
@@ -390,15 +390,19 @@
         <footer class="footer">
           <div class="swatch-list" data-swatches></div>
           <div class="footer__links" data-foot-links>
-            <button data-htp-btn class="ui-link">
+            <button data-htp-btn class="text-link text-link--icon">
               <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
-              <span>How to play</span>
+              <span>Guide</span>
             </button>
-            <button data-fb-btn class="ui-link">
+            <button data-fb-btn class="text-link text-link--icon">
               <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
               <span>Feedback</span>
             </button>
-            <button data-theme-toggle class="ui-link">
+            <a href="/puzzles" class="text-link text-link--icon">
+              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>
+              <span>Archive</span>
+            </a>
+            <button data-theme-toggle class="text-link text-link--icon">
               <span class="theme-icon" data-theme-icon aria-hidden="true">
                 <svg class="icon-moon" width="24" height="24"><use href="/sprites.svg#icon-moon"/></svg>
                 <svg class="icon-sun" width="24" height="24"><use href="/sprites.svg#icon-sun"/></svg>
@@ -410,18 +414,19 @@
             An experiment in AI-coding with Claude • Hosted on
             <span class="foot-icon-link">
               <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-github"/></svg>
-              <a href="https://github.com/jevawin/clumeral-game" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://github.com/jevawin/clumeral-game" target="_blank" rel="noopener" class="text-link">GitHub</a>
             </span>
             • Made with
             <svg class="footer-heart icon-inline" width="18" height="18" aria-hidden="true"><use href="/sprites.svg#icon-heart"/></svg>
             by
             <span class="foot-icon-link">
               <img src="jamie.webp" alt="Jamie" class="foot-avatar" />
-              <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer">Jamie</a>
+              <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer" class="text-link">Jamie</a>
             </span>
             and Dave
+            <br />
+            &copy; 2026 Jamie &amp; Dave
           </div>
-          <p class="footer__copyright">&copy; 2026 Jamie &amp; Dave</p>
           <div class="dev-links hidden" data-dev-links></div>
         </footer>
       </main>
