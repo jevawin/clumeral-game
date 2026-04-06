@@ -547,7 +547,14 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 }
 
 function startReplayPuzzle(date: string, num: number, clues: ClueData[]): void {
-  if (dom.plabel) dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
+  // Show archived puzzle label above the puzzle number
+  if (dom.plabel) {
+    const label = document.createElement("div");
+    label.className = "card__archive-label";
+    label.innerHTML = `<svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
+    dom.plabel.parentElement?.insertBefore(label, dom.plabel);
+    dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
+  }
 
   renderClues(clues);
 
