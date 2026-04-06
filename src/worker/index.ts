@@ -126,6 +126,14 @@ export default {
       return handleGuess(request, env);
     }
 
+    // Dev-only: return today's answer (blocked on production domain)
+    if (request.method === 'GET' && url.pathname === '/api/dev/answer') {
+      if (url.hostname === 'clumeral.com') return new Response('Not found', { status: 404 });
+      const today = todayLocal();
+      const puzzle = await getDailyPuzzle(env, today);
+      return json({ answer: puzzle.answer });
+    }
+
     // ── Analytics ──
 
     if (request.method === 'POST' && url.pathname === '/api/event') {

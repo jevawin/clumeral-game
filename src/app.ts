@@ -716,9 +716,13 @@ document.querySelector('[data-swatches]')?.addEventListener('click', (e) => {
 
 // ─── Dev helpers (non-production only) ───────────────────────────────────────
 
-window._devFillAnswer = () => {
-  if (!gameState.answer) return;
-  const digits = [Math.floor(gameState.answer / 100), Math.floor((gameState.answer % 100) / 10), gameState.answer % 10];
-  digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
-  checkSubmit();
+window._devFillAnswer = async () => {
+  try {
+    const res = await fetch('/api/dev/answer');
+    if (!res.ok) return;
+    const { answer } = await res.json() as { answer: number };
+    const digits = [Math.floor(answer / 100), Math.floor((answer % 100) / 10), answer % 10];
+    digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
+    checkSubmit();
+  } catch { /* dev only */ }
 };
