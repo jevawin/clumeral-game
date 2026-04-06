@@ -138,6 +138,19 @@ export default {
       return json({ date, puzzleNumber: num, clues: puzzle.clues });
     }
 
+    // GET /api/puzzle/:num/solution — return answer for a PAST puzzle (not today)
+    // Used to reveal the answer in the already-solved state when the client's
+    // history entry predates answer-saving. Today's puzzle is protected.
+    const solutionByNum = url.pathname.match(/^\/api\/puzzle\/(\d+)\/solution$/);
+    if (request.method === 'GET' && solutionByNum) {
+      const num = parseInt(solutionByNum[1], 10);
+      if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
+      const date = puzzleDate(num);
+      if (date >= todayLocal()) return json({ error: 'Solution not available' }, 403);
+      const puzzle = await getDailyPuzzle(env, date);
+      return json({ answer: puzzle.answer });
+    }
+
     // Dev-only: return the answer for the current puzzle (blocked on production domain)
     if (request.method === 'GET' && url.pathname === '/api/dev/answer') {
       if (url.hostname === 'clumeral.com') return new Response('Not found', { status: 404 });
