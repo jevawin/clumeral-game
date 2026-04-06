@@ -1015,7 +1015,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
     inline-size: 100%;
   }
 
