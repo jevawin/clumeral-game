@@ -203,6 +203,7 @@ function closeTagTip(): void {
 
 function renderClues(clues: ClueData[]): void {
   if (!dom.clueList) return;
+  dom.clueList.removeAttribute("aria-busy");
   dom.clueList.innerHTML = "";
   for (const { propKey, label, operator, value } of clues) {
     const tag = getClueTag(propKey);
@@ -279,6 +280,12 @@ function renderFeedback(type: string | null, answer?: number): void {
   } else if (type === "incorrect") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Incorrect — try again.`;
+      dom.feedback.className = "feedback feedback--incorrect";
+      dom.feedback.classList.remove("hidden");
+    }
+  } else if (type === "error") {
+    if (dom.feedback) {
+      dom.feedback.innerHTML = `${ICON_CROSS} Something went wrong — please try again.`;
       dom.feedback.className = "feedback feedback--incorrect";
       dom.feedback.classList.remove("hidden");
     }
@@ -490,9 +497,7 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 
   const entry = todayEntry();
   if (entry) {
-    // Already solved — we don't have the answer from the API, but we don't need it
-    // for the completed state display. The digit boxes stay empty (no answer to show).
-    gameState = { answer: null, guesses: [], solved: true, puzzleNum: num, date };
+    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, puzzleNum: num, date };
     showCompletedState(entry.tries);
     return;
   }
@@ -525,6 +530,9 @@ async function handleGuess() {
     body.token = gameState.token;
   } else if (gameState.date) {
     body.date = gameState.date;
+  } else {
+    renderFeedback("error");
+    return;
   }
 
   submitting = true;
@@ -538,7 +546,7 @@ async function handleGuess() {
     });
 
     if (!res.ok) {
-      renderFeedback("incorrect");
+      renderFeedback("error");
       return;
     }
 
@@ -558,7 +566,7 @@ async function handleGuess() {
         dom.again?.classList.remove("hidden");
       } else {
         if (saveScore) {
-          recordGame(todayLocal(), tries);
+          recordGame(todayLocal(), tries, guess);
           renderStats();
         }
         showNextPuzzle();
@@ -572,7 +580,7 @@ async function handleGuess() {
       dom.submitWrap?.classList.remove("visible");
     }
   } catch {
-    renderFeedback("incorrect");
+    renderFeedback("error");
   } finally {
     submitting = false;
     dom.submitBtn?.removeAttribute("disabled");

@@ -18,6 +18,7 @@ export interface GameState {
 export interface HistoryEntry {
   date: string;
   tries: number;
+  answer?: number;
 }
 
 export interface Prefs {

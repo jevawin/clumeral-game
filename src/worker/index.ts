@@ -26,13 +26,10 @@ const VALID_EVENTS = new Set([
   'theme_toggle', 'colour_change', 'tooltip_opened',
 ]);
 
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
-const CORS_HEADERS = { 'Access-Control-Allow-Origin': '*' };
-
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...JSON_HEADERS, ...CORS_HEADERS },
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
@@ -98,6 +95,9 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
   if (body.date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
       return json({ error: 'Invalid date format' }, 400);
+    }
+    if (body.date > todayLocal()) {
+      return json({ error: 'Cannot guess future puzzles' }, 400);
     }
     const puzzle = await getDailyPuzzle(env, body.date);
     return json({ correct: guess === puzzle.answer });

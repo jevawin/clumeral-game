@@ -1,11 +1,11 @@
-// HMAC helpers for signing random puzzle tokens.
+// Crypto helpers for random puzzle tokens.
 // Uses Web Crypto API (available in Cloudflare Workers).
-
-const ALGORITHM = { name: 'HMAC', hash: 'SHA-256' } as const;
+// Tokens are AES-GCM encrypted seeds — opaque to the client.
 
 async function getKey(secret: string): Promise<CryptoKey> {
   const enc = new TextEncoder();
-  return crypto.subtle.importKey('raw', enc.encode(secret), ALGORITHM, false, ['sign', 'verify']);
+  const raw = await crypto.subtle.digest('SHA-256', enc.encode(secret));
+  return crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }
 
 function toHex(buf: ArrayBuffer): string {
@@ -20,28 +20,37 @@ function fromHex(hex: string): Uint8Array {
   return bytes;
 }
 
-/** Sign a random seed, returning `seed.hmac` token string. */
+/** Encrypt a random seed into an opaque token string. */
 export async function signToken(seed: number, secret: string): Promise<string> {
   const key = await getKey(secret);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = new TextEncoder().encode(String(seed));
-  const sig = await crypto.subtle.sign('HMAC', key, data);
-  return `${seed}.${toHex(sig)}`;
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+  return toHex(iv.buffer as ArrayBuffer) + '.' + toHex(ciphertext);
 }
 
-/** Parse and verify a `seed.hmac` token. Returns the seed if valid, null otherwise. */
+/** Decrypt a token back to the seed. Returns the seed if valid, null otherwise. */
 export async function verifyToken(token: string, secret: string): Promise<number | null> {
   const dotIdx = token.indexOf('.');
   if (dotIdx < 1) return null;
 
-  const seedStr = token.slice(0, dotIdx);
-  const hmacHex = token.slice(dotIdx + 1);
-  const seed = Number(seedStr);
-  if (!Number.isFinite(seed) || seed !== Math.floor(seed)) return null;
+  const ivHex = token.slice(0, dotIdx);
+  const ctHex = token.slice(dotIdx + 1);
 
-  const key = await getKey(secret);
-  const data = new TextEncoder().encode(seedStr);
-  const sig = fromHex(hmacHex);
-  const valid = await crypto.subtle.verify('HMAC', key, sig.buffer as ArrayBuffer, data);
-
-  return valid ? seed : null;
+  try {
+    const key = await getKey(secret);
+    const iv = fromHex(ivHex);
+    const ct = fromHex(ctHex);
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv.buffer as ArrayBuffer },
+      key,
+      ct.buffer as ArrayBuffer,
+    );
+    const seedStr = new TextDecoder().decode(plaintext);
+    const seed = Number(seedStr);
+    if (!Number.isFinite(seed) || seed !== Math.floor(seed)) return null;
+    return seed;
+  } catch {
+    return null;
+  }
 }
