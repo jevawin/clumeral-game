@@ -5,25 +5,20 @@ export interface ClueData {
   value: number | boolean;
 }
 
-export interface PuzzleData {
-  date?: string;
-  puzzleNumber?: number;
-  answer: number;
-  clues: ClueData[];
-  isRandom?: boolean;
-}
-
 export interface GameState {
   answer: number | null;
   guesses: number[];
   solved: boolean;
   puzzleNum?: number;
   isRandom?: boolean;
+  date?: string;
+  token?: string;
 }
 
 export interface HistoryEntry {
   date: string;
   tries: number;
+  answer?: number;
 }
 
 export interface Prefs {

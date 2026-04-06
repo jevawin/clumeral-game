@@ -50,6 +50,6 @@ This is a **living document** — when a review catches something the self-revie
 
 ## Worker / service worker
 
-- Does the Worker still inject `window.PUZZLE_DATA` correctly for both `/` and `/random` routes?
+- Do API responses from the Worker avoid sending the answer to the client?
 - Does `sw.js` cache versioning align with any changed assets?
-- No accidental caching of puzzle data (daily puzzles must be fresh)
+- No accidental caching of API responses (puzzle data and guess validation must be fresh)

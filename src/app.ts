@@ -1,5 +1,5 @@
 // Clumeral — app.ts
-// Puzzle data is injected by the Worker as window.PUZZLE_DATA.
+// Puzzle data is fetched from the API. The answer never reaches the client.
 
 import type { GameState, ClueData } from './types.ts';
 import { launchConfetti } from './confetti.ts';
@@ -64,6 +64,7 @@ const dom = {
 
 let gameState: GameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
+let submitting = false; // guard against double-submit during API call
 
 function initPossibles(): Set<number>[] {
   return [
@@ -84,7 +85,7 @@ function todayLocal() {
 }
 
 function puzzleNumber(dateStr: string): number {
-  const ms = new Date(dateStr + "T00:00:00").getTime() - new Date(EPOCH_DATE + "T00:00:00").getTime();
+  const ms = new Date(dateStr + "T00:00:00Z").getTime() - new Date(EPOCH_DATE + "T00:00:00Z").getTime();
   return Math.max(1, Math.floor(ms / 86400000) + 1);
 }
 
@@ -202,6 +203,7 @@ function closeTagTip(): void {
 
 function renderClues(clues: ClueData[]): void {
   if (!dom.clueList) return;
+  dom.clueList.removeAttribute("aria-busy");
   dom.clueList.innerHTML = "";
   for (const { propKey, label, operator, value } of clues) {
     const tag = getClueTag(propKey);
@@ -281,6 +283,12 @@ function renderFeedback(type: string | null, answer?: number): void {
       dom.feedback.className = "feedback feedback--incorrect";
       dom.feedback.classList.remove("hidden");
     }
+  } else if (type === "error") {
+    if (dom.feedback) {
+      dom.feedback.innerHTML = `${ICON_CROSS} Something went wrong — please try again.`;
+      dom.feedback.className = "feedback feedback--incorrect";
+      dom.feedback.classList.remove("hidden");
+    }
   } else {
     if (dom.hint) {
       dom.hint.textContent = "Tap a box to eliminate possible numbers.";
@@ -325,6 +333,30 @@ function renderStats() {
     </div>
     <p class="stats__last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
     <div class="stats__bubbles">${last5.map((h) => `<span class="stats__bubble">${h.tries}</span>`).join("")}</div>
+  `;
+  dom.stats.classList.remove("hidden");
+}
+
+function renderStatsUpTo(upToDate: string) {
+  if (!dom.stats) return;
+  const history = loadHistory().filter(h => h.date <= upToDate);
+  const fDate = formatDate(upToDate);
+  if (history.length === 0) {
+    dom.stats.innerHTML = `<p class="stats__latest"><a href="/" class="text-link">Go to latest puzzle</a></p>`;
+    dom.stats.classList.remove("hidden");
+    return;
+  }
+  const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
+  const last5 = history.slice(0, 5);
+  dom.stats.innerHTML = `
+    <p class="stats__heading">Your stats (to ${fDate})</p>
+    <div class="stats__grid">
+      <div class="stats__item"><span class="stats__val">${history.length}</span><span class="stats__lbl">Played</span></div>
+      <div class="stats__item"><span class="stats__val">${avg}</span><span class="stats__lbl">Avg tries</span></div>
+    </div>
+    <p class="stats__last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <div class="stats__bubbles">${last5.map((h) => `<span class="stats__bubble">${h.tries}</span>`).join("")}</div>
+    <p class="stats__latest"><a href="/" class="text-link">Go to latest puzzle</a></p>
   `;
   dom.stats.classList.remove("hidden");
 }
@@ -437,10 +469,13 @@ function showNextPuzzle() {
   }
 }
 
-function showCompletedState(tries: number): void {
+function showCompletedState(tries: number, replayDate?: string): void {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
-    dom.feedback.innerHTML = `${ICON_CHECK} You already solved today's puzzle in ${t}!`;
+    const message = replayDate
+      ? `You solved this puzzle in ${t}!`
+      : `You already solved today's puzzle in ${t}!`;
+    dom.feedback.innerHTML = `${ICON_CHECK} ${message}`;
     dom.feedback.className = "feedback feedback--correct";
     dom.feedback.classList.remove("hidden");
   }
@@ -452,8 +487,12 @@ function showCompletedState(tries: number): void {
   dom.hint?.classList.add("hidden");
   dom.digits?.classList.add("digit-correct");
   dom.submitWrap?.classList.remove("visible");
-  renderStats();
-  showNextPuzzle();
+  if (replayDate) {
+    renderStatsUpTo(replayDate);
+  } else {
+    renderStats();
+    showNextPuzzle();
+  }
 }
 
 function resetPuzzleUI() {
@@ -469,37 +508,32 @@ function resetPuzzleUI() {
   checkSubmit();
 }
 
-function startRandomPuzzle(puzzleData: { answer: number; clues: ClueData[] }): void {
-  const { answer, clues } = puzzleData;
-
+function startRandomPuzzle(clues: ClueData[], token: string): void {
   if (dom.plabel) dom.plabel.textContent = "Random puzzle";
 
   renderClues(clues);
 
-  gameState = { answer, guesses: [], solved: false, isRandom: true };
+  gameState = { answer: null, guesses: [], solved: false, isRandom: true, token };
   resetPuzzleUI();
   track("puzzle_start");
 
   dom.again?.classList.add("hidden");
-  // No score saving for random puzzles
   dom.save?.classList.add("hidden");
 }
 
-function startDailyPuzzle(puzzleData: { date: string; puzzleNumber: number; answer: number; clues: ClueData[] }): void {
-  const { date, puzzleNumber: num, answer, clues } = puzzleData;
-
+function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
   if (dom.plabel) dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
 
   renderClues(clues);
 
   const entry = todayEntry();
   if (entry) {
-    gameState = { answer, guesses: [], solved: true, puzzleNum: num };
+    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, puzzleNum: num, date };
     showCompletedState(entry.tries);
     return;
   }
 
-  gameState = { answer, guesses: [], solved: false, puzzleNum: num };
+  gameState = { answer: null, guesses: [], solved: false, puzzleNum: num, date };
   resetPuzzleUI();
   track("puzzle_start");
   const htpWasSeen = localStorage.getItem("cw-htp-seen");
@@ -513,60 +547,156 @@ function startDailyPuzzle(puzzleData: { date: string; puzzleNumber: number; answ
   if (dom.saveCheck) dom.saveCheck.checked = saveScore;
 }
 
-function handleGuess() {
-  if (gameState.solved) return;
+async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): Promise<void> {
+  // Show archived puzzle label above the puzzle number
+  if (dom.plabel) {
+    const label = document.createElement("div");
+    label.className = "card__archive-label";
+    label.innerHTML = `<svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
+    dom.plabel.parentElement?.insertBefore(label, dom.plabel);
+    dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
+  }
+
+  renderClues(clues);
+
+  // Check if already solved
+  const entry = loadHistory().find(h => h.date === date);
+  if (entry) {
+    let answer = entry.answer ?? null;
+    // Old history entries may not have the answer stored — fetch it
+    if (answer == null) {
+      try {
+        const res = await fetch(`/api/puzzle/${num}/solution`);
+        if (res.ok) {
+          const data = await res.json() as { answer: number };
+          answer = data.answer;
+        }
+      } catch { /* leave as null */ }
+    }
+    gameState = { answer, guesses: [], solved: true, puzzleNum: num, date };
+    showCompletedState(entry.tries, date);
+    dom.save?.classList.add("hidden");
+    return;
+  }
+
+  gameState = { answer: null, guesses: [], solved: false, puzzleNum: num, date };
+  resetPuzzleUI();
+  track("puzzle_start");
+
+  // Save score for replays
+  const prefs = loadPrefs();
+  saveScore = prefs.saveScore;
+  if (dom.saveCheck) dom.saveCheck.checked = saveScore;
+  dom.again?.classList.add("hidden");
+}
+
+async function handleGuess() {
+  if (gameState.solved || submitting) return;
   if (!possibles.every((s) => s.size === 1)) return;
 
   const guessStr = possibles.map((s) => [...s][0]).join("");
   const guess = Number(guessStr);
   const tries = gameState.guesses.length + 1;
 
-  if (guess === gameState.answer) {
-    gameState.solved = true;
-    track("puzzle_complete", tries);
-    launchConfetti();
-    renderFeedback("correct", gameState.answer ?? undefined);
-    closeKeypad();
-    dom.digits?.classList.add("digit-correct");
-    dom.submitWrap?.classList.remove("visible");
-    celebrateOcto();
-    if (gameState.isRandom) {
-      dom.again?.classList.remove("hidden");
-    } else {
-      if (saveScore) {
-        recordGame(todayLocal(), tries);
-        renderStats();
-      }
-      showNextPuzzle();
-    }
+  // Build request body
+  const body: { guess: number; date?: string; token?: string } = { guess };
+  if (gameState.token) {
+    body.token = gameState.token;
+  } else if (gameState.date) {
+    body.date = gameState.date;
   } else {
-    gameState.guesses.push(guess);
-    track("incorrect_guess");
-    renderFeedback("incorrect");
-    renderHistory(gameState.guesses);
-    sadOcto();
-    // Keep digits filled but hide submit — user can tap a box to change their guess
-    dom.submitWrap?.classList.remove("visible");
+    renderFeedback("error");
+    return;
+  }
+
+  submitting = true;
+  dom.submitBtn?.setAttribute("disabled", "true");
+
+  try {
+    const res = await fetch("/api/guess", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      renderFeedback("error");
+      return;
+    }
+
+    const result = await res.json() as { correct: boolean };
+
+    if (result.correct) {
+      gameState.solved = true;
+      gameState.answer = guess; // now we know the answer (it was our correct guess)
+      track("puzzle_complete", tries);
+      launchConfetti();
+      renderFeedback("correct", guess);
+      closeKeypad();
+      dom.digits?.classList.add("digit-correct");
+      dom.submitWrap?.classList.remove("visible");
+      celebrateOcto();
+      if (gameState.isRandom) {
+        dom.again?.classList.remove("hidden");
+      } else {
+        if (saveScore && gameState.date) {
+          recordGame(gameState.date, tries, guess);
+          renderStats();
+        }
+        showNextPuzzle();
+      }
+    } else {
+      gameState.guesses.push(guess);
+      track("incorrect_guess");
+      renderFeedback("incorrect");
+      renderHistory(gameState.guesses);
+      sadOcto();
+      dom.submitWrap?.classList.remove("visible");
+    }
+  } catch {
+    renderFeedback("error");
+  } finally {
+    submitting = false;
+    dom.submitBtn?.removeAttribute("disabled");
   }
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
-function loadPuzzle() {
-  if (window.PUZZLE_DATA) {
-    if (window.PUZZLE_DATA.isRandom) {
-      startRandomPuzzle(window.PUZZLE_DATA);
-    } else {
-      const pd = window.PUZZLE_DATA;
-      if (pd.date && pd.puzzleNumber !== undefined) {
-        startDailyPuzzle({ date: pd.date, puzzleNumber: pd.puzzleNumber, answer: pd.answer, clues: pd.clues });
-      }
-    }
+async function loadPuzzle() {
+  const path = window.location.pathname;
+  const isRandom = path === '/random';
+  const replayMatch = path.match(/^\/puzzles\/(\d+)$/);
+
+  let endpoint: string;
+  if (isRandom) {
+    endpoint = '/api/puzzle/random';
+  } else if (replayMatch) {
+    endpoint = `/api/puzzle/${replayMatch[1]}`;
   } else {
+    endpoint = '/api/puzzle';
+  }
+
+  try {
+    const res = await fetch(endpoint);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+
+    const data = await res.json() as any;
+
+    if (isRandom) {
+      startRandomPuzzle(data.clues, data.token);
+    } else if (replayMatch) {
+      startReplayPuzzle(data.date, data.puzzleNumber, data.clues);
+    } else {
+      startDailyPuzzle(data.date, data.puzzleNumber, data.clues);
+    }
+  } catch {
     if (dom.feedback) {
-      dom.feedback.textContent = 'Puzzle data not available. Please refresh the page.';
+      dom.feedback.textContent = 'Could not load the puzzle. Please refresh the page.';
       dom.feedback.classList.remove('hidden');
     }
+    // Hide skeleton on error
+    if (dom.clueList) dom.clueList.innerHTML = '';
   }
 }
 
@@ -588,7 +718,7 @@ for (let i = 0; i < 3; i++) {
 }
 
 // Submit button
-dom.submitBtn?.addEventListener("click", handleGuess);
+dom.submitBtn?.addEventListener("click", () => { handleGuess(); });
 
 // Save checkbox
 if (dom.saveCheck) {
@@ -672,9 +802,14 @@ document.querySelector('[data-swatches]')?.addEventListener('click', (e) => {
 
 // ─── Dev helpers (non-production only) ───────────────────────────────────────
 
-window._devFillAnswer = () => {
-  if (!gameState.answer) return;
-  const digits = [Math.floor(gameState.answer / 100), Math.floor((gameState.answer % 100) / 10), gameState.answer % 10];
-  digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
-  checkSubmit();
+window._devFillAnswer = async () => {
+  try {
+    const params = gameState.token ? `?token=${encodeURIComponent(gameState.token)}` : '';
+    const res = await fetch(`/api/dev/answer${params}`);
+    if (!res.ok) return;
+    const { answer } = await res.json() as { answer: number };
+    const digits = [Math.floor(answer / 100), Math.floor((answer % 100) / 10), answer % 10];
+    digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
+    checkSubmit();
+  } catch { /* dev only */ }
 };

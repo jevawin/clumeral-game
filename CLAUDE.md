@@ -51,11 +51,34 @@ Remote branches are auto-deleted by GitHub on PR merge. After merging, run `git 
 4. **PR to main** — once staging has all approved branches, Claude creates a PR from `staging` → `main` and provides the staging preview URL and PR link
 5. **Final review** — the user tests staging with all branches combined
 6. **Ship** — the user merges the PR to `main` from GitHub
+7. **Sync staging back** — immediately after the main merge, Claude opens a sync PR to bring staging back in line with main (see "Post-merge sync" below). Skipping this step will cause divergence and conflicts on the next `staging → main` PR.
 
 **Key rules:**
 - **Never merge to `main`** — the user does this from GitHub. No exceptions unless the user explicitly grants override permission with a stated reason.
 - **Merge to `staging` only after user approval** — Claude can squash-merge via `gh pr merge --squash` once the user confirms the branch
 - **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic via Cloudflare Git integration on merge to `main`
+
+### Post-merge sync (critical)
+
+**Why it matters:** `main` uses squash merges, so every `staging → main` merge creates a new commit on `main` with a hash that doesn't exist in `staging`'s history. Without syncing `staging` back, the two branches drift. On the next release, `git merge-base staging main` points to a stale ancestor, and any change that touched the same lines in both branches becomes a three-way merge conflict — even when the resolution is obvious.
+
+**What to do after `staging → main` is merged on GitHub:**
+
+The user must update `staging` to include `main`'s new commits. The cleanest approach — because `staging` is protected (no merge commits, no force-push from Claude) — is to run this locally:
+
+```bash
+git checkout staging
+git pull origin staging
+git fetch origin main
+git reset --hard origin/main
+git push --force-with-lease origin staging
+```
+
+This requires the user to temporarily allow force-push on `staging`, or to be a branch admin. If that's not acceptable, the alternative is for the user to open a PR from a fresh branch that takes main's state and squash-merge it into staging — messier but works within the protection rules.
+
+**If this step is skipped** and divergence occurs, the next `staging → main` PR will likely conflict. The recovery path is to create a `release/*` branch directly off `main`, copy `staging`'s working tree onto it as a single commit (`git checkout staging -- .`), and PR that branch to main instead of the staging branch directly. The current branch state is preserved but staging still needs re-syncing afterwards.
+
+### Cloudflare preview URLs
 
 ### Cloudflare preview URLs
 
