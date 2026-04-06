@@ -1750,37 +1750,39 @@
      overridden with a modifier (--link-color).
      Icon links: use with inline-flex + gap for icon + text. */
   .text-link {
-    display: inline;
+    display: inline-block;
     background: none;
     border: none;
     padding: 0;
     font: inherit;
+    line-height: 1;
     color: var(--link-color, var(--acc));
     cursor: pointer;
     border-block-end: 1px solid currentColor;
-    padding-block-end: 0.125rem;
+    padding-block-end: 0.25rem;
     transition: color 0.4s;
   }
 
-  /* Icon variant: border goes on text span, not the whole element */
+  /* Icon variant: border goes on text span only; icon aligns with text top */
   .text-link--icon {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.3125rem;
     border-block-end: none;
     padding-block-end: 0;
 
     & svg {
-      width: 0.875rem;
-      height: 0.875rem;
+      width: 1rem;
+      height: 1rem;
       flex-shrink: 0;
       stroke: currentColor;
       transition: stroke 0.4s;
     }
 
     & > span:last-child {
+      line-height: 1;
       border-block-end: 1px solid currentColor;
-      padding-block-end: 0.125rem;
+      padding-block-end: 0.25rem;
     }
   }
 
