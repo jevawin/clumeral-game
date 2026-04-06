@@ -1049,7 +1049,7 @@
 
   .foot-icon-link {
     display: inline-flex;
-    align-items: flex-start;
+    align-items: baseline;
     gap: 0.25rem;
 
     & svg {
