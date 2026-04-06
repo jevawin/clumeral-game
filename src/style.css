@@ -1044,10 +1044,6 @@
     & > span:last-child {
       border-block-end: 1px solid var(--acc);
     }
-
-    &:is(a) > span:last-child {
-      border-block-end: none;
-    }
   }
 
   .theme-icon {
