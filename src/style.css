@@ -26,6 +26,11 @@
     background-color: var(--bg);
   }
 
+  :where(a) {
+    text-decoration: none;
+    color: inherit;
+  }
+
   :where(:focus-visible) {
     outline: 2px solid var(--acc);
     outline-offset: 2px;
@@ -319,6 +324,29 @@
     transition: color 0.4s;
   }
 
+  .card__archive-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: "Inconsolata", monospace;
+    font-size: 1rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    margin-block-end: 0.75rem;
+    border-radius: 0.25rem;
+    background: var(--acc);
+    color: var(--bg);
+    transition: background 0.4s, color 0.4s;
+
+    & svg {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+    }
+  }
+
   /* ─── Card hint ─── */
   .card__hint {
     font-size: 1rem;
@@ -500,6 +528,48 @@
       line-height: 1;
     }
   }
+
+  /* ═══════════════════════════════════════
+     Clue skeleton (loading state)
+     ═══════════════════════════════════════ */
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .clue-skeleton {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: center;
+  }
+
+  .clue-skeleton__tag {
+    width: 4rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite ease-in-out;
+  }
+
+  .clue-skeleton__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .clue-skeleton__line {
+    height: 0.85rem;
+    border-radius: 0.25rem;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite ease-in-out;
+  }
+
+  .clue-skeleton__line--long { width: 80%; }
+  .clue-skeleton__line--short { width: 40%; }
 
   /* ═══════════════════════════════════════
      Digit entry boxes
@@ -876,6 +946,11 @@
     gap: 0.375rem;
   }
 
+  .stats__latest {
+    margin-block-start: 1rem;
+    font-size: 1rem;
+  }
+
   .stats__bubble {
     font-family: "Inconsolata", monospace;
     font-size: 1rem;
@@ -919,14 +994,6 @@
     margin-block-start: 0.875rem;
   }
 
-  .play-again__link {
-    color: var(--acc);
-    text-decoration: underline;
-    text-underline-offset: 0.1875rem;
-    font-size: 1rem;
-    transition: color 0.4s;
-  }
-
   /* ═══════════════════════════════════════
      Footer links row
      ═══════════════════════════════════════ */
@@ -938,31 +1005,6 @@
     inline-size: 100%;
   }
 
-  .ui-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3125rem;
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--acc);
-    font-size: 1rem;
-    line-height: 1.4;
-    cursor: pointer;
-    transition: color 0.4s;
-
-    & svg {
-      width: 0.875rem;
-      height: 0.875rem;
-      flex-shrink: 0;
-      stroke: var(--acc);
-      transition: stroke 0.4s;
-    }
-
-    & > span:last-child {
-      border-block-end: 1px solid var(--acc);
-    }
-  }
 
   .theme-icon {
     display: inline-flex;
@@ -996,19 +1038,12 @@
     color: var(--muted);
     transition: color 0.4s;
 
-    & a {
-      text-decoration: underline;
-      text-underline-offset: 0.1875rem;
-      color: var(--acc);
-      transition: color 0.4s;
-    }
   }
 
   .foot-icon-link {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline;
     gap: 0.25rem;
-    vertical-align: middle;
 
     & svg {
       color: var(--text);
@@ -1024,11 +1059,6 @@
     display: block;
   }
 
-  .footer__copyright {
-    margin: 0;
-    color: var(--muted);
-    transition: color 0.4s;
-  }
 
   /* ─── Footer heart ─── */
   @keyframes heart-bounce {
@@ -1100,15 +1130,6 @@
     inline-size: 100%;
   }
 
-  .dev-links__btn {
-    background: none;
-    border: none;
-    border-block-end: 1px solid var(--muted);
-    color: var(--muted);
-    font-size: 1rem;
-    padding: 0;
-    cursor: pointer;
-  }
 
   /* ═══════════════════════════════════════
      How-to-play modal
@@ -1426,27 +1447,6 @@
     margin-block-end: 0.75rem;
   }
 
-  .fb-header-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3125rem;
-    background: none;
-    border: none;
-    border-block-end: 1px solid var(--muted);
-    color: var(--muted);
-    font-family: "DM Sans", system-ui, sans-serif;
-    font-size: 1rem;
-    line-height: 1.4;
-    padding: 0;
-    cursor: pointer;
-    transition: color 0.4s;
-
-    & svg {
-      flex-shrink: 0;
-      stroke: var(--muted);
-      transition: stroke 0.4s;
-    }
-  }
 
   /* ═══════════════════════════════════════
      Feedback modal
@@ -1731,6 +1731,52 @@
     border: 0;
   }
 
+  /* ─── Unified text link ───
+     Works on <a> and <button>. Underline via border on the element
+     itself — no child spans needed. Colour set by the parent or
+     overridden with a modifier (--link-color).
+     Icon links: use with inline-flex + gap for icon + text. */
+  .text-link {
+    display: inline-block;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    line-height: 1;
+    color: var(--link-color, var(--acc));
+    cursor: pointer;
+    border-block-end: 1px solid currentColor;
+    padding-block-end: 0.25rem;
+    transition: color 0.4s;
+  }
+
+  /* Icon variant: border goes on text span only; icon aligns with text top */
+  .text-link--icon {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.3125rem;
+    border-block-end: none;
+    padding-block-end: 0;
+
+    & svg {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+      stroke: currentColor;
+      transition: stroke 0.4s;
+    }
+
+    & > span:last-child {
+      line-height: 1;
+      border-block-end: 1px solid currentColor;
+      padding-block-end: 0.25rem;
+    }
+  }
+
+  .text-link--muted {
+    --link-color: var(--muted);
+  }
+
   .skip-link {
     position: absolute;
     inset-inline-start: -999rem;
@@ -1741,7 +1787,6 @@
     color: #fff;
     font-weight: 600;
     border-radius: 0.25rem;
-    text-decoration: none;
 
     &:focus-visible {
       inset-inline-start: 1rem;

@@ -25,9 +25,9 @@
     <meta name="twitter:description" content="Work out the number from 100–999. New puzzle every day." />
     <meta name="twitter:image" content="https://clumeral.com/og-image.png" />
 
-    <link rel="icon" type="image/png" href="icons/lime/dark/icon-192.png" />
-    <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/icons/lime/dark/icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/src/style.css" />
     <script>
       (function () {
@@ -69,10 +69,10 @@
         </div>
       </dialog>
 
-      <!-- ── How to play modal ── -->
+      <!-- ── Guide modal ── -->
       <dialog data-modal aria-labelledby="cw-modal-title">
         <div class="modal__box" data-modal-box>
-          <h2 id="cw-modal-title">How to Play</h2>
+          <h2 id="cw-modal-title">Guide</h2>
           <p class="modal-sub">The clues define a single, 3-digit number from 100–999. New puzzle every day.</p>
           <div class="modal-example">
             <div class="modal-steps">
@@ -282,9 +282,9 @@
         </p>
 
         <p class="fb-header">
-          <button data-fb-header-btn class="fb-header-link">
+          <button data-fb-header-btn class="text-link text-link--icon text-link--muted">
             <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
-            It's new! Please give feedback
+            <span>It's new! Please give feedback</span>
           </button>
         </p>
 
@@ -292,85 +292,40 @@
         <div id="puzzle" class="card" data-card>
           <div class="card__label" data-plabel>Puzzle #7 · 14 March 2026</div>
 
-          <div class="clue-list" role="list" aria-label="Puzzle clues">
-            <div class="clue" role="listitem">
-              <div class="clue__tag-cell">
-                <span class="clue__tag">CUBE</span>
-                <div class="clue__digits" aria-hidden="true">
-                  <div class="clue__digit"></div>
-                  <div class="clue__digit"></div>
-                  <div class="clue__digit lit"></div>
-                </div>
-              </div>
-              <div class="clue__lines">
-                <div class="clue__line1">The third digit is</div>
-                <div class="clue__line2">a cube number</div>
+          <div class="clue-list" role="list" aria-label="Puzzle clues" aria-busy="true">
+            <div class="clue-skeleton" aria-hidden="true">
+              <div class="clue-skeleton__tag"></div>
+              <div class="clue-skeleton__lines">
+                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
+                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
               </div>
             </div>
-
-            <div class="clue" role="listitem">
-              <div class="clue__tag-cell">
-                <span class="clue__tag">RANGE</span>
-                <div class="clue__digits" aria-hidden="true">
-                  <div class="clue__digit lit"></div>
-                  <div class="clue__digit lit"></div>
-                  <div class="clue__digit lit"></div>
-                </div>
-              </div>
-              <div class="clue__lines">
-                <div class="clue__line1">The range of all three digits is</div>
-                <div class="clue__line2">= 5</div>
+            <div class="clue-skeleton" aria-hidden="true">
+              <div class="clue-skeleton__tag"></div>
+              <div class="clue-skeleton__lines">
+                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
+                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
               </div>
             </div>
-
-            <div class="clue" role="listitem">
-              <div class="clue__tag-cell">
-                <span class="clue__tag">MEAN</span>
-                <div class="clue__digits" aria-hidden="true">
-                  <div class="clue__digit lit"></div>
-                  <div class="clue__digit lit"></div>
-                  <div class="clue__digit lit"></div>
-                </div>
-              </div>
-              <div class="clue__lines">
-                <div class="clue__line1">The mean of all three digits is</div>
-                <div class="clue__line2">
-                  ≠ 2.
-                  <span style="display: inline-block; position: relative">
-                    3
-                    <span style="position: absolute; left: 50%; top: -0.55em; transform: translateX(-50%); font-size: 1.4rem; line-height: 1">·</span>
-                  </span>
-                </div>
+            <div class="clue-skeleton" aria-hidden="true">
+              <div class="clue-skeleton__tag"></div>
+              <div class="clue-skeleton__lines">
+                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
+                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
               </div>
             </div>
-
-            <div class="clue" role="listitem">
-              <div class="clue__tag-cell">
-                <span class="clue__tag">SUM</span>
-                <div class="clue__digits" aria-hidden="true">
-                  <div class="clue__digit lit"></div>
-                  <div class="clue__digit"></div>
-                  <div class="clue__digit lit"></div>
-                </div>
-              </div>
-              <div class="clue__lines">
-                <div class="clue__line1">The sum of the 1st and 3rd digits is</div>
-                <div class="clue__line2">≤ 2</div>
+            <div class="clue-skeleton" aria-hidden="true">
+              <div class="clue-skeleton__tag"></div>
+              <div class="clue-skeleton__lines">
+                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
+                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
               </div>
             </div>
-
-            <div class="clue" role="listitem">
-              <div class="clue__tag-cell">
-                <span class="clue__tag">PROD</span>
-                <div class="clue__digits" aria-hidden="true">
-                  <div class="clue__digit"></div>
-                  <div class="clue__digit lit"></div>
-                  <div class="clue__digit lit"></div>
-                </div>
-              </div>
-              <div class="clue__lines">
-                <div class="clue__line1">The product of the 2nd and 3rd digits is</div>
-                <div class="clue__line2">≤ 0</div>
+            <div class="clue-skeleton" aria-hidden="true">
+              <div class="clue-skeleton__tag"></div>
+              <div class="clue-skeleton__lines">
+                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
+                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
               </div>
             </div>
           </div>
@@ -427,7 +382,7 @@
 
           <!-- ── Random again ── -->
           <p data-again class="play-again hidden">
-            <a href="/random" class="play-again__link">Play another random puzzle</a>
+            <a href="/random" class="text-link">Play another random puzzle</a>
           </p>
 
         </div>
@@ -435,15 +390,19 @@
         <footer class="footer">
           <div class="swatch-list" data-swatches></div>
           <div class="footer__links" data-foot-links>
-            <button data-htp-btn class="ui-link">
+            <button data-htp-btn class="text-link text-link--icon">
               <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
-              <span>How to play</span>
+              <span>Guide</span>
             </button>
-            <button data-fb-btn class="ui-link">
+            <button data-fb-btn class="text-link text-link--icon">
               <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
               <span>Feedback</span>
             </button>
-            <button data-theme-toggle class="ui-link">
+            <a href="/puzzles" class="text-link text-link--icon">
+              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>
+              <span>Archive</span>
+            </a>
+            <button data-theme-toggle class="text-link text-link--icon">
               <span class="theme-icon" data-theme-icon aria-hidden="true">
                 <svg class="icon-moon" width="24" height="24"><use href="/sprites.svg#icon-moon"/></svg>
                 <svg class="icon-sun" width="24" height="24"><use href="/sprites.svg#icon-sun"/></svg>
@@ -452,19 +411,21 @@
             </button>
           </div>
           <div class="footer__body" data-foot-body>
-            An experiment in AI-coding with Claude • Hosted on
+            An experiment in AI-coding with Claude • It's on
             <span class="foot-icon-link">
               <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-github"/></svg>
-              <a href="https://github.com/jevawin/clumeral-game" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://github.com/jevawin/clumeral-game" target="_blank" rel="noopener" class="text-link">GitHub</a>
             </span>
             • Made with
             <svg class="footer-heart icon-inline" width="18" height="18" aria-hidden="true"><use href="/sprites.svg#icon-heart"/></svg>
             by
             <span class="foot-icon-link">
-              <img src="jamie.webp" alt="Jamie" class="foot-avatar" />
-              <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer">Jamie</a>
+              <img src="/jamie.webp" alt="Jamie" class="foot-avatar" />
+              <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer" class="text-link">Jamie</a>
             </span>
             and Dave
+            <br />
+            &copy; 2026 Jamie &amp; Dave
           </div>
           <p class="footer__copyright">&copy; 2026 Jamie &amp; Dave</p>
           <div class="dev-links hidden" data-dev-links></div>

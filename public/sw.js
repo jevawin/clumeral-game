@@ -34,7 +34,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Network-first for navigation (gets fresh puzzle data injected by Worker)
+  // Network-first for navigation (gets fresh HTML from Worker)
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request)
@@ -45,6 +45,11 @@ self.addEventListener('fetch', (e) => {
         })
         .catch(() => caches.match(e.request))
     );
+    return;
+  }
+
+  // Network-only for API routes (never cache puzzle data or guess responses)
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
     return;
   }
 
