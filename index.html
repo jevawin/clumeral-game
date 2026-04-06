@@ -7,8 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300..700&family=Inconsolata:wdth,wght@75..125,300..700&display=swap" rel="stylesheet" />
-    <meta name="theme-color" content="#f5edd8" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#262624" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5edd8" />
     <meta name="description" content="Work out the number from 100–999. New puzzle every day." />
 
     <!-- Open Graph -->
@@ -55,7 +54,7 @@
           <div data-fb-cats role="radiogroup" aria-label="Feedback category">
             <button class="fb-cat active" data-cat="general" role="radio" aria-checked="true">General</button>
             <button class="fb-cat" data-cat="bug" role="radio" aria-checked="false">Bug</button>
-            <button class="fb-cat" data-cat="suggestion" role="radio" aria-checked="false">Suggestion</button>
+            <button class="fb-cat" data-cat="suggestion" role="radio" aria-checked="false">Idea</button>
             <button class="fb-cat" data-cat="praise" role="radio" aria-checked="false">Praise</button>
           </div>
 
@@ -98,7 +97,8 @@
                 <p class="modal-step-label">2. Open the digit boxes, remove ineligible digits</p>
                 <div class="htp-worked">
                   <div class="digit-box htp-box">
-                    <div class="digit-box__grid">
+                    <div class="digit-box__grid four-col">
+                      <span class="elim">0</span>
                       <span>1</span>
                       <span>2</span>
                       <span>3</span>
@@ -466,6 +466,7 @@
             </span>
             and Dave
           </div>
+          <p class="footer__copyright">&copy; 2026 Jamie &amp; Dave</p>
           <div class="dev-links hidden" data-dev-links></div>
         </footer>
       </main>
