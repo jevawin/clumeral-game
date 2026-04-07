@@ -248,16 +248,37 @@ export function celebrateOcto(): void {
   const origLeft = rect.left;
   const origTop = rect.top;
 
+  // Pin him in place at his current header-slot coords first, so the
+  // lead-in transition below starts from exactly where the user sees him
+  // — no teleport to the keyframe's start position.
   octoWrapEl.style.position = 'fixed';
-  octoWrapEl.style.left = '50%';
-  octoWrapEl.style.top = '50%';
+  octoWrapEl.style.left = origLeft + 'px';
+  octoWrapEl.style.top = origTop + 'px';
   octoWrapEl.style.margin = '0';
-
-  octoEl.classList.add('celebrate');
-  octoWrapEl.classList.add('celebrating');
+  octoWrapEl.style.transform = '';
   document.body.style.overflow = 'hidden';
 
-  // After fly animation ends, transition back to header
+  // Lead-in: slide from the header slot to the `octo-fly` keyframe's 0%
+  // position (centre + translateY(-55vh)) over 350ms. The keyframe 0% is
+  // identical to where we end, so handing off to the CSS animation after
+  // the transition is seamless — no jump.
+  const LEAD_IN_MS = 350;
+  requestAnimationFrame(() => {
+    if (!octoWrapEl || !octoEl) return;
+    octoWrapEl.style.transition = `left ${LEAD_IN_MS}ms ease-in, top ${LEAD_IN_MS}ms ease-in, transform ${LEAD_IN_MS}ms ease-in`;
+    octoWrapEl.style.left = '50%';
+    octoWrapEl.style.top = '50%';
+    octoWrapEl.style.transform = 'translate(-50%, -50%) translateY(-55vh)';
+
+    setTimeout(() => {
+      if (!octoWrapEl || !octoEl) return;
+      octoWrapEl.style.transition = '';
+      octoEl.classList.add('celebrate');
+      octoWrapEl.classList.add('celebrating');
+    }, LEAD_IN_MS);
+  });
+
+  // After lead-in + fly animation ends, transition back to header
   setTimeout(() => {
     if (!octoWrapEl || !octoEl) return;
     octoWrapEl.style.transform = 'translate(-50%, -50%)';
@@ -295,7 +316,7 @@ export function celebrateOcto(): void {
         octoAnimating = false;
       }, 650);
     });
-  }, 5100);
+  }, 5100 + 350);
 }
 
 function sadBounce(el: HTMLElement, fallDist: number, onDone: () => void): void {
