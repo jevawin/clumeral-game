@@ -128,7 +128,7 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
 <body>
   <a href="/" class="back">&larr; Back to today's puzzle</a>
   <h1>Every Clumeral ever.</h1>
-  <p class="subtitle">Tap to replay a puzzle. Tap a column to sort by it.</p>
+  <p class="subtitle">Tap to view a puzzle. Tap a column to sort by it.</p>
 
   <table>
     <thead>
