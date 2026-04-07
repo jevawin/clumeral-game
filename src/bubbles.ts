@@ -37,25 +37,17 @@ function sizePx(band: SizeBand): number {
   }
 }
 
-function baseDuration(band: SizeBand): number {
-  // Smaller = faster. Roughly matches the reference CodePen (4.6 / 4.9 / 5.0s).
-  switch (band) {
-    case "small": return 4400;
-    case "medium": return 4700;
-    case "large": return 5000;
-  }
+function randomDuration(): number {
+  // Each bubble gets its own fixed linear speed, somewhere between
+  // 4500ms and 5500ms. Nothing too fast, nothing overshoots the budget.
+  return 4500 + Math.random() * 1000;
 }
 
-function easeInOut(t: number): number {
-  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-}
-
-function parseAccent(raw: string): [number, number, number] {
-  // Assumes --acc is set via light-dark(hex, hex) in style.css, which
-  // getComputedStyle resolves to "rgb(r, g, b)". If --acc is ever set to a
-  // raw hex or non-rgb colour space, we fall back silently to FALLBACK_ACC.
+function parseRgb(raw: string): [number, number, number] | null {
+  // Matches "rgb(r, g, b)" / "rgba(r, g, b, a)" — what getComputedStyle
+  // returns after resolving light-dark() and SVG fill animations.
   const m = raw.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
-  if (!m) return FALLBACK_ACC;
+  if (!m) return null;
   return [Number(m[1]), Number(m[2]), Number(m[3])];
 }
 
@@ -89,7 +81,7 @@ export function launchBubbles(): void {
   for (let i = 0; i < count; i++) {
     const band = pickSize();
     const size = sizePx(band);
-    const duration = baseDuration(band) + (Math.random() - 0.5) * 300;
+    const duration = randomDuration();
     // Cap delay so delay + duration never exceeds the total budget.
     const maxDelay = Math.max(0, TOTAL_MS - duration);
     const delay = Math.random() * maxDelay;
@@ -102,9 +94,30 @@ export function launchBubbles(): void {
     });
   }
 
+  // Octo's celebration cycles through 4 colours via the `octo-colours`
+  // CSS keyframe on its first SVG path (see style.css). Reading the
+  // computed `fill` of that path each frame gives us Octo's live colour,
+  // which is what we want bubbles to match. --acc is the fallback if the
+  // octo isn't on-screen yet.
   const root = document.documentElement;
+  const octoPath = document.querySelector<SVGPathElement>(
+    "[data-octo] > path"
+  );
+
   let rafId: number;
   const start = performance.now();
+
+  function readOctoColour(): [number, number, number] {
+    if (octoPath) {
+      const fill = getComputedStyle(octoPath).fill;
+      const parsed = parseRgb(fill);
+      if (parsed) return parsed;
+    }
+    const accParsed = parseRgb(
+      getComputedStyle(root).getPropertyValue("--acc")
+    );
+    return accParsed ?? FALLBACK_ACC;
+  }
 
   function tick(now: number): void {
     const elapsed = now - start;
@@ -116,18 +129,15 @@ export function launchBubbles(): void {
 
     ctx.clearRect(0, 0, cssWidth, cssHeight);
 
-    // Read accent once per frame so bubbles re-tint live if Octo's colour changes.
-    const [ar, ag, ab] = parseAccent(
-      getComputedStyle(root).getPropertyValue("--acc")
-    );
+    const [ar, ag, ab] = readOctoColour();
 
     for (const b of bubbles) {
       const localT = (elapsed - b.delay) / b.duration;
       if (localT <= 0 || localT >= 1) continue;
 
-      // Rise distance: from startY up until fully off-screen top.
+      // Linear rise: fixed speed per bubble, no easing.
       const riseDistance = b.startY + b.size;
-      const y = b.startY - riseDistance * easeInOut(localT);
+      const y = b.startY - riseDistance * localT;
 
       // Fade in over first 10%, hold, fade out over last 10%.
       let opacity = 1;
