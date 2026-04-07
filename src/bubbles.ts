@@ -164,8 +164,8 @@ export function launchBubbles(): void {
       //    Scales naturally with bubble size (no fixed pixel blur).
       const glow = ctx.createRadialGradient(0, 0, r * 0.3, 0, 0, r);
       glow.addColorStop(0, `rgba(${ar}, ${ag}, ${ab}, 0)`);
-      glow.addColorStop(0.7, `rgba(${ar}, ${ag}, ${ab}, 0.35)`);
-      glow.addColorStop(1, `rgba(${ar}, ${ag}, ${ab}, 0.55)`);
+      glow.addColorStop(0.7, `rgba(${ar}, ${ag}, ${ab}, 0.2)`);
+      glow.addColorStop(1, `rgba(${ar}, ${ag}, ${ab}, 0.35)`);
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
       ctx.fillStyle = glow;
