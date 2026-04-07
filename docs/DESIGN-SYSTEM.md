@@ -2,44 +2,44 @@
 
 ## Theming
 
-Uses `light-dark()` for automatic theme switching. JS sets `:root.dark` or `:root.light` on the document — `color-scheme` resolves the correct value.
+- `light-dark()` everywhere. JS sets `:root.light` / `:root.dark`.
+- Accent is user-selectable via `colours.ts` — `--acc` / `--acc-btn` are dynamic. Never hardcode the accent hex.
+- New colours MUST use `light-dark(lightVal, darkVal)` with both values.
+- Use existing vars — don't hardcode hex.
 
-### CSS custom properties
+## Core CSS variables
 
-```css
-/* ── Accent (theme-aware for WCAG AA contrast) ── */
---acc:        light-dark(#bc3c2c, #ff8070)  /* text accent — 4.7:1 light, 5.6:1 dark */
---acc-btn:    #bc3c2c                       /* button bg — white text 5.5:1 both themes */
---tag-bg:     light-dark(rgba(188,60,44,0.08), rgba(255,128,112,0.1))
---md-lit-bg:  light-dark(rgba(188,60,44,0.10), rgba(255,128,112,0.12))
-
-/* ── Theme-sensitive (light / dark) ── */
---bg:         light-dark(#f5edd8, #262624)       /* page background */
---text:       light-dark(#262624, #f6f0e8)       /* primary text */
---muted:      light-dark(rgba(38,38,36,0.70), rgba(246,240,232,0.6))
---card-bg:    light-dark(#fffdf7, #2e2e2c)       /* card background */
---card-sh:    light-dark(offset shadow light, offset shadow dark)
---surface:    light-dark(#ffffff, #363634)        /* input/key backgrounds */
---border:     light-dark(rgba(38,38,36,0.12), rgba(255,253,247,0.1))
---modal-bg:   light-dark(#ffffff, #1e1e1c)
+```
+--acc          theme-aware accent (text)
+--acc-btn      solid accent (button bg, white text)
+--tag-bg       subtle accent tint (clue tag bg)
+--md-lit-bg    lit modal/accent bg
+--bg           page bg (derived from --acc)
+--text         primary text
+--muted        secondary text
+--card-bg      card bg
+--card-sh      card offset shadow
+--surface      input/key bg
+--border       borders
+--modal-bg     modal bg
+--modal-sh     modal shadow
 ```
 
-New colours must use `light-dark()` with both values. Use existing accent variables (`--acc`, `--acc-btn`) — don't hardcode hex.
+## Typography
 
-### Typography
+- Body: DM Sans (Google Fonts), fallback `system-ui`
+- Mono (labels/digits): Inconsolata (Google Fonts)
 
-- Body: DM Sans via Google Fonts CDN, with `system-ui` fallback
-- Monospace (labels/digits): Inconsolata via Google Fonts CDN
+## Layout
 
-### Layout
+- Fluid. `max-width: 30rem`. No fixed breakpoints.
+- Card = solid `--card-bg` + offset `--card-sh`
+- No `!important` unless overriding third-party
 
-- Fluid: `max-width: 30rem`, no fixed breakpoints
-- Card: offset shadow (`--card-sh`) with solid `--card-bg` background
+## Clue display
 
-## Clue display rules
-
-- **Boolean clues** (`type: 'text'`): `[subject] [is [not] predicate]`
-  - Affirmative (`= true` or `!= false`): "The first digit **is a prime number**"
-  - Negative (`= false` or `!= true`): "The first digit **is not a prime number**"
-- **Numeric clues**: `[label] [operator in coral] [value in bold]`
-- Operator symbols: `<=` renders as `≤`, `>=` as `≥`, `!=` as `≠`, `=` as `=`
+- **Boolean** (`type: 'text'`): `[subject] [is [not] predicate]`
+  - Affirmative (`= true` / `!= false`): "The first digit **is a prime number**"
+  - Negative (`= false` / `!= true`): "The first digit **is not a prime number**"
+- **Numeric**: `[label] [operator in accent] [value in bold]`
+- Operator rendering: `<=` → `≤`, `>=` → `≥`, `!=` → `≠`, `=` → `=`

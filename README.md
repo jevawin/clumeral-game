@@ -1,38 +1,59 @@
 # Clumeral
 
-**Work out the number from 100-999. New puzzle every day.**
+**Work out the number from 100–999. New puzzle every day.**
 
 [clumeral.com](https://clumeral.com)
 
-Clumeral is a daily browser puzzle game. A seeded random algorithm filters numbers 100-999 down to one answer using mathematical clues about each digit. Every player gets the same puzzle each day.
+Clumeral is a daily browser puzzle game. A seeded random algorithm filters numbers 100–999 down to one answer using mathematical clues about each digit. Every player gets the same puzzle each day.
 
 ## How it works
 
-Each puzzle gives you clues about a hidden 3-digit number. Clues are based on properties of the digits - whether they're prime, square, triangular, or Fibonacci numbers, plus sums, differences, products, means, and ranges of digit pairs. You read the clues, narrow down the possibilities, and guess the number.
+Each puzzle gives you clues about a hidden three-digit number. Clues are based on properties of the digits — whether they're prime, square, triangular, or cube numbers, plus sums, differences, products, means, and ranges of digit pairs. You read the clues, narrow down the possibilities, and guess the number.
 
 ## Tech stack
 
-No framework, no bundler, no build step. Pure HTML, CSS, and JavaScript.
+- **Vite + TypeScript** — ES modules in dev, bundled for production
+- **Cloudflare Workers** — `@cloudflare/vite-plugin` runs the Worker in dev (same runtime as production)
+- **Cloudflare KV** — daily puzzles cached by date key
+- **Cloudflare Pages** — auto-deploy on merge to `main`
 
-| File | Purpose |
-|------|---------|
-| `index.html` | Game shell |
-| `app.js` | Client UI - renders clues, handles guesses, manages game state |
-| `puzzle.js` | Shared puzzle logic - properties, filter algorithm, seeded RNG |
-| `_worker.js` | Cloudflare Pages Worker - injects puzzle data server-side |
-| `style.css` | All styling - light/dark themes, responsive layout |
+### Project structure
+
+```
+src/
+  worker/
+    index.ts     Worker entry — API routes, static page handlers, cron
+    puzzle.ts    Puzzle generation (server-only)
+    crypto.ts    AES-GCM token signing for random puzzles
+    puzzles.ts   Worker-rendered /puzzles archive page
+    stats.ts     Analytics Engine queries for /stats dashboard
+  app.ts         Client UI — fetches puzzle, renders clues, handles guesses
+  style.css      All styling (light-dark themes, accent-colour system)
+  storage.ts     localStorage helpers
+  theme.ts       Light/dark toggle
+  colours.ts     Accent colour picker
+  modals.ts      How-to-play + feedback modals
+  bubbles.ts     Correct-answer effect
+  octo.ts        Mascot animations
+public/          Static assets (icons, sprites.svg, manifest.json, sw.js)
+index.html       Game shell (Vite entry)
+```
 
 ### Puzzle generation
 
-- Candidates start as all integers 100-999
-- Each digit has properties derived on-the-fly (prime, square, cube, triangular, etc.)
-- A seeded RNG (mulberry32) draws filters from 6 property groups per loop iteration
+- Candidates start as all integers 100–999
+- Each property has a `compute(n)` function that derives the value from digits on the fly
+- A seeded RNG (mulberry32) draws filters from six property groups per iteration
 - A tiebreaker phase sweeps exact-match filters until one candidate remains
 - Same date seed = same puzzle for everyone
 
-### Themes
+Deep dive: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-Light and dark themes via CSS `light-dark()`. The coral accent (`#ff6d5a`) runs throughout - operators, borders, buttons, tags.
+### Design system
+
+Light and dark themes via CSS `light-dark()`. Four accent colours (Berry, Blue, Lime, Violet) chosen by the player, driving all borders, operators, tags, and highlights.
+
+Deep dive: [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md).
 
 ## Getting started
 
@@ -41,38 +62,39 @@ Light and dark themes via CSS `light-dark()`. The coral accent (`#ff6d5a`) runs 
 git clone https://github.com/jevawin/clumeral-game.git
 cd clumeral-game
 
-# Enable git hooks (blocks commits on main)
-git config core.hooksPath .githooks
+# Install
+npm install
 
-# Start dev server
-python3 -m http.server 8080
-# Open http://localhost:8080
+# Dev server (Vite + Worker runtime)
+npm run dev
 ```
 
-In local dev, the app skips the Cloudflare Worker and generates the puzzle directly in the browser using `puzzle.js`.
+The dev server runs the Worker in Cloudflare's local runtime, so API endpoints and KV behave the same as production.
 
-## Git workflow
+## API endpoints
 
-`main` is protected - never commit or push to it directly.
+| Route | Purpose |
+|-------|---------|
+| `GET /api/puzzle` | Today's puzzle clues (no answer) |
+| `GET /api/puzzle/random` | Random puzzle clues + HMAC-signed token |
+| `GET /api/puzzle/:num` | Archived puzzle clues by puzzle number |
+| `GET /api/puzzle/:num/solution` | Answer for a past puzzle (not today) |
+| `POST /api/guess` | Validate a guess server-side |
 
-```
-issue/NUM  -->  dev  -->  PR  -->  main
-(feature)    (integrate)       (deploy)
-```
-
-- **Features / bug fixes**: branch `issue/NUM` from `dev`, build there, merge into `dev`
-- **Cleanup / config / docs**: commit directly to `dev`
-- **Deploy**: PR from `dev` to `main`, merge when ready
-
-Multiple issue branches can be batched into a single PR.
+The answer is never sent to the client for today's puzzle. Full validation happens in the Worker.
 
 ## Deployment
 
-Push to `main` triggers auto-deploy via Cloudflare Pages. The `_worker.js` is picked up automatically by Pages Advanced Mode - no `wrangler.toml` needed.
+Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → auto-deploys from `dist/client`.
+
+- **Production**: [clumeral.com](https://clumeral.com)
+- **Build command**: `npm run build`
+- **Output directory**: `dist/client`
+- **Merge method**: squash only (merge commits disabled on the repo)
 
 ## Contributing
 
-Issues and ideas tracked on [GitHub Issues](https://github.com/jevawin/clumeral-game/issues) with the `roadmap` label.
+Issues and ideas tracked on [GitHub Issues](https://github.com/jevawin/clumeral-game/issues) with the `roadmap` label. Workflow and review process in [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md).
 
 ## Trademark
 
@@ -80,4 +102,4 @@ Issues and ideas tracked on [GitHub Issues](https://github.com/jevawin/clumeral-
 
 ## License
 
-[MIT](LICENSE) - see LICENSE file for details.
+[MIT](LICENSE) — see LICENSE file for details.

@@ -1,49 +1,64 @@
 # Architecture
 
-**Vite + TypeScript.** ES modules in dev, bundled for production. Cloudflare Worker runs via `@cloudflare/vite-plugin`.
+Vite + TypeScript. Cloudflare Worker via `@cloudflare/vite-plugin`. REST API — answer never sent to client.
 
-## Project structure
+## Files
 
 ```
 src/
-  worker/index.ts      Cloudflare Worker — intercepts GET /, injects PUZZLE_DATA
-  worker/puzzle.ts     Puzzle generation logic (server-only)
-  app.ts               Client UI — renders clues/feedback/history/stats, handles guesses
-  confetti.ts          Confetti animation on correct answer
-  style.css            All visual styling
-public/                Static assets copied as-is (icons, images, manifest, sw.js)
-index.html             Game shell (Vite entry point)
-vite.config.ts         Vite + Cloudflare plugin config
-wrangler.jsonc         Cloudflare Worker config
+  app.ts         Client UI, guess handling, game flow
+  storage.ts     localStorage helpers (prefs, history)
+  modals.ts      How-to-Play, toast, feedback modals
+  theme.ts       Light/dark toggle, dot-grid canvas bg
+  colours.ts     Accent colour picker, icon swap
+  octo.ts        Octopus mascot animations
+  bubbles.ts     Rising bubbles on correct answer (owns canvas)
+  types.ts       Shared types (GameState, ClueData, HistoryEntry, Prefs)
+  global.d.ts    Ambient types
+  style.css      All styling
+  worker/
+    index.ts     Entry — API routes + HTML serving
+    puzzle.ts    Filter/compute logic, RNG, seeding (server-only)
+    puzzles.ts   /puzzles history page (SSR)
+    stats.ts     /stats dashboard, Analytics Engine queries
+    crypto.ts    AES-GCM token signing for random puzzles
+public/          Static (icons, manifest, sw.js)
+index.html       Shell
 ```
 
-## How it works
+## Worker API
 
-1. Worker intercepts `GET /` and `/random`, generates puzzle, injects `window.PUZZLE_DATA` into HTML
-2. `index.html` loads `src/app.ts` as `type="module"`
-3. `app.ts` reads `window.PUZZLE_DATA` and calls `startDailyPuzzle()`
+- `GET /api/puzzle` — today's clues (no answer)
+- `GET /api/puzzle/random` — random puzzle + signed token
+- `GET /api/puzzle/:num` — specific puzzle clues
+- `GET /api/puzzle/:num/solution` — answer for PAST puzzles only
+- `POST /api/guess` — server validates, returns correct/incorrect
+- `POST /api/event` — analytics
+- `GET /api/stats` — stats data
+- `GET /api/dev/answer` — dev only
+- `GET /stats`, `/puzzles`, `/puzzles/:num` — SSR HTML
+- `GET /`, `/index.html`, `/random` — app shell
 
-## Puzzle algorithm
+Client fetches puzzle data on load. Never has the answer.
 
-- `candidates` starts as integers `[100..999]` — no pre-built data structure
-- Each property has a `compute(n)` function that derives the value on-the-fly from digits
-- One filter is drawn per `PROPERTY_GROUPS` entry per main loop iteration
-- After the main loop, a **tiebreaker** sweeps all properties with `=` (exact match on `candidates[0]`) until `candidates.length === 1`
-- 28 filterable properties: 12 boolean specials + 16 numeric, across 6 groups
+## Puzzle algorithm (puzzle.ts)
 
-### Daily puzzle seeding
+- Candidates = `[100..999]`, filtered live via `compute(n)` — no prebuilt data
+- 28 properties across 6 groups: 12 boolean specials (3 digits × prime/square/cube/triangular) + 16 numeric (4 sums, 3 diffs, 4 products, 4 means, 1 range)
+- Main loop: one filter per group per iteration
+- Tiebreaker: `=` sweep on remaining candidate until length 1
+- Seed = YYYYMMDD local, RNG = mulberry32 (`makeRng`)
+- `EPOCH_DATE = '2026-03-08'` = Puzzle #1
 
-- Seed = today's local date as integer (YYYYMMDD)
-- RNG = mulberry32 (`makeRng` in `puzzle.ts`)
-- `runFilterLoop(rng)` — same seed always produces same puzzle
-- Epoch date (`EPOCH_DATE = '2026-03-08'`) = Puzzle #1
-
-**Do not modify** `EPOCH_DATE`, `makeRng`, or `PROPERTIES`/`PROPERTY_GROUPS` structure unless fixing a proven bug — changes break puzzle determinism or shift all puzzle numbers.
+**DO NOT modify** `EPOCH_DATE`, `makeRng`, `PROPERTIES`, or `PROPERTY_GROUPS` unless fixing a proven bug. Breaks determinism / shifts puzzle numbers.
 
 ## localStorage keys
 
-- `dlng_history` — array of `{ date: "YYYY-MM-DD", tries: N }`, max 60 entries
-- `dlng_prefs` — `{ saveScore: boolean }`
-- `dlng_theme` — `"light"` or `"dark"` (user's theme preference)
-- `cw-htp-seen` — `"1"` if How to Play modal has been shown
-- Prefix `dlng_` = original game name "David Lark's Lame Number Game" — do not rename (persisted in existing user browsers)
+- `dlng_history` — `[{date, tries}]`, max 60
+- `dlng_prefs` — `{saveScore}`
+- `dlng_theme` — `"light"|"dark"`
+- `dlng_colour` — accent colour id
+- `dlng_uid` — anonymous analytics id
+- `cw-htp-seen` — `"1"` once How-to-Play shown
+
+`dlng_` prefix = legacy name. **Never rename** — persisted in user browsers.

@@ -1,139 +1,41 @@
-# Clumeral — Claude Instructions
+# Clumeral — Claude operating rules
 
-**Clumeral** (clumeral.com) is a daily browser word puzzle game. A seeded random algorithm filters numbers 100–999 down to one answer using column-based clues. The player reads the clues and guesses the hidden number. New puzzle every day, same answer for everyone.
+Clumeral is a daily number puzzle at [clumeral.com](https://clumeral.com). Project overview and dev setup are in [README.md](README.md).
 
-## Key docs
+---
 
-Read the relevant doc **before** working in that area:
+## Rules (non-negotiables)
+
+- **Never commit to `main` or `staging`** — both are protected. Work branches only.
+- **Never merge to `main`** — the user does it on GitHub. No exceptions unless explicitly granted with a reason.
+- **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic on merge to `main`.
+- **Follow the review gates** — DA review first (fresh-context subagent), then self-review, then PR. Required when a change touches more than one file, adds/removes >30 lines, changes puzzle logic, CSS/theming, or accessibility. Skip only for single-file typo/copy fixes. See [docs/DA-REVIEW.md](docs/DA-REVIEW.md) and [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md).
+- **After merging `staging → main`**, run the post-merge sync (below). Skipping this causes divergence.
+- **After any PR merge**, run post-merge cleanup: `git remote prune origin` and delete the local branch.
+
+## Workflow
+
+1. **Ask → Plan → Build** for new issues or tasks. Small tweaks inside an ongoing task can skip straight to building.
+2. When starting work, committing, pushing, or merging, follow [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md) — branches, preview URLs, staging/main flow, and recovery paths.
+
+## Context hygiene
+
+Prompt the user to run `/clear` at these trigger points:
+
+- Before starting a new issue or task
+- After merging a PR (to staging or main)
+- After a big refactor or debugging session
+
+## When working in specific areas, read the relevant doc first
 
 | Working on | Read |
 |------------|------|
-| Puzzle logic, seeding, localStorage | `docs/ARCHITECTURE.md` |
-| CSS, theming, clue display | `docs/DESIGN-SYSTEM.md` |
-| Code patterns, accessibility, DOM | `docs/CONVENTIONS.md` |
-| Pre-PR review (architecture) | `docs/DA-REVIEW.md` |
-| Pre-PR review (line-level) | `docs/SELF-REVIEW.md` |
+| Puzzle logic, seeding, storage | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| CSS, theming, clue display | [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |
+| Code patterns, accessibility, DOM | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
+| Git workflow, branch strategy, recovery | [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md) |
+| Pre-PR architecture review | [docs/DA-REVIEW.md](docs/DA-REVIEW.md) |
+| Pre-PR line-level review | [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md) |
+| Adding a roadmap item as a GitHub issue | [docs/ROADMAP-ISSUES.md](docs/ROADMAP-ISSUES.md) |
 
-## Dev server
-
-```bash
-npm run dev
-# Vite dev server with Worker running in Cloudflare Workers runtime
-# PUZZLE_DATA is injected by the Worker, same as production
-```
-
-## Git workflow
-
-**Both `main` and `staging` are protected — never commit or push to them directly.**
-
-### Branches
-
-| Branch | Purpose | Commits |
-|--------|---------|---------|
-| `main` | Production | PRs from `staging` only (the user merges in GitHub) |
-| `staging` | Pre-production review | Merges from approved work branches only — **protected, never commit directly** |
-| `dev/thing` | General work (no GitHub issue) | Direct commits OK |
-| `issue/NUM` | Work linked to a GitHub issue | Direct commits OK |
-
-Create work branches off `staging`. Legacy branches (`dev`, `colours`) are being retired — leave them as-is.
-
-### Harness branch workaround
-
-The Claude Code harness auto-assigns a `claude/*` branch name per session. **Ignore it.** Create `issue/NUM` or `dev/name` off `staging` instead.
-
-Remote branches are auto-deleted by GitHub on PR merge. After merging, run `git remote prune origin` and delete the local branch to keep things clean.
-
-### Workflow
-
-1. **Build** — Claude creates `issue/NUM` or `dev/name` branches off `staging`, commits work, pushes, and provides the Cloudflare preview URL for each branch
-2. **Branch review** — the user tests each branch via its preview URL as work progresses
-3. **Merge to staging** — on the user's approval, Claude creates a PR from the work branch into `staging` and squash-merges it via `gh pr merge --squash`. Then provides the staging preview URL.
-4. **PR to main** — once staging has all approved branches, Claude creates a PR from `staging` → `main` and provides the staging preview URL and PR link
-5. **Final review** — the user tests staging with all branches combined
-6. **Ship** — the user merges the PR to `main` from GitHub
-7. **Sync staging back** — immediately after the main merge, Claude opens a sync PR to bring staging back in line with main (see "Post-merge sync" below). Skipping this step will cause divergence and conflicts on the next `staging → main` PR.
-
-**Key rules:**
-- **Never merge to `main`** — the user does this from GitHub. No exceptions unless the user explicitly grants override permission with a stated reason.
-- **Merge to `staging` only after user approval** — Claude can squash-merge via `gh pr merge --squash` once the user confirms the branch
-- **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic via Cloudflare Git integration on merge to `main`
-
-### Post-merge sync (critical)
-
-**Why it matters:** `main` uses squash merges, so every `staging → main` merge creates a new commit on `main` with a hash that doesn't exist in `staging`'s history. Without syncing `staging` back, the two branches drift. On the next release, `git merge-base staging main` points to a stale ancestor, and any change that touched the same lines in both branches becomes a three-way merge conflict — even when the resolution is obvious.
-
-**What to do after `staging → main` is merged on GitHub:**
-
-The user must update `staging` to include `main`'s new commits. The cleanest approach — because `staging` is protected (no merge commits, no force-push from Claude) — is to run this locally:
-
-```bash
-git checkout staging
-git pull origin staging
-git fetch origin main
-git reset --hard origin/main
-git push --force-with-lease origin staging
-```
-
-This requires the user to temporarily allow force-push on `staging`, or to be a branch admin. If that's not acceptable, the alternative is for the user to open a PR from a fresh branch that takes main's state and squash-merge it into staging — messier but works within the protection rules.
-
-**If this step is skipped** and divergence occurs, the next `staging → main` PR will likely conflict. The recovery path is to create a `release/*` branch directly off `main`, copy `staging`'s working tree onto it as a single commit (`git checkout staging -- .`), and PR that branch to main instead of the staging branch directly. The current branch state is preserved but staging still needs re-syncing afterwards.
-
-### Cloudflare preview URLs
-
-### Cloudflare preview URLs
-
-Provide these as clickable markdown links after pushing:
-- **Feature branches**: `https://{branch}-clumeral-game.jevawin.workers.dev` (e.g. [https://issue-109-clumeral-game.jevawin.workers.dev](https://issue-109-clumeral-game.jevawin.workers.dev))
-- **Staging**: [https://staging-clumeral-game.jevawin.workers.dev](https://staging-clumeral-game.jevawin.workers.dev)
-
-When presenting a branch for approval, provide the Cloudflare branch URL. When all branches are merged to staging, provide the staging URL **and** the `staging` → `main` PR URL.
-
-## Deployment
-
-Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → auto-deploys from `dist/client`.
-
-- **Production**: [https://clumeral.com](https://clumeral.com)
-- **Merge method**: squash only (merge commits disabled on the repo)
-- **Build command**: `npm run build`
-- **Output directory**: `dist/client`
-
-## Skills
-
-- `/add-to-roadmap` — when the user says "add to roadmap" or similar, invoke this skill to create a structured GitHub issue labelled `roadmap`, assigned to `jevawin`
-
-## Process directives
-
-### Session management
-
-- **Hand off after 3 PRs** or when context compression is detected (responses get vaguer, repeat themselves, miss things)
-- **Handoff summary**: update `PROGRESS.md` with what was completed, what's next, decisions made, blockers, and current branch state
-- `PROGRESS.md` is the living document — the next session reads it to pick up where the last left off
-
-### Plan before building
-
-When picking up an issue or starting any new piece of work, follow this lightweight flow before writing code:
-
-1. **Ask** — ask the user short questions about how they want to approach it. Use the interactive Q&A format with recommendations, e.g. "How should we handle X?" `[option A (recommended)]` `[option B]` `[other]`. Keep it to 2–4 questions max — enough to resolve ambiguity, not an interrogation.
-2. **Plan** — once the approach is clear, present a brief bullet-point plan (what changes, which files, how). Ask if they want to dig deeper or crack on.
-3. **Build** — execute on approval.
-
-Never skip straight to writing code, even outside of plan mode.
-
-### Review gates
-
-For non-trivial changes (new features, changed logic, refactored modules), run the full review gate before creating a PR. Trivial changes (typos, formatting, config tweaks) can skip DA but should still get a self-review pass.
-
-**Review order matters — never skip or reorder:**
-
-1. **DA Review** — spin up a subagent in fresh context to review all changed files. Follow `docs/DA-REVIEW.md` checklist item by item. Medium+ findings must be fixed before proceeding.
-2. **Self-Review** — read every changed file (`git diff staging...HEAD`) and run through `docs/SELF-REVIEW.md`. Catches line-level accuracy issues the DA misses.
-3. **Create PR** — only after both reviews pass.
-
-### Living checklists
-
-`docs/DA-REVIEW.md` and `docs/SELF-REVIEW.md` are living documents. When a review (or the user) catches something the checklist should have spotted, add the specific check immediately.
-
-### Context management
-
-- Use subagents for exploration and DA reviews (protect main context window)
-- DA reviews must run in fresh context — the agent that wrote the code should not be the same context that reviews it
+Update the respective doc if it's incorrect or your work makes it outdated.

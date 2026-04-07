@@ -1,40 +1,38 @@
 # Conventions
 
-## Accessibility
+## Accessibility (WCAG 2.1 AA)
 
-All changes must meet WCAG 2.1 AA minimum:
-- Semantic HTML, proper ARIA attributes
-- Colour contrast: 4.5:1 normal text, 3:1 large text / UI components
-- Keyboard navigable (Tab, Enter, Escape)
-- No information conveyed by colour alone
+- Semantic HTML, ARIA only where semantics insufficient
+- Contrast: 4.5:1 text, 3:1 large text / UI
+- Keyboard nav: Tab / Enter / Escape
+- No info by colour alone
+- Touch targets ≥ 44px
 
 ## Code separation
 
-- `puzzle.ts` — filter/compute logic only, no UI code
-- `app.ts` — UI only, no filter/compute logic
-- `confetti.ts` — confetti animation, owns its own canvas
-- Worker code (`src/worker/`) must not import client-side modules and vice versa
+- `puzzle.ts` — filter/compute only, no UI
+- `app.ts` — UI only, no compute logic
+- `bubbles.ts` — owns its canvas
+- `src/worker/` ↔ client modules: no cross-imports
 
-## UI patterns
+## UI / stack
 
-- No frontend framework — Vite + TypeScript with ES modules
-- Icons: [Lucide](https://lucide.dev/)
-- Notifications: toast/snackbar (auto-dismiss ~3s) — not modals
-- No PII: never collect, store, or transmit personally identifiable information
+- No framework. Vite + TS + ES modules
+- Icons: Lucide
+- Notifications: auto-dismiss toast (~3s), not modals
+- No PII — never collect/store/transmit
 
-## DOM constraints
+## DOM patterns
 
-- Event listeners attached at module level in `app.ts` — never inside `startDailyPuzzle`
-- `gameState` is module-scoped `let` in `app.ts` — not a `window` global
-- DOM IDs are locked — do not rename or remove existing IDs. New IDs must be added to this list:
-
-`#cw` `#cw-canvas` `#cw-shape` `#cw-shape2` `#cw-inner` `#cw-header` `#cw-title` `#cw-sub` `#cw-card` `#cw-plabel` `#cw-digits` `#d0` `#d1` `#d2` `#cw-hint` `#cw-keypad-wrap` `#cw-keypad` `#cw-submit-wrap` `#cw-submit` `#cw-save` `#cw-ck` `#cw-feedback` `#cw-history` `#cw-history-list` `#cw-stats` `#cw-next` `#cw-next-number` `#cw-again` `#cw-foot-links` `#cw-tog` `#cw-htp-btn` `#cw-foot` `#cw-modal` `#cw-modal-box` `#cw-modal-close` `#cw-modal-gotit` `#octo-wrap` `#octo`
+- Selectors use `data-*` attributes (e.g. `[data-digit]`, `[data-htp-btn]`), NOT IDs. Don't introduce new IDs — use `data-*`.
+- Event listeners attached at module level in `app.ts`. Never inside `startDailyPuzzle`.
+- `gameState` = module-scoped `let` in `app.ts`. Never on `window`.
 
 ## GitHub labels
 
-- Lowercase for words: `roadmap`, `gameplay`
-- Uppercase for acronyms/codes: `P1`, `P2`, `P3`, `UI/UX`
+- Lowercase words: `roadmap`, `gameplay`, `hygiene`, `accessibility`
+- Uppercase acronyms: `P1`, `P2`, `P3`, `UI/UX`, `SEO`
 
 ## Testing notes
 
-- **Safari tab navigation**: Safari requires **Option+Tab** to tab through all interactive elements. If the user reports "tabbing is broken", remind them to check Option+Tab before investigating.
+- Safari tab nav requires **Option+Tab**. If user reports tabbing broken, check this first.
