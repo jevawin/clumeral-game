@@ -23,7 +23,7 @@ Clumeral is a daily number puzzle at [clumeral.com](https://clumeral.com). Proje
 Prompt the user to run `/clear` at these trigger points:
 
 - Before starting a new issue or task
-- After shipping a PR to main
+- After merging a PR (to staging or main)
 - After a big refactor or debugging session
 
 ## When working in specific areas, read the relevant doc first
