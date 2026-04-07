@@ -2,7 +2,9 @@
 // Replaces the old confetti burst. Sea creature + confetti was a thematic
 // mismatch; bubbles fit Octo's aquatic world.
 
-const TOTAL_MS = 5500; // every bubble must be off the top of the screen by this time
+// Every bubble must be off the top of the screen by this time. Slightly
+// longer than Octo's ~5.75s celebrate window so the trail can linger.
+const TOTAL_MS = 6500;
 const MIN_COUNT = 20;
 const MAX_COUNT = 30;
 
@@ -39,8 +41,10 @@ function sizePx(band: SizeBand): number {
 
 function randomDuration(): number {
   // Each bubble gets its own fixed linear speed, somewhere between
-  // 4500ms and 5500ms. Nothing too fast, nothing overshoots the budget.
-  return 4500 + Math.random() * 1000;
+  // 4100ms and 5000ms. Paired with TOTAL_MS = 6500 this gives a
+  // spawn-window of ~1500–2400ms, so bubbles fill ~40–45% of the
+  // viewport vertically at peak instead of rising as a single line.
+  return 4100 + Math.random() * 900;
 }
 
 function parseRgb(raw: string): [number, number, number] | null {
