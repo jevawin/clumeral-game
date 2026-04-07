@@ -251,11 +251,14 @@
     }
   }
 
-  .octo__placeholder {
+  /* Fixed-dimension slot that holds Octo's layout space even when
+     `.octo` goes `position: fixed` during celebrate/sad animations.
+     Without this, the header flex row collapses and the title
+     jumps left. */
+  .octo-slot {
     flex-shrink: 0;
     width: 3.3125rem;
     height: 3.25rem;
-    display: none;
   }
 
   /* ═══════════════════════════════════════

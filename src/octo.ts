@@ -6,6 +6,7 @@
 
 const octoEl     = document.querySelector('[data-octo]') as HTMLElement | null;
 const octoWrapEl = document.querySelector('[data-octo-wrap]') as HTMLElement | null;
+const octoSlotEl = document.querySelector('[data-octo-slot]') as HTMLElement | null;
 const tlts       = [...document.querySelectorAll('.tlt')] as HTMLElement[];
 
 // ── Eye / mouth elements ──
@@ -252,9 +253,6 @@ export function celebrateOcto(): void {
   octoWrapEl.style.top = '50%';
   octoWrapEl.style.margin = '0';
 
-  const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
-  if (ph) ph.classList.remove('hidden');
-
   octoEl.classList.add('celebrate');
   octoWrapEl.classList.add('celebrating');
   document.body.style.overflow = 'hidden';
@@ -266,11 +264,18 @@ export function celebrateOcto(): void {
     octoWrapEl.classList.remove('celebrating');
     octoEl.classList.remove('celebrate');
 
+    // Re-measure the slot NOW so we animate back to where home actually
+    // is at this moment — not where it was 5s ago. Handles resize/scroll
+    // mid-celebration and avoids a settle-snap on cleanup.
+    const home = octoSlotEl?.getBoundingClientRect();
+    const returnLeft = home ? home.left : origLeft;
+    const returnTop = home ? home.top : origTop;
+
     requestAnimationFrame(() => {
       if (!octoWrapEl) return;
       octoWrapEl.style.transition = 'left 0.6s ease-in-out, top 0.6s ease-in-out, transform 0.6s ease-in-out';
-      octoWrapEl.style.left = origLeft + 'px';
-      octoWrapEl.style.top = origTop + 'px';
+      octoWrapEl.style.left = returnLeft + 'px';
+      octoWrapEl.style.top = returnTop + 'px';
       octoWrapEl.style.transform = '';
 
       setTimeout(() => {
@@ -281,9 +286,6 @@ export function celebrateOcto(): void {
         octoWrapEl.style.margin = '';
         octoWrapEl.style.transition = '';
         octoWrapEl.style.opacity = '1';
-
-        const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
-        if (ph) ph.classList.add('hidden');
 
         const digitsEl = document.querySelector('[data-digits]') as HTMLElement | null;
         if (digitsEl) digitsEl.classList.add('digit-correct');
@@ -365,9 +367,6 @@ export function sadOcto(): void {
   octoWrapEl.style.transition = 'none';
   octoWrapEl.style.zIndex = '9999';
 
-  const ph = document.querySelector('[data-octo-placeholder]') as HTMLElement | null;
-  if (ph) ph.classList.remove('hidden');
-
   // Animate fall + bounce, then settle on side
   sadBounce(octoWrapEl, fallDist, () => {
     if (!octoWrapEl) return;
@@ -410,7 +409,6 @@ export function sadOcto(): void {
           octoWrapEl.style.transition = '';
           octoWrapEl.style.zIndex = '';
 
-          if (ph) ph.classList.add('hidden');
           octoAnimating = false;
         }, 450);
       }, 900);
