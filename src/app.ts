@@ -2,7 +2,7 @@
 // Puzzle data is fetched from the API. The answer never reaches the client.
 
 import type { GameState, ClueData } from './types.ts';
-import { launchConfetti } from './confetti.ts';
+import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
 import { initTheme } from './theme.ts';
 import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
@@ -630,7 +630,7 @@ async function handleGuess() {
       gameState.solved = true;
       gameState.answer = guess; // now we know the answer (it was our correct guess)
       track("puzzle_complete", tries);
-      launchConfetti();
+      launchBubbles();
       renderFeedback("correct", guess);
       closeKeypad();
       dom.digits?.classList.add("digit-correct");

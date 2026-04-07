@@ -6,7 +6,7 @@ Devil's advocate review. Fresh-context subagent. Assume code is wrong until prov
 
 - [ ] `puzzle.ts`: no UI code
 - [ ] `app.ts`: no filter/compute logic
-- [ ] DOM manipulation only in `app.ts` (except `confetti.ts` for its canvas)
+- [ ] DOM manipulation only in `app.ts` (except `bubbles.ts` for its canvas)
 - [ ] `src/worker/` doesn't import client modules; client doesn't import worker modules
 
 ## DOM

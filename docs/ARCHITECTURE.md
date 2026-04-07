@@ -12,7 +12,7 @@ src/
   theme.ts       Light/dark toggle, dot-grid canvas bg
   colours.ts     Accent colour picker, icon swap
   octo.ts        Octopus mascot animations
-  confetti.ts    Confetti on correct answer (owns canvas)
+  bubbles.ts     Rising bubbles on correct answer (owns canvas)
   types.ts       Shared types (GameState, ClueData, HistoryEntry, Prefs)
   global.d.ts    Ambient types
   style.css      All styling

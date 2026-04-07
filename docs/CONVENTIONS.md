@@ -12,7 +12,7 @@
 
 - `puzzle.ts` — filter/compute only, no UI
 - `app.ts` — UI only, no compute logic
-- `confetti.ts` — owns its canvas
+- `bubbles.ts` — owns its canvas
 - `src/worker/` ↔ client modules: no cross-imports
 
 ## UI / stack
