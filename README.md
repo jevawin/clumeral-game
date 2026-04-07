@@ -33,7 +33,7 @@ src/
   theme.ts       Light/dark toggle
   colours.ts     Accent colour picker
   modals.ts      How-to-play + feedback modals
-  confetti.ts    Correct-answer effect
+  bubbles.ts     Correct-answer effect
   octo.ts        Mascot animations
 public/          Static assets (icons, sprites.svg, manifest.json, sw.js)
 index.html       Game shell (Vite entry)
