@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. A simplified footer ("Made with heart by Jamie & Dave. (c) 2026.") appears on all three screens
 **Plans:** 1 plan
 Plans:
-- [ ] 01-01-PLAN.md — Tailwind tokens, screen state machine, footer
+- [x] 01-01-PLAN.md — Tailwind tokens, screen state machine, footer
 **UI hint**: yes
 
 ### Phase 2: Welcome + How-to-Play
