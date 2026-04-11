@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Wire dark: variant to existing .dark class on html (set by theme.ts) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Light mode token defaults — Tailwind generates bg-bg, text-text, etc. */
+/* Per D-01: 6 semantic tokens. Per D-02: bg locked to #FAFAFA / #121213 */
+@theme {
+  --color-bg:      #FAFAFA;
+  --color-text:    #262624;
+  --color-muted:   rgba(38, 38, 36, 0.7);
+  --color-accent:  #0A850A;
+  --color-surface: #FFFFFF;
+  --color-border:  rgba(38, 38, 36, 0.12);
+}
+
+/* Dark mode overrides — reassign CSS variables under .dark (per D-04) */
+@layer base {
+  html.dark {
+    --color-bg:      #121213;
+    --color-text:    #FAF8F4;
+    --color-muted:   rgba(246, 240, 232, 0.6);
+    --color-accent:  #1EAD52;
+    --color-surface: #363634;
+    --color-border:  rgba(246, 240, 232, 0.1);
+  }
+}

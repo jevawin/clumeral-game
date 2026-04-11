@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
@@ -7,6 +8,7 @@ const buildHash = Date.now().toString(36);
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     cloudflare(),
     {
       name: "sw-cache-bust",
