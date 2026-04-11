@@ -31,7 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Dark mode toggling via Tailwind `dark:` variants works — no `color-mix()` or `light-dark()` in the output
   4. Three screens (welcome, game, completion) render via state-driven transitions with a cross-fade, not URL changes
   5. A simplified footer ("Made with heart by Jamie & Dave. (c) 2026.") appears on all three screens
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 01-01-PLAN.md — Tailwind tokens, screen state machine, footer
 **UI hint**: yes
 
 ### Phase 2: Welcome + How-to-Play
@@ -103,7 +105,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/1 | Planning complete | - |
 | 2. Welcome + How-to-Play | 0/TBD | Not started | - |
 | 3. Game Screen + Menu | 0/TBD | Not started | - |
 | 4. Feedback Modal | 0/TBD | Not started | - |
