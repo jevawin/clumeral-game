@@ -1,4 +1,5 @@
-@import "tailwindcss";
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
 
 /* Wire dark: variant to existing .dark class on html (set by theme.ts) */
 @custom-variant dark (&:where(.dark, .dark *));
