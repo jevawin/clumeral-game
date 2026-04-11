@@ -46,7 +46,9 @@ Plans:
   3. On a first visit (no Clumeral localStorage keys), how-to-play content appears above the play button
   4. On a return visit (any Clumeral localStorage key present), how-to-play content appears below the play button
   5. The welcome screen appears on every visit, not just the first
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
 **UI hint**: yes
 
 ### Phase 3: Game Screen + Menu
@@ -60,7 +62,9 @@ Plans:
   4. Guess submission reaches the worker and server-side validation returns a correct/incorrect result with no regression
   5. Random puzzle and archive/replay modes work through the new screen flow
   6. A compact menu in the game header gives access to light/dark toggle, archive link, feedback trigger, and how-to-play
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
 **UI hint**: yes
 
 ### Phase 4: Feedback Modal
@@ -72,7 +76,9 @@ Plans:
   2. The modal has four category pills (General, Bug, Idea, Praise) and a textarea that warns at 400 characters and blocks at 500
   3. The metadata line shows the correct puzzle number, date, device, and browser
   4. Submitting sends to the existing Google Apps Script endpoint with retry logic intact
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
 **UI hint**: yes
 
 ### Phase 5: Celebration + Completion
@@ -85,7 +91,9 @@ Plans:
   3. On a device with `prefers-reduced-motion`, the animation is skipped or reduced
   4. The completion screen shows games played, win %, current streak, and max streak read from localStorage
   5. A feedback prompt on the completion screen opens the feedback modal
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
 **UI hint**: yes
 
 ### Phase 6: Polish
@@ -96,7 +104,9 @@ Plans:
   1. No old CSS files are imported or referenced anywhere in the build
   2. The built CSS output contains only Tailwind-generated styles
   3. All five screens (welcome, game, completion — plus modal and menu states) look correct in both light and dark mode on mobile and desktop
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
 
 ## Progress
 
