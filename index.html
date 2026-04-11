@@ -435,6 +435,23 @@
       <div class="toast" data-toast aria-live="polite"></div>
     </div>
 
+    <!-- ── New screen architecture (Phase 1) ── -->
+    <main data-screens class="fixed inset-0 z-10">
+      <section data-screen="welcome" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <!-- Phase 2 content -->
+      </section>
+      <section data-screen="game" class="absolute inset-0 flex flex-col bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <!-- Phase 3 content -->
+      </section>
+      <section data-screen="completion" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <!-- Phase 5 content -->
+      </section>
+    </main>
+
+    <footer data-footer class="fixed bottom-0 left-0 right-0 z-20 text-center py-4 text-muted text-sm font-[DM_Sans]">
+      Made with &#10084;&#65039; by Jamie &amp; Dave. &copy; 2026.
+    </footer>
+
     <script type="module" src="/src/app.ts"></script>
   </body>
 </html>
