@@ -1,0 +1,62 @@
+# Project State
+
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-04-11)
+
+**Core value:** The game screen must work flawlessly — clues, digit elimination, guess submission, and answer validation must all function exactly as they do today, just in a cleaner layout.
+**Current focus:** Phase 1 — Foundation
+
+## Current Position
+
+Phase: 1 of 6 (Foundation)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-04-11 — Roadmap created, phases derived from requirements
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+- Average duration: —
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+**Recent Trend:**
+- Last 5 plans: —
+- Trend: —
+
+*Updated after each plan completion*
+
+## Accumulated Context
+
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- Tailwind from scratch (not migrating old CSS) — clean break, no legacy fighting
+- State-driven screens, not URL routes — matches Wordle pattern
+- Green accent only, no colour picker — collapses palette to ~7 tokens
+- No component library — only ~3 real components needed
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
+
+## Session Continuity
+
+Last session: 2026-04-11
+Stopped at: Roadmap and STATE.md created. Ready to plan Phase 1.
+Resume file: None

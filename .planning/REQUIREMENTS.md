@@ -108,13 +108,53 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | — |
+| SCR-01 | Phase 1 | Pending |
+| SCR-02 | Phase 1 | Pending |
+| SCR-03 | Phase 1 | Pending |
+| STY-01 | Phase 1 | Pending |
+| STY-02 | Phase 1 | Pending |
+| STY-03 | Phase 1 | Pending |
+| STY-04 | Phase 1 | Pending |
+| STY-05 | Phase 1 | Pending |
+| FTR-01 | Phase 1 | Pending |
+| FTR-02 | Phase 1 | Pending |
+| WEL-01 | Phase 2 | Pending |
+| WEL-02 | Phase 2 | Pending |
+| WEL-03 | Phase 2 | Pending |
+| WEL-04 | Phase 2 | Pending |
+| HTP-01 | Phase 2 | Pending |
+| HTP-02 | Phase 2 | Pending |
+| HTP-03 | Phase 2 | Pending |
+| HTP-04 | Phase 2 | Pending |
+| GAM-01 | Phase 3 | Pending |
+| GAM-02 | Phase 3 | Pending |
+| GAM-03 | Phase 3 | Pending |
+| GAM-04 | Phase 3 | Pending |
+| GAM-05 | Phase 3 | Pending |
+| GAM-06 | Phase 3 | Pending |
+| MNU-01 | Phase 3 | Pending |
+| MNU-02 | Phase 3 | Pending |
+| MNU-03 | Phase 3 | Pending |
+| MNU-04 | Phase 3 | Pending |
+| MNU-05 | Phase 3 | Pending |
+| FBK-01 | Phase 4 | Pending |
+| FBK-02 | Phase 4 | Pending |
+| FBK-03 | Phase 4 | Pending |
+| FBK-04 | Phase 4 | Pending |
+| FBK-05 | Phase 4 | Pending |
+| CEL-01 | Phase 5 | Pending |
+| CEL-02 | Phase 5 | Pending |
+| CEL-03 | Phase 5 | Pending |
+| CMP-01 | Phase 5 | Pending |
+| CMP-02 | Phase 5 | Pending |
+| CMP-03 | Phase 5 | Pending |
+| STY-06 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 33 total
-- Mapped to phases: 0
-- Unmapped: 33
+- v1 requirements: 41 total
+- Mapped to phases: 41
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-11*
-*Last updated: 2026-04-11 after initial definition*
+*Last updated: 2026-04-11 after roadmap creation*
