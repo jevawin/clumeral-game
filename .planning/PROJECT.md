@@ -26,7 +26,6 @@ The game screen must work flawlessly — clues, digit elimination, guess submiss
 
 ### Active
 
-- [ ] Three distinct screens: welcome, game, completion (state-driven, single page)
 - [ ] Welcome screen: logo, octopus, subtitle, puzzle number, how-to-play, play button
 - [ ] How-to-play placement: above play button (first visit), below (return visits)
 - [ ] Game screen: clues listed directly on background (no card wrapper), digit boxes, number pad, submit button
@@ -34,14 +33,18 @@ The game screen must work flawlessly — clues, digit elimination, guess submiss
 - [ ] Completion screen: basic stats (games played, win %, current streak, max streak), feedback prompt
 - [ ] Feedback modal accessible from both completion screen and game menu
 - [ ] Celebration animation: octopus swims up from bottom with bubbles (~3s), then completion screen appears
-- [ ] Built from scratch with Tailwind CSS
-- [ ] Minimal palette: ~7 semantic tokens with light/dark variants in tailwind.config.ts
-- [ ] Dark mode: near-black (#121213), light mode: off-white (#FAFAFA)
-- [ ] No colour theme picker — green accent only
-- [ ] No `color-mix()` or `light-dark()` — Tailwind `dark:` variants and opacity modifiers only
-- [ ] Simplified footer on all screens: "Made with heart by Jamie & Dave. (c) 2026."
 - [ ] Old CSS fully removed once replacement is complete
 - [ ] No visual regression on core gameplay
+
+### Validated in Phase 1: Foundation
+
+- ✓ Three distinct screens: welcome, game, completion (state-driven, single page) — screen state machine with cross-fade transitions
+- ✓ Built from scratch with Tailwind CSS — Tailwind v4 installed, building alongside existing CSS
+- ✓ Minimal palette: 6 semantic tokens with light/dark variants in @theme — bg, text, muted, accent, surface, border
+- ✓ Dark mode: near-black (#121213), light mode: off-white (#FAFAFA) — via @custom-variant hooking into existing theme.ts toggle
+- ✓ No colour theme picker — green accent only
+- ✓ No `color-mix()` or `light-dark()` — Tailwind dark: variants and opacity modifiers only
+- ✓ Simplified footer on all screens: "Made with heart by Jamie & Dave. (c) 2026."
 
 ### Out of Scope
 
@@ -75,10 +78,10 @@ Several existing issues get absorbed: #153 (Tailwind migration), #87 (copyright 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Tailwind from scratch, not migrating old CSS | Clean break avoids fighting legacy patterns | — Pending |
+| Tailwind from scratch, not migrating old CSS | Clean break avoids fighting legacy patterns | Phase 1: confirmed, preflight disabled to coexist |
 | No component library | Only ~3 real components; library adds weight for no value | — Pending |
-| State-driven screens, not URL routes | Matches Wordle pattern, simpler implementation | — Pending |
-| Green accent only, drop colour picker | Simplifies UI and collapses palette from ~20 tokens to ~7 | — Pending |
+| State-driven screens, not URL routes | Matches Wordle pattern, simpler implementation | Phase 1: implemented via showScreen() state machine |
+| Green accent only, drop colour picker | Simplifies UI and collapses palette from ~20 tokens to ~7 | Phase 1: 6 tokens, green accent (#0A850A light / #1EAD52 dark) |
 | How-to-play inline on welcome screen | Players dismissed the popup; inline content gets read | — Pending |
 | Feedback modal stays (restyled) | Works well, just needs Tailwind styling | — Pending |
 | No share button placeholder | Cleaner to add it when the feature ships | — Pending |
@@ -101,4 +104,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-11 after initialization*
+*Last updated: 2026-04-11 after Phase 1 completion*
