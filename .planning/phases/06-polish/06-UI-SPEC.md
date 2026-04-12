@@ -58,12 +58,14 @@ No new type styles are introduced in Phase 6. All rendered text must match what 
 | Body / clue text | 16px (1rem) | 400 (regular) | 1.5 |
 | Label / muted text | 14px (0.875rem) | 400 (regular) | 1.4 |
 | Heading / screen title | 20px (1.25rem) | 600 (semibold) | 1.2 |
-| Display / logo mark | 28px (1.75rem) | 700 (bold) | 1.1 |
+| Display / logo mark | 28px (1.75rem) | 700 (bold) — see exception note | 1.1 |
+
+**Exception — weight 700:** DM Sans 700 is locked by Phase 1 (foundation phase). It applies only to the logo mark (`[data-logo]`) and is not a new declaration in Phase 6. The two-weight rule (400 + 600) governs all new type decisions; the logo mark is a carry-forward from the established design foundation and is exempt from that constraint.
 
 Font family: `"DM Sans", system-ui, sans-serif` for all body, label, heading, display roles.
 Digit/keypad numerals: `"Inconsolata", monospace` (used inline via Tailwind `font-mono` or class override where applicable).
 
-Source: `docs/DESIGN-SYSTEM.md` (typography section); `src/tailwind.css` toast-msg rule (1rem, weight 600 confirmed); REQUIREMENTS.md STY-01 through STY-05.
+Source: `docs/DESIGN-SYSTEM.md` (typography section); `src/tailwind.css` toast-msg rule (1rem, weight 600 confirmed); REQUIREMENTS.md STY-01 through STY-05; Phase 1 foundation contract (DM Sans 700 logo mark).
 
 ---
 
