@@ -24,6 +24,8 @@ let currentScreen: ScreenId = "welcome";
 // ─── Internal ─────────────────────────────────────────────────────────────────
 
 function updateScreenDOM(next: ScreenId): void {
+  const overlay = document.querySelector("[data-screens]") as HTMLElement | null;
+
   (["welcome", "game", "completion"] as ScreenId[]).forEach((id) => {
     const el = dom[id];
     const active = id === next;
@@ -33,6 +35,14 @@ function updateScreenDOM(next: ScreenId): void {
     el.classList.toggle("pointer-events-auto", active);
     el.setAttribute("aria-hidden", active ? "false" : "true");
   });
+
+  // While the game screen section is empty (Phase 3 will populate it),
+  // hide the entire overlay so the old game UI underneath is visible and interactive.
+  if (overlay) {
+    const gameEmpty = !dom.game.children.length;
+    overlay.classList.toggle("invisible", next === "game" && gameEmpty);
+  }
+
   currentScreen = next;
 }
 
@@ -55,5 +65,5 @@ export function getCurrentScreen(): ScreenId {
 }
 
 export function initScreens(): void {
-  showScreen("welcome");
+  updateScreenDOM("welcome");
 }
