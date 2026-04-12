@@ -79,7 +79,7 @@ Plans:
   4. Submitting sends to the existing Google Apps Script endpoint with retry logic intact
 **Plans:** 1 plan
 Plans:
-- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
+- [ ] 04-01-PLAN.md — Tailwind modal markup, dialog/toast CSS rules, modals.ts toast class update
 **UI hint**: yes
 
 ### Phase 5: Celebration + Completion
@@ -119,6 +119,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation | 0/1 | Planning complete | - |
 | 2. Welcome + How-to-Play | 0/TBD | Not started | - |
 | 3. Game Screen + Menu | 1/2 | In Progress|  |
-| 4. Feedback Modal | 0/TBD | Not started | - |
+| 4. Feedback Modal | 0/1 | Planning complete | - |
 | 5. Celebration + Completion | 0/TBD | Not started | - |
 | 6. Polish | 0/TBD | Not started | - |
