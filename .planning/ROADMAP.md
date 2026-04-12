@@ -62,9 +62,10 @@ Plans:
   4. Guess submission reaches the worker and server-side validation returns a correct/incorrect result with no regression
   5. Random puzzle and archive/replay modes work through the new screen flow
   6. A compact menu in the game header gives access to light/dark toggle, archive link, feedback trigger, and how-to-play
-**Plans:** 1 plan
+**Plans:** 2 plans
 Plans:
-- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
+- [ ] 03-01-PLAN.md — Game screen HTML markup, remove old markup, hamburger icon, screens.ts guard
+- [ ] 03-02-PLAN.md — JS wiring: DOM cache, render functions, initMenu, toggleTheme export
 **UI hint**: yes
 
 ### Phase 4: Feedback Modal
