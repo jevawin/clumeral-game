@@ -4,7 +4,7 @@
 import type { GameState, ClueData } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
-import { initTheme } from './theme.ts';
+import { initTheme, toggleTheme } from './theme.ts';
 import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { initColours } from './colours.ts';
@@ -43,7 +43,6 @@ const OPERATOR_SYMBOLS: Record<string, string> = { "<": "<", ">": ">", "<=": "�
 const $ = (sel: string) => document.querySelector(sel);
 
 const dom = {
-  hint: $('[data-hint]') as HTMLElement | null,
   feedback: $('[data-feedback]') as HTMLElement | null,
   digits: $('[data-digits]') as HTMLElement | null,
   keypadWrap: $('[data-keypad-wrap]') as HTMLElement | null,
@@ -59,7 +58,7 @@ const dom = {
   plabel: $('[data-plabel]') as HTMLElement | null,
   history: $('[data-history]') as HTMLElement | null,
   historyList: $('[data-history-list]') as HTMLElement | null,
-  clueList: $('.clue-list') as HTMLElement | null,
+  clueList: $('[data-clue-list]') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -163,19 +162,22 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
   track("tooltip_opened");
 
   const popover = document.createElement("div");
-  popover.className = "tag-tip";
+  popover.className = "absolute bottom-full left-0 mb-2 min-w-[18rem] p-3 bg-surface border border-border rounded-md shadow-md z-50";
   popover.setAttribute("role", "tooltip");
+  popover.setAttribute("data-tag-tip", "");
   popover.innerHTML = `
-    <p class="tag-tip__text">${tip}</p>
-    <button class="tag-tip__close" aria-label="Close">
-      <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-circle-x"/></svg>
-      Close
-    </button>
+    <p class="text-base text-text leading-snug font-[DM_Sans]">${tip}</p>
+    <button class="mt-2 text-muted hover:text-text text-sm font-[DM_Sans]" type="button" aria-label="Close">Close</button>
   `;
 
-  anchor.closest(".clue__tag-cell")!.appendChild(popover);
+  // Anchor to the parent flex column (tag + position indicators wrapper)
+  const wrapper = anchor.parentElement;
+  if (wrapper) {
+    wrapper.classList.add("relative");
+    wrapper.appendChild(popover);
+  }
 
-  const closeBtn = popover.querySelector(".tag-tip__close")!;
+  const closeBtn = popover.querySelector("button")!;
   closeBtn.addEventListener("click", closeTagTip);
 
   const onOutside = (e: Event) => {
@@ -188,7 +190,6 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
     document.addEventListener("keydown", onEscape);
   }, 0);
 
-  popover.dataset.cleanup = "true";
   (popover as any)._cleanup = () => {
     document.removeEventListener("click", onOutside);
     document.removeEventListener("keydown", onEscape);
@@ -196,7 +197,7 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
 }
 
 function closeTagTip(): void {
-  const existing = document.querySelector(".tag-tip");
+  const existing = document.querySelector("[data-tag-tip]");
   if (existing) {
     (existing as any)._cleanup?.();
     existing.remove();
@@ -210,9 +211,11 @@ function renderClues(clues: ClueData[]): void {
   for (const { propKey, label, operator, value } of clues) {
     const tag = getClueTag(propKey);
     const lit = digitPositions(propKey);
-    const miniDigitsHtml = lit.map((on) => `<div class="clue__digit${on ? " lit" : ""}"></div>`).join("");
+    const miniDigitsHtml = lit.map((on) =>
+      `<span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border ${on ? 'border-accent bg-accent/50' : 'border-accent bg-accent/5'}"></span>`
+    ).join("");
 
-    let l1Text, l2Text, l2Html;
+    let l1Text: string | undefined, l2Text: string | undefined, l2Html: string | undefined;
     if (typeof value === "boolean") {
       const isAffirmative = operator === "=" ? value : !value;
       const idx = label.indexOf(" is ");
@@ -232,27 +235,27 @@ function renderClues(clues: ClueData[]): void {
     }
 
     const clueEl = document.createElement("div");
-    clueEl.className = "clue";
+    clueEl.className = "contents";
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
-      <div class="clue__tag-cell">
-        <button class="clue__tag" type="button" aria-label="${tag} — tap for definition">
+      <div class="flex flex-col items-start gap-1">
+        <button class="inline-flex items-center gap-1 px-1 h-[1.375rem] rounded border-[1.5px] border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
-          <svg class="clue__tag-icon" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
+          <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
-        <div class="clue__digits" aria-hidden="true">${miniDigitsHtml}</div>
+        <div class="flex justify-between gap-1" data-clue-digits aria-hidden="true">${miniDigitsHtml}</div>
       </div>
-      <div class="clue__lines">
-        <div class="clue__line1"></div>
-        <div class="clue__line2"></div>
+      <div class="flex flex-col gap-2">
+        <div class="text-base text-text font-[DM_Sans]" data-clue-line1></div>
+        <div class="text-base font-bold text-accent font-mono" data-clue-line2></div>
       </div>
     `;
 
-    const tagBtn = clueEl.querySelector(".clue__tag") as HTMLButtonElement;
+    const tagBtn = clueEl.querySelector("[data-clue-tag]") as HTMLButtonElement;
     tagBtn.addEventListener("click", () => showTagTip(tag, tagBtn));
 
-    const l1El = clueEl.querySelector(".clue__line1");
-    const l2El = clueEl.querySelector(".clue__line2");
+    const l1El = clueEl.querySelector("[data-clue-line1]");
+    const l2El = clueEl.querySelector("[data-clue-line2]");
     if (l1El) l1El.textContent = l1Text ?? "";
     if (l2El) {
       if (l2Html) {
@@ -267,37 +270,30 @@ function renderClues(clues: ClueData[]): void {
 
 // ─── Feedback / history / stats ───────────────────────────────────────────────
 
-const ICON_CHECK = `<svg class="feedback__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-ck"><circle cx="12" cy="12" r="10" fill="white"/><path d="m9 12 2 2 4-4" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-ck)"/></svg>`;
+const ICON_CHECK = `<svg class="w-8 h-8 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-ck"><circle cx="12" cy="12" r="10" fill="white"/><path d="m9 12 2 2 4-4" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-ck)"/></svg>`;
 
-const ICON_CROSS = `<svg class="feedback__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-cx"><circle cx="12" cy="12" r="10" fill="white"/><path d="m15 9-6 6M9 9l6 6" stroke="black" stroke-width="2.5" stroke-linecap="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-cx)"/></svg>`;
+const ICON_CROSS = `<svg class="w-8 h-8 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-cx"><circle cx="12" cy="12" r="10" fill="white"/><path d="m15 9-6 6M9 9l6 6" stroke="black" stroke-width="2.5" stroke-linecap="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-cx)"/></svg>`;
 
 function renderFeedback(type: string | null, answer?: number): void {
   if (type === "correct") {
-    dom.hint?.classList.add("hidden");
     if (dom.feedback) {
-      dom.feedback.innerHTML = `${ICON_CHECK} Congratulations! ${answer} is the correct answer.`;
-      dom.feedback.className = "feedback feedback--correct";
-      dom.feedback.classList.remove("hidden");
+      dom.feedback.innerHTML = `${ICON_CHECK} Correct! That's puzzle #${gameState.puzzleNum ?? ''}.`;
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[DM_Sans]";
     }
   } else if (type === "incorrect") {
     if (dom.feedback) {
-      dom.feedback.innerHTML = `${ICON_CROSS} Incorrect — try again.`;
-      dom.feedback.className = "feedback feedback--incorrect";
-      dom.feedback.classList.remove("hidden");
+      dom.feedback.innerHTML = `${ICON_CROSS} Not quite — try again.`;
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[DM_Sans]";
     }
   } else if (type === "error") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Something went wrong — please try again.`;
-      dom.feedback.className = "feedback feedback--incorrect";
-      dom.feedback.classList.remove("hidden");
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[DM_Sans]";
     }
   } else {
-    if (dom.hint) {
-      dom.hint.textContent = "Tap a box to eliminate possible numbers.";
-    }
     if (dom.feedback) {
       dom.feedback.textContent = "";
-      dom.feedback.classList.add("hidden");
+      dom.feedback.className = "text-base font-bold leading-snug mt-4 hidden font-[DM_Sans]";
     }
   }
 }
@@ -313,7 +309,7 @@ function renderHistory(guesses: number[]): void {
   for (const g of guesses) {
     const li = document.createElement("li");
     li.textContent = String(g);
-    li.className = "history__item";
+    li.className = "font-mono text-base font-normal px-2 py-1 rounded-sm border border-border bg-surface text-muted";
     dom.historyList.appendChild(li);
   }
 }
@@ -328,13 +324,13 @@ function renderStats() {
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
   dom.stats.innerHTML = `
-    <p class="stats__heading">Your stats</p>
-    <div class="stats__grid">
-      <div class="stats__item"><span class="stats__val">${history.length}</span><span class="stats__lbl">Played</span></div>
-      <div class="stats__item"><span class="stats__val">${avg}</span><span class="stats__lbl">Avg tries</span></div>
+    <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your stats</p>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[DM_Sans]">Played</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[DM_Sans]">Avg tries</span></div>
     </div>
-    <p class="stats__last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
-    <div class="stats__bubbles">${last5.map((h) => `<span class="stats__bubble">${h.tries}</span>`).join("")}</div>
+    <p class="text-sm text-muted mt-3 font-[DM_Sans]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
   `;
   dom.stats.classList.remove("hidden");
 }
@@ -344,21 +340,21 @@ function renderStatsUpTo(upToDate: string) {
   const history = loadHistory().filter(h => h.date <= upToDate);
   const fDate = formatDate(upToDate);
   if (history.length === 0) {
-    dom.stats.innerHTML = `<p class="stats__latest"><a href="/" class="text-link">Go to latest puzzle</a></p>`;
+    dom.stats.innerHTML = `<p class="mt-3 font-[DM_Sans]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>`;
     dom.stats.classList.remove("hidden");
     return;
   }
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
   dom.stats.innerHTML = `
-    <p class="stats__heading">Your stats (to ${fDate})</p>
-    <div class="stats__grid">
-      <div class="stats__item"><span class="stats__val">${history.length}</span><span class="stats__lbl">Played</span></div>
-      <div class="stats__item"><span class="stats__val">${avg}</span><span class="stats__lbl">Avg tries</span></div>
+    <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your stats (to ${fDate})</p>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[DM_Sans]">Played</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[DM_Sans]">Avg tries</span></div>
     </div>
-    <p class="stats__last-lbl">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
-    <div class="stats__bubbles">${last5.map((h) => `<span class="stats__bubble">${h.tries}</span>`).join("")}</div>
-    <p class="stats__latest"><a href="/" class="text-link">Go to latest puzzle</a></p>
+    <p class="text-sm text-muted mt-3 font-[DM_Sans]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
+    <p class="mt-3 font-[DM_Sans]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>
   `;
   dom.stats.classList.remove("hidden");
 }
@@ -371,20 +367,27 @@ function renderBox(i: number): void {
   const s = possibles[i];
 
   if (s.size === 1) {
-    el.innerHTML = `<span class="digit-box__resolved">${[...s][0]}</span>`;
+    el.innerHTML = `<span class="font-mono text-3xl font-bold text-text">${[...s][0]}</span>`;
   } else {
-    // 3-4-3 grid for all boxes (1-9 then 0)
-    // Box 0 (hundreds): 0 is always eliminated since numbers are 100–999
+    // 4-column grid for all boxes — 0 always eliminated for hundreds (100–999)
     const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
       .map((d) => {
         const isElim = (i === 0 && d === 0) || !s.has(d);
-        return `<span${isElim ? ' class="elim"' : ""}>${d}</span>`;
+        return `<span class="font-mono text-base ${isElim ? 'opacity-[0.12]' : 'text-text'}">${d}</span>`;
       })
       .join("");
-    el.innerHTML = `<div class="digit-box__grid four-col">${spans}</div>`;
+    el.innerHTML = `<div class="grid grid-cols-4 gap-0.5 text-center p-1">${spans}</div>`;
   }
 
-  el.classList.toggle("active", i === activeBox);
+  // Active state: accent border + accent shadow
+  el.classList.toggle("border-accent", i === activeBox);
+  el.classList.toggle("shadow-[3px_3px_0_rgba(10,133,10,0.3)]", i === activeBox);
+  // Restore default border+shadow when not active
+  el.classList.toggle("border-border", i !== activeBox);
+  el.classList.toggle("shadow-[3px_3px_0_rgba(38,38,36,0.12)]", i !== activeBox);
+  el.classList.toggle("dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)]", i !== activeBox);
+
+  el.setAttribute("aria-expanded", i === activeBox ? "true" : "false");
 }
 
 function renderAllBoxes() {
@@ -401,9 +404,16 @@ function buildKeypad() {
     const btn = document.createElement("button");
     btn.type = "button";
     const disabled = activeBox === 0 && d === 0;
-    btn.className = "keypad__btn" + (disabled || !possibles[activeBox].has(d) ? " elim" : "");
+    const elim = disabled || !possibles[activeBox].has(d);
+    btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+      elim
+        ? 'bg-surface text-text/25 border-border shadow-none'
+        : 'bg-surface text-text border-border shadow-[2px_2px_0_rgba(38,38,36,0.12)] dark:shadow-[2px_2px_0_rgba(0,0,0,0.25)]'
+    }`;
     btn.textContent = String(d);
+    btn.setAttribute("data-key", String(d));
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
+    if (elim) btn.setAttribute("aria-pressed", "true");
     if (disabled) {
       btn.disabled = true;
     } else {
@@ -414,11 +424,11 @@ function buildKeypad() {
 }
 
 function openKeypad() {
-  dom.keypadWrap?.classList.add("open");
+  dom.keypadWrap?.classList.remove("hidden");
 }
 
 function closeKeypad() {
-  dom.keypadWrap?.classList.remove("open");
+  dom.keypadWrap?.classList.add("hidden");
   activeBox = null;
   renderAllBoxes();
 }
@@ -459,7 +469,9 @@ function selectBox(i: number): void {
 
 function checkSubmit() {
   const allResolved = possibles.every((s) => s.size === 1);
-  dom.submitWrap?.classList.toggle("visible", allResolved);
+  if (dom.submitWrap) {
+    dom.submitWrap.classList.toggle("hidden", !allResolved);
+  }
 }
 
 // ─── Game ─────────────────────────────────────────────────────────────────────
@@ -478,17 +490,21 @@ function showCompletedState(tries: number, replayDate?: string): void {
       ? `You solved this puzzle in ${t}!`
       : `You already solved today's puzzle in ${t}!`;
     dom.feedback.innerHTML = `${ICON_CHECK} ${message}`;
-    dom.feedback.className = "feedback feedback--correct";
-    dom.feedback.classList.remove("hidden");
+    dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[DM_Sans]";
   }
   // Show the answer digits in the boxes
   if (gameState.answer != null) {
     const digits = [Math.floor(gameState.answer / 100), Math.floor((gameState.answer % 100) / 10), gameState.answer % 10];
     digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
   }
-  dom.hint?.classList.add("hidden");
-  dom.digits?.classList.add("digit-correct");
-  dom.submitWrap?.classList.remove("visible");
+  // Apply correct state to all digit boxes
+  for (let i = 0; i < 3; i++) {
+    const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
+    if (el) {
+      el.classList.add("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+    }
+  }
+  dom.submitWrap?.classList.add("hidden");
   if (replayDate) {
     renderStatsUpTo(replayDate);
   } else {
@@ -502,8 +518,13 @@ function resetPuzzleUI() {
   renderHistory([]);
   dom.stats?.classList.add("hidden");
   dom.next?.classList.add("hidden");
-  dom.hint?.classList.remove("hidden");
-  dom.digits?.classList.remove("hidden", "digit-correct");
+  // Remove correct state from digit boxes
+  for (let i = 0; i < 3; i++) {
+    const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
+    if (el) {
+      el.classList.remove("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+    }
+  }
   possibles = initPossibles();
   renderAllBoxes();
   closeKeypad();
@@ -553,8 +574,8 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
   // Show archived puzzle label above the puzzle number
   if (dom.plabel) {
     const label = document.createElement("div");
-    label.className = "card__archive-label";
-    label.innerHTML = `<svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
+    label.className = "flex items-center gap-1 text-sm text-muted font-[DM_Sans]";
+    label.innerHTML = `<svg width="14" height="14" class="text-muted" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
     dom.plabel.parentElement?.insertBefore(label, dom.plabel);
     dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
   }
@@ -635,8 +656,12 @@ async function handleGuess() {
       launchBubbles();
       renderFeedback("correct", guess);
       closeKeypad();
-      dom.digits?.classList.add("digit-correct");
-      dom.submitWrap?.classList.remove("visible");
+      // Apply correct state to all digit boxes
+      for (let i = 0; i < 3; i++) {
+        const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
+        if (el) el.classList.add("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+      }
+      dom.submitWrap?.classList.add("hidden");
       celebrateOcto();
       if (gameState.isRandom) {
         dom.again?.classList.remove("hidden");
@@ -653,7 +678,7 @@ async function handleGuess() {
       renderFeedback("incorrect");
       renderHistory(gameState.guesses);
       sadOcto();
-      dom.submitWrap?.classList.remove("visible");
+      dom.submitWrap?.classList.add("hidden");
     }
   } catch {
     renderFeedback("error");
@@ -697,8 +722,11 @@ async function loadPuzzle() {
       dom.feedback.textContent = 'Could not load the puzzle. Please refresh the page.';
       dom.feedback.classList.remove('hidden');
     }
-    // Hide skeleton on error
-    if (dom.clueList) dom.clueList.innerHTML = '';
+    // Show error in clue list area and clear skeleton
+    if (dom.clueList) {
+      dom.clueList.removeAttribute("aria-busy");
+      dom.clueList.innerHTML = '<p class="col-span-2 text-base text-text font-[DM_Sans]">Couldn\'t load the puzzle. Please refresh the page.</p>';
+    }
   }
 }
 
@@ -779,10 +807,81 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// ─── Menu ────────────────────────────────────────────────────────────────────
+
+function initMenu(): void {
+  const menuBtn = document.querySelector('[data-menu-btn]') as HTMLButtonElement | null;
+  const menu = document.querySelector('[data-menu]') as HTMLElement | null;
+  if (!menuBtn || !menu) return;
+
+  function openMenu(): void {
+    menu!.classList.remove('hidden');
+    menuBtn!.setAttribute('aria-expanded', 'true');
+    (menu!.querySelector('button, a') as HTMLElement | null)?.focus();
+  }
+
+  function closeMenu(): void {
+    menu!.classList.add('hidden');
+    menuBtn!.setAttribute('aria-expanded', 'false');
+    menuBtn!.focus();
+  }
+
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (menu!.classList.contains('hidden')) {
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  });
+
+  document.querySelector('[data-menu-close]')?.addEventListener('click', closeMenu);
+
+  document.addEventListener('click', (e) => {
+    if (!menu!.contains(e.target as Node) && e.target !== menuBtn && !menu!.classList.contains('hidden')) {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu!.classList.contains('hidden')) {
+      closeMenu();
+    }
+  });
+
+  // Menu item wiring: dark mode toggle
+  const menuThemeBtn = menu.querySelector('[data-theme-toggle]');
+  if (menuThemeBtn) {
+    menuThemeBtn.addEventListener('click', () => {
+      toggleTheme();
+    });
+  }
+
+  // Menu item wiring: HTP link — modals.ts already binds the open handler via [data-htp-btn]
+  // Just close the menu first; the existing listener handles opening the modal
+  const menuHtpBtn = menu.querySelector('[data-htp-btn]');
+  if (menuHtpBtn) {
+    menuHtpBtn.addEventListener('click', () => {
+      closeMenu();
+    });
+  }
+
+  // Menu item wiring: feedback trigger — modals.ts already binds the open handler via [data-fb-btn]
+  // Just close the menu first
+  const menuFbBtn = menu.querySelector('[data-fb-btn]');
+  if (menuFbBtn) {
+    menuFbBtn.addEventListener('click', () => {
+      closeMenu();
+    });
+  }
+}
+
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 initColours();
 initTheme();
+initMenu();
 const openModal = initModal();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
@@ -799,10 +898,6 @@ document.querySelector('[data-modal-gotit]')?.addEventListener('click', () => tr
 document.querySelector('[data-fb-send]')?.addEventListener('click', () => track('feedback_submitted'));
 // Theme toggle
 document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => track('theme_toggle'));
-// Colour change (event delegation — buttons are created dynamically)
-document.querySelector('[data-swatches]')?.addEventListener('click', (e) => {
-  if ((e.target as Element).closest('.swatch-btn')) track('colour_change');
-});
 
 // ─── Dev helpers (non-production only) ───────────────────────────────────────
 

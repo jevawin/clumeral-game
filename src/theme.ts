@@ -3,6 +3,10 @@
 
 const STORAGE_THEME = "dlng_theme";
 
+const root = document.documentElement;
+let togBtn: HTMLElement | null = null;
+let togLabel: HTMLElement | null = null;
+
 export function drawCanvas(dark: boolean): void {
   const canvas = document.querySelector('[data-canvas]') as HTMLCanvasElement | null;
   if (!canvas) return;
@@ -23,30 +27,30 @@ export function drawCanvas(dark: boolean): void {
   }
 }
 
-export function initTheme(): void {
-  const root = document.documentElement;
-  const togBtn = document.querySelector('[data-theme-toggle]') as HTMLElement | null;
-  const togLabel = document.querySelector('[data-theme-label]') as HTMLElement | null;
-  if (!togBtn) return;
+function applyTheme(dark: boolean): void {
+  root.classList.toggle("dark", dark);
+  root.classList.toggle("light", !dark);
+  if (togLabel) togLabel.textContent = dark ? "Light mode" : "Dark mode";
+  if (togBtn) togBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  drawCanvas(dark);
+  if (window._swapIcons && window._currentColour) window._swapIcons(window._currentColour);
+}
 
-  function applyTheme(dark: boolean) {
-    root.classList.toggle("dark", dark);
-    root.classList.toggle("light", !dark);
-    if (togLabel) togLabel.textContent = dark ? "Light" : "Dark";
-    togBtn!.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
-    drawCanvas(dark);
-    if (window._swapIcons && window._currentColour) window._swapIcons(window._currentColour);
-  }
+export function toggleTheme(): void {
+  const newDark = !root.classList.contains("dark");
+  localStorage.setItem(STORAGE_THEME, newDark ? "dark" : "light");
+  applyTheme(newDark);
+}
+
+export function initTheme(): void {
+  togBtn = document.querySelector('[data-theme-toggle]') as HTMLElement | null;
+  togLabel = document.querySelector('[data-theme-label]') as HTMLElement | null;
+  if (!togBtn) return;
 
   const saved = localStorage.getItem(STORAGE_THEME);
   const isDark = saved !== null ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
   applyTheme(isDark);
 
-  togBtn.addEventListener("click", () => {
-    const newDark = !root.classList.contains("dark");
-    localStorage.setItem(STORAGE_THEME, newDark ? "dark" : "light");
-    applyTheme(newDark);
-  });
-
+  togBtn.addEventListener("click", toggleTheme);
   window.addEventListener("resize", () => drawCanvas(root.classList.contains("dark")));
 }
