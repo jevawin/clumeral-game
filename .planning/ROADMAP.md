@@ -106,9 +106,10 @@ Plans:
   1. No old CSS files are imported or referenced anywhere in the build
   2. The built CSS output contains only Tailwind-generated styles
   3. All five screens (welcome, game, completion — plus modal and menu states) look correct in both light and dark mode on mobile and desktop
-**Plans:** 1 plan
+**Plans:** 2 plans
 Plans:
-- [ ] 06-01-PLAN.md — Old CSS removal and final regression check
+- [ ] 06-01-PLAN.md — Migrate CSS rules to tailwind.css, remove canvas/colours.ts, fix JS token refs
+- [ ] 06-02-PLAN.md — Convert legacy wrapper HTML, remove style.css, visual regression check
 
 ## Progress
 
@@ -122,4 +123,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Game Screen + Menu | 2/2 | Complete | - |
 | 4. Feedback Modal | 1/1 | Complete | - |
 | 5. Celebration + Completion | 2/2 | Complete   | 2026-04-12 |
-| 6. Polish | 0/1 | Not started | - |
+| 6. Polish | 0/2 | Not started | - |
