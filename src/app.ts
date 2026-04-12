@@ -9,6 +9,7 @@ import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { initColours } from './colours.ts';
 import { initScreens } from './screens.ts';
+import { initWelcome } from './welcome.ts';
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
 
@@ -786,6 +787,7 @@ const openModal = initModal();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
 initScreens();
+initWelcome();
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
 
