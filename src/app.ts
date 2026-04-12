@@ -10,6 +10,7 @@ import { celebrateOcto, sadOcto } from './octo.ts';
 import { initColours } from './colours.ts';
 import { initScreens, showScreen } from './screens.ts';
 import { initWelcome } from './welcome.ts';
+import { renderCompletion } from './completion.ts';
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
 
@@ -648,7 +649,6 @@ async function handleGuess() {
       gameState.solved = true;
       gameState.answer = guess; // now we know the answer (it was our correct guess)
       track("puzzle_complete", tries);
-      launchBubbles();
       renderFeedback("correct", guess);
       closeKeypad();
       // Apply correct state to all digit boxes
@@ -657,15 +657,21 @@ async function handleGuess() {
         if (el) el.classList.add("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
       }
       dom.submitWrap?.classList.add("hidden");
-      celebrateOcto();
-      if (gameState.isRandom) {
-        dom.again?.classList.remove("hidden");
+
+      // Record game before rendering completion so loadHistory includes today's entry
+      if (!gameState.isRandom && saveScore && gameState.date) {
+        recordGame(gameState.date, tries, guess);
+      }
+
+      // Render completion content before transition so it's ready when cross-fade reveals it
+      renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
+
+      // Celebration → completion screen (per D-13: skip celebration under reduced motion)
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        showScreen('completion');
       } else {
-        if (saveScore && gameState.date) {
-          recordGame(gameState.date, tries, guess);
-          renderStats();
-        }
-        showNextPuzzle();
+        launchBubbles();
+        celebrateOcto(() => showScreen('completion'));
       }
     } else {
       gameState.guesses.push(guess);
