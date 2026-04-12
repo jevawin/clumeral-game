@@ -27,20 +27,20 @@
 
 ### Game Screen
 
-- [ ] **GAM-01**: Game screen shows clues listed directly on background (no card wrapper)
-- [ ] **GAM-02**: Game screen shows digit boxes with number pad input
-- [ ] **GAM-03**: Game screen shows submit button
+- [x] **GAM-01**: Game screen shows clues listed directly on background (no card wrapper)
+- [x] **GAM-02**: Game screen shows digit boxes with number pad input
+- [x] **GAM-03**: Game screen shows submit button
 - [ ] **GAM-04**: Digit elimination works exactly as current implementation
 - [ ] **GAM-05**: Guess submission and server-side validation works without regression
-- [ ] **GAM-06**: Random puzzle and replay modes work through the new screen flow
+- [x] **GAM-06**: Random puzzle and replay modes work through the new screen flow
 
 ### Game Menu
 
-- [ ] **MNU-01**: Compact menu accessible from game screen header (hamburger or icon)
-- [ ] **MNU-02**: Menu contains light/dark mode toggle
-- [ ] **MNU-03**: Menu contains archive link
-- [ ] **MNU-04**: Menu contains feedback trigger
-- [ ] **MNU-05**: Menu contains how-to-play link
+- [x] **MNU-01**: Compact menu accessible from game screen header (hamburger or icon)
+- [x] **MNU-02**: Menu contains light/dark mode toggle
+- [x] **MNU-03**: Menu contains archive link
+- [x] **MNU-04**: Menu contains feedback trigger
+- [x] **MNU-05**: Menu contains how-to-play link
 
 ### Celebration
 
@@ -126,17 +126,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HTP-02 | Phase 2 | Pending |
 | HTP-03 | Phase 2 | Pending |
 | HTP-04 | Phase 2 | Pending |
-| GAM-01 | Phase 3 | Pending |
-| GAM-02 | Phase 3 | Pending |
-| GAM-03 | Phase 3 | Pending |
+| GAM-01 | Phase 3 | Complete |
+| GAM-02 | Phase 3 | Complete |
+| GAM-03 | Phase 3 | Complete |
 | GAM-04 | Phase 3 | Pending |
 | GAM-05 | Phase 3 | Pending |
-| GAM-06 | Phase 3 | Pending |
-| MNU-01 | Phase 3 | Pending |
-| MNU-02 | Phase 3 | Pending |
-| MNU-03 | Phase 3 | Pending |
-| MNU-04 | Phase 3 | Pending |
-| MNU-05 | Phase 3 | Pending |
+| GAM-06 | Phase 3 | Complete |
+| MNU-01 | Phase 3 | Complete |
+| MNU-02 | Phase 3 | Complete |
+| MNU-03 | Phase 3 | Complete |
+| MNU-04 | Phase 3 | Complete |
+| MNU-05 | Phase 3 | Complete |
 | FBK-01 | Phase 4 | Pending |
 | FBK-02 | Phase 4 | Pending |
 | FBK-03 | Phase 4 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 UI-SPEC approved
-last_updated: "2026-04-12T09:33:05.008Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-04-12T10:31:53.412Z"
 last_activity: 2026-04-12
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** The game screen must work flawlessly — clues, digit elimination, guess submission, and answer validation must all function exactly as they do today, just in a cleaner layout.
-**Current focus:** Phase 02 — welcome-how-to-play
+**Current focus:** Phase 03 — game-screen-menu
 
 ## Current Position
 
-Phase: 3
-Plan: Not started
-Status: Executing Phase 02
+Phase: 03 (game-screen-menu) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-04-12
 
 Progress: [░░░░░░░░░░] 0%
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 03-game-screen-menu P01 | 10 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - State-driven screens, not URL routes — matches Wordle pattern
 - Green accent only, no colour picker — collapses palette to ~7 tokens
 - No component library — only ~3 real components needed
+- [Phase 03-game-screen-menu]: Removed empty-game overlay guard from screens.ts — game section now has content so guard is obsolete
+- [Phase 03-game-screen-menu]: Updated skip link from #puzzle to #game-content after removing old puzzle card anchor
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T09:33:05.001Z
-Stopped at: Phase 3 UI-SPEC approved
-Resume file: .planning/phases/03-game-screen-menu/03-UI-SPEC.md
+Last session: 2026-04-12T10:31:49.805Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None

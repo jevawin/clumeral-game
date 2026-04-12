@@ -62,9 +62,9 @@ Plans:
   4. Guess submission reaches the worker and server-side validation returns a correct/incorrect result with no regression
   5. Random puzzle and archive/replay modes work through the new screen flow
   6. A compact menu in the game header gives access to light/dark toggle, archive link, feedback trigger, and how-to-play
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 03-01-PLAN.md — Game screen HTML markup, remove old markup, hamburger icon, screens.ts guard
+- [x] 03-01-PLAN.md — Game screen HTML markup, remove old markup, hamburger icon, screens.ts guard
 - [ ] 03-02-PLAN.md — JS wiring: DOM cache, render functions, initMenu, toggleTheme export
 **UI hint**: yes
 
@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 0/1 | Planning complete | - |
 | 2. Welcome + How-to-Play | 0/TBD | Not started | - |
-| 3. Game Screen + Menu | 0/TBD | Not started | - |
+| 3. Game Screen + Menu | 1/2 | In Progress|  |
 | 4. Feedback Modal | 0/TBD | Not started | - |
 | 5. Celebration + Completion | 0/TBD | Not started | - |
 | 6. Polish | 0/TBD | Not started | - |
