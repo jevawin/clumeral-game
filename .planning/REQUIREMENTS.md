@@ -30,8 +30,8 @@
 - [x] **GAM-01**: Game screen shows clues listed directly on background (no card wrapper)
 - [x] **GAM-02**: Game screen shows digit boxes with number pad input
 - [x] **GAM-03**: Game screen shows submit button
-- [ ] **GAM-04**: Digit elimination works exactly as current implementation
-- [ ] **GAM-05**: Guess submission and server-side validation works without regression
+- [x] **GAM-04**: Digit elimination works exactly as current implementation
+- [x] **GAM-05**: Guess submission and server-side validation works without regression
 - [x] **GAM-06**: Random puzzle and replay modes work through the new screen flow
 
 ### Game Menu
@@ -129,8 +129,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GAM-01 | Phase 3 | Complete |
 | GAM-02 | Phase 3 | Complete |
 | GAM-03 | Phase 3 | Complete |
-| GAM-04 | Phase 3 | Pending |
-| GAM-05 | Phase 3 | Pending |
+| GAM-04 | Phase 3 | Complete |
+| GAM-05 | Phase 3 | Complete |
 | GAM-06 | Phase 3 | Complete |
 | MNU-01 | Phase 3 | Complete |
 | MNU-02 | Phase 3 | Complete |

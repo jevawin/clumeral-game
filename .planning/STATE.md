@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-04-12T10:31:53.412Z"
+status: verifying
+stopped_at: "Completed 03-02-PLAN.md (checkpoint: browser verification pending)"
+last_updated: "2026-04-12T10:40:53.630Z"
 last_activity: 2026-04-12
 progress:
   total_phases: 6
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 Phase: 03 (game-screen-menu) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-12
 
 Progress: [░░░░░░░░░░] 0%
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 03-game-screen-menu P01 | 10 | 2 tasks | 3 files |
+| Phase 03-game-screen-menu P02 | 25 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - No component library — only ~3 real components needed
 - [Phase 03-game-screen-menu]: Removed empty-game overlay guard from screens.ts — game section now has content so guard is obsolete
 - [Phase 03-game-screen-menu]: Updated skip link from #puzzle to #game-content after removing old puzzle card anchor
+- [Phase 03-game-screen-menu]: toggleTheme() exported by lifting applyTheme() out of initTheme closure — module-level togBtn/togLabel
+- [Phase 03-game-screen-menu]: initMenu() HTP/feedback items only close menu — modals.ts existing listeners handle opening
 
 ### Pending Todos
 
@@ -78,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T10:31:49.805Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-04-12T10:40:53.628Z
+Stopped at: Completed 03-02-PLAN.md (checkpoint: browser verification pending)
 Resume file: None
