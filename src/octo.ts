@@ -240,7 +240,7 @@ export function setupOctoClick(): void {
   octoWrapEl?.addEventListener('click', () => { if (!entryBusy && !octoAnimating) runEntry(); });
 }
 
-export function celebrateOcto(): void {
+export function celebrateOcto(onComplete?: () => void): void {
   if (octoAnimating || !octoWrapEl || !octoEl) return;
   octoAnimating = true;
 
@@ -258,11 +258,51 @@ export function celebrateOcto(): void {
   octoWrapEl.style.transform = '';
   document.body.style.overflow = 'hidden';
 
+  // Timer refs stored here so the skip handler can cancel them.
+  let returnTimer: ReturnType<typeof setTimeout>;
+  let cleanupTimer: ReturnType<typeof setTimeout>;
+
+  // Skip: tap anywhere during celebration to jump straight to onComplete.
+  const removeSkipListeners = () => {
+    document.body.removeEventListener('click', onSkip);
+    document.body.removeEventListener('touchstart', onSkip);
+  };
+
+  const onSkip = () => {
+    removeSkipListeners();
+    clearTimeout(returnTimer);
+    clearTimeout(cleanupTimer);
+
+    // Snap octo back to header instantly (no return transition).
+    if (octoWrapEl) {
+      octoWrapEl.classList.remove('celebrating');
+      octoWrapEl.style.position = '';
+      octoWrapEl.style.left = '';
+      octoWrapEl.style.top = '';
+      octoWrapEl.style.margin = '';
+      octoWrapEl.style.transition = '';
+      octoWrapEl.style.transform = '';
+      octoWrapEl.style.opacity = '1';
+    }
+    if (octoEl) octoEl.classList.remove('celebrate');
+
+    const digitsEl = document.querySelector('[data-digits]') as HTMLElement | null;
+    if (digitsEl) digitsEl.classList.add('digit-correct');
+
+    document.body.style.overflow = '';
+    exprMode = 'round';
+    octoAnimating = false;
+    if (onComplete) onComplete();
+  };
+
+  document.body.addEventListener('click', onSkip, { once: true });
+  document.body.addEventListener('touchstart', onSkip, { once: true });
+
   // Lead-in: slide from the header slot to the `octo-fly` keyframe's 0%
-  // position (centre + translateY(-55vh)) over 350ms. The keyframe 0% is
+  // position (centre + translateY(-55vh)) over 200ms. The keyframe 0% is
   // identical to where we end, so handing off to the CSS animation after
   // the transition is seamless — no jump.
-  const LEAD_IN_MS = 350;
+  const LEAD_IN_MS = 200;
   requestAnimationFrame(() => {
     if (!octoWrapEl || !octoEl) return;
     octoWrapEl.style.transition = `left ${LEAD_IN_MS}ms ease-in, top ${LEAD_IN_MS}ms ease-in, transform ${LEAD_IN_MS}ms ease-in`;
@@ -278,28 +318,28 @@ export function celebrateOcto(): void {
     }, LEAD_IN_MS);
   });
 
-  // After lead-in + fly animation ends, transition back to header
-  setTimeout(() => {
+  // After lead-in + fly animation ends, transition back to header.
+  returnTimer = setTimeout(() => {
     if (!octoWrapEl || !octoEl) return;
     octoWrapEl.style.transform = 'translate(-50%, -50%)';
     octoWrapEl.classList.remove('celebrating');
     octoEl.classList.remove('celebrate');
 
     // Re-measure the slot NOW so we animate back to where home actually
-    // is at this moment — not where it was 5s ago. Handles resize/scroll
-    // mid-celebration and avoids a settle-snap on cleanup.
+    // is at this moment — not where it was when the celebration started.
+    // Handles resize/scroll mid-celebration and avoids a settle-snap on cleanup.
     const home = octoSlotEl?.getBoundingClientRect();
     const returnLeft = home ? home.left : origLeft;
     const returnTop = home ? home.top : origTop;
 
     requestAnimationFrame(() => {
       if (!octoWrapEl) return;
-      octoWrapEl.style.transition = 'left 0.6s ease-in-out, top 0.6s ease-in-out, transform 0.6s ease-in-out';
+      octoWrapEl.style.transition = 'left 0.4s ease-in-out, top 0.4s ease-in-out, transform 0.4s ease-in-out';
       octoWrapEl.style.left = returnLeft + 'px';
       octoWrapEl.style.top = returnTop + 'px';
       octoWrapEl.style.transform = '';
 
-      setTimeout(() => {
+      cleanupTimer = setTimeout(() => {
         if (!octoWrapEl) return;
         octoWrapEl.style.position = '';
         octoWrapEl.style.left = '';
@@ -314,9 +354,11 @@ export function celebrateOcto(): void {
         document.body.style.overflow = '';
         exprMode = 'round';
         octoAnimating = false;
-      }, 650);
+        removeSkipListeners();
+        if (onComplete) onComplete();
+      }, 400);
     });
-  }, 5100 + 350);
+  }, 2000 + 200);
 }
 
 function sadBounce(el: HTMLElement, fallDist: number, onDone: () => void): void {
