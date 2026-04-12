@@ -95,8 +95,12 @@ function renderWelcome(isNew: boolean): void {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
+function hasClumeralData(): boolean {
+  return ["dlng_history", "dlng_prefs", "dlng_uid", "dlng_theme", "dlng_colour", "cw-htp-seen"].some((k) => localStorage.getItem(k) !== null);
+}
+
 export function initWelcome(): void {
-  const isNew = !localStorage.getItem("dlng_history");
+  const isNew = !hasClumeralData();
   renderWelcome(isNew);
 
   const playBtn = document.querySelector('[data-play-btn]') as HTMLButtonElement | null;
