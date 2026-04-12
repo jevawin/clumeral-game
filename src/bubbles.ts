@@ -3,8 +3,8 @@
 // mismatch; bubbles fit Octo's aquatic world.
 
 // Every bubble must be off the top of the screen by this time. Slightly
-// longer than Octo's ~5.75s celebrate window so the trail can linger.
-const TOTAL_MS = 6500;
+// longer than Octo's ~2.6s celebrate window so the trail can linger.
+const TOTAL_MS = 3200;
 const MIN_COUNT = 20;
 const MAX_COUNT = 30;
 
@@ -41,10 +41,10 @@ function sizePx(band: SizeBand): number {
 
 function randomDuration(): number {
   // Each bubble gets its own fixed linear speed, somewhere between
-  // 4100ms and 5000ms. Paired with TOTAL_MS = 6500 this gives a
-  // spawn-window of ~1500–2400ms, so bubbles fill ~40–45% of the
+  // 2000ms and 2600ms. Paired with TOTAL_MS = 3200 this gives a
+  // spawn-window of ~600–1200ms, so bubbles fill ~40–45% of the
   // viewport vertically at peak instead of rising as a single line.
-  return 4100 + Math.random() * 900;
+  return 2000 + Math.random() * 600;
 }
 
 function parseRgb(raw: string): [number, number, number] | null {
