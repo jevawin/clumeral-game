@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Welcome + How-to-Play** - Complete welcome screen with first/return visit how-to-play logic
 - [ ] **Phase 3: Game Screen + Menu** - Full game screen layout, gameplay wiring, compact menu
 - [ ] **Phase 4: Feedback Modal** - Restyled modal accessible from game menu and completion screen
-- [ ] **Phase 5: Celebration + Completion** - Octopus animation then stats/feedback completion screen
+- [x] **Phase 5: Celebration + Completion** - Octopus animation then stats/feedback completion screen (completed 2026-04-12)
 - [ ] **Phase 6: Polish** - Old CSS removal and final regression check
 
 ## Phase Details
@@ -92,10 +92,10 @@ Plans:
   3. On a device with `prefers-reduced-motion`, the animation is skipped or reduced
   4. The completion screen shows games played, avg tries, current streak, and max streak read from localStorage
   5. A feedback prompt on the completion screen opens the feedback modal
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 05-01-PLAN.md — Celebration animation: compress timing, add callback + skip support
-- [ ] 05-02-PLAN.md — Completion screen markup, stats rendering, correct-answer handler wiring
+- [x] 05-02-PLAN.md — Completion screen markup, stats rendering, correct-answer handler wiring
 **UI hint**: yes
 
 ### Phase 6: Polish
@@ -121,5 +121,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Welcome + How-to-Play | 1/1 | Complete | - |
 | 3. Game Screen + Menu | 2/2 | Complete | - |
 | 4. Feedback Modal | 1/1 | Complete | - |
-| 5. Celebration + Completion | 1/2 | In Progress|  |
+| 5. Celebration + Completion | 2/2 | Complete   | 2026-04-12 |
 | 6. Polish | 0/1 | Not started | - |
