@@ -47,26 +47,36 @@
 
       <!-- ── Feedback modal ── -->
       <dialog data-fb-modal aria-labelledby="cw-fb-modal-title">
-        <div class="fb-modal__box" data-fb-modal-box>
-          <button class="fb-modal__close" data-fb-modal-close aria-label="Close">✕</button>
-          <h2 id="cw-fb-modal-title">Send feedback</h2>
-          <p class="modal-sub">Let us know what you think.</p>
+        <div data-fb-modal-box
+             class="relative w-full max-w-[26rem] max-h-[90vh] overflow-y-auto rounded-md bg-surface shadow-[0_8px_40px_rgba(26,24,48,0.18)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] pt-7 px-6 pb-6">
+          <button data-fb-modal-close
+                  class="absolute top-4 right-4 min-w-[44px] min-h-[44px] flex items-center justify-center bg-transparent border-none text-text/50 hover:text-text text-xl leading-none cursor-pointer"
+                  type="button" aria-label="Close feedback modal">&#10005;</button>
+          <h2 id="cw-fb-modal-title" class="text-[26px] font-semibold leading-[1.2] text-text font-[DM_Sans] m-0">Send feedback</h2>
+          <p class="text-muted text-base font-[DM_Sans] mt-1 mb-3">Let us know what you think.</p>
 
-          <div data-fb-cats role="radiogroup" aria-label="Feedback category">
-            <button class="fb-cat active" data-cat="general" role="radio" aria-checked="true">General</button>
-            <button class="fb-cat" data-cat="bug" role="radio" aria-checked="false">Bug</button>
-            <button class="fb-cat" data-cat="suggestion" role="radio" aria-checked="false">Idea</button>
-            <button class="fb-cat" data-cat="praise" role="radio" aria-checked="false">Praise</button>
+          <div data-fb-cats role="radiogroup" aria-label="Feedback category" class="flex flex-wrap gap-2 mb-3">
+            <button class="fb-cat rounded-full border-[1.5px] border-border bg-surface text-text px-4 py-2 text-base font-[DM_Sans] cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="general" role="radio" aria-checked="true">General</button>
+            <button class="fb-cat rounded-full border-[1.5px] border-border bg-surface text-text px-4 py-2 text-base font-[DM_Sans] cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="bug" role="radio" aria-checked="false">Bug</button>
+            <button class="fb-cat rounded-full border-[1.5px] border-border bg-surface text-text px-4 py-2 text-base font-[DM_Sans] cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="suggestion" role="radio" aria-checked="false">Idea</button>
+            <button class="fb-cat rounded-full border-[1.5px] border-border bg-surface text-text px-4 py-2 text-base font-[DM_Sans] cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="praise" role="radio" aria-checked="false">Praise</button>
           </div>
 
           <label for="cw-fb-msg" class="sr-only">Your feedback message</label>
-          <textarea id="cw-fb-msg" data-fb-msg maxlength="500" rows="4" placeholder="Your message..."></textarea>
-          <div data-fb-counter class="fb-counter"></div>
+          <textarea id="cw-fb-msg" data-fb-msg maxlength="500" rows="4"
+                    placeholder="Your message..."
+                    class="w-full min-h-[96px] max-h-[192px] resize-y border-[1.5px] border-border bg-surface text-text placeholder:text-muted p-3 rounded-[4px] font-[DM_Sans] text-base leading-relaxed focus:border-accent focus:outline-none transition-[border-color] duration-150"></textarea>
+          <div data-fb-counter class="hidden w-full text-right font-[Inconsolata,monospace] text-base text-muted mt-1"></div>
 
-          <p class="fb-meta-label">This info will be sent with your feedback:</p>
-          <div data-fb-meta class="fb-meta"></div>
+          <p class="text-muted text-base font-[DM_Sans] mt-3 mb-2">This info will be sent with your feedback:</p>
+          <div data-fb-meta class="font-[Inconsolata,monospace] text-base leading-[1.6] text-muted bg-[rgba(10,133,10,0.08)] dark:bg-[rgba(30,173,82,0.1)] p-2 px-3 rounded-[4px]"></div>
 
-          <button class="fb-modal__send" data-fb-send>Send feedback</button>
+          <button data-fb-send
+                  class="w-full h-12 mt-3 bg-[#0A850A] text-white text-base font-semibold tracking-[0.04em] font-[DM_Sans] border-none rounded-[3px] shadow-[3px_3px_0_rgba(38,38,36,0.25)] cursor-pointer active:translate-y-0.5 active:translate-x-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-[transform,box-shadow] duration-75">Send feedback</button>
         </div>
       </dialog>
 
@@ -279,7 +289,7 @@
 
       </main>
 
-      <div class="toast" data-toast aria-live="polite"></div>
+      <div data-toast aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex flex-col items-center gap-2 pointer-events-none"></div>
     </div>
 
     <!-- ── New screen architecture (Phase 1) ── -->

@@ -51,7 +51,7 @@ export function showToast(message: string, duration: number = 3000): void {
   const container = document.querySelector('[data-toast]') as HTMLElement | null;
   if (!container) return;
   const el = document.createElement("div");
-  el.className = "toast__msg";
+  el.className = "toast-msg";
   el.textContent = message;
   container.appendChild(el);
   requestAnimationFrame(() => el.classList.add("show"));
