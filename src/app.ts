@@ -4,7 +4,7 @@
 import type { GameState, ClueData } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
-import { initTheme, toggleTheme } from './theme.ts';
+import { initTheme } from './theme.ts';
 import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { initColours } from './colours.ts';

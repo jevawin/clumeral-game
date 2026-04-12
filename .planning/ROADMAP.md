@@ -65,7 +65,7 @@ Plans:
 **Plans:** 1/2 plans executed
 Plans:
 - [x] 03-01-PLAN.md — Game screen HTML markup, remove old markup, hamburger icon, screens.ts guard
-- [ ] 03-02-PLAN.md — JS wiring: DOM cache, render functions, initMenu, toggleTheme export
+- [x] 03-02-PLAN.md — JS wiring: DOM cache, render functions, initMenu, toggleTheme export
 **UI hint**: yes
 
 ### Phase 4: Feedback Modal
