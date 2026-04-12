@@ -10,7 +10,7 @@ requires:
     plan: 01
     provides: celebrateOcto with onComplete callback
   - phase: 04-feedback-modal
-    provides: "[data-fb-header-btn] trigger for feedback modal"
+    provides: "[data-fb-btn] trigger for feedback modal"
 provides:
   - Completion screen markup in index.html with data attributes
   - src/completion.ts renderCompletion() module
@@ -35,7 +35,7 @@ key-files:
 key-decisions:
   - "recordGame called before renderCompletion so loadHistory includes today's game in stats"
   - "launchBubbles moved inside else branch — skipped under reduced-motion alongside celebrateOcto"
-  - "Feedback button click delegates to [data-fb-header-btn] — no direct modal open, stays coupled to Phase 4"
+  - "Feedback button click delegates to [data-fb-btn] — no direct modal open, stays coupled to Phase 4"
   - "Streak computed with streakBroken flag: captures currentRun at first gap (today's streak), not end-of-loop value"
 
 requirements-completed: [CEL-02, CMP-01, CMP-02, CMP-03]
@@ -54,7 +54,7 @@ completed: 2026-04-12
 - **Duration:** ~5 min
 - **Started:** 2026-04-12T18:17:00Z
 - **Completed:** 2026-04-12T18:19:48Z
-- **Tasks completed:** 2 of 3 (Task 3 is human-verify checkpoint)
+- **Tasks completed:** 3 of 3
 - **Files modified:** 3
 
 ## Accomplishments
@@ -84,12 +84,15 @@ completed: 2026-04-12
 
 - `recordGame` is called before `renderCompletion` so when `loadHistory()` runs inside `renderCompletion`, today's game is already in the array and included in stats.
 - `launchBubbles()` moved inside the `else` branch alongside `celebrateOcto()` — under reduced-motion, neither runs, so the completion screen appears immediately via cross-fade.
-- Feedback button click delegates to `[data-fb-header-btn]?.click()` rather than calling the modal module directly — keeps the coupling to Phase 4's existing wiring.
+- Feedback button click delegates to `[data-fb-btn]?.click()` rather than calling the modal module directly — keeps the coupling to Phase 4's existing wiring.
 - Streak computation uses `streakBroken` flag: when the first gap appears between consecutive dates (history is newest-first), `streak = currentRun` is captured. If no gap, `streak = currentRun` at loop end covers the entire history.
 
 ## Deviations from Plan
 
-None — plan executed exactly as written.
+- Feedback button selector changed from `data-fb-header-btn` to `data-fb-btn` (correct element)
+- Random puzzles show "Puzzle solved!" instead of "Puzzle #0 solved!" with single tries stat
+- `/random` path skips welcome screen, goes straight to game (initScreens accepts initial screen)
+- src/screens.ts `initScreens()` now accepts optional `initial` parameter
 
 ## Known Stubs
 
