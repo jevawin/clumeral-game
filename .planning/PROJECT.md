@@ -114,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-12 after Phase 4 completion — feedback modal restyled in Tailwind, Guide modal removed, visual HTP on welcome screen*
+*Last updated: 2026-04-12 after Phase 5 completion — celebration compressed to ~3s with skip + callback, completion screen with stats/countdown/feedback, reduced-motion gate*
