@@ -90,11 +90,12 @@ Plans:
   1. On a correct answer, the octopus swims up from the bottom with bubbles for approximately 3 seconds
   2. After the animation finishes, the completion screen appears automatically
   3. On a device with `prefers-reduced-motion`, the animation is skipped or reduced
-  4. The completion screen shows games played, win %, current streak, and max streak read from localStorage
+  4. The completion screen shows games played, avg tries, current streak, and max streak read from localStorage
   5. A feedback prompt on the completion screen opens the feedback modal
-**Plans:** 1 plan
+**Plans:** 2 plans
 Plans:
-- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
+- [ ] 05-01-PLAN.md — Celebration animation: compress timing, add callback + skip support
+- [ ] 05-02-PLAN.md — Completion screen markup, stats rendering, correct-answer handler wiring
 **UI hint**: yes
 
 ### Phase 6: Polish
@@ -107,7 +108,7 @@ Plans:
   3. All five screens (welcome, game, completion — plus modal and menu states) look correct in both light and dark mode on mobile and desktop
 **Plans:** 1 plan
 Plans:
-- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
+- [ ] 06-01-PLAN.md — Old CSS removal and final regression check
 
 ## Progress
 
@@ -116,9 +117,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/1 | Planning complete | - |
-| 2. Welcome + How-to-Play | 0/TBD | Not started | - |
-| 3. Game Screen + Menu | 1/2 | In Progress|  |
-| 4. Feedback Modal | 0/1 | Planning complete | - |
-| 5. Celebration + Completion | 0/TBD | Not started | - |
-| 6. Polish | 0/TBD | Not started | - |
+| 1. Foundation | 1/1 | Complete | - |
+| 2. Welcome + How-to-Play | 1/1 | Complete | - |
+| 3. Game Screen + Menu | 2/2 | Complete | - |
+| 4. Feedback Modal | 1/1 | Complete | - |
+| 5. Celebration + Completion | 0/2 | Planning complete | - |
+| 6. Polish | 0/1 | Not started | - |
