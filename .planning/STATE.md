@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-04-11T22:21:47.319Z"
-last_activity: 2026-04-11
+last_updated: "2026-04-12T07:16:54.839Z"
+last_activity: 2026-04-12 -- Phase 02 execution started
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 1
+  total_plans: 2
   completed_plans: 1
   percent: 0
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** The game screen must work flawlessly — clues, digit elimination, guess submission, and answer validation must all function exactly as they do today, just in a cleaner layout.
-**Current focus:** Phase 01 — foundation
+**Current focus:** Phase 02 — welcome-how-to-play
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Executing Phase 01
-Last activity: 2026-04-11
+Phase: 02 (welcome-how-to-play) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 02
+Last activity: 2026-04-12 -- Phase 02 execution started
 
 Progress: [░░░░░░░░░░] 0%
 

@@ -48,7 +48,7 @@ Plans:
   5. The welcome screen appears on every visit, not just the first
 **Plans:** 1 plan
 Plans:
-- [ ] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
+- [x] 02-01-PLAN.md — Welcome screen content, HTP placement logic, play button
 **UI hint**: yes
 
 ### Phase 3: Game Screen + Menu
