@@ -44,9 +44,9 @@
 
 ### Celebration
 
-- [ ] **CEL-01**: Octopus swims up from bottom with bubbles on correct answer (~3s)
+- [x] **CEL-01**: Octopus swims up from bottom with bubbles on correct answer (~3s)
 - [ ] **CEL-02**: Celebration animation completes, then completion screen appears
-- [ ] **CEL-03**: Celebration respects prefers-reduced-motion
+- [x] **CEL-03**: Celebration respects prefers-reduced-motion
 
 ### Completion Screen
 
@@ -142,9 +142,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FBK-03 | Phase 4 | Pending |
 | FBK-04 | Phase 4 | Pending |
 | FBK-05 | Phase 4 | Pending |
-| CEL-01 | Phase 5 | Pending |
+| CEL-01 | Phase 5 | Complete |
 | CEL-02 | Phase 5 | Pending |
-| CEL-03 | Phase 5 | Pending |
+| CEL-03 | Phase 5 | Complete |
 | CMP-01 | Phase 5 | Pending |
 | CMP-02 | Phase 5 | Pending |
 | CMP-03 | Phase 5 | Pending |

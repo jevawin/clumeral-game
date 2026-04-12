@@ -92,9 +92,9 @@ Plans:
   3. On a device with `prefers-reduced-motion`, the animation is skipped or reduced
   4. The completion screen shows games played, avg tries, current streak, and max streak read from localStorage
   5. A feedback prompt on the completion screen opens the feedback modal
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 05-01-PLAN.md — Celebration animation: compress timing, add callback + skip support
+- [x] 05-01-PLAN.md — Celebration animation: compress timing, add callback + skip support
 - [ ] 05-02-PLAN.md — Completion screen markup, stats rendering, correct-answer handler wiring
 **UI hint**: yes
 
@@ -121,5 +121,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Welcome + How-to-Play | 1/1 | Complete | - |
 | 3. Game Screen + Menu | 2/2 | Complete | - |
 | 4. Feedback Modal | 1/1 | Complete | - |
-| 5. Celebration + Completion | 0/2 | Planning complete | - |
+| 5. Celebration + Completion | 1/2 | In Progress|  |
 | 6. Polish | 0/1 | Not started | - |
