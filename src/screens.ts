@@ -55,6 +55,6 @@ export function getCurrentScreen(): ScreenId {
   return currentScreen;
 }
 
-export function initScreens(): void {
-  updateScreenDOM("welcome");
+export function initScreens(initial: ScreenId = "welcome"): void {
+  updateScreenDOM(initial);
 }

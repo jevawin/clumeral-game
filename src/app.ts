@@ -879,8 +879,9 @@ initTheme();
 initMenu();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
-initScreens();
-initWelcome();
+const isRandomPath = window.location.pathname === '/random';
+initScreens(isRandomPath ? 'game' : 'welcome');
+if (!isRandomPath) initWelcome();
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
 

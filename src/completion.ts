@@ -88,22 +88,28 @@ function renderStatBox(value: string | number, label: string): string {
 export function renderCompletion(puzzleNum: number, tries: number, isRandom: boolean): void {
   // Heading
   if (dom.heading) {
-    dom.heading.textContent = `Puzzle #${puzzleNum} solved!`;
+    dom.heading.textContent = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
   }
   if (dom.subheading) {
     dom.subheading.textContent = `You got it in ${tries} ${tries === 1 ? 'try' : 'tries'}.`;
   }
 
-  // Stats grid (per D-05: played, avg tries, streak, best streak)
-  const history = loadHistory();
-  const stats = computeStats(history);
+  // Stats grid — daily: full history stats; random: just this game's tries
   if (dom.stats) {
-    dom.stats.innerHTML = [
-      renderStatBox(stats.played, 'Played'),
-      renderStatBox(stats.avgTries, 'Avg tries'),
-      renderStatBox(stats.streak, 'Streak'),
-      renderStatBox(stats.bestStreak, 'Best streak'),
-    ].join('');
+    if (isRandom) {
+      dom.stats.innerHTML = renderStatBox(tries, tries === 1 ? 'Try' : 'Tries');
+      dom.stats.classList.remove('grid-cols-2');
+      dom.stats.classList.add('grid-cols-1', 'max-w-[200px]', 'mx-auto');
+    } else {
+      const history = loadHistory();
+      const stats = computeStats(history);
+      dom.stats.innerHTML = [
+        renderStatBox(stats.played, 'Played'),
+        renderStatBox(stats.avgTries, 'Avg tries'),
+        renderStatBox(stats.streak, 'Streak'),
+        renderStatBox(stats.bestStreak, 'Best streak'),
+      ].join('');
+    }
   }
 
   // Countdown (per D-10: hidden for random puzzles)
@@ -117,7 +123,7 @@ export function renderCompletion(puzzleNum: number, tries: number, isRandom: boo
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
-// Feedback button delegates to Phase 4's existing [data-fb-header-btn] trigger (per D-12).
+// Feedback button delegates to Phase 4's existing [data-fb-btn] trigger (per D-12).
 dom.feedback?.addEventListener('click', () => {
-  (document.querySelector('[data-fb-header-btn]') as HTMLElement | null)?.click();
+  (document.querySelector('[data-fb-btn]') as HTMLElement | null)?.click();
 });
