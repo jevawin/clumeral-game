@@ -350,7 +350,21 @@
 
       </section>
       <section data-screen="completion" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
-        <!-- Phase 5 content -->
+        <div class="max-w-sm mx-auto px-4 pt-12 pb-8 text-center">
+          <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
+          <p data-completion-subheading class="text-base text-muted mt-1"></p>
+
+          <div data-completion-stats class="grid grid-cols-2 gap-4 mt-6">
+            <!-- Stats rendered by completion.ts -->
+          </div>
+
+          <p data-completion-countdown class="text-base text-muted mt-8"></p>
+
+          <button data-completion-feedback type="button"
+            class="mt-6 w-full bg-accent text-white font-semibold text-base py-3 px-6 rounded-md min-h-[44px]">
+            Leave feedback
+          </button>
+        </div>
       </section>
     </main>
 
