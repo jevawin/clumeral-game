@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-12T21:32:05.390Z"
+stopped_at: Phase 6 UI-SPEC approved
+last_updated: "2026-04-12T21:46:41.933Z"
 last_activity: 2026-04-12
 progress:
   total_phases: 6
@@ -87,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:32:05.387Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-polish/06-CONTEXT.md
+Last session: 2026-04-12T21:46:41.930Z
+Stopped at: Phase 6 UI-SPEC approved
+Resume file: .planning/phases/06-polish/06-UI-SPEC.md
