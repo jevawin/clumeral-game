@@ -25,4 +25,78 @@
     --color-surface: #363634;
     --color-border:  rgba(246, 240, 232, 0.1);
   }
+
+  /* Feedback modal dialog — fade + scale(0.95→1) animation per D-03 */
+  [data-fb-modal] {
+    border: none;
+    background: transparent;
+    padding: 1rem;
+    max-width: 100%;
+    max-height: 100vh;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  [data-fb-modal][open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+  }
+  [data-fb-modal].open {
+    opacity: 1;
+  }
+  [data-fb-modal] [data-fb-modal-box] {
+    transform: scale(0.95);
+    transition: transform 200ms ease;
+  }
+  [data-fb-modal].open [data-fb-modal-box] {
+    transform: scale(1);
+  }
+  [data-fb-modal]::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  [data-fb-modal].open::backdrop {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* Counter warn colour — toggled by modals.ts counterEl.classList.add("warn") */
+  .warn { color: var(--color-accent); }
+
+  /* Category pill selected state — JS toggles aria-checked; CSS styles it */
+  .fb-cat[aria-checked="true"] {
+    background-color: #0A850A;
+    border-color: #0A850A;
+    color: #fff;
+  }
+  html.dark .fb-cat[aria-checked="true"] {
+    background-color: #1EAD52;
+    border-color: #1EAD52;
+  }
+
+  /* Toast element — replaces legacy toast__msg; show class toggled by modals.ts */
+  .toast-msg {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-family: "DM Sans", system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition: opacity 250ms ease, transform 250ms ease;
+  }
+  .toast-msg.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
