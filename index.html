@@ -39,7 +39,7 @@
     </script>
   </head>
   <body>
-    <a href="#puzzle" class="skip-link">Skip to puzzle</a>
+    <a href="#game-content" class="skip-link">Skip to puzzle</a>
     <div class="game">
       <canvas class="game__canvas" data-canvas aria-hidden="true"></canvas>
       <div class="game__shape" aria-hidden="true"></div>
@@ -277,159 +277,6 @@
           </h1>
         </header>
 
-        <p class="subtitle">
-          Work out the number from 100–999.
-          <br />
-          New puzzle every day.
-        </p>
-
-        <p class="fb-header">
-          <button data-fb-header-btn class="text-link text-link--icon text-link--muted">
-            <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
-            <span>It's new! Please give feedback</span>
-          </button>
-        </p>
-
-        <!-- ── Puzzle card ── -->
-        <div id="puzzle" class="card" data-card>
-          <div class="card__label" data-plabel>Puzzle #7 · 14 March 2026</div>
-
-          <div class="clue-list" role="list" aria-label="Puzzle clues" aria-busy="true">
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
-            </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
-            </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
-            </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
-            </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
-            </div>
-          </div>
-          <!-- /.cw-clue-container -->
-
-          <!-- ── Hint ── -->
-          <div class="card__hint" data-hint aria-live="polite">Tap a box to eliminate possible numbers.</div>
-
-          <!-- ── Digit boxes ── -->
-          <div class="digits" data-digits role="group" aria-label="Digit entry boxes">
-            <div class="digit-box" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit"></div>
-            <div class="digit-box" data-digit="1" role="button" tabindex="0" aria-label="Tens digit"></div>
-            <div class="digit-box" data-digit="2" role="button" tabindex="0" aria-label="Units digit"></div>
-          </div>
-
-          <!-- ── Keypad ── -->
-          <div class="keypad" data-keypad-wrap>
-            <div class="keypad__grid" data-keypad></div>
-          </div>
-
-          <!-- ── Submit ── -->
-          <div class="submit" data-submit-wrap>
-            <button class="submit__btn" data-submit>Submit</button>
-          </div>
-
-          <!-- ── Save row ── -->
-          <div class="save" data-save>
-            <input type="checkbox" checked id="cw-ck" data-save-check />
-            <label for="cw-ck">
-              <svg class="check-icon ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
-              <svg class="check-icon ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
-              Keep my score in a
-              <svg class="icon-inline" width="13" height="13" aria-hidden="true"><use href="/sprites.svg#icon-cookie"/></svg>
-              cookie
-            </label>
-          </div>
-
-          <!-- ── Feedback ── -->
-          <p data-feedback class="feedback hidden" aria-live="assertive"></p>
-
-          <!-- ── Guess history ── -->
-          <div data-history class="history hidden">
-            <p class="history__label">Your guesses</p>
-            <ul class="history__list" data-history-list></ul>
-          </div>
-
-          <!-- ── Stats ── -->
-          <div data-stats class="stats hidden"></div>
-
-          <!-- ── Next puzzle ── -->
-          <p data-next class="next-puzzle hidden">
-            Puzzle <span data-next-number></span> is available tomorrow.
-          </p>
-
-          <!-- ── Random again ── -->
-          <p data-again class="play-again hidden">
-            <a href="/random" class="text-link">Play another random puzzle</a>
-          </p>
-
-        </div>
-
-        <footer class="footer">
-          <div class="swatch-list" data-swatches></div>
-          <div class="footer__links" data-foot-links>
-            <button data-htp-btn class="text-link text-link--icon">
-              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
-              <span>Guide</span>
-            </button>
-            <button data-fb-btn class="text-link text-link--icon">
-              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
-              <span>Feedback</span>
-            </button>
-            <a href="/puzzles" class="text-link text-link--icon">
-              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>
-              <span>Archive</span>
-            </a>
-            <button data-theme-toggle class="text-link text-link--icon">
-              <span class="theme-icon" data-theme-icon aria-hidden="true">
-                <svg class="icon-moon" width="24" height="24"><use href="/sprites.svg#icon-moon"/></svg>
-                <svg class="icon-sun" width="24" height="24"><use href="/sprites.svg#icon-sun"/></svg>
-              </span>
-              <span data-theme-label>Dark</span>
-            </button>
-          </div>
-          <div class="footer__body" data-foot-body>
-            An experiment in AI-coding with Claude. It's on
-            <span class="foot-icon-link">
-              <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-github"/></svg>
-              <a href="https://github.com/jevawin/clumeral-game" target="_blank" rel="noopener" class="text-link">GitHub</a>
-            </span>. Made with
-            <svg class="footer-heart icon-inline" width="18" height="18" aria-hidden="true"><use href="/sprites.svg#icon-heart"/></svg>
-            by
-            <span class="foot-icon-link">
-              <img src="/jamie.webp" alt="Jamie" class="foot-avatar" />
-              <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer" class="text-link">Jamie</a>
-            </span>
-            and Dave.
-            <br />
-            &copy; 2026 Jamie &amp; Dave
-          </div>
-          <div class="dev-links hidden" data-dev-links></div>
-        </footer>
       </main>
 
       <div class="toast" data-toast aria-live="polite"></div>
@@ -440,8 +287,126 @@
       <section data-screen="welcome" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
         <!-- Phase 2 content -->
       </section>
-      <section data-screen="game" class="absolute inset-0 flex flex-col opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
-        <!-- Phase 3 content — no bg-bg until game content moves here -->
+      <section data-screen="game" class="absolute inset-0 flex flex-col bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+
+        <!-- ── Game header ── -->
+        <header data-game-header class="h-14 sticky top-0 z-30 flex items-center justify-between px-4 bg-bg border-b border-border">
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-bold text-text font-[DM_Sans]">Clumeral</span>
+            <span data-plabel class="text-muted text-base font-[DM_Sans]"></span>
+          </div>
+          <button data-menu-btn class="h-10 w-10 flex items-center justify-center text-text" type="button" aria-expanded="false" aria-controls="game-menu" aria-label="Open menu">
+            <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-menu"/></svg>
+          </button>
+        </header>
+
+        <!-- ── Menu dropdown ── -->
+        <div id="game-menu" data-menu role="dialog" aria-label="Game menu"
+             class="hidden absolute top-14 right-0 z-40 min-w-[200px] py-2 bg-surface border border-border rounded-lg shadow-lg">
+          <button data-theme-toggle class="flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:bg-bg font-[DM_Sans]" type="button">
+            <svg width="20" height="20" class="text-muted" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
+            <span data-theme-label>Dark mode</span>
+          </button>
+          <a href="/puzzles" class="flex items-center gap-3 px-4 py-3 w-full text-base text-text hover:bg-bg no-underline font-[DM_Sans]">
+            <svg width="20" height="20" class="text-muted" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>
+            Archive
+          </a>
+          <button data-fb-btn class="flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:bg-bg font-[DM_Sans]" type="button">
+            <svg width="20" height="20" class="text-muted" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
+            Feedback
+          </button>
+          <button data-htp-btn class="flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:bg-bg font-[DM_Sans]" type="button">
+            <svg width="20" height="20" class="text-muted" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
+            How to play
+          </button>
+          <button data-menu-close class="flex items-center gap-3 px-4 py-3 w-full text-left text-base text-muted hover:bg-bg font-[DM_Sans]" type="button" aria-label="Close menu">
+            <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-circle-x"/></svg>
+            Close
+          </button>
+        </div>
+
+        <!-- ── Scrollable content ── -->
+        <div id="game-content" data-game-content class="flex-1 overflow-y-auto px-4 pt-8 pb-24">
+          <div class="w-full max-w-sm mx-auto flex flex-col">
+
+            <!-- Clue list (skeletons replaced by renderClues) -->
+            <div data-clue-list role="list" aria-label="Puzzle clues" aria-busy="true"
+                 class="[display:grid] [grid-template-columns:max-content_1fr] gap-x-2 gap-y-4">
+              <div class="clue-skeleton contents" aria-hidden="true">
+                <div class="w-16 h-8 rounded bg-surface animate-pulse"></div>
+                <div class="flex flex-col gap-2">
+                  <div class="h-4 w-4/5 rounded bg-surface animate-pulse"></div>
+                  <div class="h-4 w-2/5 rounded bg-surface animate-pulse"></div>
+                </div>
+              </div>
+              <div class="clue-skeleton contents" aria-hidden="true">
+                <div class="w-16 h-8 rounded bg-surface animate-pulse"></div>
+                <div class="flex flex-col gap-2">
+                  <div class="h-4 w-4/5 rounded bg-surface animate-pulse"></div>
+                  <div class="h-4 w-2/5 rounded bg-surface animate-pulse"></div>
+                </div>
+              </div>
+              <div class="clue-skeleton contents" aria-hidden="true">
+                <div class="w-16 h-8 rounded bg-surface animate-pulse"></div>
+                <div class="flex flex-col gap-2">
+                  <div class="h-4 w-4/5 rounded bg-surface animate-pulse"></div>
+                  <div class="h-4 w-2/5 rounded bg-surface animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Digit boxes -->
+            <div data-digits class="flex gap-2 w-full mt-2 h-28" role="group" aria-label="Digit entry boxes">
+              <div class="flex-1 flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
+              <div class="flex-1 flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
+              <div class="flex-1 flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>
+            </div>
+
+            <!-- Keypad -->
+            <div data-keypad-wrap class="w-full mt-2 hidden">
+              <div data-keypad class="grid grid-cols-5 gap-2 w-full"></div>
+            </div>
+
+            <!-- Submit -->
+            <div data-submit-wrap class="w-full mt-4 hidden">
+              <button data-submit class="w-full h-14 rounded-sm bg-accent text-white text-base font-bold tracking-wide font-[DM_Sans] shadow-[3px_3px_0_rgba(38,38,36,0.18)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none" type="button">Check my guess</button>
+            </div>
+
+            <!-- Save score row -->
+            <div data-save class="hidden items-center gap-1 mt-4 text-base text-muted font-[DM_Sans]">
+              <input type="checkbox" checked id="cw-ck" data-save-check class="sr-only" />
+              <label for="cw-ck" class="flex items-center gap-1 cursor-pointer">
+                <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
+                <svg class="ck-off hidden" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
+                Keep my score
+              </label>
+            </div>
+
+            <!-- Feedback -->
+            <p data-feedback class="text-base font-bold leading-snug mt-4 hidden font-[DM_Sans]" aria-live="assertive"></p>
+
+            <!-- Guess history -->
+            <div data-history class="hidden mt-4">
+              <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your guesses</p>
+              <ul data-history-list class="flex flex-wrap gap-2 list-none p-0 m-0"></ul>
+            </div>
+
+            <!-- Stats -->
+            <div data-stats class="hidden mt-4"></div>
+
+            <!-- Next puzzle -->
+            <p data-next class="hidden mt-4 text-base text-muted font-[DM_Sans]">
+              Puzzle <span data-next-number></span> is available tomorrow.
+            </p>
+
+            <!-- Random again -->
+            <p data-again class="hidden mt-4 text-base font-[DM_Sans]">
+              <a href="/random" class="text-accent underline">Play another random puzzle</a>
+            </p>
+
+          </div>
+        </div>
+
       </section>
       <section data-screen="completion" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
         <!-- Phase 5 content -->
