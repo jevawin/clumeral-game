@@ -5,10 +5,10 @@ import type { GameState, ClueData } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
 import { initTheme } from './theme.ts';
-import { initModal, maybeAutoShowModal, initFeedbackModal } from './modals.ts';
+import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { initColours } from './colours.ts';
-import { initScreens } from './screens.ts';
+import { initScreens, showScreen } from './screens.ts';
 import { initWelcome } from './welcome.ts';
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
@@ -559,11 +559,6 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
   gameState = { answer: null, guesses: [], solved: false, puzzleNum: num, date };
   resetPuzzleUI();
   track("puzzle_start");
-  const htpWasSeen = localStorage.getItem("cw-htp-seen");
-  maybeAutoShowModal(openModal);
-  if (!htpWasSeen && localStorage.getItem("cw-htp-seen")) {
-    track("htp_opened", undefined, "auto");
-  }
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
@@ -876,7 +871,6 @@ function initMenu(): void {
 initColours();
 initTheme();
 initMenu();
-const openModal = initModal();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
 initScreens();
@@ -884,10 +878,8 @@ initWelcome();
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
 
-// HTP modal: opened (manual via button click)
-document.querySelector('[data-htp-btn]')?.addEventListener('click', () => track('htp_opened', undefined, 'manual'));
-// HTP modal: dismissed
-document.querySelector('[data-modal-gotit]')?.addEventListener('click', () => track('htp_dismissed'));
+// HTP: navigate to welcome screen from menu
+document.querySelector('[data-htp-btn]')?.addEventListener('click', () => { showScreen('welcome'); track('htp_opened', undefined, 'manual'); });
 // Feedback submitted
 document.querySelector('[data-fb-send]')?.addEventListener('click', () => track('feedback_submitted'));
 // Theme toggle

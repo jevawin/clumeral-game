@@ -1,49 +1,7 @@
 // Clumeral — modals.ts
 // How-to-Play modal, toast notifications, and feedback modal.
 
-import { loadHistory } from './storage.ts';
-
 const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0kv6I7xacnvDvcw_lgM_gBF6TzvPtqNvAlnxM7UJi-sjMku8bSQKw/exec";
-
-// ─── How-to-Play modal ──────────────────────────────────────────────────────
-
-export function initModal(): (() => void) | null {
-  const modalEl = document.querySelector('[data-modal]') as HTMLDialogElement | null;
-  if (!modalEl) return null;
-  const modal: HTMLDialogElement = modalEl;
-  const htpBtn = document.querySelector('[data-htp-btn]') as HTMLElement | null;
-
-  function openModal() {
-    localStorage.setItem("cw-htp-seen", "1");
-    modal.showModal();
-    requestAnimationFrame(() => modal.classList.add("open"));
-  }
-
-  function closeModal() {
-    modal.classList.remove("open");
-    modal.addEventListener("transitionend", () => {
-      modal.close();
-      if (htpBtn) htpBtn.focus();
-    }, { once: true });
-  }
-
-  const closeBtn = document.querySelector('[data-modal-close]');
-  const gotitBtn = document.querySelector('[data-modal-gotit]');
-  if (htpBtn) htpBtn.addEventListener("click", openModal);
-  if (closeBtn) closeBtn.addEventListener("click", closeModal);
-  if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
-  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-  modal.addEventListener("cancel", (e) => { e.preventDefault(); closeModal(); });
-
-  return openModal;
-}
-
-export function maybeAutoShowModal(openModal: (() => void) | null): void {
-  if (localStorage.getItem("cw-htp-seen")) return;
-  if (loadHistory().length > 0) return;
-  if (!openModal) return;
-  setTimeout(openModal, 400);
-}
 
 // ─── Toast ──────────────────────────────────────────────────────────────────
 

@@ -52,11 +52,70 @@ const OCTO_SVG = `<svg aria-hidden="true" width="96" height="96" viewBox="0 0 53
 // ─── Render ───────────────────────────────────────────────────────────────────
 
 function htpSteps(): string {
-  return `<ol class="text-base text-muted space-y-2 list-none" aria-label="How to play">
-      <li class="flex gap-2"><span class="font-semibold">1.</span><span>Read the clues — each one narrows down a digit</span></li>
-      <li class="flex gap-2"><span class="font-semibold">2.</span><span>Tap a digit box to open it, then remove digits that don't fit</span></li>
-      <li class="flex gap-2"><span class="font-semibold">3.</span><span>When one digit remains in each box, submit your answer</span></li>
-    </ol>`;
+  return `<div class="w-full space-y-5" aria-label="How to play">
+
+      <!-- Step 1: Read the clues -->
+      <div>
+        <p class="text-sm font-semibold text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-muted" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
+        <div class="clue htp-clue">
+          <div class="clue__tag-cell">
+            <span class="clue__tag"><span>PRIME</span><svg class="clue__tag-icon" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg></span>
+            <div class="clue__digits" aria-hidden="true">
+              <span class="clue__digit lit"></span>
+              <span class="clue__digit"></span>
+              <span class="clue__digit"></span>
+            </div>
+          </div>
+          <div class="clue__lines">
+            <div class="clue__line1">The first digit</div>
+            <div class="clue__line2">is a prime number</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Open the digit boxes -->
+      <div>
+        <p class="text-sm font-semibold text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
+        <div class="htp-worked">
+          <div class="digit-box htp-box">
+            <div class="digit-box__grid four-col">
+              <span class="elim">0</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+              <span>6</span>
+              <span>7</span>
+              <span>8</span>
+              <span>9</span>
+            </div>
+          </div>
+          <span class="htp-arrow" aria-hidden="true">→</span>
+          <div class="htp-keypad-wrap">
+            <div class="htp-keypad">
+              <span class="htp-key elim">0</span>
+              <span class="htp-key elim">1</span>
+              <span class="htp-key">2</span>
+              <span class="htp-key">3</span>
+              <span class="htp-key elim">4</span>
+              <span class="htp-key">5</span>
+              <span class="htp-key elim">6</span>
+              <span class="htp-key">7</span>
+              <span class="htp-key elim">8</span>
+              <span class="htp-key elim">9</span>
+            </div>
+            <span class="htp-keypad-hint">Tap to remove</span>
+          </div>
+          <span class="htp-arrow" aria-hidden="true">→</span>
+          <div class="digit-box htp-box"><span class="digit-box__resolved">5</span></div>
+        </div>
+      </div>
+
+      <!-- Step 3: Submit -->
+      <p class="text-sm font-semibold text-text">3. When 1 digit remains in each, submit your answer</p>
+
+    </div>`;
 }
 
 function playButton(): string {
