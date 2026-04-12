@@ -849,13 +849,7 @@ function initMenu(): void {
     }
   });
 
-  // Menu item wiring: dark mode toggle
-  const menuThemeBtn = menu.querySelector('[data-theme-toggle]');
-  if (menuThemeBtn) {
-    menuThemeBtn.addEventListener('click', () => {
-      toggleTheme();
-    });
-  }
+  // Dark mode toggle: initTheme() already binds toggleTheme() to [data-theme-toggle]
 
   // Menu item wiring: HTP link — modals.ts already binds the open handler via [data-htp-btn]
   // Just close the menu first; the existing listener handles opening the modal
