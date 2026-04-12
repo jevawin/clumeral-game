@@ -79,7 +79,7 @@ Plans:
   4. Submitting sends to the existing Google Apps Script endpoint with retry logic intact
 **Plans:** 1 plan
 Plans:
-- [ ] 04-01-PLAN.md — Tailwind modal markup, dialog/toast CSS rules, modals.ts toast class update
+- [x] 04-01-PLAN.md — Tailwind modal markup, dialog/toast CSS rules, modals.ts toast class update
 **UI hint**: yes
 
 ### Phase 5: Celebration + Completion
