@@ -31,7 +31,7 @@ The game screen must work flawlessly — clues, digit elimination, guess submiss
 - [ ] Game screen: clues listed directly on background (no card wrapper), digit boxes, number pad, submit button
 - [ ] Compact menu on game screen: light/dark toggle, archive link, feedback, how-to-play
 - [ ] Completion screen: basic stats (games played, win %, current streak, max streak), feedback prompt
-- [ ] Feedback modal accessible from both completion screen and game menu
+- [ ] Feedback modal accessible from completion screen (game menu access done in Phase 4)
 - [ ] Celebration animation: octopus swims up from bottom with bubbles (~3s), then completion screen appears
 - [ ] Old CSS fully removed once replacement is complete
 - [ ] No visual regression on core gameplay
@@ -45,6 +45,15 @@ The game screen must work flawlessly — clues, digit elimination, guess submiss
 - ✓ No colour theme picker — green accent only
 - ✓ No `color-mix()` or `light-dark()` — Tailwind dark: variants and opacity modifiers only
 - ✓ Simplified footer on all screens: "Made with heart by Jamie & Dave. (c) 2026."
+
+### Validated in Phase 4: Feedback Modal
+
+- ✓ Feedback modal restyled with Tailwind utilities — dialog element with fade+scale animation (95%→100%)
+- ✓ Four category pills (General/Bug/Idea/Praise) with aria-checked state and accent fill
+- ✓ Textarea with character counter at 400/500, metadata line with puzzle info
+- ✓ Toast notification at bottom centre, auto-dismisses after 3s
+- ✓ Guide modal removed — visual how-to-play content now inline on welcome screen
+- ✓ Menu "How to play" navigates to welcome screen instead of opening modal
 
 ### Out of Scope
 
@@ -82,8 +91,9 @@ Several existing issues get absorbed: #153 (Tailwind migration), #87 (copyright 
 | No component library | Only ~3 real components; library adds weight for no value | — Pending |
 | State-driven screens, not URL routes | Matches Wordle pattern, simpler implementation | Phase 1: implemented via showScreen() state machine |
 | Green accent only, drop colour picker | Simplifies UI and collapses palette from ~20 tokens to ~7 | Phase 1: 6 tokens, green accent (#0A850A light / #1EAD52 dark) |
-| How-to-play inline on welcome screen | Players dismissed the popup; inline content gets read | — Pending |
-| Feedback modal stays (restyled) | Works well, just needs Tailwind styling | — Pending |
+| How-to-play inline on welcome screen | Players dismissed the popup; inline content gets read | Phase 4: visual HTP with example clue and digit boxes on welcome screen |
+| Feedback modal stays (restyled) | Works well, just needs Tailwind styling | Phase 4: restyled with Tailwind, scale animation, toast system |
+| Guide modal removed, visual HTP inline | Players dismissed popup; visual steps on welcome screen get read | Phase 4: Guide dialog removed, welcome screen has example clue + digit box flow |
 | No share button placeholder | Cleaner to add it when the feature ships | — Pending |
 
 ## Evolution
@@ -104,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-12 after Phase 3 completion — game screen with menu, clue rendering, digit entry, and gameplay fully wired*
+*Last updated: 2026-04-12 after Phase 4 completion — feedback modal restyled in Tailwind, Guide modal removed, visual HTP on welcome screen*
