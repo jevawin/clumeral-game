@@ -43,13 +43,13 @@ Declared values (multiples of 4):
 | 3xl | 64px | — |
 
 Exceptions:
-- Pill padding: 6px top/bottom, 14px left/right (nearest 4px multiples that match the existing 0.375rem/0.875rem feel — keep at exactly these values for visual continuity)
+- Pill padding: 8px top/bottom, 16px left/right (on the 4px grid — replaces legacy 6px/14px values)
 - Textarea min-height: 96px (6rem — 24 × 4)
 - Textarea max-height: 192px (12rem — 48 × 4)
 - Send button height: 48px (3rem — matches existing design)
 - Touch target for close button: min 44px × 44px
 
-Source: existing style.css fb-modal block; closest 4px multiples confirmed.
+Source: existing style.css fb-modal block; values adjusted to 4px grid.
 
 ---
 
@@ -104,6 +104,12 @@ Source: src/tailwind.css @theme tokens; src/style.css fb-modal + toast blocks; R
 
 ---
 
+## Visual Hierarchy
+
+The modal card is the sole focal point. Every other element — backdrop, page content — recedes so the user's eye lands on the heading, then the category pills, then the textarea, then the send button, in that reading order.
+
+---
+
 ## Component Inventory
 
 ### Modal dialog (`<dialog data-fb-modal>`)
@@ -133,7 +139,7 @@ Source: src/tailwind.css @theme tokens; src/style.css fb-modal + toast blocks; R
 - Pill: rounded-full (border-radius 9999px)
 - Unselected: border 1.5px border-border, bg-surface, text-text
 - Selected (`aria-checked="true"`): bg accent (#0A850A), border accent, text white
-- Padding: 6px 14px
+- Padding: 8px 16px
 - Font: 16px / 400
 - Transition: background-color, color, border-color at 150ms
 - ARIA: `role="radiogroup"` on container, `role="radio"` + `aria-checked` on each pill
@@ -162,7 +168,7 @@ Source: src/tailwind.css @theme tokens; src/style.css fb-modal + toast blocks; R
 - Background: accent at ~10% opacity (see colour section)
 - Padding: 8px 12px
 - Border radius: 4px
-- Margin-top on label: 12px; margin-bottom on label: 6px
+- Margin-top on label: 12px; margin-bottom on label: 8px
 
 ### Send button (`[data-fb-send]`)
 - Full width
@@ -179,11 +185,11 @@ Source: src/tailwind.css @theme tokens; src/style.css fb-modal + toast blocks; R
 ### Toast (`[data-toast]` container + dynamically created elements)
 - Container: fixed, bottom 24px, horizontally centred, z-index 300
 - Toast element: `div` created by `showToast()` in modals.ts — class replaced from `toast__msg` to Tailwind utilities
-- Padding: 12px 20px
+- Padding: 12px 16px
 - Border radius: 6px
 - Background: bg-text token (inverted — automatic light/dark)
 - Text: bg-bg token (inverted)
-- Font: DM Sans 16px / 500
+- Font: DM Sans 16px / 600
 - Shadow: 0 4px 16px rgba(0,0,0,0.2)
 - Appear animation: opacity 0→1 + translateY(8px)→0 over 250ms
 - Auto-dismiss: 3000ms default (existing `showToast` duration param — do not change)
@@ -236,7 +242,7 @@ Source: src/style.css toast block; CONTEXT.md D-04, D-05.
 | Send button | Send feedback |
 | Toast — success | Thanks for your feedback! |
 | Toast — error | Something went wrong. Please try again. |
-| Close button aria-label | Close |
+| Close button aria-label | Close feedback modal |
 | Textarea aria-label (sr-only) | Your feedback message |
 | Category group aria-label | Feedback category |
 
@@ -270,7 +276,7 @@ Source: CONTEXT.md D-03; existing style.css transition values.
 - `aria-labelledby` on dialog references heading id `cw-fb-modal-title`
 - Category pills: `role="radiogroup"` / `role="radio"` / `aria-checked`
 - Textarea has `<label for="cw-fb-msg">` (sr-only) so screen readers announce it
-- Close button has `aria-label="Close"`
+- Close button has `aria-label="Close feedback modal"`
 - Focus returns to the trigger element that opened the modal when closed (modals.ts must save and restore focus — verify this is already handled)
 - Colour contrast: accent (#0A850A) on white meets WCAG AA for normal text; white on #0A850A send button meets WCAG AA
 - Counter warn colour: accent on surface — check meets WCAG AA (currently borderline; acceptable as it is supplementary to the visible counter text)
