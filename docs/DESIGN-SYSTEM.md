@@ -10,7 +10,7 @@
 
 ## Semantic colour tokens
 
-Six tokens defined in `@theme` block. Dark mode overrides in `@layer base` under `html.dark`.
+Six tokens defined in `@theme` block. Dark mode overrides in `@layer theme` under `html.dark` (same cascade layer, higher specificity than `:root`).
 
 | Token | CSS variable | Light | Dark | Usage |
 |-------|-------------|-------|------|-------|
