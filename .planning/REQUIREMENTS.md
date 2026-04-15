@@ -69,7 +69,7 @@
 - [ ] **STY-03**: Dark mode uses near-black background (#121213), light mode uses off-white (#FAFAFA)
 - [ ] **STY-04**: Dark mode via Tailwind dark: variants, not light-dark() or color-mix()
 - [ ] **STY-05**: Green accent only — no colour theme picker
-- [ ] **STY-06**: Old CSS fully removed once replacement is complete
+- [x] **STY-06**: Old CSS fully removed once replacement is complete
 
 ### Footer
 
@@ -148,7 +148,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMP-01 | Phase 5 | Complete |
 | CMP-02 | Phase 5 | Complete |
 | CMP-03 | Phase 5 | Complete |
-| STY-06 | Phase 6 | Pending |
+| STY-06 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 41 total
