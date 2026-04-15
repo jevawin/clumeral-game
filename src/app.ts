@@ -541,7 +541,6 @@ function startRandomPuzzle(clues: ClueData[], token: string): void {
   track("puzzle_start");
 
   dom.again?.classList.add("hidden");
-  dom.save?.classList.add("hidden");
 }
 
 function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
@@ -593,7 +592,6 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     }
     gameState = { answer, guesses: [], solved: true, puzzleNum: num, date };
     showCompletedState(entry.tries, date);
-    dom.save?.classList.add("hidden");
     return;
   }
 

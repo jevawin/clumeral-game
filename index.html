@@ -308,13 +308,15 @@
               <button data-submit class="w-full h-14 rounded-sm bg-accent text-white text-base font-bold tracking-wide font-[DM_Sans] shadow-[3px_3px_0_rgba(38,38,36,0.18)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none" type="button">Check my guess</button>
             </div>
 
-            <!-- Save score row -->
-            <div data-save class="hidden items-center gap-1 mt-4 text-base text-muted font-[DM_Sans]">
-              <input type="checkbox" checked id="cw-ck" data-save-check class="sr-only" />
-              <label for="cw-ck" class="flex items-center gap-1 cursor-pointer">
+            <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css) -->
+            <div data-save class="items-center gap-1.5 mt-3.5 text-base text-muted font-[DM_Sans]">
+              <input type="checkbox" checked id="cw-ck" data-save-check />
+              <label for="cw-ck" class="flex items-center gap-1.5 cursor-pointer">
                 <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
-                <svg class="ck-off hidden" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
-                Keep my score
+                <svg class="ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
+                Keep my score in a
+                <svg class="inline" width="13" height="13" aria-hidden="true"><use href="/sprites.svg#icon-cookie"/></svg>
+                cookie
               </label>
             </div>
 

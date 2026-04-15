@@ -16,8 +16,8 @@
   --color-border:  rgba(38, 38, 36, 0.12);
 }
 
-/* Dark mode overrides — reassign CSS variables under .dark (per D-04) */
-@layer base {
+/* Dark mode overrides — in theme layer so they beat @theme's :root tokens via specificity */
+@layer theme {
   html.dark {
     --color-bg:      #121213;
     --color-text:    #FAF8F4;
@@ -26,7 +26,9 @@
     --color-surface: #363634;
     --color-border:  rgba(246, 240, 232, 0.1);
   }
+}
 
+@layer base {
   /* Feedback modal dialog — fade + scale(0.95→1) animation per D-03 */
   [data-fb-modal] {
     border: none;
@@ -167,7 +169,16 @@
     inset-block-start: 1rem;
   }
 
+  /* ─── Save score row — hidden by default, shown when submit sibling is visible ─── */
+  [data-save] {
+    display: none;
+  }
+  [data-submit-wrap]:not(.hidden) + [data-save] {
+    display: flex;
+  }
+
   /* ─── Save checkbox icon toggle ─── */
+  #cw-ck { position: absolute; opacity: 0; pointer-events: none; }
   #cw-ck:not(:checked) ~ label .ck-on { display: none; }
   #cw-ck:not(:checked) ~ label .ck-off { display: inline; }
   #cw-ck:checked ~ label .ck-on { display: inline; }
