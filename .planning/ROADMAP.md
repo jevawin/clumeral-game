@@ -109,7 +109,7 @@ Plans:
 **Plans:** 1/2 plans executed
 Plans:
 - [x] 06-01-PLAN.md — Migrate CSS rules to tailwind.css, remove canvas/colours.ts, fix JS token refs
-- [ ] 06-02-PLAN.md — Convert legacy wrapper HTML, remove style.css, visual regression check
+- [x] 06-02-PLAN.md — Convert legacy wrapper HTML, remove style.css, visual regression check
 
 ## Progress
 
@@ -124,3 +124,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 4. Feedback Modal | 1/1 | Complete | - |
 | 5. Celebration + Completion | 2/2 | Complete   | 2026-04-12 |
 | 6. Polish | 1/2 | In Progress|  |
+
+
+## Backlog (post-milestone fixes)
+
+Items deferred from Phase 6 visual review. Not blocking v1.0 launch.
+
+- [ ] **Tooltip positioning** — Clue tooltips render above the clue, causing the topmost tooltip to clip off-screen. Originates from old layout where logo/intro provided more top padding. Reposition tooltips or add viewport-aware flip logic.
+- [ ] **Letter reveal animation** — Title SVG letter reveal doesn't fire on refresh. User plans to replace logo/lettering, so may become moot. Check for dead `data-tlt` animation code after logo change.
+- [ ] **Recurring overdot** — Unable to verify `.recurring::after` styling (no recurring values in current puzzle set). Verify next time a recurring decimal appears.
+- [ ] **Animation replay from stats** — Clarify whether clicking stats/completion screen should replay octo celebration. Currently doesn't.
