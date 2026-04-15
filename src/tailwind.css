@@ -134,6 +134,15 @@
     border-color: rgba(76, 195, 140, 0.35);
   }
 
+  /* ─── Title letter groups (animated by octo.ts revealLetters) ─── */
+  [data-tlt] {
+    display: inline-block;
+    color: var(--color-text);
+    opacity: 0;
+    transform: translateY(0.625rem);
+    transition: color 0.4s;
+  }
+
   /* ─── Octo slot layout spacer ─── */
   [data-octo-slot] {
     flex-shrink: 0;

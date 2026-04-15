@@ -7,7 +7,7 @@
 const octoEl     = document.querySelector('[data-octo]') as HTMLElement | null;
 const octoWrapEl = document.querySelector('[data-octo-wrap]') as HTMLElement | null;
 const octoSlotEl = document.querySelector('[data-octo-slot]') as HTMLElement | null;
-const tlts       = [...document.querySelectorAll('.tlt')] as HTMLElement[];
+const tlts       = [...document.querySelectorAll('[data-tlt]')] as HTMLElement[];
 
 // ── Eye / mouth elements ──
 const eyeLR   = document.querySelector('[data-eye="l-round"]') as HTMLElement | null;
