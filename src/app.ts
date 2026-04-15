@@ -7,7 +7,6 @@ import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
 import { initTheme } from './theme.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
-import { initColours } from './colours.ts';
 import { initScreens, showScreen } from './screens.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
@@ -874,7 +873,6 @@ function initMenu(): void {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-initColours();
 initTheme();
 initMenu();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);

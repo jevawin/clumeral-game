@@ -8,7 +8,7 @@ const TOTAL_MS = 3200;
 const MIN_COUNT = 20;
 const MAX_COUNT = 30;
 
-// Fallback accent if --acc can't be parsed (matches the default green).
+// Fallback accent if --color-accent can't be parsed (matches the default green).
 const FALLBACK_ACC: [number, number, number] = [10, 133, 10];
 
 type SizeBand = "small" | "medium" | "large";
@@ -99,10 +99,10 @@ export function launchBubbles(): void {
   }
 
   // Octo's celebration cycles through 4 colours via the `octo-colours`
-  // CSS keyframe on its first SVG path (see style.css). Reading the
+  // CSS keyframe on its first SVG path (see tailwind.css). Reading the
   // computed `fill` of that path each frame gives us Octo's live colour,
-  // which is what we want bubbles to match. --acc is the fallback if the
-  // octo isn't on-screen yet.
+  // which is what we want bubbles to match. --color-accent is the fallback
+  // if the octo isn't on-screen yet.
   const root = document.documentElement;
   const octoPath = document.querySelector<SVGPathElement>(
     "[data-octo] > path"
@@ -118,7 +118,7 @@ export function launchBubbles(): void {
       if (parsed) return parsed;
     }
     const accParsed = parseRgb(
-      getComputedStyle(root).getPropertyValue("--acc")
+      getComputedStyle(root).getPropertyValue("--color-accent")
     );
     return accParsed ?? FALLBACK_ACC;
   }
