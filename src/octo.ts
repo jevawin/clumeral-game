@@ -1,13 +1,12 @@
 // Clumeral — octo.ts
 // Octopus mascot animations: eye tracking, blink/wink, squint-glance,
-// spring bounce, letter reveal, celebrate, sad, idle bob.
+// spring bounce, celebrate, sad, idle bob.
 
 // ─── DOM references ─────────────────────────────────────────────────────────
 
 const octoEl     = document.querySelector('[data-octo]') as HTMLElement | null;
 const octoWrapEl = document.querySelector('[data-octo-wrap]') as HTMLElement | null;
 const octoSlotEl = document.querySelector('[data-octo-slot]') as HTMLElement | null;
-const tlts       = [...document.querySelectorAll('[data-tlt]')] as HTMLElement[];
 
 // ── Eye / mouth elements ──
 const eyeLR   = document.querySelector('[data-eye="l-round"]') as HTMLElement | null;
@@ -185,54 +184,14 @@ function revealOcto(onDone?: () => void) {
   }, 420);
 }
 
-function resetLetters() {
-  tlts.forEach((l) => {
-    l.style.transition = 'none';
-    l.style.opacity    = '0';
-    l.style.transform  = 'translateY(10px)';
-  });
-}
-
-function revealLetters(onDone?: () => void) {
-  tlts.forEach((l, i) => setTimeout(() => {
-    l.style.transition = 'opacity .15s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1)';
-    l.style.opacity    = '1';
-    l.style.transform  = 'translateY(0)';
-    if (i === tlts.length - 1 && onDone) setTimeout(onDone, 120);
-  }, i * 80));
-}
-
-function watchLetters(dur: number) {
-  const s = performance.now();
-  (function f(now: number) {
-    const t  = Math.min((now - s) / dur, 1);
-    const li = Math.min(Math.floor(t * tlts.length), tlts.length - 1);
-    const el = tlts[li];
-    if (el && octoEl) {
-      const lr = el.getBoundingClientRect();
-      const or = octoEl.getBoundingClientRect();
-      if (lr.width > 0 && or.width > 0) {
-        eyeTX = Math.max(-1.8, Math.min(1.8, (lr.left + lr.width  / 2 - (or.left + or.width  / 2)) / 40));
-        eyeTY = Math.max(-1.5, Math.min(1.5, (lr.top  + lr.height / 2 - (or.top  + or.height / 2)) / 40));
-      }
-    }
-    if (t < 1) requestAnimationFrame(f);
-  })(performance.now());
-}
-
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export function runEntry(): void {
   if (entryBusy) return;
   entryBusy = true;
-  resetLetters();
   resetOcto();
   revealOcto(() => {
-    setTimeout(() => {
-      const dur = tlts.length * 80 + 120;
-      watchLetters(dur);
-      revealLetters(() => setTimeout(() => springBounce(() => { entryBusy = false; }), 80));
-    }, 80);
+    setTimeout(() => springBounce(() => { entryBusy = false; }), 160);
   });
 }
 

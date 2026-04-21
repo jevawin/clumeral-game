@@ -162,12 +162,14 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
   track("tooltip_opened");
 
   const popover = document.createElement("div");
-  popover.className = "absolute bottom-full left-0 mb-2 min-w-[18rem] p-3 bg-surface border border-border rounded-md shadow-md z-50";
+  popover.className = "absolute left-0 bottom-full mb-2 min-w-[18rem] p-3 bg-surface rounded-md z-50";
   popover.setAttribute("role", "tooltip");
   popover.setAttribute("data-tag-tip", "");
   popover.innerHTML = `
-    <p class="text-base text-text leading-snug font-[DM_Sans]">${tip}</p>
-    <button class="mt-2 text-muted hover:text-text text-sm font-[DM_Sans]" type="button" aria-label="Close">Close</button>
+    <button class="absolute top-1.5 right-1.5 p-0.5 rounded border border-border text-muted hover:text-text" type="button" aria-label="Close">
+      <svg width="14" height="14" class="stroke-[2]"><use href="/sprites.svg#icon-circle-x"/></svg>
+    </button>
+    <p class="text-base text-text leading-snug pr-6 font-[Quicksand]">${tip}</p>
   `;
 
   // Anchor to the parent flex column (tag + position indicators wrapper)
@@ -175,6 +177,15 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
   if (wrapper) {
     wrapper.classList.add("relative");
     wrapper.appendChild(popover);
+  }
+
+  // Flip tooltip below if it would be hidden behind the sticky header
+  const headerH = document.querySelector("header")?.getBoundingClientRect().bottom ?? 0;
+  const rect = popover.getBoundingClientRect();
+  if (rect.top < headerH) {
+    popover.classList.remove("bottom-full", "mb-2");
+    // Position 0.5rem below the tag button, not the wrapper
+    popover.style.top = `${anchor.offsetTop + anchor.offsetHeight + 8}px`;
   }
 
   const closeBtn = popover.querySelector("button")!;
@@ -238,16 +249,16 @@ function renderClues(clues: ClueData[]): void {
     clueEl.className = "contents";
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
-      <div class="flex flex-col items-start gap-1">
-        <button class="inline-flex items-center gap-1 px-1 h-[1.375rem] rounded border-[1.5px] border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
+      <div class="flex flex-col gap-2">
+        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border-[1.5px] border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
           <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
         <div class="flex justify-between gap-1" data-clue-digits aria-hidden="true">${miniDigitsHtml}</div>
       </div>
-      <div class="flex flex-col gap-2">
-        <div class="text-base text-text font-[DM_Sans]" data-clue-line1></div>
-        <div class="text-base font-bold text-accent font-mono" data-clue-line2></div>
+      <div class="flex flex-col gap-1">
+        <div class="text-base font-medium text-text font-[Quicksand]" data-clue-line1></div>
+        <div class="text-2xl font-bold text-accent font-mono" data-clue-line2></div>
       </div>
     `;
 
@@ -278,22 +289,22 @@ function renderFeedback(type: string | null, answer?: number): void {
   if (type === "correct") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CHECK} Correct! That's puzzle #${gameState.puzzleNum ?? ''}.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[DM_Sans]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
     }
   } else if (type === "incorrect") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Not quite — try again.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[DM_Sans]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[Quicksand]";
     }
   } else if (type === "error") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Something went wrong — please try again.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[DM_Sans]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[Quicksand]";
     }
   } else {
     if (dom.feedback) {
       dom.feedback.textContent = "";
-      dom.feedback.className = "text-base font-bold leading-snug mt-4 hidden font-[DM_Sans]";
+      dom.feedback.className = "text-base font-bold leading-snug mt-4 hidden font-[Quicksand]";
     }
   }
 }
@@ -326,10 +337,10 @@ function renderStats() {
   dom.stats.innerHTML = `
     <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your stats</p>
     <div class="grid grid-cols-2 gap-4">
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[DM_Sans]">Played</span></div>
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[DM_Sans]">Avg tries</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[Quicksand]">Played</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[Quicksand]">Avg tries</span></div>
     </div>
-    <p class="text-sm text-muted mt-3 font-[DM_Sans]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <p class="text-sm text-muted mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
     <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
   `;
   dom.stats.classList.remove("hidden");
@@ -340,7 +351,7 @@ function renderStatsUpTo(upToDate: string) {
   const history = loadHistory().filter(h => h.date <= upToDate);
   const fDate = formatDate(upToDate);
   if (history.length === 0) {
-    dom.stats.innerHTML = `<p class="mt-3 font-[DM_Sans]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>`;
+    dom.stats.innerHTML = `<p class="mt-3 font-[Quicksand]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>`;
     dom.stats.classList.remove("hidden");
     return;
   }
@@ -349,12 +360,12 @@ function renderStatsUpTo(upToDate: string) {
   dom.stats.innerHTML = `
     <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your stats (to ${fDate})</p>
     <div class="grid grid-cols-2 gap-4">
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[DM_Sans]">Played</span></div>
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[DM_Sans]">Avg tries</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[Quicksand]">Played</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[Quicksand]">Avg tries</span></div>
     </div>
-    <p class="text-sm text-muted mt-3 font-[DM_Sans]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <p class="text-sm text-muted mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
     <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
-    <p class="mt-3 font-[DM_Sans]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>
+    <p class="mt-3 font-[Quicksand]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>
   `;
   dom.stats.classList.remove("hidden");
 }
@@ -369,14 +380,14 @@ function renderBox(i: number): void {
   if (s.size === 1) {
     el.innerHTML = `<span class="font-mono text-3xl font-bold text-text">${[...s][0]}</span>`;
   } else {
-    // 4-column grid for all boxes — 0 always eliminated for hundreds (100–999)
+    // 3/4/3 layout — matches HTP digit-box (via .digit-box__grid.four-col CSS in tailwind.css)
     const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
       .map((d) => {
         const isElim = (i === 0 && d === 0) || !s.has(d);
-        return `<span class="font-mono text-base ${isElim ? 'opacity-[0.12]' : 'text-text'}">${d}</span>`;
+        return `<span class="${isElim ? 'elim' : ''}">${d}</span>`;
       })
       .join("");
-    el.innerHTML = `<div class="grid grid-cols-4 gap-0.5 text-center p-1">${spans}</div>`;
+    el.innerHTML = `<div class="digit-box__grid four-col">${spans}</div>`;
   }
 
   // Active state: accent border + accent shadow
@@ -490,7 +501,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
       ? `You solved this puzzle in ${t}!`
       : `You already solved today's puzzle in ${t}!`;
     dom.feedback.innerHTML = `${ICON_CHECK} ${message}`;
-    dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[DM_Sans]";
+    dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
   }
   // Show the answer digits in the boxes
   if (gameState.answer != null) {
@@ -568,7 +579,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
   // Show archived puzzle label above the puzzle number
   if (dom.plabel) {
     const label = document.createElement("div");
-    label.className = "flex items-center gap-1 text-sm text-muted font-[DM_Sans]";
+    label.className = "flex items-center gap-1 text-sm text-muted font-[Quicksand]";
     label.innerHTML = `<svg width="14" height="14" class="text-muted" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
     dom.plabel.parentElement?.insertBefore(label, dom.plabel);
     dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
@@ -723,7 +734,7 @@ async function loadPuzzle() {
     // Show error in clue list area and clear skeleton
     if (dom.clueList) {
       dom.clueList.removeAttribute("aria-busy");
-      dom.clueList.innerHTML = '<p class="col-span-2 text-base text-text font-[DM_Sans]">Couldn\'t load the puzzle. Please refresh the page.</p>';
+      dom.clueList.innerHTML = '<p class="col-span-2 text-base text-text font-[Quicksand]">Couldn\'t load the puzzle. Please refresh the page.</p>';
     }
   }
 }

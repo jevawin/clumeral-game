@@ -54,7 +54,7 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
   :root.light { color-scheme: light; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: "DM Sans", system-ui, sans-serif;
+    font-family: "Quicksand", system-ui, sans-serif;
     background: light-dark(#f5edd8, #262624);
     color: light-dark(#262624, #f6f0e8);
     padding: 1.5rem 1rem;
@@ -116,7 +116,7 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
   .num-col { font-family: "Inconsolata", monospace; font-weight: 600; text-align: right; }
   th.num-header { text-align: right; }
   .play-link {
-    font-family: "DM Sans", system-ui, sans-serif;
+    font-family: "Quicksand", system-ui, sans-serif;
     font-weight: 600;
     font-size: 1rem;
   }

@@ -161,7 +161,7 @@ export function renderDashboard(
   :root.light { color-scheme: light; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: "DM Sans", system-ui, sans-serif;
+    font-family: "Quicksand", system-ui, sans-serif;
     background: light-dark(#f5edd8, #262624);
     color: light-dark(#262624, #f6f0e8);
     padding: 1.5rem;

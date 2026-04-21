@@ -56,28 +56,31 @@ function htpSteps(): string {
 
       <!-- Step 1: Read the clues -->
       <div>
-        <p class="text-sm font-semibold text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-muted" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
-        <div class="clue htp-clue">
-          <div class="clue__tag-cell">
-            <span class="clue__tag"><span>PRIME</span><svg class="clue__tag-icon" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg></span>
-            <div class="clue__digits" aria-hidden="true">
-              <span class="clue__digit lit"></span>
-              <span class="clue__digit"></span>
-              <span class="clue__digit"></span>
+        <p class="text-base font-medium text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-accent" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
+        <div class="grid [grid-template-columns:max-content_1fr] gap-x-4 items-center">
+          <div class="flex flex-col items-stretch justify-center gap-2 self-stretch py-[0.1875rem]">
+            <span class="font-mono text-base font-bold tracking-wider uppercase h-[1.375rem] leading-[1.375rem] rounded-sm border-[1.5px] px-1 flex items-center justify-between gap-1 bg-accent/5 text-accent border-accent cursor-pointer">
+              <span>PRIME</span>
+              <svg class="shrink-0 stroke-[2.5]" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
+            </span>
+            <div class="flex justify-between gap-[2.5px]" aria-hidden="true">
+              <span class="w-[1.375rem] h-[1.375rem] shrink-0 rounded-[1px] border border-accent bg-accent/50"></span>
+              <span class="w-[1.375rem] h-[1.375rem] shrink-0 rounded-[1px] border border-accent bg-accent/5"></span>
+              <span class="w-[1.375rem] h-[1.375rem] shrink-0 rounded-[1px] border border-accent bg-accent/5"></span>
             </div>
           </div>
-          <div class="clue__lines">
-            <div class="clue__line1">The first digit</div>
-            <div class="clue__line2">is a prime number</div>
+          <div class="flex flex-col gap-1 justify-center">
+            <div class="text-base font-medium leading-snug text-text">The first digit</div>
+            <div class="font-mono text-2xl font-bold leading-tight text-accent">is a prime number</div>
           </div>
         </div>
       </div>
 
       <!-- Step 2: Open the digit boxes -->
       <div>
-        <p class="text-sm font-semibold text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
-        <div class="htp-worked">
-          <div class="digit-box htp-box">
+        <p class="text-base font-medium text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
+        <div class="flex items-start gap-2.5">
+          <div class="digit-box flex-1 aspect-square min-w-0">
             <div class="digit-box__grid four-col">
               <span class="elim">0</span>
               <span>1</span>
@@ -91,29 +94,29 @@ function htpSteps(): string {
               <span>9</span>
             </div>
           </div>
-          <span class="htp-arrow" aria-hidden="true">→</span>
-          <div class="htp-keypad-wrap">
-            <div class="htp-keypad">
-              <span class="htp-key elim">0</span>
-              <span class="htp-key elim">1</span>
-              <span class="htp-key">2</span>
-              <span class="htp-key">3</span>
-              <span class="htp-key elim">4</span>
-              <span class="htp-key">5</span>
-              <span class="htp-key elim">6</span>
-              <span class="htp-key">7</span>
-              <span class="htp-key elim">8</span>
-              <span class="htp-key elim">9</span>
+          <span class="text-xl text-muted shrink-0 self-center" aria-hidden="true">→</span>
+          <div class="flex flex-col items-center justify-between flex-1 min-w-0 self-stretch">
+            <div class="grid grid-cols-5 gap-0.5 w-full">
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">0</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">1</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">2</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">3</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">4</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">5</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">6</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">7</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">8</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">9</span>
             </div>
-            <span class="htp-keypad-hint">Tap to remove</span>
+            <span class="text-sm text-muted text-center leading-tight">Tap to remove</span>
           </div>
-          <span class="htp-arrow" aria-hidden="true">→</span>
-          <div class="digit-box htp-box"><span class="digit-box__resolved">5</span></div>
+          <span class="text-xl text-muted shrink-0 self-center" aria-hidden="true">→</span>
+          <div class="digit-box flex-1 aspect-square min-w-0"><span class="digit-box__resolved">5</span></div>
         </div>
       </div>
 
       <!-- Step 3: Submit -->
-      <p class="text-sm font-semibold text-text">3. When 1 digit remains in each, submit your answer</p>
+      <p class="text-base font-medium text-text">3. When 1 digit remains in each, submit your answer</p>
 
     </div>`;
 }
@@ -126,16 +129,18 @@ function renderWelcome(isNew: boolean): void {
   const screen = document.querySelector('[data-screen="welcome"]') as HTMLElement | null;
   if (!screen) return;
 
-  const num = puzzleNumber(todayLocal());
-  const puzzleNumHtml = num > 0 ? `<p class="text-base text-muted text-center">Puzzle #${num}</p>` : "";
+  const today = todayLocal();
+  const num = puzzleNumber(today);
+  const formattedDate = new Date(today + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const puzzleNumHtml = num > 0 ? `<p class="text-base text-muted text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
 
   const header = `
-    <h1 class="text-3xl font-bold text-text tracking-tight">Clumeral</h1>
+    <div class="flex flex-col items-center gap-1">
+      <h1 class="text-4xl font-bold font-[Comfortaa] text-text tracking-tight">Clumeral</h1>
+      <p class="text-base text-text text-center">A daily number puzzle</p>
+    </div>
     ${OCTO_SVG}
-    <div class="text-center space-y-1">
-      <p class="text-base text-muted">A daily number puzzle</p>
-      ${puzzleNumHtml}
-    </div>`;
+    ${puzzleNumHtml}`;
 
   // First visit: HTP above Play button; return visit: HTP below
   const body = isNew
@@ -145,7 +150,7 @@ function renderWelcome(isNew: boolean): void {
     ${htpSteps()}`;
 
   screen.innerHTML = `
-    <div class="w-full max-w-sm mx-auto flex flex-col items-center gap-6 px-6 py-8">
+    <div class="w-full max-w-[390px] mx-auto flex flex-col items-center gap-6 px-6 py-8">
       ${header}
       ${body}
     </div>`;

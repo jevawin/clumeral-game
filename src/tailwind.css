@@ -1,3 +1,28 @@
+/*
+ * tailwind.css — Clumeral stylesheet
+ *
+ * Most styling lives in Tailwind utilities applied inline on elements. This
+ * file holds everything that can't cleanly live as a utility:
+ *
+ *   1. Tailwind setup (preflight + theme + utilities imports, dark variant)
+ *   2. @theme tokens — semantic colours + font family defaults
+ *   3. Component classes — dense markup where utilities would balloon HTML:
+ *        - .digit-box / .digit-box__grid — shared 3/4/3 grid digit box
+ *          (used by both HTP demo and live game, container-query font sizing)
+ *        - .burger-btn / .burger-bar — animated hamburger-to-X
+ *        - [data-octo-wrap] / @keyframes octo-* — octopus mascot animations
+ *        - [data-fb-modal] — feedback modal fade + scale
+ *   4. Pseudo-element / selector combinator tricks:
+ *        - .recurring::after — overdot for recurring decimals (3.3̇)
+ *        - [data-submit-wrap]:not(.hidden) + [data-save] — conditional show
+ *        - #cw-ck sibling rules — custom SVG checkbox toggle
+ *   5. Small utility-like helpers that need dark variants:
+ *        - .skip-link — positioned off-screen until focus (sr-only doesn't
+ *          re-show on focus, so a custom rule is needed)
+ *        - .toast-msg — toast animation classes
+ *        - .warn — accent colour on char counter when limit approaching
+ */
+
 @import "tailwindcss/preflight" layer(base);
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
@@ -14,7 +39,13 @@
   --color-accent:  #0A850A;
   --color-surface: #FFFFFF;
   --color-border:  rgba(38, 38, 36, 0.12);
+
+  --font-sans: "Quicksand", system-ui, sans-serif;
+  --font-mono: "Inconsolata", ui-monospace, monospace;
 }
+
+/* Default body font — Quicksand for all text unless overridden */
+html, body { font-family: var(--font-sans); }
 
 /* Dark mode overrides — in theme layer so they beat @theme's :root tokens via specificity */
 @layer theme {
@@ -136,15 +167,6 @@
     border-color: rgba(76, 195, 140, 0.35);
   }
 
-  /* ─── Title letter groups (animated by octo.ts revealLetters) ─── */
-  [data-tlt] {
-    display: inline-block;
-    color: var(--color-text);
-    opacity: 0;
-    transform: translateY(0.625rem);
-    transition: color 0.4s;
-  }
-
   /* ─── Octo slot layout spacer ─── */
   [data-octo-slot] {
     flex-shrink: 0;
@@ -169,6 +191,31 @@
     inset-block-start: 1rem;
   }
 
+  /* ─── Burger menu button — two bars that rotate to X when open ─── */
+  .burger-btn .burger-bar {
+    position: absolute;
+    left: 50%;
+    width: 20px;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 2px;
+    transform: translateX(-50%);
+    transition: top 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .burger-btn .burger-bar:nth-child(1) { top: calc(50% - 4px); }
+  .burger-btn .burger-bar:nth-child(2) { top: calc(50% + 4px); }
+  .burger-btn[aria-expanded="true"] .burger-bar:nth-child(1) {
+    top: 50%;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .burger-btn[aria-expanded="true"] .burger-bar:nth-child(2) {
+    top: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .burger-btn .burger-bar { transition: none; }
+  }
+
   /* ─── Save score row — hidden by default, shown when submit sibling is visible ─── */
   [data-save] {
     display: none;
@@ -185,138 +232,11 @@
   #cw-ck:checked ~ label .ck-off { display: none; }
 
   /* ─── HTP clue styles for welcome screen ─── */
-  .htp-clue {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 0 0.8rem;
-    padding: 0;
-  }
-  .clue__tag-cell {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
-    gap: 0.5rem;
-    align-self: stretch;
-    padding: 0.1875rem 0;
-  }
-  .clue__tag {
-    font-family: "Inconsolata", monospace;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    height: 1.375rem;
-    line-height: 1.375rem;
-    border-radius: 0.125rem;
-    border: 1.5px solid;
-    padding: 0 0.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.25rem;
-    background-color: color-mix(in srgb, var(--color-accent) 5%, transparent);
-    color: var(--color-accent);
-    border-color: var(--color-accent);
-    cursor: pointer;
-  }
-  .clue__tag-icon {
-    flex-shrink: 0;
-    stroke-width: 2.5;
-  }
-  .clue__digits {
-    display: flex;
-    justify-content: space-between;
-    gap: 2.5px;
-  }
-  .clue__digit {
-    width: 1.375rem;
-    height: 1.375rem;
-    flex-shrink: 0;
-    border-radius: 0.0625rem;
-    border: 1px solid var(--color-accent);
-    background-color: color-mix(in srgb, var(--color-accent) 5%, transparent);
-  }
-  .clue__digit.lit {
-    background-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
-  }
-  .clue__lines {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    justify-content: center;
-  }
-  .clue__line1 {
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.35;
-    color: var(--color-text);
-  }
-  .clue__line2 {
-    font-size: 1.1875rem;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--color-accent);
-  }
-
-  /* HTP worked example */
-  .htp-worked {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.625rem;
-  }
-  .htp-box {
-    flex: 1;
-    aspect-ratio: 1;
-    min-inline-size: 0;
-  }
-  .htp-arrow {
-    font-size: 1.25rem;
-    color: var(--color-muted);
-    flex-shrink: 0;
-    align-self: center;
-  }
-  .htp-keypad-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    flex: 1;
-    min-inline-size: 0;
-    align-self: stretch;
-  }
-  .htp-keypad {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.125rem;
-    inline-size: 100%;
-  }
-  .htp-keypad-hint {
-    font-size: 1rem;
-    color: var(--color-muted);
-    text-align: center;
-  }
-  .htp-key {
-    font-family: "Inconsolata", monospace;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-align: center;
-    line-height: 1.5;
-    border-radius: 0.125rem;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
-  }
-  .htp-key.elim {
-    opacity: 0.2;
-    text-decoration: line-through;
-  }
-
   /* HTP digit box (reused from game digit-box styling) */
   .digit-box {
     flex: 1;
     block-size: 100%;
+    container-type: inline-size;
     border-radius: 0.25rem;
     display: flex;
     flex-direction: column;
@@ -353,7 +273,7 @@
   .digit-box__grid.four-col span:nth-child(n+8) { grid-column: span 4; }
   .digit-box__grid span {
     font-family: "Inconsolata", monospace;
-    font-size: 1rem;
+    font-size: clamp(0.75rem, 16cqw, 1rem);
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -371,13 +291,9 @@
 
   /* Category pill selected state — JS toggles aria-checked; CSS styles it */
   .fb-cat[aria-checked="true"] {
-    background-color: #0A850A;
-    border-color: #0A850A;
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
     color: #fff;
-  }
-  html.dark .fb-cat[aria-checked="true"] {
-    background-color: #1EAD52;
-    border-color: #1EAD52;
   }
 
   /* Toast element — replaces legacy toast__msg; show class toggled by modals.ts */
@@ -386,7 +302,7 @@
     border-radius: 6px;
     background: var(--color-text);
     color: var(--color-bg);
-    font-family: "DM Sans", system-ui, sans-serif;
+    font-family: "Quicksand", system-ui, sans-serif;
     font-size: 1rem;
     font-weight: 600;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);

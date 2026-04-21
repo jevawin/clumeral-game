@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Feedback Modal** - Restyled modal accessible from game menu and completion screen
 - [x] **Phase 5: Celebration + Completion** - Octopus animation then stats/feedback completion screen (completed 2026-04-12)
 - [ ] **Phase 6: Polish** - Old CSS removal and final regression check
+- [ ] **Phase 7: Simplify** - Remove dead code, consolidate duplicated markup, prune unused CSS, prep for design iteration
 
 ## Phase Details
 
@@ -134,3 +135,13 @@ Items deferred from Phase 6 visual review. Not blocking v1.0 launch.
 - [ ] **Letter reveal animation** — Title SVG letter reveal doesn't fire on refresh. User plans to replace logo/lettering, so may become moot. Check for dead `data-tlt` animation code after logo change.
 - [ ] **Recurring overdot** — Unable to verify `.recurring::after` styling (no recurring values in current puzzle set). Verify next time a recurring decimal appears.
 - [ ] **Animation replay from stats** — Clarify whether clicking stats/completion screen should replay octo celebration. Currently doesn't.
+
+### Phase 7: Simplify
+
+**Goal:** Remove dead code, consolidate duplicated markup, prune unused CSS rules, document remaining component classes. Prep for design iteration so follow-up tweaks are easier and safer.
+**Requirements**: TBD
+**Depends on:** Phase 6
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 7 to break down)
