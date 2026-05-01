@@ -36,7 +36,6 @@ export function initFeedbackModal(
   const counterEl = document.querySelector('[data-fb-counter]');
   const metaEl = document.querySelector('[data-fb-meta]');
   const sendBtn = document.querySelector('[data-fb-send]') as HTMLButtonElement | null;
-  const headerBtn = document.querySelector('[data-fb-header-btn]');
   const footerBtn = document.querySelector('[data-fb-btn]');
 
   let selectedCat = "general";
@@ -135,7 +134,6 @@ export function initFeedbackModal(
   if (msgEl) msgEl.addEventListener("input", updateCounter);
 
   // Open triggers
-  if (headerBtn) headerBtn.addEventListener("click", openFeedback);
   if (footerBtn) footerBtn.addEventListener("click", openFeedback);
 
   // Close triggers
