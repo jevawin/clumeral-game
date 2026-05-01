@@ -27,12 +27,12 @@
 
 ### Game Screen
 
-- [ ] **GAM-01**: Game screen shows clues listed directly on background (no card wrapper)
+- [x] **GAM-01**: Game screen shows clues listed directly on background (no card wrapper)
 - [x] **GAM-02**: Game screen shows digit boxes with number pad input
 - [x] **GAM-03**: Game screen shows submit button
 - [x] **GAM-04**: Digit elimination works exactly as current implementation
 - [x] **GAM-05**: Guess submission and server-side validation works without regression
-- [ ] **GAM-06**: Random puzzle and replay modes work through the new screen flow
+- [x] **GAM-06**: Random puzzle and replay modes work through the new screen flow
 
 ### Game Menu
 
@@ -56,7 +56,7 @@
 
 ### Feedback Modal
 
-- [ ] **FBK-01**: Feedback modal accessible from both completion screen and game menu (audit found dead `[data-fb-header-btn]` query — close in Phase 8)
+- [x] **FBK-01**: Feedback modal accessible from both completion screen and game menu (audit found dead `[data-fb-header-btn]` query — close in Phase 8)
 - [ ] **FBK-02**: Feedback modal has category pills (General, Bug, Idea, Praise)
 - [ ] **FBK-03**: Feedback modal has textarea with character counter (warns at 400/500)
 - [ ] **FBK-04**: Feedback modal shows metadata line (puzzle number, date, device, browser)
@@ -130,18 +130,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HTP-02 | Phase 2 | Pending |
 | HTP-03 | Phase 2 | Pending |
 | HTP-04 | Phase 2 | Pending |
-| GAM-01 | Phase 3 → Phase 8 | Pending |
+| GAM-01 | Phase 3 → Phase 8 | Complete |
 | GAM-02 | Phase 3 | Complete |
 | GAM-03 | Phase 3 | Complete |
 | GAM-04 | Phase 3 | Complete |
 | GAM-05 | Phase 3 | Complete |
-| GAM-06 | Phase 3 → Phase 8 | Pending |
+| GAM-06 | Phase 3 → Phase 8 | Complete |
 | MNU-01 | Phase 3 | Complete |
 | MNU-02 | Phase 3 | Complete |
 | MNU-03 | Phase 3 | Complete |
 | MNU-04 | Phase 3 | Complete |
 | MNU-05 | Phase 3 | Complete |
-| FBK-01 | Phase 4 → Phase 8 | Pending |
+| FBK-01 | Phase 4 → Phase 8 | Complete |
 | FBK-02 | Phase 4 | Pending |
 | FBK-03 | Phase 4 | Pending |
 | FBK-04 | Phase 4 | Pending |
