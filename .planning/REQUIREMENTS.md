@@ -27,12 +27,12 @@
 
 ### Game Screen
 
-- [x] **GAM-01**: Game screen shows clues listed directly on background (no card wrapper)
+- [ ] **GAM-01**: Game screen shows clues listed directly on background (no card wrapper)
 - [x] **GAM-02**: Game screen shows digit boxes with number pad input
 - [x] **GAM-03**: Game screen shows submit button
 - [x] **GAM-04**: Digit elimination works exactly as current implementation
 - [x] **GAM-05**: Guess submission and server-side validation works without regression
-- [x] **GAM-06**: Random puzzle and replay modes work through the new screen flow
+- [ ] **GAM-06**: Random puzzle and replay modes work through the new screen flow
 
 ### Game Menu
 
@@ -56,7 +56,7 @@
 
 ### Feedback Modal
 
-- [ ] **FBK-01**: Feedback modal accessible from both completion screen and game menu
+- [ ] **FBK-01**: Feedback modal accessible from both completion screen and game menu (audit found dead `[data-fb-header-btn]` query — close in Phase 8)
 - [ ] **FBK-02**: Feedback modal has category pills (General, Bug, Idea, Praise)
 - [ ] **FBK-03**: Feedback modal has textarea with character counter (warns at 400/500)
 - [ ] **FBK-04**: Feedback modal shows metadata line (puzzle number, date, device, browser)
@@ -75,6 +75,10 @@
 
 - [ ] **FTR-01**: Simplified footer on all screens: "Made with heart by Jamie & Dave. (c) 2026."
 - [ ] **FTR-02**: No GitHub link, no "AI experiment" copy
+
+### Simplify
+
+- [ ] **SIMP-01**: Dead code, duplicated markup, and unused CSS rules removed from the codebase to prep for design iteration (covers letter-reveal removal, sprite pruning, component class documentation per 07-01-PLAN.md). Defined retroactively in Phase 9 to close orphan from v1.0 audit.
 
 ## v2 Requirements
 
@@ -126,18 +130,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HTP-02 | Phase 2 | Pending |
 | HTP-03 | Phase 2 | Pending |
 | HTP-04 | Phase 2 | Pending |
-| GAM-01 | Phase 3 | Complete |
+| GAM-01 | Phase 3 → Phase 8 | Pending |
 | GAM-02 | Phase 3 | Complete |
 | GAM-03 | Phase 3 | Complete |
 | GAM-04 | Phase 3 | Complete |
 | GAM-05 | Phase 3 | Complete |
-| GAM-06 | Phase 3 | Complete |
+| GAM-06 | Phase 3 → Phase 8 | Pending |
 | MNU-01 | Phase 3 | Complete |
 | MNU-02 | Phase 3 | Complete |
 | MNU-03 | Phase 3 | Complete |
 | MNU-04 | Phase 3 | Complete |
 | MNU-05 | Phase 3 | Complete |
-| FBK-01 | Phase 4 | Pending |
+| FBK-01 | Phase 4 → Phase 8 | Pending |
 | FBK-02 | Phase 4 | Pending |
 | FBK-03 | Phase 4 | Pending |
 | FBK-04 | Phase 4 | Pending |
@@ -149,12 +153,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMP-02 | Phase 5 | Complete |
 | CMP-03 | Phase 5 | Complete |
 | STY-06 | Phase 6 | Complete |
+| SIMP-01 | Phase 9 | Pending |
 
 **Coverage:**
-- v1 requirements: 41 total
-- Mapped to phases: 41
+- v1 requirements: 42 total (SIMP-01 added retroactively in v1.0 audit)
+- Mapped to phases: 42
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-11*
-*Last updated: 2026-04-11 after roadmap creation*
+*Last updated: 2026-05-01 after v1.0 milestone audit — Phase 8 (audit fixes) and Phase 9 (Phase 7 retrofit) added*

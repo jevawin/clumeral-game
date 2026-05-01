@@ -12,13 +12,15 @@ This roadmap rebuilds Clumeral's UI from scratch in Tailwind CSS across six phas
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Tailwind setup, semantic colour tokens, screen state machine, footer
-- [ ] **Phase 2: Welcome + How-to-Play** - Complete welcome screen with first/return visit how-to-play logic
-- [ ] **Phase 3: Game Screen + Menu** - Full game screen layout, gameplay wiring, compact menu
-- [ ] **Phase 4: Feedback Modal** - Restyled modal accessible from game menu and completion screen
+- [x] **Phase 1: Foundation** - Tailwind setup, semantic colour tokens, screen state machine, footer
+- [x] **Phase 2: Welcome + How-to-Play** - Complete welcome screen with first/return visit how-to-play logic
+- [x] **Phase 3: Game Screen + Menu** - Full game screen layout, gameplay wiring, compact menu
+- [x] **Phase 4: Feedback Modal** - Restyled modal accessible from game menu and completion screen
 - [x] **Phase 5: Celebration + Completion** - Octopus animation then stats/feedback completion screen (completed 2026-04-12)
-- [ ] **Phase 6: Polish** - Old CSS removal and final regression check
-- [ ] **Phase 7: Simplify** - Remove dead code, consolidate duplicated markup, prune unused CSS, prep for design iteration
+- [x] **Phase 6: Polish** - Old CSS removal and final regression check (completed 2026-04-15)
+- [x] **Phase 7: Simplify** - Remove dead code, consolidate duplicated markup, prune unused CSS, prep for design iteration (completed 2026-04-21)
+- [ ] **Phase 8: Audit Fixes** - Close GAM-01, GAM-06, FBK-01 gaps from v1.0 audit (missing `[data-plabel]`, replay routing, dead modal query)
+- [ ] **Phase 9: Phase 7 Retrofit** - Define SIMP-01 and generate retroactive Phase 7 GSD artifacts
 
 ## Phase Details
 
@@ -107,7 +109,7 @@ Plans:
   1. No old CSS files are imported or referenced anywhere in the build
   2. The built CSS output contains only Tailwind-generated styles
   3. All five screens (welcome, game, completion — plus modal and menu states) look correct in both light and dark mode on mobile and desktop
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 06-01-PLAN.md — Migrate CSS rules to tailwind.css, remove canvas/colours.ts, fix JS token refs
 - [x] 06-02-PLAN.md — Convert legacy wrapper HTML, remove style.css, visual regression check
@@ -115,7 +117,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -123,8 +125,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Welcome + How-to-Play | 1/1 | Complete | - |
 | 3. Game Screen + Menu | 2/2 | Complete | - |
 | 4. Feedback Modal | 1/1 | Complete | - |
-| 5. Celebration + Completion | 2/2 | Complete   | 2026-04-12 |
-| 6. Polish | 1/2 | In Progress|  |
+| 5. Celebration + Completion | 2/2 | Complete | 2026-04-12 |
+| 6. Polish | 2/2 | Complete | 2026-04-15 |
+| 7. Simplify | 1/1 | Complete | 2026-04-21 |
+| 8. Audit Fixes | 0/1 | Pending | - |
+| 9. Phase 7 Retrofit | 0/1 | Pending | - |
 
 
 ## Backlog (post-milestone fixes)
@@ -139,9 +144,34 @@ Items deferred from Phase 6 visual review. Not blocking v1.0 launch.
 ### Phase 7: Simplify
 
 **Goal:** Remove dead code, consolidate duplicated markup, prune unused CSS rules, document remaining component classes. Prep for design iteration so follow-up tweaks are easier and safer.
-**Requirements**: TBD
+**Requirements**: SIMP-01
 **Depends on:** Phase 6
-**Plans:** 0 plans
+**Plans:** 1/1 plan complete
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 7 to break down)
+- [x] 07-01-PLAN.md — Remove dead letter-reveal code, prune sprites, document component classes
+
+### Phase 8: Audit Fixes
+**Goal:** Close requirement and integration gaps surfaced by the v1.0 milestone audit
+**Depends on:** Phase 7
+**Requirements**: GAM-01, GAM-06, FBK-01
+**Gap Closure:** Closes audit gaps from `.planning/v1.0-MILESTONE-AUDIT.md`
+**Success Criteria** (what must be TRUE):
+  1. `[data-plabel]` element exists in the game header and renders puzzle number/date for daily, random, and replay puzzles
+  2. Visiting `/puzzles/:n` lands directly on the game screen (no welcome-screen flash)
+  3. Stale `[data-fb-header-btn]` query removed from modals.ts; no dead selectors remain
+  4. All seven E2E flows from audit pass end-to-end
+**Plans:** 0/1 plans
+**UI hint**: yes
+
+### Phase 9: Phase 7 Retrofit
+**Goal:** Bring Phase 7 into formal GSD compliance — define SIMP-01 and produce missing artifacts
+**Depends on:** Phase 7
+**Requirements**: SIMP-01
+**Gap Closure:** Closes orphan SIMP-01 from v1.0 audit; addresses Phase 7 missing SUMMARY/VERIFICATION/VALIDATION
+**Success Criteria** (what must be TRUE):
+  1. SIMP-01 is defined in REQUIREMENTS.md with clear scope wording
+  2. Phase 7 has SUMMARY.md, VERIFICATION.md, and VALIDATION.md derived from the simplify commit
+  3. Traceability table includes SIMP-01 → Phase 7 → Complete
+**Plans:** 0/1 plans
+**UI hint**: no
