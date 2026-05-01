@@ -887,8 +887,9 @@ initMenu();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
 const isRandomPath = window.location.pathname === '/random';
-initScreens(isRandomPath ? 'game' : 'welcome');
-if (!isRandomPath) initWelcome();
+const replayMatch = window.location.pathname.match(/^\/puzzles\/(\d+)$/);
+initScreens((isRandomPath || !!replayMatch) ? 'game' : 'welcome');
+if (!isRandomPath && !replayMatch) initWelcome();
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
 
