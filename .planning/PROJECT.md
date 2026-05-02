@@ -1,115 +1,96 @@
-# Clumeral Redesign
+# Clumeral
 
 ## What This Is
 
-Clumeral is a daily number puzzle at clumeral.com. Players get clues about a 3-digit number and eliminate possibilities to find the answer. This project restructures the app from a single busy page into three clean, focused screens — welcome, game, completion — inspired by Wordle's simplicity. The entire UI gets rebuilt from scratch in Tailwind CSS with a minimal colour palette.
+Clumeral is a daily number puzzle at clumeral.com. Players get clues about a 3-digit number, eliminate possibilities, and submit a guess. v1.0 (shipped 2026-05-02) restructured the app from a single busy page into three focused screens — welcome, game, completion — and rebuilt the entire UI in Tailwind CSS v4 with a 6-token palette.
 
 ## Core Value
 
-The game screen must work flawlessly — clues, digit elimination, guess submission, and answer validation must all function exactly as they do today, just in a cleaner layout.
+The game screen works flawlessly — clues, digit elimination, guess submission, and answer validation behave exactly as they always did, in a cleaner, calmer layout.
 
-## Requirements
+## Current State
 
-### Validated
+**Shipped:** v1.0 Clumeral Redesign (2026-05-02)
+- 9 phases, 12 plans, 24 tasks
+- 42/42 v1 requirements satisfied
+- ~3,566 LOC TypeScript + CSS in `src/`
+- Stack: Vite + Cloudflare Workers + Tailwind v4 (no component library)
+- Backend untouched per project constraint
 
-- ✓ Daily puzzle generation with 5-7 clues — existing
-- ✓ Server-side answer validation (answer never reaches client) — existing
-- ✓ Digit elimination via clue tapping — existing
-- ✓ Number pad input and guess submission — existing
-- ✓ Game history persisted to localStorage — existing
-- ✓ Random puzzle mode — existing
-- ✓ Puzzle archive / replay — existing
-- ✓ Light/dark mode toggle — existing
-- ✓ Feedback modal with categories, metadata, Google Form submission — existing
-- ✓ Analytics tracking via Cloudflare Analytics Engine — existing
-- ✓ Celebration animation (octopus + bubbles) on correct answer — existing
+**Verified delivery:**
+- Three-screen state machine with View Transition cross-fade
+- Welcome screen with logo, octopus, subtitle, puzzle number, inline how-to-play (above Play first-visit, below return-visit, detection via any Clumeral localStorage key)
+- Game screen: clues on bare background, digit boxes, keypad, submit, hamburger menu (theme/archive/feedback/HTP)
+- Feedback modal: pills, char counter (warns at 400, blocks at 500), metadata line, Google Apps Script submit with retry
+- Celebration: octopus + bubbles ~2.6s, skippable, prefers-reduced-motion respected, then completion screen
+- Completion: stats (games/win%/streaks), feedback prompt, countdown
+- Tailwind v4 with 6 semantic tokens (bg, text, muted, accent, surface, border), `dark:` variants only, green accent only
+- Old style.css fully removed; Phase 7 dead-code pass removed letter-reveal system, four orphan sprite icons, duplicate welcome h1, and audited tailwind.css component classes
 
-### Active
+**Known tech debt** (carried into v1.1 backlog — see `.planning/milestones/v1.0-MILESTONE-AUDIT.md`):
+- `modals.ts:188` — `console.error` violates no-console rule
+- `screens.ts:54` — orphan `getCurrentScreen` export
+- `app.ts:863, 872` — stale comments about modals.ts binding HTP/feedback openers
+- `worker/puzzles.ts` — old `--acc` token (out of scope per backend-untouched constraint)
+- `docs/DESIGN-SYSTEM.md` — says `@layer base` but `tailwind.css` uses both `@layer theme` and `@layer base`
+- Nyquist (Wave-0 validation) non-compliant across all v1.0 phases — pre-Nyquist build, expected
 
-- [ ] Welcome screen: logo, octopus, subtitle, puzzle number, how-to-play, play button
-- [ ] How-to-play placement: above play button (first visit), below (return visits)
-- [ ] Game screen: clues listed directly on background (no card wrapper), digit boxes, number pad, submit button
-- [ ] Compact menu on game screen: light/dark toggle, archive link, feedback, how-to-play
-- [ ] Completion screen: basic stats (games played, win %, current streak, max streak), feedback prompt
-- [ ] Feedback modal accessible from completion screen (game menu access done in Phase 4)
-- [ ] Celebration animation: octopus swims up from bottom with bubbles (~3s), then completion screen appears
-- [ ] Old CSS fully removed once replacement is complete
-- [ ] No visual regression on core gameplay
+## Next Milestone Goals
 
-### Validated in Phase 1: Foundation
+To be defined via `/gsd:new-milestone`. Likely candidates from `v2 Requirements` in the archived requirements doc:
+- **Share** (SHR-01, SHR-02) — share results from completion screen, accessible (not emoji grid)
+- **Enhancements** (ENH-01..03) — countdown to next puzzle, tap-to-skip celebration, subtle entrance animations for clues/digit boxes
 
-- ✓ Three distinct screens: welcome, game, completion (state-driven, single page) — screen state machine with cross-fade transitions
-- ✓ Built from scratch with Tailwind CSS — Tailwind v4 installed, building alongside existing CSS
-- ✓ Minimal palette: 6 semantic tokens with light/dark variants in @theme — bg, text, muted, accent, surface, border
-- ✓ Dark mode: near-black (#121213), light mode: off-white (#FAFAFA) — via @custom-variant hooking into existing theme.ts toggle
-- ✓ No colour theme picker — green accent only
-- ✓ No `color-mix()` or `light-dark()` — Tailwind dark: variants and opacity modifiers only
-- ✓ Simplified footer on all screens: "Made with heart by Jamie & Dave. (c) 2026."
+## Constraints (still in force)
 
-### Validated in Phase 4: Feedback Modal
+- **Tech stack**: Tailwind CSS, Vite + Cloudflare Workers
+- **Backend**: no worker/API changes (frontend-only)
+- **Compatibility**: ES2022 target, all current browsers
+- **Performance**: celebration must be skippable and under 3s
+- **Design**: under 15 semantic colour tokens
 
-- ✓ Feedback modal restyled with Tailwind utilities — dialog element with fade+scale animation (95%→100%)
-- ✓ Four category pills (General/Bug/Idea/Praise) with aria-checked state and accent fill
-- ✓ Textarea with character counter at 400/500, metadata line with puzzle info
-- ✓ Toast notification at bottom centre, auto-dismisses after 3s
-- ✓ Guide modal removed — visual how-to-play content now inline on welcome screen
-- ✓ Menu "How to play" navigates to welcome screen instead of opening modal
+## Out of Scope (still in force)
 
-### Validated in Phase 7: Simplify (retrofitted via Phase 9)
+- Share button placeholder — add when feature ships, no greyed-out preview
+- Multiple colour themes — deliberately removed to simplify palette
+- Toast notification system — how-to-play is inline, not a toast
+- Real-time multiplayer / social features
+- Worker/API changes
+- Component library — only ~3 real components, library adds weight for no value
 
-- ✓ SIMP-01 — dead code removed post-redesign: `data-tlt` Welsh attributes, `revealLetters` helper, four orphan sprite icons, 21 tailwind.css doc comment blocks; verified by live grep at retrofit time
-
-### Out of Scope
-
-- Share button — separate roadmap item, no placeholder needed
-- Multiple colour themes — removed deliberately to simplify UI and codebase
-- Toast notification system — how-to-play is now inline, not a toast
-- Real-time multiplayer or social features — not relevant to this redesign
-- Worker/API changes — backend stays untouched, this is purely a frontend rebuild
-
-## Context
-
-The app has grown features (colour swatches, footer links, settings, guide modal) that compete for attention on one page. New players auto-dismiss the how-to-play popup without reading it. The redesign follows what the best daily puzzles do: one clear thing per screen.
-
-The existing feedback modal (`src/modals.ts`) works well — category pills (General/Bug/Idea/Praise), textarea with character counter at 400/500, metadata line (puzzle number, date, device, browser), submit to Google Apps Script with 3-retry logic. It stays, just restyled in Tailwind.
-
-Several existing issues get absorbed: #153 (Tailwind migration), #87 (copyright footer), #127 (bubble effect rework), #189 (how-to-play toast — superseded by inline approach). Issues #80 (tap clues to hide) and #78 (clicking digit hides clues) need rethinking in the new layout. Issue #190 (trial input above clues) is decided by the new layout.
-
-**Technical approach:** Tailwind installed fresh, new screens built in Tailwind from scratch. Old CSS stays until fully replaced, then gets removed. No component library — the UI has ~3 real components (button, dropdown menu, stats display). The design anchor is a tight `tailwind.config.ts`.
-
-**Screen transitions:** State-driven on a single page (like Wordle), not URL routes.
-
-## Constraints
-
-- **Tech stack**: Tailwind CSS, existing Vite + Cloudflare Workers setup stays
-- **Backend**: No worker/API changes — frontend-only rebuild
-- **Compatibility**: Must work on all current browsers (ES2022 target)
-- **Performance**: Celebration animation must be skippable and under 3s
-- **Design**: Under 15 semantic colour tokens in tailwind.config.ts
-
-## Key Decisions
+## Key Decisions (v1.0 outcomes)
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Tailwind from scratch, not migrating old CSS | Clean break avoids fighting legacy patterns | Phase 1: confirmed, preflight disabled to coexist |
-| No component library | Only ~3 real components; library adds weight for no value | — Pending |
-| State-driven screens, not URL routes | Matches Wordle pattern, simpler implementation | Phase 1: implemented via showScreen() state machine |
-| Green accent only, drop colour picker | Simplifies UI and collapses palette from ~20 tokens to ~7 | Phase 1: 6 tokens, green accent (#0A850A light / #1EAD52 dark) |
-| How-to-play inline on welcome screen | Players dismissed the popup; inline content gets read | Phase 4: visual HTP with example clue and digit boxes on welcome screen |
-| Feedback modal stays (restyled) | Works well, just needs Tailwind styling | Phase 4: restyled with Tailwind, scale animation, toast system |
-| Guide modal removed, visual HTP inline | Players dismissed popup; visual steps on welcome screen get read | Phase 4: Guide dialog removed, welcome screen has example clue + digit box flow |
-| No share button placeholder | Cleaner to add it when the feature ships | — Pending |
+| Tailwind from scratch, not migrating old CSS | Clean break avoids fighting legacy patterns | ✓ Good — preflight disabled to coexist; old CSS removed cleanly in Phase 6 |
+| No component library | ~3 real components; library = weight for no value | ✓ Good — render-function pattern works at this scale |
+| State-driven screens, not URL routes | Matches Wordle, simpler | ✓ Good — `showScreen()` state machine + View Transition fallback |
+| Green accent only, drop colour picker | Simplifies UI, collapses palette ~20 → ~6 tokens | ✓ Good — 6 tokens shipped (#0A850A / #1EAD52) |
+| How-to-play inline on welcome | Players dismissed popup; inline gets read | ✓ Good — visual HTP with example clue on welcome |
+| Feedback modal stays (restyled) | Works well | ✓ Good — Tailwind restyle with fade+scale + toast |
+| Guide modal removed | Visual steps inline on welcome read better | ✓ Good — Phase 4 |
+| Skippable celebration with onComplete callback | Avoids waiting on animations | ✓ Good — compressed ~6s → ~2.6s, tap-to-skip |
+| Phase 7 ran as direct commit (no GSD plan) | Speed over ceremony for dead-code pass | ⚠️ Revisit — required Phase 9 retrofit; future simplify passes should run through `/gsd:plan-phase` |
+| Defer FBK-01 completion-screen wiring to Phase 5 | Single-responsibility per phase | ⚠️ Revisit — created a partial requirement that surfaced as audit gap; eventually closed in Phase 8 |
+
+## Context
+
+Pre-redesign Clumeral had grown features (colour swatches, footer links, settings, guide modal) that competed for attention on one page. New players auto-dismissed the how-to-play popup. v1.0 followed daily-puzzle convention: one clear thing per screen.
+
+Issues absorbed: #153 (Tailwind migration), #87 (copyright footer), #127 (bubble effect rework), #189 (HTP toast — superseded by inline). Issues #80, #78, #190 resolved by the new layout.
+
+Backend deliberately untouched: same Cloudflare Workers, same KV cache, same Analytics Engine, same crypto-signed random puzzle tokens.
 
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
 
 **After each phase transition** (via `/gsd:transition`):
-1. Requirements invalidated? -> Move to Out of Scope with reason
-2. Requirements validated? -> Move to Validated with phase reference
-3. New requirements emerged? -> Add to Active
-4. Decisions to log? -> Add to Key Decisions
-5. "What This Is" still accurate? -> Update if drifted
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
 
 **After each milestone** (via `/gsd:complete-milestone`):
 1. Full review of all sections
@@ -118,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-02 after Phase 9 completion — Phase 7 retrofit closed v1.0 audit gap with retroactive SUMMARY/VERIFICATION/VALIDATION and finalised SIMP-01 traceability*
+*Last updated: 2026-05-02 after v1.0 milestone completion*
