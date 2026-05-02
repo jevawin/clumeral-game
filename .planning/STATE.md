@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Design Refinements
-status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-05-02T20:15:31.714Z"
+status: verifying
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-05-02T20:20:21.369Z"
 last_activity: 2026-05-02
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 
 Phase: 01 (refinements-wave-1) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-02
 
 Progress: [░░░░░░░░░░] 0%
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-refinements-wave-1 P01 | 3m | 2 tasks | 5 files |
 | Phase 01-refinements-wave-1 P03 | 1 min | 1 tasks | 2 files |
 | Phase 01-refinements-wave-1 P02 | 1 min | 2 tasks | 2 files |
+| Phase 01-refinements-wave-1 P04 | 4 min | 2 tasks tasks | 3 files files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ v1.1 starting decisions:
 - [Phase 01-refinements-wave-1]: CPY-02 drops the trailing period — REQUIREMENTS.md quotes 'Solved in N try' / 'Solved in N tries' verbatim with no full stop.
 - [Phase 01-refinements-wave-1]: Leave src/app.ts showCompletedState 'You already solved...' inline copy untouched in Plan 03 — Plan 04 SLV-02 makes that path unreachable on init by auto-routing solved returners to the completion screen.
 - [Phase 01-refinements-wave-1]: Use menu-item class hook + scoped [data-menu] .menu-item svg { color: inherit } so hover accent flows to icons via existing currentColor sprite paths.
+- [Phase 01-refinements-wave-1]: Plan 04 — Solved screen uses pre-render before initScreens to avoid flash on returning-solver auto-route; todayEntry() is synchronous (localStorage).
+- [Phase 01-refinements-wave-1]: Plan 04 — Cross-screen state mutation (suppressStats) stays in app.ts; completion.ts dispatches a document CustomEvent (completion:show-puzzle) so stats ownership is not split across modules.
+- [Phase 01-refinements-wave-1]: Plan 04 — Decorative octo SVG copied with mask id renamed to completion-octo-mask; both screens live in DOM simultaneously, so duplicate ids would be invalid.
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-02T20:15:31.710Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-05-02T20:20:21.367Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None

@@ -8,7 +8,7 @@
 ### Layout
 
 - [x] **LAY-01**: Footer is part of the natural document flow (not `position: fixed`); page uses a header / content / footer flex column that pins footer to the bottom of the viewport when content is short, and pushes it down naturally when content is long. Use `min-h-screen` (or 100dvh) and `flex flex-col` with footer as the last child.
-- [ ] **LAY-02**: Logo + octopus on the solved (completion) screen sit in the same relative position as the welcome screen (same vertical offset, same sizing), so transitioning between welcome → game → solved feels like a single anchored layout.
+- [x] **LAY-02**: Logo + octopus on the solved (completion) screen sit in the same relative position as the welcome screen (same vertical offset, same sizing), so transitioning between welcome → game → solved feels like a single anchored layout.
 
 ### Color
 
@@ -31,9 +31,9 @@
 
 ### Solved screen
 
-- [ ] **SLV-01**: Below the existing "Leave feedback" link, render a "Show puzzle" link (when applicable) and an "Archive" link, in that order. Both follow the project's standard link style (defined in `LNK-01`).
-- [ ] **SLV-02**: When a returning user opens the app and today's puzzle is already solved, route them directly to the solved screen on init (skip welcome screen for that session). First visit and unsolved state behaviour unchanged.
-- [ ] **SLV-03**: When the user navigates from the solved screen back to the puzzle (via "Show puzzle"), the "YOUR STATS" section is not rendered on the puzzle view.
+- [x] **SLV-01**: Below the existing "Leave feedback" link, render a "Show puzzle" link (when applicable) and an "Archive" link, in that order. Both follow the project's standard link style (defined in `LNK-01`).
+- [x] **SLV-02**: When a returning user opens the app and today's puzzle is already solved, route them directly to the solved screen on init (skip welcome screen for that session). First visit and unsolved state behaviour unchanged.
+- [x] **SLV-03**: When the user navigates from the solved screen back to the puzzle (via "Show puzzle"), the "YOUR STATS" section is not rendered on the puzzle view.
 
 ### Link style (cross-cutting)
 
@@ -61,7 +61,7 @@ Filled in during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | LAY-01 | Phase 1 | Complete |
-| LAY-02 | Phase 1 | Pending |
+| LAY-02 | Phase 1 | Complete |
 | CLR-01 | Phase 1 | Complete |
 | HDR-01 | Phase 1 | Complete |
 | MNU-01 | Phase 1 | Complete |
@@ -69,9 +69,9 @@ Filled in during roadmap creation.
 | MNU-03 | Phase 1 | Complete |
 | CPY-01 | Phase 1 | Complete |
 | CPY-02 | Phase 1 | Complete |
-| SLV-01 | Phase 1 | Pending |
-| SLV-02 | Phase 1 | Pending |
-| SLV-03 | Phase 1 | Pending |
+| SLV-01 | Phase 1 | Complete |
+| SLV-02 | Phase 1 | Complete |
+| SLV-03 | Phase 1 | Complete |
 | LNK-01 | Phase 1 | Complete |
 | DEN-01 | Phase 2 | Pending |
 
