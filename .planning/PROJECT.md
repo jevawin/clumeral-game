@@ -35,11 +35,19 @@ The game screen works flawlessly — clues, digit elimination, guess submission,
 - `docs/DESIGN-SYSTEM.md` — says `@layer base` but `tailwind.css` uses both `@layer theme` and `@layer base`
 - Nyquist (Wave-0 validation) non-compliant across all v1.0 phases — pre-Nyquist build, expected
 
-## Next Milestone Goals
+## Current Milestone: v1.1 Design Refinements
 
-To be defined via `/gsd:new-milestone`. Likely candidates from `v2 Requirements` in the archived requirements doc:
-- **Share** (SHR-01, SHR-02) — share results from completion screen, accessible (not emoji grid)
-- **Enhancements** (ENH-01..03) — countdown to next puzzle, tap-to-skip celebration, subtle entrance animations for clues/digit boxes
+**Goal:** Tighten the v1.0 design — layout structure, color contrast, copy clarity, solved-screen flow, menu polish.
+
+**Target items:**
+- Footer becomes part of natural document flow (header / content / footer flex with min-h-screen) — no longer fixed-position
+- Drop all grey text — pure white-on-dark / black-on-light only
+- Header simplified: remove puzzle number
+- Burger menu: drop Archive item, drop hover background, hover text uses accent green
+- Submit button copy: "Check my guess" → "Submit answer"
+- Solved screen: logo + octopus match welcome screen position; on return-visit if today's puzzle is solved, route straight to solved screen; "Show puzzle" + "Archive" links below feedback (1px green underline, 2px bottom padding, no text-decoration); drop "YOUR STATS" section when returning from solved page
+- Solved screen copy: "You already solved today's puzzle in 1 try!" → "Solved in N try/ies" (keep tick)
+- **Phase 2 (deferred):** clue margin/spacing tightening — review fresh after Phase 1 ships
 
 ## Constraints (still in force)
 
@@ -99,4 +107,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-02 after v1.0 milestone completion*
+*Last updated: 2026-05-02 — v1.1 Design Refinements milestone started*
