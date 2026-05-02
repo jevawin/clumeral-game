@@ -177,7 +177,7 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
   popover.setAttribute("role", "tooltip");
   popover.setAttribute("data-tag-tip", "");
   popover.innerHTML = `
-    <button class="absolute top-1.5 right-1.5 p-0.5 rounded border border-border text-muted hover:text-text" type="button" aria-label="Close">
+    <button class="absolute top-1.5 right-1.5 p-0.5 rounded border border-border text-text hover:text-text" type="button" aria-label="Close">
       <svg width="14" height="14" class="stroke-[2]"><use href="/sprites.svg#icon-circle-x"/></svg>
     </button>
     <p class="text-base text-text leading-snug pr-6 font-[Quicksand]">${tip}</p>
@@ -331,7 +331,7 @@ function renderHistory(guesses: number[]): void {
   for (const g of guesses) {
     const li = document.createElement("li");
     li.textContent = String(g);
-    li.className = "font-mono text-base font-normal px-2 py-1 rounded-sm border border-border bg-surface text-muted";
+    li.className = "font-mono text-base font-normal px-2 py-1 rounded-sm border border-border bg-surface text-text";
     dom.historyList.appendChild(li);
   }
 }
@@ -346,12 +346,12 @@ function renderStats() {
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
   dom.stats.innerHTML = `
-    <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your stats</p>
+    <p class="font-mono text-base font-bold uppercase tracking-widest text-text mb-2">Your stats</p>
     <div class="grid grid-cols-2 gap-4">
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[Quicksand]">Played</span></div>
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[Quicksand]">Avg tries</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-text font-[Quicksand]">Played</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-text font-[Quicksand]">Avg tries</span></div>
     </div>
-    <p class="text-sm text-muted mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <p class="text-sm text-text mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
     <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
   `;
   dom.stats.classList.remove("hidden");
@@ -369,12 +369,12 @@ function renderStatsUpTo(upToDate: string) {
   const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
   const last5 = history.slice(0, 5);
   dom.stats.innerHTML = `
-    <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your stats (to ${fDate})</p>
+    <p class="font-mono text-base font-bold uppercase tracking-widest text-text mb-2">Your stats (to ${fDate})</p>
     <div class="grid grid-cols-2 gap-4">
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-muted font-[Quicksand]">Played</span></div>
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-muted font-[Quicksand]">Avg tries</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-text font-[Quicksand]">Played</span></div>
+      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-text font-[Quicksand]">Avg tries</span></div>
     </div>
-    <p class="text-sm text-muted mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
+    <p class="text-sm text-text mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
     <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
     <p class="mt-3 font-[Quicksand]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>
   `;
@@ -590,8 +590,8 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
   // Show archived puzzle label above the puzzle number
   if (dom.plabel) {
     const label = document.createElement("div");
-    label.className = "flex items-center gap-1 text-sm text-muted font-[Quicksand]";
-    label.innerHTML = `<svg width="14" height="14" class="text-muted" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
+    label.className = "flex items-center gap-1 text-sm text-text font-[Quicksand]";
+    label.innerHTML = `<svg width="14" height="14" class="text-text" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
     dom.plabel.parentElement?.insertBefore(label, dom.plabel);
     dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
   }

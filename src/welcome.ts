@@ -94,7 +94,7 @@ function htpSteps(): string {
               <span>9</span>
             </div>
           </div>
-          <span class="text-xl text-muted shrink-0 self-center" aria-hidden="true">→</span>
+          <span class="text-xl text-text shrink-0 self-center" aria-hidden="true">→</span>
           <div class="flex flex-col items-center justify-between flex-1 min-w-0 self-stretch">
             <div class="grid grid-cols-5 gap-0.5 w-full">
               <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">0</span>
@@ -108,9 +108,9 @@ function htpSteps(): string {
               <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">8</span>
               <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">9</span>
             </div>
-            <span class="text-sm text-muted text-center leading-tight">Tap to remove</span>
+            <span class="text-sm text-text text-center leading-tight">Tap to remove</span>
           </div>
-          <span class="text-xl text-muted shrink-0 self-center" aria-hidden="true">→</span>
+          <span class="text-xl text-text shrink-0 self-center" aria-hidden="true">→</span>
           <div class="digit-box flex-1 aspect-square min-w-0"><span class="digit-box__resolved">5</span></div>
         </div>
       </div>
@@ -132,7 +132,7 @@ function renderWelcome(isNew: boolean): void {
   const today = todayLocal();
   const num = puzzleNumber(today);
   const formattedDate = new Date(today + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-  const puzzleNumHtml = num > 0 ? `<p class="text-base text-muted text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
+  const puzzleNumHtml = num > 0 ? `<p class="text-base text-text text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
 
   const header = `
     <div class="flex flex-col items-center gap-1">

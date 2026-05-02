@@ -81,7 +81,7 @@ function formatCountdown(isRandom: boolean): string | null {
 function renderStatBox(value: string | number, label: string): string {
   return `<div class="bg-surface border border-border rounded-md p-4 text-center">
     <span class="block text-3xl font-bold font-mono text-text">${value}</span>
-    <span class="text-sm text-muted mt-1 block">${label}</span>
+    <span class="text-sm text-text mt-1 block">${label}</span>
   </div>`;
 }
 

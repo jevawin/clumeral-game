@@ -226,7 +226,7 @@
             </div>
 
             <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css) -->
-            <div data-save class="items-center gap-1.5 mt-3.5 text-base text-muted font-[Quicksand]">
+            <div data-save class="items-center gap-1.5 mt-3.5 text-base text-text font-[Quicksand]">
               <input type="checkbox" checked id="cw-ck" data-save-check />
               <label for="cw-ck" class="flex items-center gap-1.5 cursor-pointer">
                 <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
@@ -242,7 +242,7 @@
 
             <!-- Guess history -->
             <div data-history class="hidden mt-4">
-              <p class="font-mono text-base font-bold uppercase tracking-widest text-muted mb-2">Your guesses</p>
+              <p class="font-mono text-base font-bold uppercase tracking-widest text-text mb-2">Your guesses</p>
               <ul data-history-list class="flex flex-wrap gap-2 list-none p-0 m-0"></ul>
             </div>
 
@@ -250,7 +250,7 @@
             <div data-stats class="hidden mt-4"></div>
 
             <!-- Next puzzle -->
-            <p data-next class="hidden mt-4 text-base text-muted font-[Quicksand]">
+            <p data-next class="hidden mt-4 text-base text-text font-[Quicksand]">
               Puzzle <span data-next-number></span> is available tomorrow.
             </p>
 
@@ -266,13 +266,13 @@
       <section data-screen="completion" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
         <div class="max-w-[390px] mx-auto px-4 pt-12 pb-8 text-center">
           <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
-          <p data-completion-subheading class="text-base text-muted mt-1"></p>
+          <p data-completion-subheading class="text-base text-text mt-1"></p>
 
           <div data-completion-stats class="grid grid-cols-2 gap-4 mt-6">
             <!-- Stats rendered by completion.ts -->
           </div>
 
-          <p data-completion-countdown class="text-base text-muted mt-8"></p>
+          <p data-completion-countdown class="text-base text-text mt-8"></p>
 
           <button data-completion-feedback type="button"
             class="mt-6 w-full bg-accent text-white font-semibold text-base py-3 px-6 rounded-md min-h-[44px]">
