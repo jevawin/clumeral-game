@@ -16,10 +16,21 @@ import { renderCompletion } from './completion.ts';
 function getUid(): string {
   let uid = localStorage.getItem("dlng_uid");
   if (!uid) {
-    uid = crypto.randomUUID();
+    // crypto.randomUUID is only defined in secure contexts (HTTPS / localhost).
+    // Fall back to a manual v4 UUID for non-secure dev hosts and older browsers.
+    uid = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : fallbackUuid();
     localStorage.setItem("dlng_uid", uid);
   }
   return uid;
+}
+
+function fallbackUuid(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 const analyticsUid = getUid();
