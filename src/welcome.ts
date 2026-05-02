@@ -150,7 +150,7 @@ function renderWelcome(isNew: boolean): void {
     ${htpSteps()}`;
 
   screen.innerHTML = `
-    <div class="w-full max-w-[390px] mx-auto flex flex-col items-center gap-6 px-6 py-8">
+    <div class="w-full max-w-[390px] mx-auto min-h-full flex flex-col items-center justify-center gap-6 px-6 py-8">
       ${header}
       ${body}
     </div>`;

@@ -39,7 +39,7 @@
   </head>
   <body>
     <a href="#game-content" class="skip-link">Skip to puzzle</a>
-    <div class="min-h-screen flex flex-col bg-bg">
+    <div class="h-screen flex flex-col bg-bg overflow-hidden">
       <!-- ── Feedback modal ── -->
       <dialog data-fb-modal aria-labelledby="cw-fb-modal-title">
         <div data-fb-modal-box
@@ -135,7 +135,7 @@
 
     <!-- ── New screen architecture (Phase 1) ── -->
     <main data-screens class="relative flex-1 z-10">
-      <section data-screen="welcome" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+      <section data-screen="welcome" class="absolute inset-0 overflow-y-auto bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
         <!-- Phase 2 content -->
       </section>
       <section data-screen="game" class="absolute inset-0 flex flex-col bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
@@ -175,7 +175,7 @@
         </div>
 
         <!-- ── Scrollable content ── -->
-        <div id="game-content" data-game-content class="flex-1 overflow-y-auto px-4 pt-8 pb-24">
+        <div id="game-content" data-game-content class="flex-1 min-h-0 overflow-y-auto px-4 pt-8 pb-24">
           <div class="w-full max-w-[390px] mx-auto flex flex-col">
 
             <!-- Clue list (skeletons replaced by renderClues) -->
@@ -259,8 +259,8 @@
         </div>
 
       </section>
-      <section data-screen="completion" class="absolute inset-0 flex flex-col bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out overflow-y-auto" aria-hidden="true">
-        <div class="w-full max-w-[390px] mx-auto flex flex-col items-center gap-6 px-6 py-8 text-center">
+      <section data-screen="completion" class="absolute inset-0 overflow-y-auto bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <div class="w-full max-w-[390px] mx-auto min-h-full flex flex-col items-center justify-center gap-6 px-6 py-8 text-center">
 
           <!-- Logo + octo header (parity with welcome screen — LAY-02) -->
           <div class="flex flex-col items-center gap-1">
