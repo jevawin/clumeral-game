@@ -40,7 +40,11 @@
   4. Burger menu omits Archive, has no hover background, and changes text to accent green on hover
   5. Submit button reads "Submit answer"; solved-screen copy reads "Solved in N try/ies" with the tick icon retained
   6. Solved screen positions logo + octopus identically to the welcome screen, shows "Show puzzle" + "Archive" links below feedback in the standard green-underline link style, auto-routes returning solvers, and hides the YOUR STATS section when the user navigates back to the puzzle
-**Plans:** TBD (run `/gsd:plan-phase 1`)
+**Plans:** 4 plans
+- [ ] 01-01-PLAN.md — Footer in document flow, no muted text anywhere, standard `.link` utility (LAY-01, CLR-01, LNK-01)
+- [ ] 01-02-PLAN.md — Drop puzzle # from game header; remove Archive item; menu hover is accent text only (HDR-01, MNU-01, MNU-02, MNU-03)
+- [ ] 01-03-PLAN.md — Submit button reads "Submit answer"; solved subheading reads "Solved in N try/tries" (CPY-01, CPY-02)
+- [ ] 01-04-PLAN.md — Solved-screen logo+octo parity; Show puzzle + Archive links; auto-route returning solvers; hide YOUR STATS on back-navigation (LAY-02, SLV-01, SLV-02, SLV-03)
 **UI hint:** yes
 
 ### Phase 2: Clue density
@@ -58,8 +62,8 @@
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|---------------:|--------|-----------|
-| 1. Refinements wave 1 | v1.1 | 0/0 | Not started | — |
+| 1. Refinements wave 1 | v1.1 | 0/4 | Planned | — |
 | 2. Clue density | v1.1 | 0/0 | Not started | — |
 
 ---
-*Last updated: 2026-05-02 — v1.1 milestone roadmap created*
+*Last updated: 2026-05-02 — Phase 1 plans created (4 plans, 3 waves)*
