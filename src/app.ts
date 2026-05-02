@@ -77,6 +77,9 @@ const dom = {
 let gameState: GameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
 let submitting = false; // guard against double-submit during API call
+// SLV-03: when true, renderStats / renderStatsUpTo skip rendering.
+// Set when the user clicks "Show puzzle" on the completion screen.
+let suppressStats = false;
 
 function initPossibles(): Set<number>[] {
   return [
@@ -338,6 +341,11 @@ function renderHistory(guesses: number[]): void {
 
 function renderStats() {
   if (!dom.stats) return;
+  if (suppressStats) {
+    dom.stats.classList.add("hidden");
+    dom.stats.innerHTML = "";
+    return;
+  }
   const history = loadHistory();
   if (history.length === 0) {
     dom.stats.classList.add("hidden");
@@ -359,6 +367,11 @@ function renderStats() {
 
 function renderStatsUpTo(upToDate: string) {
   if (!dom.stats) return;
+  if (suppressStats) {
+    dom.stats.classList.add("hidden");
+    dom.stats.innerHTML = "";
+    return;
+  }
   const history = loadHistory().filter(h => h.date <= upToDate);
   const fDate = formatDate(upToDate);
   if (history.length === 0) {
@@ -899,8 +912,36 @@ initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 loadPuzzle();
 const isRandomPath = window.location.pathname === '/random';
 const replayMatch = window.location.pathname.match(/^\/puzzles\/(\d+)$/);
-initScreens((isRandomPath || !!replayMatch) ? 'game' : 'welcome');
-if (!isRandomPath && !replayMatch) initWelcome();
+
+// SLV-02: if the user is on `/` and today's puzzle is already solved
+// (history has an entry for today's date), route directly to the completion
+// screen on init. First-visit and unsolved-today behaviour is unchanged.
+let initialScreen: 'welcome' | 'game' | 'completion' = 'welcome';
+const todayHistory = (!isRandomPath && !replayMatch) ? todayEntry() : null;
+if (isRandomPath || replayMatch) {
+  initialScreen = 'game';
+} else if (todayHistory) {
+  initialScreen = 'completion';
+  const todayDate = todayLocal();
+  const num = puzzleNumber(todayDate);
+  // Pre-render completion content so the screen has data the moment it shows.
+  // isRandom = false (this is the daily path).
+  renderCompletion(num, todayHistory.tries, false);
+}
+
+initScreens(initialScreen);
+if (initialScreen === 'welcome') initWelcome();
+
+// SLV-03: "Show puzzle" link on completion screen → back to game with stats suppressed.
+document.addEventListener('completion:show-puzzle', () => {
+  suppressStats = true;
+  // Belt-and-braces: hide the stats section directly in case it was already rendered.
+  if (dom.stats) {
+    dom.stats.classList.add('hidden');
+    dom.stats.innerHTML = '';
+  }
+  showScreen('game');
+});
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
 
