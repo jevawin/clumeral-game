@@ -78,7 +78,7 @@
 
 ### Simplify
 
-- [ ] **SIMP-01**: Dead code, duplicated markup, and unused CSS rules removed from the codebase to prep for design iteration (covers letter-reveal removal, sprite pruning, component class documentation per 07-01-PLAN.md). Defined retroactively in Phase 9 to close orphan from v1.0 audit.
+- [x] **SIMP-01**: Dead code, duplicated markup, and unused CSS rules removed from the codebase to prep for design iteration (covers letter-reveal removal, sprite pruning, component class documentation per 07-01-PLAN.md). Defined retroactively in Phase 9 to close orphan from v1.0 audit.
 
 ## v2 Requirements
 
@@ -153,7 +153,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CMP-02 | Phase 5 | Complete |
 | CMP-03 | Phase 5 | Complete |
 | STY-06 | Phase 6 | Complete |
-| SIMP-01 | Phase 9 | Pending |
+| SIMP-01 | Phase 7 (retrofitted Phase 9) | Complete |
 
 **Coverage:**
 - v1 requirements: 42 total (SIMP-01 added retroactively in v1.0 audit)
@@ -163,3 +163,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 *Requirements defined: 2026-04-11*
 *Last updated: 2026-05-01 after v1.0 milestone audit — Phase 8 (audit fixes) and Phase 9 (Phase 7 retrofit) added*
+*Last updated: 2026-05-02 — Phase 9 retrofit closed SIMP-01 (Phase 7 artifacts produced retroactively)*
