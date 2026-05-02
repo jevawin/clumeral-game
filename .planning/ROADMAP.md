@@ -173,5 +173,7 @@ Plans:
   1. SIMP-01 is defined in REQUIREMENTS.md with clear scope wording
   2. Phase 7 has SUMMARY.md, VERIFICATION.md, and VALIDATION.md derived from the simplify commit
   3. Traceability table includes SIMP-01 → Phase 7 → Complete
-**Plans:** 0/1 plans
+**Plans:** 1 plan
+Plans:
+- [ ] 09-01-PLAN.md — Retrofit Phase 7: finalise SIMP-01 traceability and produce SUMMARY/VERIFICATION/VALIDATION from commit 2e13e2b
 **UI hint**: no
