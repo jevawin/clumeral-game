@@ -258,21 +258,35 @@
         </div>
 
       </section>
-      <section data-screen="completion" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
-        <div class="max-w-[390px] mx-auto px-4 pt-12 pb-8 text-center">
-          <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
-          <p data-completion-subheading class="text-base text-text mt-1"></p>
+      <section data-screen="completion" class="absolute inset-0 flex flex-col bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out overflow-y-auto" aria-hidden="true">
+        <div class="w-full max-w-[390px] mx-auto flex flex-col items-center gap-6 px-6 py-8 text-center">
 
-          <div data-completion-stats class="grid grid-cols-2 gap-4 mt-6">
-            <!-- Stats rendered by completion.ts -->
+          <!-- Logo + octo header (parity with welcome screen — LAY-02) -->
+          <div class="flex flex-col items-center gap-1">
+            <h1 class="text-4xl font-bold font-[Comfortaa] text-text tracking-tight">Clumeral</h1>
+            <p class="text-base text-text">A daily number puzzle</p>
           </div>
+          <div data-completion-octo aria-hidden="true"></div>
 
-          <p data-completion-countdown class="text-base text-text mt-8"></p>
+          <!-- Solved heading + subheading -->
+          <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
+          <p data-completion-subheading class="text-base text-text"></p>
 
+          <!-- Stats grid -->
+          <div data-completion-stats class="grid grid-cols-2 gap-4 w-full"></div>
+
+          <!-- Countdown -->
+          <p data-completion-countdown class="text-base text-text"></p>
+
+          <!-- Leave feedback button -->
           <button data-completion-feedback type="button"
-            class="mt-6 w-full bg-accent text-white font-semibold text-base py-3 px-6 rounded-md min-h-[44px]">
+            class="w-full bg-accent text-white font-semibold text-base py-3 px-6 rounded-md min-h-[44px]">
             Leave feedback
           </button>
+
+          <!-- Show puzzle + Archive links (SLV-01, LNK-01) -->
+          <div data-completion-links class="flex flex-col items-center gap-3"></div>
+
         </div>
       </section>
     </main>
