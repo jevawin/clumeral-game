@@ -216,6 +216,24 @@ html, body { font-family: var(--font-sans); }
     .burger-btn .burger-bar { transition: none; }
   }
 
+  /* ─── Burger menu items (MNU-02 / MNU-03) ─── */
+  /* No hover background; text + icon both turn accent green on hover. */
+  [data-menu] .menu-item {
+    background-color: transparent;
+    transition: color 150ms ease;
+  }
+  [data-menu] .menu-item:hover,
+  [data-menu] .menu-item:focus-visible {
+    background-color: transparent;
+    color: var(--color-accent);
+  }
+  [data-menu] .menu-item svg {
+    color: inherit;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-menu] .menu-item { transition: none; }
+  }
+
   /* ─── Save score row — hidden by default, shown when submit sibling is visible ─── */
   [data-save] {
     display: none;
