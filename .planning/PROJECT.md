@@ -55,6 +55,10 @@ The game screen must work flawlessly — clues, digit elimination, guess submiss
 - ✓ Guide modal removed — visual how-to-play content now inline on welcome screen
 - ✓ Menu "How to play" navigates to welcome screen instead of opening modal
 
+### Validated in Phase 7: Simplify (retrofitted via Phase 9)
+
+- ✓ SIMP-01 — dead code removed post-redesign: `data-tlt` Welsh attributes, `revealLetters` helper, four orphan sprite icons, 21 tailwind.css doc comment blocks; verified by live grep at retrofit time
+
 ### Out of Scope
 
 - Share button — separate roadmap item, no placeholder needed
@@ -114,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-12 after Phase 5 completion — celebration compressed to ~3s with skip + callback, completion screen with stats/countdown/feedback, reduced-motion gate*
+*Last updated: 2026-05-02 after Phase 9 completion — Phase 7 retrofit closed v1.0 audit gap with retroactive SUMMARY/VERIFICATION/VALIDATION and finalised SIMP-01 traceability*
