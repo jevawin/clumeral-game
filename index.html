@@ -76,8 +76,9 @@
       </dialog>
 
 
-      <main class="max-w-[390px] mx-auto px-4">
-        <!-- ── Header row: octo + title ── -->
+      <!-- Legacy octo host: kept in DOM so celebrateOcto/sadOcto can measure it,
+           but pulled offscreen so it doesn't push the screens stack down. -->
+      <main aria-hidden="true" class="absolute -left-[9999px] top-0 max-w-[390px] mx-auto px-4 pointer-events-none">
         <header class="flex items-center gap-3.5 mb-2.5">
           <div data-octo-slot>
           <div data-octo-wrap title="click to replay" aria-hidden="true">
@@ -159,16 +160,16 @@
         <!-- ── Menu dropdown ── -->
         <div id="game-menu" data-menu role="dialog" aria-label="Game menu"
              class="hidden absolute top-14 right-0 z-40 min-w-[200px] py-2 bg-surface border border-border rounded-lg shadow-lg">
-          <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text font-[Quicksand]" type="button">
-            <svg width="20" height="20" class="text-text" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
+          <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+            <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
             <span data-theme-label>Dark mode</span>
           </button>
-          <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text font-[Quicksand]" type="button">
-            <svg width="20" height="20" class="text-text" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
+          <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+            <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
             Feedback
           </button>
-          <button data-htp-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text font-[Quicksand]" type="button">
-            <svg width="20" height="20" class="text-text" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
+          <button data-htp-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+            <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
             How to play
           </button>
         </div>
