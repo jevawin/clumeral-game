@@ -91,7 +91,7 @@ export function renderCompletion(puzzleNum: number, tries: number, isRandom: boo
     dom.heading.textContent = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
   }
   if (dom.subheading) {
-    dom.subheading.textContent = `You got it in ${tries} ${tries === 1 ? 'try' : 'tries'}.`;
+    dom.subheading.textContent = `Solved in ${tries} ${tries === 1 ? 'try' : 'tries'}`;
   }
 
   // Stats grid — daily: full history stats; random: just this game's tries
