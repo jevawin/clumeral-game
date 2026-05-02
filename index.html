@@ -39,7 +39,7 @@
   </head>
   <body>
     <a href="#game-content" class="skip-link">Skip to puzzle</a>
-    <div class="min-h-screen bg-bg">
+    <div class="min-h-screen flex flex-col bg-bg">
       <!-- ── Feedback modal ── -->
       <dialog data-fb-modal aria-labelledby="cw-fb-modal-title">
         <div data-fb-modal-box
@@ -131,10 +131,9 @@
       </main>
 
       <div data-toast aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex flex-col items-center gap-2 pointer-events-none"></div>
-    </div>
 
     <!-- ── New screen architecture (Phase 1) ── -->
-    <main data-screens class="fixed inset-0 z-10 pointer-events-none">
+    <main data-screens class="relative flex-1 z-10">
       <section data-screen="welcome" class="absolute inset-0 flex items-center justify-center bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
         <!-- Phase 2 content -->
       </section>
@@ -283,9 +282,10 @@
       </section>
     </main>
 
-    <footer data-footer class="fixed bottom-0 left-0 right-0 z-20 text-center py-4 text-muted text-sm font-[Quicksand]">
-      Made with &#10084;&#65039; by Jamie &amp; Dave. &copy; 2026.
-    </footer>
+      <footer data-footer class="mt-auto text-center py-4 text-text text-sm font-[Quicksand]">
+        Made with &#10084;&#65039; by Jamie &amp; Dave. &copy; 2026.
+      </footer>
+    </div>
 
     <script type="module" src="/src/app.ts"></script>
   </body>

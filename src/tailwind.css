@@ -289,6 +289,21 @@ html, body { font-family: var(--font-sans); }
   /* Counter warn colour — toggled by modals.ts counterEl.classList.add("warn") */
   .warn { color: var(--color-accent); }
 
+  /* ─── Standard inline link style (LNK-01) ─── */
+  /* Accent green text, 1px solid accent bottom border, 2px bottom padding,
+     no text-decoration. Applied via class="link" on <a> elements. */
+  .link {
+    color: var(--color-accent);
+    border-block-end: 1px solid var(--color-accent);
+    padding-block-end: 2px;
+    text-decoration: none;
+  }
+  .link:hover,
+  .link:focus-visible {
+    color: var(--color-accent);
+    border-block-end-color: var(--color-accent);
+  }
+
   /* Category pill selected state — JS toggles aria-checked; CSS styles it */
   .fb-cat[aria-checked="true"] {
     background-color: var(--color-accent);
