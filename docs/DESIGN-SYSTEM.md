@@ -10,18 +10,17 @@
 
 ## Semantic colour tokens
 
-Six tokens defined in `@theme` block. Dark mode overrides in `@layer theme` under `html.dark` (same cascade layer, higher specificity than `:root`).
+Five tokens defined in `@theme` block. Dark mode overrides in `@layer theme` under `html.dark` (same cascade layer, higher specificity than `:root`).
 
 | Token | CSS variable | Light | Dark | Usage |
 |-------|-------------|-------|------|-------|
 | bg | `--color-bg` | `#FAFAFA` | `#121213` | Page background |
-| text | `--color-text` | `#262624` | `#FAF8F4` | Primary text |
-| muted | `--color-muted` | `rgba(38, 38, 36, 0.7)` | `rgba(246, 240, 232, 0.6)` | Secondary text, labels |
+| text | `--color-text` | `#262624` | `#FAF8F4` | Primary text — all text, including secondary copy (per CLR-01) |
 | accent | `--color-accent` | `#0A850A` | `#1EAD52` | Accent colour, buttons, links |
 | surface | `--color-surface` | `#FFFFFF` | `#363634` | Input/card backgrounds |
 | border | `--color-border` | `rgba(38, 38, 36, 0.12)` | `rgba(246, 240, 232, 0.1)` | Borders, dividers |
 
-Tailwind generates utility classes from these: `bg-bg`, `text-text`, `text-muted`, `bg-accent`, `bg-surface`, `border-border`.
+Tailwind generates utility classes from these: `bg-bg`, `text-text`, `bg-accent`, `bg-surface`, `border-border`. The legacy `muted` token was removed in v1.1 (CLR-01) — secondary copy now uses `text-text`. Use `text-text/60` only for non-essential placeholder/decorative variants where pure text is unreadable.
 
 ## Typography
 
