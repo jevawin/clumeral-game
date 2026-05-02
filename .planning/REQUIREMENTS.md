@@ -7,12 +7,12 @@
 
 ### Layout
 
-- [ ] **LAY-01**: Footer is part of the natural document flow (not `position: fixed`); page uses a header / content / footer flex column that pins footer to the bottom of the viewport when content is short, and pushes it down naturally when content is long. Use `min-h-screen` (or 100dvh) and `flex flex-col` with footer as the last child.
+- [x] **LAY-01**: Footer is part of the natural document flow (not `position: fixed`); page uses a header / content / footer flex column that pins footer to the bottom of the viewport when content is short, and pushes it down naturally when content is long. Use `min-h-screen` (or 100dvh) and `flex flex-col` with footer as the last child.
 - [ ] **LAY-02**: Logo + octopus on the solved (completion) screen sit in the same relative position as the welcome screen (same vertical offset, same sizing), so transitioning between welcome → game → solved feels like a single anchored layout.
 
 ### Color
 
-- [ ] **CLR-01**: All text uses only the foreground colors — pure white in dark mode, pure black in light mode. No grey or muted text remains anywhere in the app (clues, stats, metadata, footer, helper copy, modals).
+- [x] **CLR-01**: All text uses only the foreground colors — pure white in dark mode, pure black in light mode. No grey or muted text remains anywhere in the app (clues, stats, metadata, footer, helper copy, modals).
 
 ### Header
 
@@ -37,7 +37,7 @@
 
 ### Link style (cross-cutting)
 
-- [ ] **LNK-01**: Standard link style: text in accent green, 1px solid green bottom border, 2px bottom padding, `text-decoration: none`. Applies to "Leave feedback", "Show puzzle", "Archive", and any future inline links.
+- [x] **LNK-01**: Standard link style: text in accent green, 1px solid green bottom border, 2px bottom padding, `text-decoration: none`. Applies to "Leave feedback", "Show puzzle", "Archive", and any future inline links.
 
 ## Future Requirements
 
@@ -60,9 +60,9 @@ Filled in during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| LAY-01 | Phase 1 | Pending |
+| LAY-01 | Phase 1 | Complete |
 | LAY-02 | Phase 1 | Pending |
-| CLR-01 | Phase 1 | Pending |
+| CLR-01 | Phase 1 | Complete |
 | HDR-01 | Phase 1 | Pending |
 | MNU-01 | Phase 1 | Pending |
 | MNU-02 | Phase 1 | Pending |
@@ -72,7 +72,7 @@ Filled in during roadmap creation.
 | SLV-01 | Phase 1 | Pending |
 | SLV-02 | Phase 1 | Pending |
 | SLV-03 | Phase 1 | Pending |
-| LNK-01 | Phase 1 | Pending |
+| LNK-01 | Phase 1 | Complete |
 | DEN-01 | Phase 2 | Pending |
 
 **Coverage:**
