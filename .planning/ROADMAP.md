@@ -175,5 +175,5 @@ Plans:
   3. Traceability table includes SIMP-01 → Phase 7 → Complete
 **Plans:** 1 plan
 Plans:
-- [ ] 09-01-PLAN.md — Retrofit Phase 7: finalise SIMP-01 traceability and produce SUMMARY/VERIFICATION/VALIDATION from commit 2e13e2b
+- [x] 09-01-PLAN.md — Retrofit Phase 7: finalise SIMP-01 traceability and produce SUMMARY/VERIFICATION/VALIDATION from commit 2e13e2b
 **UI hint**: no
