@@ -7,23 +7,23 @@
 
 ### Screen Structure
 
-- [ ] **SCR-01**: App shows three distinct screens: welcome, game, completion
-- [ ] **SCR-02**: Screens are state-driven on a single page (no URL routes)
-- [ ] **SCR-03**: Smooth cross-fade transitions between screens using View Transition API with fallback
+- [x] **SCR-01**: App shows three distinct screens: welcome, game, completion
+- [x] **SCR-02**: Screens are state-driven on a single page (no URL routes)
+- [x] **SCR-03**: Smooth cross-fade transitions between screens using View Transition API with fallback
 
 ### Welcome Screen
 
-- [ ] **WEL-01**: Welcome screen shows logo and octopus mascot
-- [ ] **WEL-02**: Welcome screen shows subtitle and puzzle number
-- [ ] **WEL-03**: Welcome screen shows play button that transitions to game screen
-- [ ] **WEL-04**: Welcome screen shows every visit (like Wordle)
+- [x] **WEL-01**: Welcome screen shows logo and octopus mascot
+- [x] **WEL-02**: Welcome screen shows subtitle and puzzle number
+- [x] **WEL-03**: Welcome screen shows play button that transitions to game screen
+- [x] **WEL-04**: Welcome screen shows every visit (like Wordle)
 
 ### How-to-Play
 
-- [ ] **HTP-01**: How-to-play content displayed inline on the welcome screen (not a modal)
-- [ ] **HTP-02**: How-to-play appears above play button on first visit
-- [ ] **HTP-03**: How-to-play appears below play button on return visits
-- [ ] **HTP-04**: First-visit detection based on whether any Clumeral localStorage keys exist
+- [x] **HTP-01**: How-to-play content displayed inline on the welcome screen (not a modal)
+- [x] **HTP-02**: How-to-play appears above play button on first visit
+- [x] **HTP-03**: How-to-play appears below play button on return visits
+- [x] **HTP-04**: First-visit detection based on whether any Clumeral localStorage keys exist
 
 ### Game Screen
 
@@ -57,24 +57,24 @@
 ### Feedback Modal
 
 - [x] **FBK-01**: Feedback modal accessible from both completion screen and game menu (audit found dead `[data-fb-header-btn]` query — close in Phase 8)
-- [ ] **FBK-02**: Feedback modal has category pills (General, Bug, Idea, Praise)
-- [ ] **FBK-03**: Feedback modal has textarea with character counter (warns at 400/500)
-- [ ] **FBK-04**: Feedback modal shows metadata line (puzzle number, date, device, browser)
-- [ ] **FBK-05**: Feedback submits to existing Google Apps Script endpoint with retry logic
+- [x] **FBK-02**: Feedback modal has category pills (General, Bug, Idea, Praise)
+- [x] **FBK-03**: Feedback modal has textarea with character counter (warns at 400/500)
+- [x] **FBK-04**: Feedback modal shows metadata line (puzzle number, date, device, browser)
+- [x] **FBK-05**: Feedback submits to existing Google Apps Script endpoint with retry logic
 
 ### Styling
 
-- [ ] **STY-01**: Built from scratch with Tailwind CSS v4
-- [ ] **STY-02**: Semantic colour tokens defined in CSS @theme (~7 tokens with light/dark variants)
-- [ ] **STY-03**: Dark mode uses near-black background (#121213), light mode uses off-white (#FAFAFA)
-- [ ] **STY-04**: Dark mode via Tailwind dark: variants, not light-dark() or color-mix()
-- [ ] **STY-05**: Green accent only — no colour theme picker
+- [x] **STY-01**: Built from scratch with Tailwind CSS v4
+- [x] **STY-02**: Semantic colour tokens defined in CSS @theme (~7 tokens with light/dark variants)
+- [x] **STY-03**: Dark mode uses near-black background (#121213), light mode uses off-white (#FAFAFA)
+- [x] **STY-04**: Dark mode via Tailwind dark: variants, not light-dark() or color-mix()
+- [x] **STY-05**: Green accent only — no colour theme picker
 - [x] **STY-06**: Old CSS fully removed once replacement is complete
 
 ### Footer
 
-- [ ] **FTR-01**: Simplified footer on all screens: "Made with heart by Jamie & Dave. (c) 2026."
-- [ ] **FTR-02**: No GitHub link, no "AI experiment" copy
+- [x] **FTR-01**: Simplified footer on all screens: "Made with heart by Jamie & Dave. (c) 2026."
+- [x] **FTR-02**: No GitHub link, no "AI experiment" copy
 
 ### Simplify
 
@@ -112,24 +112,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCR-01 | Phase 1 | Pending |
-| SCR-02 | Phase 1 | Pending |
-| SCR-03 | Phase 1 | Pending |
-| STY-01 | Phase 1 | Pending |
-| STY-02 | Phase 1 | Pending |
-| STY-03 | Phase 1 | Pending |
-| STY-04 | Phase 1 | Pending |
-| STY-05 | Phase 1 | Pending |
-| FTR-01 | Phase 1 | Pending |
-| FTR-02 | Phase 1 | Pending |
-| WEL-01 | Phase 2 | Pending |
-| WEL-02 | Phase 2 | Pending |
-| WEL-03 | Phase 2 | Pending |
-| WEL-04 | Phase 2 | Pending |
-| HTP-01 | Phase 2 | Pending |
-| HTP-02 | Phase 2 | Pending |
-| HTP-03 | Phase 2 | Pending |
-| HTP-04 | Phase 2 | Pending |
+| SCR-01 | Phase 1 | Complete |
+| SCR-02 | Phase 1 | Complete |
+| SCR-03 | Phase 1 | Complete |
+| STY-01 | Phase 1 | Complete |
+| STY-02 | Phase 1 | Complete |
+| STY-03 | Phase 1 | Complete |
+| STY-04 | Phase 1 | Complete |
+| STY-05 | Phase 1 | Complete |
+| FTR-01 | Phase 1 | Complete |
+| FTR-02 | Phase 1 | Complete |
+| WEL-01 | Phase 2 | Complete |
+| WEL-02 | Phase 2 | Complete |
+| WEL-03 | Phase 2 | Complete |
+| WEL-04 | Phase 2 | Complete |
+| HTP-01 | Phase 2 | Complete |
+| HTP-02 | Phase 2 | Complete |
+| HTP-03 | Phase 2 | Complete |
+| HTP-04 | Phase 2 | Complete |
 | GAM-01 | Phase 3 → Phase 8 | Complete |
 | GAM-02 | Phase 3 | Complete |
 | GAM-03 | Phase 3 | Complete |
@@ -142,10 +142,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MNU-04 | Phase 3 | Complete |
 | MNU-05 | Phase 3 | Complete |
 | FBK-01 | Phase 4 → Phase 8 | Complete |
-| FBK-02 | Phase 4 | Pending |
-| FBK-03 | Phase 4 | Pending |
-| FBK-04 | Phase 4 | Pending |
-| FBK-05 | Phase 4 | Pending |
+| FBK-02 | Phase 4 | Complete |
+| FBK-03 | Phase 4 | Complete |
+| FBK-04 | Phase 4 | Complete |
+| FBK-05 | Phase 4 | Complete |
 | CEL-01 | Phase 5 | Complete |
 | CEL-02 | Phase 5 | Complete |
 | CEL-03 | Phase 5 | Complete |
@@ -164,3 +164,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 *Requirements defined: 2026-04-11*
 *Last updated: 2026-05-01 after v1.0 milestone audit — Phase 8 (audit fixes) and Phase 9 (Phase 7 retrofit) added*
 *Last updated: 2026-05-02 — Phase 9 retrofit closed SIMP-01 (Phase 7 artifacts produced retroactively)*
+*Last updated: 2026-05-02 — pre-archive sync: all 42 v1 requirements marked Complete in checklist + traceability table after milestone audit verified*
