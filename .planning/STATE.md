@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Design Refinements
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-05-02T20:12:32.311Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-05-02T20:15:31.714Z"
 last_activity: 2026-05-02
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 3
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 ## Current Position
 
 Phase: 01 (refinements-wave-1) — EXECUTING
-Plan: 2 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-05-02
 
@@ -53,6 +53,8 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-refinements-wave-1 P01 | 3m | 2 tasks | 5 files |
+| Phase 01-refinements-wave-1 P03 | 1 min | 1 tasks | 2 files |
+| Phase 01-refinements-wave-1 P02 | 1 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +73,10 @@ v1.1 starting decisions:
 - [Phase 01-refinements-wave-1]: Keep --color-muted token in @theme — feedback modal and burger menu still consume it; only utility usages purged in plan-scoped files.
 - [Phase 01-refinements-wave-1]: Use mt-auto on footer rather than flex-1 alone — defensive guarantee that footer pins to bottom on short pages.
 - [Phase 01-refinements-wave-1]: Use logical properties (border-block-end, padding-block-end) in .link for future RTL safety.
+- [Phase 01-refinements-wave-1]: Leave dom.plabel cache + writers in src/app.ts intact — null-safe writes silently no-op; deferred dead-code cleanup avoids unrelated diff in this plan.
+- [Phase 01-refinements-wave-1]: CPY-02 drops the trailing period — REQUIREMENTS.md quotes 'Solved in N try' / 'Solved in N tries' verbatim with no full stop.
+- [Phase 01-refinements-wave-1]: Leave src/app.ts showCompletedState 'You already solved...' inline copy untouched in Plan 03 — Plan 04 SLV-02 makes that path unreachable on init by auto-routing solved returners to the completion screen.
+- [Phase 01-refinements-wave-1]: Use menu-item class hook + scoped [data-menu] .menu-item svg { color: inherit } so hover accent flows to icons via existing currentColor sprite paths.
 
 ### Pending Todos
 
@@ -82,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-02T20:12:32.309Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-05-02T20:15:31.710Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

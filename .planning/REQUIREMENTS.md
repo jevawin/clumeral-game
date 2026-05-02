@@ -16,18 +16,18 @@
 
 ### Header
 
-- [ ] **HDR-01**: Game-screen header no longer shows the puzzle number (`Puzzle #N · <date>` removed); header is reduced to title + menu only.
+- [x] **HDR-01**: Game-screen header no longer shows the puzzle number (`Puzzle #N · <date>` removed); header is reduced to title + menu only.
 
 ### Burger menu
 
-- [ ] **MNU-01**: Burger menu no longer contains the "Archive" item.
-- [ ] **MNU-02**: Burger menu items have no hover background (hover state is text-only).
-- [ ] **MNU-03**: Burger menu items change text color to the accent green on hover (light + dark mode).
+- [x] **MNU-01**: Burger menu no longer contains the "Archive" item.
+- [x] **MNU-02**: Burger menu items have no hover background (hover state is text-only).
+- [x] **MNU-03**: Burger menu items change text color to the accent green on hover (light + dark mode).
 
 ### Copy
 
-- [ ] **CPY-01**: Submit-guess button label reads "Submit answer" (was: "Check my guess").
-- [ ] **CPY-02**: Solved-screen copy reads "Solved in N try" (singular when N=1) / "Solved in N tries" (plural otherwise), keeping the existing tick icon. Was: "You already solved today's puzzle in 1 try!"
+- [x] **CPY-01**: Submit-guess button label reads "Submit answer" (was: "Check my guess").
+- [x] **CPY-02**: Solved-screen copy reads "Solved in N try" (singular when N=1) / "Solved in N tries" (plural otherwise), keeping the existing tick icon. Was: "You already solved today's puzzle in 1 try!"
 
 ### Solved screen
 
@@ -63,12 +63,12 @@ Filled in during roadmap creation.
 | LAY-01 | Phase 1 | Complete |
 | LAY-02 | Phase 1 | Pending |
 | CLR-01 | Phase 1 | Complete |
-| HDR-01 | Phase 1 | Pending |
-| MNU-01 | Phase 1 | Pending |
-| MNU-02 | Phase 1 | Pending |
-| MNU-03 | Phase 1 | Pending |
-| CPY-01 | Phase 1 | Pending |
-| CPY-02 | Phase 1 | Pending |
+| HDR-01 | Phase 1 | Complete |
+| MNU-01 | Phase 1 | Complete |
+| MNU-02 | Phase 1 | Complete |
+| MNU-03 | Phase 1 | Complete |
+| CPY-01 | Phase 1 | Complete |
+| CPY-02 | Phase 1 | Complete |
 | SLV-01 | Phase 1 | Pending |
 | SLV-02 | Phase 1 | Pending |
 | SLV-03 | Phase 1 | Pending |
