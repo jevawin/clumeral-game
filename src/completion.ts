@@ -102,7 +102,14 @@ function renderStatBox(value: string | number, label: string): string {
   </div>`;
 }
 
-export function renderCompletion(puzzleNum: number, tries: number, isRandom: boolean): void {
+export interface RenderCompletionOpts { activeDate?: string; todayLocal?: string }
+
+export function renderCompletion(
+  puzzleNum: number,
+  tries: number,
+  isRandom: boolean,
+  opts: RenderCompletionOpts = {}
+): void {
   // Octo injection (idempotent — only injects once per session).
   if (dom.octo && !dom.octo.firstChild) {
     dom.octo.innerHTML = COMPLETION_OCTO_SVG;
@@ -145,10 +152,16 @@ export function renderCompletion(puzzleNum: number, tries: number, isRandom: boo
   // Show puzzle is rendered for daily puzzles only (where the user can navigate back to today's
   // game screen). For random puzzles, only Archive shows.
   if (dom.links) {
-    // Reset (drops previous listeners with the elements).
     dom.links.replaceChildren();
 
-    if (!isRandom) {
+    const isArchivedOtherDate =
+      !isRandom &&
+      typeof opts.activeDate === 'string' &&
+      typeof opts.todayLocal === 'string' &&
+      opts.activeDate !== opts.todayLocal;
+
+    // Show puzzle: only on today's daily solved view (not random, not archived past).
+    if (!isRandom && !isArchivedOtherDate) {
       const a = document.createElement('a');
       a.href = '#';
       a.className = 'link';
@@ -156,14 +169,14 @@ export function renderCompletion(puzzleNum: number, tries: number, isRandom: boo
       a.textContent = 'Show puzzle';
       a.addEventListener('click', (e) => {
         e.preventDefault();
-        // Loose coupling: app.ts owns the suppressStats flag and the screen transition.
         document.dispatchEvent(new CustomEvent('completion:show-puzzle'));
       });
       dom.links.appendChild(a);
     }
 
+    // Archive link: always present. Renamed from /puzzles to /archive (ARC-01).
     const archive = document.createElement('a');
-    archive.href = '/puzzles';
+    archive.href = '/archive';
     archive.className = 'link';
     archive.dataset.completionArchive = '';
     archive.textContent = 'Archive';
