@@ -254,8 +254,10 @@ export default {
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
-    // GET /archive/<YYYY-MM-DD> — SPA shell; client router handles dated puzzle replay.
-    if (request.method === 'GET' && /^\/archive\/\d{4}-\d{2}-\d{2}$/.test(url.pathname)) {
+    // GET /archive/<segment> — SPA shell. Client router handles dated puzzle replay
+    // for valid YYYY-MM-DD; resolveRoute bounces malformed/future segments to /archive
+    // (ARC-03). Loose regex so the resolver — not the worker — owns malformed-date policy.
+    if (request.method === 'GET' && /^\/archive\/[^/]+$/.test(url.pathname)) {
       return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
     }
 

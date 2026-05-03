@@ -961,7 +961,11 @@ if (isRandomBoot || oldReplayBoot) {
         .catch(() => { renderFeedback('error'); });
     },
   });
-  loadPuzzle();
+  // Skip today's-puzzle fetch when cold-loading an archive replay — onArchiveDate
+  // owns the puzzle fetch via startReplayPuzzle. Otherwise loadPuzzle() races and
+  // overwrites the archived clues with today's.
+  const isArchiveDateBoot = /^\/archive\/[^/]+$/.test(window.location.pathname);
+  if (!isArchiveDateBoot) loadPuzzle();
 }
 
 // SLV-03: "Show puzzle" link on completion screen → back to game with stats suppressed.
