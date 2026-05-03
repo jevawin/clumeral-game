@@ -85,9 +85,9 @@ function emitAnalytics(path: string): void {
 function emitAnalyticsBeacon(path: string): void {
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      // Use string body — valid sendBeacon BodyInit, simpler than Blob, and easier to assert in jsdom tests.
       const body = JSON.stringify({ event: 'route_change', source: path });
-      const blob = new Blob([body], { type: 'application/json' });
-      navigator.sendBeacon('/api/event', blob);
+      navigator.sendBeacon('/api/event', body);
     }
   } catch { /* swallow — analytics is non-critical */ }
 }
@@ -156,8 +156,8 @@ export function initRouter(d: RouterDeps): void {
 
   // POL-03: set once at boot, before any navigation.
   try {
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-  } catch { /* ignore */ }
+    history.scrollRestoration = 'manual';
+  } catch { /* ignore — environments without History scrollRestoration */ }
 
   window.addEventListener('popstate', () => {
     // Browser already updated location — re-render only, never pushState here.
