@@ -102,7 +102,12 @@ function renderStatBox(value: string | number, label: string): string {
   </div>`;
 }
 
-export function renderCompletion(puzzleNum: number, tries: number, isRandom: boolean): void {
+export interface RenderCompletionOpts {
+  activeDate?: string;
+  todayLocal?: string;
+}
+
+export function renderCompletion(puzzleNum: number, tries: number, isRandom: boolean, _opts?: RenderCompletionOpts): void {
   // Octo injection (idempotent — only injects once per session).
   if (dom.octo && !dom.octo.firstChild) {
     dom.octo.innerHTML = COMPLETION_OCTO_SVG;
