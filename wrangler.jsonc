@@ -4,7 +4,14 @@
   "main": "./src/worker/index.ts",
   "assets": {
     "binding": "ASSETS",
-    "run_worker_first": ["/", "/index.html", "/random", "/puzzles", "/puzzles/*", "/api/*", "/stats"]
+    "run_worker_first": [
+      "/", "/index.html",
+      "/welcome", "/play", "/solved",
+      "/archive", "/archive/*",
+      "/random",
+      "/puzzles", "/puzzles/*",
+      "/api/*", "/stats"
+    ]
   },
   "analytics_engine_datasets": [
     {
