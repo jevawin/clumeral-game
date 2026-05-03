@@ -18,7 +18,9 @@ const dom = {
 
 // ─── Module State ─────────────────────────────────────────────────────────────
 
-let currentScreen: ScreenId = "welcome";
+// Initial value is null so the first showScreen() call always applies — even when
+// it targets 'welcome' — preventing a pre-router welcome flash on cold load.
+let currentScreen: ScreenId | null = null;
 
 
 // ─── Internal ─────────────────────────────────────────────────────────────────
@@ -33,6 +35,21 @@ function updateScreenDOM(next: ScreenId): void {
     el.classList.toggle("pointer-events-auto", active);
     el.setAttribute("aria-hidden", active ? "false" : "true");
   });
+
+  // First showScreen call dismisses the cold-load overlay. The 300ms fade hides
+  // any pre-paint flash from initial HTML/loadPuzzle DOM writes.
+  if (currentScreen === null) {
+    const loader = document.querySelector('[data-app-loading]');
+    if (loader) {
+      // Defer one frame so the screen swap paints before the loader fades out —
+      // otherwise on slow paints the loader fades to a still-empty screen.
+      requestAnimationFrame(() => {
+        loader.classList.replace("opacity-100", "opacity-0");
+        // Remove from DOM after fade completes so it can never trap clicks again.
+        setTimeout(() => loader.remove(), 350);
+      });
+    }
+  }
 
   currentScreen = next;
 }
@@ -51,7 +68,7 @@ export function showScreen(next: ScreenId): void {
   document.startViewTransition(() => updateScreenDOM(next));
 }
 
-export function getCurrentScreen(): ScreenId {
+export function getCurrentScreen(): ScreenId | null {
   return currentScreen;
 }
 

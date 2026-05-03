@@ -7,7 +7,7 @@ import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
 import { initTheme } from './theme.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
-import { initScreens, showScreen } from './screens.ts';
+import { showScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
@@ -935,9 +935,9 @@ if (_todayHistoryAtBoot) {
   renderCompletion(_num, _todayHistoryAtBoot.tries, false);
 }
 
-// Initialise the screen state machine on 'welcome' — the router immediately
-// resolves location.pathname and calls showScreen() with the correct screen.
-initScreens('welcome');
+// Don't pre-paint a screen here — the router resolves location.pathname and
+// calls showScreen() below. Pre-painting 'welcome' caused a flash on cold loads
+// to /play (welcome appeared at opacity-100 before the router swapped to game).
 
 // Bridge router-emitted analytics events to the existing track() helper.
 document.addEventListener('analytics:track', (e) => {

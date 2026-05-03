@@ -135,6 +135,9 @@
 
     <!-- ── New screen architecture (Phase 1) ── -->
     <main data-screens class="relative flex-1 z-10">
+      <!-- Cold-load overlay: hides screen-swap flicker until the router resolves
+           the initial route. JS removes opacity-100 once the first showScreen lands. -->
+      <div data-app-loading class="absolute inset-0 z-40 bg-bg opacity-100 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
       <section data-screen="welcome" class="absolute inset-0 overflow-y-auto bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
         <!-- Phase 2 content -->
       </section>
