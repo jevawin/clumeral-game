@@ -956,7 +956,10 @@ if (isRandomBoot || oldReplayBoot) {
   loadPuzzle();
 } else {
   initRouter({
-    hasData: () => Object.keys(localStorage).some((k) => k.startsWith('dlng_') || k === 'cw-htp-seen'),
+    // hasData = user has meaningful state. dlng_uid is set unconditionally at boot for
+    // analytics, so it must NOT count — only history (has played) or cw-htp-seen (has
+    // opened how-to-play / dismissed welcome) prove the user has engaged.
+    hasData: () => !!localStorage.getItem('dlng_history') || !!localStorage.getItem('cw-htp-seen'),
     todayLocal,
     todayEntry,
     midInteraction: () => activeBox !== null || submitting,
