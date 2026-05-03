@@ -57,15 +57,29 @@ function updateScreenDOM(next: ScreenId): void {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
+// Sequential fade: outgoing screen fades to 0, then the incoming screen fades in.
+// Avoids the cross-fade bleed where both screens are visible together (which made
+// stale destination DOM — e.g. last completion result — flash during back/forward).
+const FADE_OUT_MS = 200;
+
 export function showScreen(next: ScreenId): void {
   if (next === currentScreen) return;
 
-  if (!document.startViewTransition) {
+  // First call (cold load) — paint immediately, no fade-out from a prior screen.
+  if (currentScreen === null) {
     updateScreenDOM(next);
     return;
   }
 
-  document.startViewTransition(() => updateScreenDOM(next));
+  const prev = currentScreen;
+  const prevEl = dom[prev];
+  // Fade the outgoing screen out first.
+  prevEl.classList.add("opacity-0");
+  prevEl.classList.remove("opacity-100", "pointer-events-auto");
+  prevEl.classList.add("pointer-events-none");
+  prevEl.setAttribute("aria-hidden", "true");
+
+  setTimeout(() => updateScreenDOM(next), FADE_OUT_MS);
 }
 
 export function getCurrentScreen(): ScreenId | null {
