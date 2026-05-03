@@ -68,6 +68,7 @@ const dom = {
   nextNumber: $('[data-next-number]') as HTMLElement | null,
   again: $('[data-again]') as HTMLElement | null,
   plabel: $('[data-plabel]') as HTMLElement | null,
+  archiveBanner: $('[data-archive-banner]') as HTMLElement | null,
   history: $('[data-history]') as HTMLElement | null,
   historyList: $('[data-history-list]') as HTMLElement | null,
   clueList: $('[data-clue-list]') as HTMLElement | null,
@@ -343,8 +344,9 @@ function renderHistory(guesses: number[]): void {
 function renderStats() {
   if (!dom.stats) return;
   if (suppressStats) {
-    dom.stats.classList.add("hidden");
-    dom.stats.innerHTML = "";
+    // Solved-replay mode: hide stats numbers but keep a way back to /solved.
+    dom.stats.classList.remove("hidden");
+    dom.stats.innerHTML = `<p class="mt-3 font-[Quicksand]"><a href="/solved" data-show-stats class="text-accent underline">Show stats</a></p>`;
     return;
   }
   const history = loadHistory();
@@ -554,6 +556,11 @@ function resetPuzzleUI() {
   renderHistory([]);
   dom.stats?.classList.add("hidden");
   dom.next?.classList.add("hidden");
+  // Hide archive banner by default; startReplayPuzzle re-enables it for dated replays.
+  if (dom.archiveBanner) {
+    dom.archiveBanner.classList.add("hidden");
+    dom.archiveBanner.innerHTML = "";
+  }
   // Remove correct state from digit boxes
   for (let i = 0; i < 3; i++) {
     const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
@@ -601,16 +608,15 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 }
 
 async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): Promise<void> {
-  // Show archived puzzle label above the puzzle number
-  if (dom.plabel) {
-    const label = document.createElement("div");
-    label.className = "flex items-center gap-1 text-sm text-text font-[Quicksand]";
-    label.innerHTML = `<svg width="14" height="14" class="text-text" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg> Archived puzzle`;
-    dom.plabel.parentElement?.insertBefore(label, dom.plabel);
-    dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
-  }
+  // Legacy plabel writer (no-op in new design) kept for backward compat.
+  if (dom.plabel) dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
 
   renderClues(clues);
+  const showBanner = () => {
+    if (!dom.archiveBanner) return;
+    dom.archiveBanner.innerHTML = `<svg width="14" height="14" class="text-text shrink-0" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg><span>Archived puzzle · #${num} · ${formatDate(date)}</span>`;
+    dom.archiveBanner.classList.remove("hidden");
+  };
 
   // Check if already solved
   const entry = loadHistory().find(h => h.date === date);
@@ -628,6 +634,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     }
     gameState = { answer, guesses: [], solved: true, puzzleNum: num, date };
     showCompletedState(entry.tries, date);
+    showBanner();
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
     // when the user reaches the completion screen via /archive/<date>. The renderCompletion
     // signature accepting opts ships in Plan 06 — this call site depends on that change.
@@ -637,6 +644,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
 
   gameState = { answer: null, guesses: [], solved: false, puzzleNum: num, date };
   resetPuzzleUI();
+  showBanner();
   track("puzzle_start");
 
   // Save score for replays
@@ -971,11 +979,9 @@ if (isRandomBoot || oldReplayBoot) {
 // SLV-03: "Show puzzle" link on completion screen → back to game with stats suppressed.
 document.addEventListener('completion:show-puzzle', () => {
   suppressStats = true;
-  // Belt-and-braces: hide the stats section directly in case it was already rendered.
-  if (dom.stats) {
-    dom.stats.classList.add('hidden');
-    dom.stats.innerHTML = '';
-  }
+  // Render the suppressStats variant of stats — this injects the "Show stats" return link
+  // so the user has a way back to /solved without refreshing the page.
+  renderStats();
   // SLV-03 + RTE-01: route to /play via the router so title + analytics go through the single
   // source of truth (titleFor + emitAnalytics). skipResolve bypasses the /play → /solved
   // redirect that would otherwise loop today's solved player back to the completion screen.
@@ -983,6 +989,17 @@ document.addEventListener('completion:show-puzzle', () => {
   // (Pitfall 3: double view-transition).
   navigate('/play', { skipResolve: true });
 });
+
+// "Show stats" link on /play (solved-replay mode) → back to /solved.
+// Delegated because the link is rendered into dom.stats lazily by renderStats().
+document.addEventListener('click', (e) => {
+  const target = (e.target as HTMLElement).closest('[data-show-stats]');
+  if (!target) return;
+  e.preventDefault();
+  suppressStats = false;
+  navigate('/solved');
+});
+
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
 
