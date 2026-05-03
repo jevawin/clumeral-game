@@ -45,6 +45,32 @@
 
 - **DEN-01**: Reduce clue card margin / line spacing so more clues fit on a single mobile viewport without scrolling. Exact target deferred — review after Phase 1 ships.
 
+### Phase 3 — URL routing
+
+#### Routing core
+
+- **RTE-01**: Client-side routing for `/welcome`, `/play`, `/solved`. The active screen is driven by `location.pathname`; navigating between screens uses `history.pushState` (or `replaceState` per RTE-03) and listens for `popstate` so browser back/forward swaps screens.
+- **RTE-02**: The Cloudflare Worker serves the SPA shell for any of the new client routes (and `/archive`, `/archive/<date>`) so deep links and refreshes never 404. API and asset paths are unaffected.
+- **RTE-03**: Redirect rules (all use `replaceState` so the wrong URL doesn't pollute history):
+  - `/play` for a user with no Clumeral data → `/welcome`.
+  - `/play` when today's puzzle is already solved → `/solved`.
+  - `/solved` with no history, or with history that doesn't include today → `/welcome`.
+  - On solving today's puzzle, the transition to `/solved` uses `replaceState` so back from `/solved` skips the finished puzzle and lands on `/welcome`.
+  - Stale-day check (history says today=Y but real today=Z) fires on `visibilitychange`/focus, not while the user is mid-interaction; redirects from `/solved` to `/welcome`.
+
+#### Archive
+
+- **ARC-01**: Rename the existing `/puzzles` archive list to `/archive`. Keep a one-line redirect from `/puzzles` → `/archive` so old links still work.
+- **ARC-02**: `/archive/<YYYY-MM-DD>` serves the puzzle for that date in solved-aware mode. For today's date, the solved view links to `/solved`. For any other date, the solved view links back to `/archive`.
+- **ARC-03**: `/archive/<date>` for an invalid or future date redirects (`replaceState`) to `/archive`.
+
+#### Polish
+
+- **POL-01**: Each route sets a route-specific `<title>` (e.g. `Clumeral`, `Clumeral · Play`, `Clumeral · Solved`, `Clumeral · Archive`).
+- **POL-02**: Route changes emit a `route_change` analytics event whose value is the new path (added to the `VALID_EVENTS` allowlist in `src/worker/index.ts`).
+- **POL-03**: `history.scrollRestoration = 'manual'` is set once at boot so the browser's auto-scroll-restore heuristic doesn't fight the screens overlay.
+- **POL-04**: Stale-day check on focus (see RTE-03) — implemented as a single visibility/focus listener, not a polling timer.
+
 ## Out of Scope (still in force from v1.0)
 
 | Feature | Reason |
@@ -74,11 +100,21 @@ Filled in during roadmap creation.
 | SLV-03 | Phase 1 | Complete |
 | LNK-01 | Phase 1 | Complete |
 | DEN-01 | Phase 2 | Pending |
+| RTE-01 | Phase 3 | Pending |
+| RTE-02 | Phase 3 | Pending |
+| RTE-03 | Phase 3 | Pending |
+| ARC-01 | Phase 3 | Pending |
+| ARC-02 | Phase 3 | Pending |
+| ARC-03 | Phase 3 | Pending |
+| POL-01 | Phase 3 | Pending |
+| POL-02 | Phase 3 | Pending |
+| POL-03 | Phase 3 | Pending |
+| POL-04 | Phase 3 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 13 total
-- Mapped to phases: 13
+- v1.1 requirements: 24 total
+- Mapped to phases: 24
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-05-02*
+*Requirements defined: 2026-05-02; Phase 3 added 2026-05-03*

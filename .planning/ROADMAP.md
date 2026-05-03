@@ -26,6 +26,7 @@
 
 - [ ] **Phase 1: Refinements wave 1** — Layout, color, header, menu, copy, solved-screen behaviour and links (13 requirements)
 - [ ] **Phase 2: Clue density** — Reduce clue margin/spacing for more clues per viewport (deferred — review after Phase 1 ships)
+- [ ] **Phase 3: URL routing** — Semantic client routes (/welcome, /play, /solved, /archive, /archive/<date>), worker fallback, redirect rules, dated puzzle replay (10 requirements)
 
 ## Phase Details
 
@@ -58,12 +59,28 @@
 **Plans:** TBD (run `/gsd:plan-phase 2`)
 **UI hint:** yes
 
+### Phase 3: URL routing
+**Goal:** Replace the single-route SPA shell with semantic client routes so the address bar reflects state (welcome / play / solved / archive / dated puzzle), share links land users in the right place, and browser back/forward feels natural — without changing the underlying screens architecture.
+**Depends on:** Phase 1
+**Requirements:** RTE-01, RTE-02, RTE-03, ARC-01, ARC-02, ARC-03, POL-01, POL-02, POL-03, POL-04
+**Success Criteria** (what must be TRUE):
+  1. The address bar shows `/welcome`, `/play`, `/solved`, `/archive`, or `/archive/<YYYY-MM-DD>` matching the active screen — never just `/`.
+  2. Refreshing or sharing any of those URLs lands the user on the correct screen (subject to redirect rules below); deep links never 404.
+  3. Redirects: `/play` for a user with no onboarding → `/welcome`; `/play` for today already solved → `/solved`; `/solved` with no/stale history → `/welcome`; invalid or future `/archive/<date>` → `/archive`. Stale-day check fires on focus/visibility, not while the user is mid-interaction.
+  4. Solving a puzzle uses `replaceState` (not `pushState`) so browser back from `/solved` skips the finished puzzle and lands on `/welcome`.
+  5. `/archive/<YYYY-MM-DD>` for today links its solved view back to `/solved`; for any other date it links back to `/archive`.
+  6. Each route sets a route-specific `<title>`; route changes emit a `route_change` analytics event with the path; `history.scrollRestoration` is set to `manual` once at boot.
+  7. The existing `/puzzles` archive list is renamed to `/archive` (one redirect kept for back-compat) and `/random` is unchanged.
+**Plans:** TBD (run `/gsd:plan-phase 3`)
+**UI hint:** no (no new visuals — pure routing/structure change)
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|---------------:|--------|-----------|
-| 1. Refinements wave 1 | v1.1 | 0/4 | Planned | — |
+| 1. Refinements wave 1 | v1.1 | 4/4 | Complete | 2026-05-02 |
 | 2. Clue density | v1.1 | 0/0 | Not started | — |
+| 3. URL routing | v1.1 | 0/0 | Planned | — |
 
 ---
-*Last updated: 2026-05-02 — Phase 1 plans created (4 plans, 3 waves)*
+*Last updated: 2026-05-03 — Phase 3 added (URL routing)*

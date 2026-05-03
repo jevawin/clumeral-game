@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 ### Roadmap Evolution
 
 - v1.1 milestone added (2026-05-02): Design Refinements — 2 phases. Phase 1 batches 13 design items. Phase 2 deferred clue density review.
+- Phase 3 added (2026-05-03): URL routing — semantic client routes (/welcome, /play, /solved, /archive, /archive/<date>) with worker fallback, redirect rules, and dated puzzle replay. Decided to ship under v1.1 rather than spin up v1.2.
 
 ### Decisions
 
