@@ -4,7 +4,7 @@
 import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber, puzzleDate } from './puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
 import { getStats, renderDashboard } from './stats.ts';
-import { renderPuzzlesPage } from './puzzles.ts';
+import { renderArchivePage } from './puzzles.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -25,6 +25,7 @@ const VALID_EVENTS = new Set([
   'puzzle_start', 'puzzle_complete', 'incorrect_guess',
   'htp_opened', 'htp_dismissed', 'feedback_submitted',
   'theme_toggle', 'colour_change', 'tooltip_opened',
+  'route_change',
 ]);
 
 function json(data: unknown, status = 200): Response {
@@ -228,10 +229,10 @@ export default {
       }
     }
 
-    // ── Puzzles ──
+    // ── Archive (renamed from /puzzles) ──
 
-    // GET /puzzles — Worker-rendered puzzle history page
-    if (request.method === 'GET' && url.pathname === '/puzzles') {
+    // GET /archive — Worker-rendered archive list (renamed from /puzzles).
+    if (request.method === 'GET' && url.pathname === '/archive') {
       const today = todayLocal();
       const todayNum = puzzleNumber(today);
       const keys = await env.PUZZLES.list();
@@ -243,28 +244,46 @@ export default {
             return p ? { num: puzzleNumber(k.name), date: k.name, clues: p.clues.length } : null;
           })
       );
-      // Include today if not yet in KV
       const dates = new Set(keys.keys.map(k => k.name));
       if (!dates.has(today)) {
         const p = await getDailyPuzzle(env, today);
         puzzles.push({ num: todayNum, date: today, clues: p.clues.length });
       }
       const valid = puzzles.filter((p): p is NonNullable<typeof p> => p !== null);
-      const html = renderPuzzlesPage(valid);
-      return new Response(html, {
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      });
+      const html = renderArchivePage(valid);
+      return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
-    // GET /puzzles/:num — serve game HTML for replay
-    if (request.method === 'GET' && /^\/puzzles\/\d+$/.test(url.pathname)) {
+    // GET /archive/<YYYY-MM-DD> — SPA shell; client router handles dated puzzle replay.
+    if (request.method === 'GET' && /^\/archive\/\d{4}-\d{2}-\d{2}$/.test(url.pathname)) {
       return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
+    }
+
+    // GET /puzzles — 302 to /archive (back-compat per ARC-01; 302 not 301 to avoid permanent caching).
+    if (request.method === 'GET' && url.pathname === '/puzzles') {
+      return new Response(null, { status: 302, headers: { Location: '/archive' } });
+    }
+
+    // GET /puzzles/<num> — 302 to /archive/<YYYY-MM-DD>.
+    const oldReplay = url.pathname.match(/^\/puzzles\/(\d+)$/);
+    if (request.method === 'GET' && oldReplay) {
+      const num = parseInt(oldReplay[1], 10);
+      if (num < 1) return new Response(null, { status: 302, headers: { Location: '/archive' } });
+      const date = puzzleDate(num);
+      return new Response(null, { status: 302, headers: { Location: `/archive/${date}` } });
     }
 
     // ── Static pages ──
 
-    // GET / and /random — serve static HTML (client fetches puzzle via API)
-    if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/random')) {
+    // GET / and client SPA routes — serve static HTML (client router handles in-page nav).
+    if (request.method === 'GET' && (
+      url.pathname === '/' ||
+      url.pathname === '/index.html' ||
+      url.pathname === '/random' ||
+      url.pathname === '/welcome' ||
+      url.pathname === '/play' ||
+      url.pathname === '/solved'
+    )) {
       return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
     }
 
