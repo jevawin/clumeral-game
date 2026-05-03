@@ -3,7 +3,7 @@
 // The welcome screen shell ([data-screen="welcome"]) is managed by screens.ts.
 // This module populates its content and handles the first-visit / return-visit layout.
 
-import { showScreen } from './screens.ts';
+import { navigate } from './router.ts';
 
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -168,5 +168,5 @@ export function initWelcome(): void {
   renderWelcome(isNew);
 
   const playBtn = document.querySelector('[data-play-btn]') as HTMLButtonElement | null;
-  playBtn?.addEventListener("click", () => showScreen("game"));
+  playBtn?.addEventListener("click", () => navigate('/play'));
 }

@@ -8,6 +8,7 @@ import { initTheme } from './theme.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { initScreens, showScreen } from './screens.ts';
+import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
 
@@ -627,6 +628,10 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     }
     gameState = { answer, guesses: [], solved: true, puzzleNum: num, date };
     showCompletedState(entry.tries, date);
+    // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
+    // when the user reaches the completion screen via /archive/<date>. The renderCompletion
+    // signature accepting opts ships in Plan 06 — this call site depends on that change.
+    renderCompletion(num, entry.tries, false, { activeDate: date, todayLocal: todayLocal() });
     return;
   }
 
@@ -699,11 +704,12 @@ async function handleGuess() {
       renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
 
       // Celebration → completion screen (per D-13: skip celebration under reduced motion)
+      // RTE-03: replaceState so back from /solved lands on /welcome, not the finished /play.
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        showScreen('completion');
+        replaceRoute('/solved');
       } else {
         launchBubbles();
-        celebrateOcto(() => showScreen('completion'));
+        celebrateOcto(() => replaceRoute('/solved'));
       }
     } else {
       gameState.guesses.push(guess);
@@ -909,28 +915,54 @@ function initMenu(): void {
 initTheme();
 initMenu();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
-loadPuzzle();
-const isRandomPath = window.location.pathname === '/random';
-const replayMatch = window.location.pathname.match(/^\/puzzles\/(\d+)$/);
 
-// SLV-02: if the user is on `/` and today's puzzle is already solved
-// (history has an entry for today's date), route directly to the completion
-// screen on init. First-visit and unsolved-today behaviour is unchanged.
-let initialScreen: 'welcome' | 'game' | 'completion' = 'welcome';
-const todayHistory = (!isRandomPath && !replayMatch) ? todayEntry() : null;
-if (isRandomPath || replayMatch) {
-  initialScreen = 'game';
-} else if (todayHistory) {
-  initialScreen = 'completion';
-  const todayDate = todayLocal();
-  const num = puzzleNumber(todayDate);
-  // Pre-render completion content so the screen has data the moment it shows.
-  // isRandom = false (this is the daily path).
-  renderCompletion(num, todayHistory.tries, false);
+// Pre-render welcome content so navigate('/welcome') has something to show.
+initWelcome();
+
+// Pre-render completion content if today is already solved (SLV-02 parity).
+const _todayHistoryAtBoot = todayEntry();
+if (_todayHistoryAtBoot) {
+  const _todayDate = todayLocal();
+  const _num = puzzleNumber(_todayDate);
+  renderCompletion(_num, _todayHistoryAtBoot.tries, false);
 }
 
-initScreens(initialScreen);
-if (initialScreen === 'welcome') initWelcome();
+// Initialise the screen state machine on 'welcome' — the router immediately
+// resolves location.pathname and calls showScreen() with the correct screen.
+initScreens('welcome');
+
+// Bridge router-emitted analytics events to the existing track() helper.
+document.addEventListener('analytics:track', (e) => {
+  const detail = (e as CustomEvent).detail as { event: string; value?: number; source?: string };
+  if (detail?.event) track(detail.event, detail.value, detail.source);
+});
+
+// Boot the router — sets scrollRestoration, registers popstate + visibility/focus,
+// and resolves location.pathname to the right screen (handles SLV-02, /random, /puzzles/<n>).
+const isRandomBoot = window.location.pathname === '/random';
+const oldReplayBoot = window.location.pathname.match(/^\/puzzles\/(\d+)$/);
+if (isRandomBoot || oldReplayBoot) {
+  // Legacy paths still served by Worker / handled by loadPuzzle() — skip the new router on these.
+  // The Worker rewrites /puzzles/<num> via 302 in Plan 05, but in dev the client may still see them.
+  showScreen('game');
+  loadPuzzle();
+} else {
+  initRouter({
+    hasData: () => Object.keys(localStorage).some((k) => k.startsWith('dlng_') || k === 'cw-htp-seen'),
+    todayLocal,
+    todayEntry,
+    midInteraction: () => activeBox !== null || submitting,
+    onArchiveDate: (date) => {
+      // Convert date → puzzleNumber → /api/puzzle/:num and replay via startReplayPuzzle.
+      const num = puzzleNumber(date);
+      fetch(`/api/puzzle/${num}`)
+        .then((r) => r.ok ? r.json() as Promise<{ date: string; puzzleNumber: number; clues: ClueData[] }> : Promise.reject(new Error('puzzle fetch failed')))
+        .then((data) => startReplayPuzzle(data.date, data.puzzleNumber, data.clues))
+        .catch(() => { renderFeedback('error'); });
+    },
+  });
+  loadPuzzle();
+}
 
 // SLV-03: "Show puzzle" link on completion screen → back to game with stats suppressed.
 document.addEventListener('completion:show-puzzle', () => {
@@ -940,7 +972,12 @@ document.addEventListener('completion:show-puzzle', () => {
     dom.stats.classList.add('hidden');
     dom.stats.innerHTML = '';
   }
-  showScreen('game');
+  // SLV-03 + RTE-01: route to /play via the router so title + analytics go through the single
+  // source of truth (titleFor + emitAnalytics). skipResolve bypasses the /play → /solved
+  // redirect that would otherwise loop today's solved player back to the completion screen.
+  // Do NOT call showScreen('game') here — applyRoute already does that for kind: 'play'
+  // (Pitfall 3: double view-transition).
+  navigate('/play', { skipResolve: true });
 });
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
