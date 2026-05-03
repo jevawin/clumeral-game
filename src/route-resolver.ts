@@ -43,7 +43,8 @@ export function resolveRoute(path: string, ctx: ResolveCtx): Route {
     return { kind: 'archive-date', date: d };
   }
 
-  if (path === '/archive') return { kind: 'archive' };
+  // Any other /archive/* subpath (malformed date, garbage) → archive list (ARC-03).
+  if (path === '/archive' || path.startsWith('/archive/')) return { kind: 'archive' };
   if (path === '/welcome') return { kind: 'welcome' };
   if (path === '/play') return { kind: 'play' };
   if (path === '/solved') return { kind: 'solved' };
