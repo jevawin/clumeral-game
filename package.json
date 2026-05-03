@@ -6,6 +6,7 @@
   "description": "Work out the number from 100-999. New puzzle every day.",
   "scripts": {
     "dev": "vite dev",
+    "test": "vitest run",
     "build": "vite build",
     "preview": "vite build && vite preview --host",
     "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
@@ -22,8 +23,11 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.31.0",
     "@cloudflare/workers-types": "^4.20260403.1",
+    "@types/jsdom": "^28.0.1",
+    "jsdom": "^25.0.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
+    "vitest": "^2.1.9",
     "wrangler": "^4.80.0"
   },
   "dependencies": {
