@@ -71,7 +71,13 @@
   5. `/archive/<YYYY-MM-DD>` for today links its solved view back to `/solved`; for any other date it links back to `/archive`.
   6. Each route sets a route-specific `<title>`; route changes emit a `route_change` analytics event with the path; `history.scrollRestoration` is set to `manual` once at boot.
   7. The existing `/puzzles` archive list is renamed to `/archive` (one redirect kept for back-compat) and `/random` is unchanged.
-**Plans:** TBD (run `/gsd:plan-phase 3`)
+**Plans:** 6 plans
+- [ ] 03-01-PLAN.md — Wave 0: install vitest+jsdom, scaffold red specs (infra)
+- [ ] 03-02-PLAN.md — Wave 1: pure resolveRoute() + tests (RTE-03, ARC-03)
+- [ ] 03-03-PLAN.md — Wave 1: src/router.ts navigate/replaceRoute/initRouter + popstate + stale-day (RTE-01, POL-01..04)
+- [ ] 03-04-PLAN.md — Wave 2: wire router into src/app.ts + welcome.ts; replaceRoute on solve (RTE-01, RTE-03, POL-04)
+- [ ] 03-05-PLAN.md — Wave 2: worker rename /puzzles → /archive, 302s, SPA fallback, route_change allowlist (RTE-02, ARC-01, POL-02)
+- [ ] 03-06-PLAN.md — Wave 2: completion-screen back-links date-aware; replace /puzzles with /archive (ARC-02)
 **UI hint:** no (no new visuals — pure routing/structure change)
 
 ## Progress
@@ -80,7 +86,7 @@
 |-------|-----------|---------------:|--------|-----------|
 | 1. Refinements wave 1 | v1.1 | 4/4 | Complete | 2026-05-02 |
 | 2. Clue density | v1.1 | 0/0 | Not started | — |
-| 3. URL routing | v1.1 | 0/0 | Planned | — |
+| 3. URL routing | v1.1 | 0/6 | Planned | — |
 
 ---
-*Last updated: 2026-05-03 — Phase 3 added (URL routing)*
+*Last updated: 2026-05-03 — Phase 3 plans created (6 plans, 3 waves)*
