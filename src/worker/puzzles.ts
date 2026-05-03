@@ -15,7 +15,7 @@ function fmtDate(dateStr: string): string {
   return yr !== now ? `${day} ${mon}, ${String(yr).slice(2)}` : `${day} ${mon}`;
 }
 
-export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
+export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   const rows = puzzles
     .sort((a, b) => b.num - a.num)
     .map(p => `["${p.date}",${p.num},${p.clues}]`)
@@ -25,7 +25,7 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
     .sort((a, b) => b.num - a.num)
     .map(p =>
       `<tr class="row" data-num="${p.num}" data-date="${p.date}" data-clues="${p.clues}">
-        <td><a href="/puzzles/${p.num}">${p.num}</a></td>
+        <td><a href="/archive/${p.date}">${p.num}</a></td>
         <td>${fmtDate(p.date)}</td>
         <td class="num-col">${p.clues}</td>
         <td class="num-col" data-tries></td>
@@ -38,7 +38,7 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Clumeral — Puzzles</title>
+<title>Clumeral · Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Inconsolata:wght@500;700&display=swap" rel="stylesheet">
 <script>
@@ -160,7 +160,7 @@ export function renderPuzzlesPage(puzzles: PuzzleSummary[]): string {
     if (byDate[date] != null) {
       cell.textContent = byDate[date];
     } else {
-      cell.innerHTML = '<a href="/puzzles/' + num + '" class="play-link">Play</a>';
+      cell.innerHTML = '<a href="/archive/' + rows[r].getAttribute("data-date") + '" class="play-link">Play</a>';
     }
   }
 })();
@@ -203,7 +203,7 @@ document.querySelectorAll("th.sortable").forEach(function(th) {
 document.querySelectorAll("tr.row").forEach(function(row) {
   row.addEventListener("click", function(e) {
     if (e.target.tagName === "A") return;
-    location.href = "/puzzles/" + row.getAttribute("data-num");
+    location.href = "/archive/" + row.getAttribute("data-date");
   });
 });
 </script>
