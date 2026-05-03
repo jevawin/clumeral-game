@@ -72,12 +72,12 @@
   6. Each route sets a route-specific `<title>`; route changes emit a `route_change` analytics event with the path; `history.scrollRestoration` is set to `manual` once at boot.
   7. The existing `/puzzles` archive list is renamed to `/archive` (one redirect kept for back-compat) and `/random` is unchanged.
 **Plans:** 6 plans
-- [ ] 03-01-PLAN.md — Wave 0: install vitest+jsdom, scaffold red specs (infra)
-- [ ] 03-02-PLAN.md — Wave 1: pure resolveRoute() + tests (RTE-03, ARC-03)
-- [ ] 03-03-PLAN.md — Wave 1: src/router.ts navigate/replaceRoute/initRouter + popstate + stale-day (RTE-01, POL-01..04)
-- [ ] 03-04-PLAN.md — Wave 2: wire router into src/app.ts + welcome.ts; replaceRoute on solve (RTE-01, RTE-03, POL-04)
-- [ ] 03-05-PLAN.md — Wave 2: worker rename /puzzles → /archive, 302s, SPA fallback, route_change allowlist (RTE-02, ARC-01, POL-02)
-- [ ] 03-06-PLAN.md — Wave 2: completion-screen back-links date-aware; replace /puzzles with /archive (ARC-02)
+- [x] 03-01-PLAN.md — Wave 0: install vitest+jsdom, scaffold red specs (infra)
+- [x] 03-02-PLAN.md — Wave 1: pure resolveRoute() + tests (RTE-03, ARC-03)
+- [x] 03-03-PLAN.md — Wave 1: src/router.ts navigate/replaceRoute/initRouter + popstate + stale-day (RTE-01, POL-01..04)
+- [x] 03-04-PLAN.md — Wave 2: wire router into src/app.ts + welcome.ts; replaceRoute on solve (RTE-01, RTE-03, POL-04)
+- [x] 03-05-PLAN.md — Wave 2: worker rename /puzzles → /archive, 302s, SPA fallback, route_change allowlist (RTE-02, ARC-01, POL-02)
+- [x] 03-06-PLAN.md — Wave 2: completion-screen back-links date-aware; replace /puzzles with /archive (ARC-02)
 **UI hint:** no (no new visuals — pure routing/structure change)
 
 ## Progress
