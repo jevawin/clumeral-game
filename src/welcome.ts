@@ -168,5 +168,10 @@ export function initWelcome(): void {
   renderWelcome(isNew);
 
   const playBtn = document.querySelector('[data-play-btn]') as HTMLButtonElement | null;
-  playBtn?.addEventListener("click", () => navigate('/play'));
+  playBtn?.addEventListener("click", () => {
+    // Mark user as engaged so RTE-03 hasData gate lets /play through.
+    // A fresh visitor with only dlng_uid (analytics) would otherwise bounce back here.
+    try { localStorage.setItem('cw-htp-seen', '1'); } catch { /* private mode */ }
+    navigate('/play');
+  });
 }
