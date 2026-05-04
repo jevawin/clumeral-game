@@ -982,6 +982,14 @@ if (isRandomBoot || oldReplayBoot) {
   // owns the puzzle fetch via startReplayPuzzle. Otherwise loadPuzzle() races and
   // overwrites the archived clues with today's.
   const isArchiveDateBoot = /^\/archive\/[^/]+$/.test(window.location.pathname);
+  // Refresh on /play after solving today should mirror Show-puzzle mode: hide
+  // the full stats panel and render a "Show stats" link instead. The router's
+  // back-loop fix (resolveRoute no longer auto-redirects /play→/solved) means
+  // this branch is now reachable; without it the user sees the full stats
+  // panel which is jarring against the also-visible reveal-answer state.
+  if (window.location.pathname === '/play' && todayEntry()) {
+    suppressStats = true;
+  }
   if (!isArchiveDateBoot) loadPuzzle();
 }
 
