@@ -82,10 +82,3 @@ export function showScreen(next: ScreenId): void {
   setTimeout(() => updateScreenDOM(next), FADE_OUT_MS);
 }
 
-export function getCurrentScreen(): ScreenId | null {
-  return currentScreen;
-}
-
-export function initScreens(initial: ScreenId = "welcome"): void {
-  updateScreenDOM(initial);
-}

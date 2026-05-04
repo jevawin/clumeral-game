@@ -8,7 +8,7 @@ import { initTheme } from './theme.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { showScreen } from './screens.ts';
-import { navigate, replaceRoute, initRouter } from './router.ts';
+import { navigate, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
 
@@ -67,7 +67,6 @@ const dom = {
   next: $('[data-next]') as HTMLElement | null,
   nextNumber: $('[data-next-number]') as HTMLElement | null,
   again: $('[data-again]') as HTMLElement | null,
-  plabel: $('[data-plabel]') as HTMLElement | null,
   archiveBanner: $('[data-archive-banner]') as HTMLElement | null,
   history: $('[data-history]') as HTMLElement | null,
   historyList: $('[data-history-list]') as HTMLElement | null,
@@ -575,8 +574,6 @@ function resetPuzzleUI() {
 }
 
 function startRandomPuzzle(clues: ClueData[], token: string): void {
-  if (dom.plabel) dom.plabel.textContent = "Random puzzle";
-
   renderClues(clues);
 
   gameState = { answer: null, guesses: [], solved: false, isRandom: true, token };
@@ -587,8 +584,6 @@ function startRandomPuzzle(clues: ClueData[], token: string): void {
 }
 
 function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
-  if (dom.plabel) dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
-
   renderClues(clues);
 
   const entry = todayEntry();
@@ -608,9 +603,6 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 }
 
 async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): Promise<void> {
-  // Legacy plabel writer (no-op in new design) kept for backward compat.
-  if (dom.plabel) dom.plabel.textContent = `Puzzle #${num} · ${formatDate(date)}`;
-
   renderClues(clues);
   const showBanner = () => {
     if (!dom.archiveBanner) return;
@@ -952,12 +944,12 @@ document.addEventListener('analytics:track', (e) => {
 });
 
 // Boot the router — sets scrollRestoration, registers popstate + visibility/focus,
-// and resolves location.pathname to the right screen (handles SLV-02, /random, /puzzles/<n>).
+// resolves location.pathname to the right screen, and handles cold-load redirects.
+// /random is intentional (no router resolution — direct game screen with random puzzle).
+// /puzzles/<n> is handled by the worker as a 302 to /archive/<date> so the client
+// never sees it; no client-side handler needed.
 const isRandomBoot = window.location.pathname === '/random';
-const oldReplayBoot = window.location.pathname.match(/^\/puzzles\/(\d+)$/);
-if (isRandomBoot || oldReplayBoot) {
-  // Legacy paths still served by Worker / handled by loadPuzzle() — skip the new router on these.
-  // The Worker rewrites /puzzles/<num> via 302 in Plan 05, but in dev the client may still see them.
+if (isRandomBoot) {
   showScreen('game');
   loadPuzzle();
 } else {
