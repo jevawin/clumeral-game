@@ -36,9 +36,9 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed (v1.1): 0
-- Average duration: —
-- Total execution time: 0 hours
+- Total plans completed (v1.1): 10
+- Average duration: ~5 min/plan (executor)
+- Total execution time: not tracked
 
 **By Phase:**
 
@@ -93,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-02T20:20:21.367Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-05-04
+Stopped at: Phase 03 complete + follow-up fixes (home rule, archive solved-replay, layout restructure). Awaiting design tweaks next session.
 Resume file: None
