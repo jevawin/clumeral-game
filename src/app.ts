@@ -650,7 +650,15 @@ async function handleGuess() {
       }
 
       // Render completion content before transition so it's ready when fade reveals it.
-      renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
+      // Pass activeDate when solving an archived puzzle so completion.ts wires Show-puzzle
+      // back to /archive/<date> rather than /play (URL must reflect archive context).
+      const isArchiveSolve = !!gameState.date && gameState.date !== todayLocal();
+      renderCompletion(
+        gameState.puzzleNum ?? 0,
+        tries,
+        !!gameState.isRandom,
+        isArchiveSolve ? { activeDate: gameState.date, todayLocal: todayLocal() } : undefined,
+      );
 
       // RTE-03: pushState (not replace) so back from /solved lands on /play with the
       // solved state visible — the user explicitly asked to see "their puzzle". /welcome
@@ -925,11 +933,14 @@ if (isRandomBoot) {
   if (!isArchiveDateBoot) loadPuzzle();
 }
 
-// SLV-03: "Show puzzle" link on completion screen → /play. The screens:enter
-// listener below re-applies showCompletedState for the solved state, so the
-// /play view ends up consistent with cold-load and archive paths.
-document.addEventListener('completion:show-puzzle', () => {
-  navigate('/play', { skipResolve: true });
+// SLV-03: "Show puzzle" link on completion screen → /play (today) or
+// /archive/<date> (archive solve). Activate date carried in event detail.
+// The screens:enter listener re-applies showCompletedState afterwards so the
+// /play view is consistent with cold-load and archive paths.
+document.addEventListener('completion:show-puzzle', (e) => {
+  const detail = (e as CustomEvent).detail as { activeDate?: string } | undefined;
+  const target = detail?.activeDate ? `/archive/${detail.activeDate}` : '/play';
+  navigate(target, { skipResolve: true });
 });
 
 // Re-apply solved-replay state every time the game screen becomes active.

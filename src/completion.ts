@@ -160,8 +160,9 @@ export function renderCompletion(
       typeof opts.todayLocal === 'string' &&
       opts.activeDate !== opts.todayLocal;
 
-    // Show puzzle: only on today's daily solved view (not random, not archived past).
-    if (!isRandom && !isArchivedOtherDate) {
+    // Show puzzle: visible on today's solved view AND archive solved view.
+    // Random has no equivalent puzzle URL to deep-link to, so omit there.
+    if (!isRandom) {
       const a = document.createElement('a');
       a.href = '#';
       a.className = 'link';
@@ -169,7 +170,10 @@ export function renderCompletion(
       a.textContent = 'Show puzzle';
       a.addEventListener('click', (e) => {
         e.preventDefault();
-        document.dispatchEvent(new CustomEvent('completion:show-puzzle'));
+        // Archive solves carry their date in the event so the handler can route
+        // to /archive/<date> instead of /play (URL must reflect archive context).
+        const detail = isArchivedOtherDate ? { activeDate: opts.activeDate } : undefined;
+        document.dispatchEvent(new CustomEvent('completion:show-puzzle', { detail }));
       });
       dom.links.appendChild(a);
     }
