@@ -150,9 +150,31 @@ function checkStaleDay(): void {
   }
 }
 
+// localStorage key for the puzzle day the user last interacted with.
+// On cold-load, if this is older than today, redirect to /welcome regardless of
+// the requested path — the puzzle has rolled over and any prior /play/solved
+// view is stale (D-rollover policy, surfaced from preview testing 2026-05-04).
+const LAST_VISIT_KEY = 'cw-last-visit-date';
+
 export function initRouter(d: RouterDeps): void {
   deps = d;
-  lastKnownDate = d.todayLocal();
+  const today = d.todayLocal();
+  lastKnownDate = today;
+
+  // Cold-load rollover redirect — runs before the first navigate so the user
+  // never sees a stale /play or /solved screen briefly. Only triggers if the
+  // user has a stored prior-visit date and it's older than today; first-time
+  // visitors fall through to whatever route they requested.
+  let coldRedirect: string | null = null;
+  try {
+    const prior = localStorage.getItem(LAST_VISIT_KEY);
+    // /archive/* is a deliberate date-anchored deep-link — never rollover-redirect.
+    const isArchive = location.pathname === '/archive' || location.pathname.startsWith('/archive/');
+    if (prior && prior < today && location.pathname !== '/welcome' && !isArchive) {
+      coldRedirect = '/welcome';
+    }
+    localStorage.setItem(LAST_VISIT_KEY, today);
+  } catch { /* private mode — skip */ }
 
   // POL-03: set once at boot, before any navigation.
   try {
@@ -164,6 +186,11 @@ export function initRouter(d: RouterDeps): void {
     const route = resolveRoute(location.pathname, ctx());
     applyRoute(route);
   });
+
+  // Apply the cold-load rollover redirect if we computed one above.
+  if (coldRedirect) {
+    history.replaceState(null, '', coldRedirect);
+  }
 
   // POL-04: visibility + focus only. No timer-based polling.
   document.addEventListener('visibilitychange', () => {
