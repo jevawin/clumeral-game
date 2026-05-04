@@ -16,9 +16,9 @@ describe('resolveRoute (RTE-03, ARC-03)', () => {
     expect(resolveRoute('/play', ctx({ hasData: false }))).toEqual({ kind: 'welcome' });
   });
 
-  it('RTE-03: /play with today already solved → solved', () => {
+  it('RTE-03: /play with today already solved → play (solved-replay; back-from-/solved should not loop)', () => {
     const todayEntry = { date: '2026-05-03', tries: 2 };
-    expect(resolveRoute('/play', ctx({ todayEntry }))).toEqual({ kind: 'solved' });
+    expect(resolveRoute('/play', ctx({ hasData: true, todayEntry }))).toEqual({ kind: 'play' });
   });
 
   it('RTE-03: /solved with no/stale today entry → welcome', () => {

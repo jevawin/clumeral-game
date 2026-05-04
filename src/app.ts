@@ -711,11 +711,14 @@ async function handleGuess() {
       // Render completion content before transition so it's ready when fade reveals it.
       renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
 
-      // RTE-03: replaceState so back from /solved lands on /welcome, not the finished /play.
+      // RTE-03: pushState (not replace) so back from /solved lands on /play with the
+      // solved state visible — the user explicitly asked to see "their puzzle". /welcome
+      // is reachable via second back press. resolveRoute treats /play with todayEntry as
+      // /play (not /solved) so the back-pop doesn't bounce-loop.
       // Fire sync — never inside celebrateOcto's callback. If celebration is interrupted
       // (page hidden, rAF paused, transition cancelled) the user could be stranded on /play
       // with the puzzle solved but no path to /solved except a refresh (#solve-stranding).
-      replaceRoute('/solved');
+      navigate('/solved');
 
       // Celebration is visual only (D-13: skip under reduced motion).
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
