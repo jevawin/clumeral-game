@@ -37,13 +37,21 @@ calls `navigate()` / `replaceRoute()`.
 | Input path                              | Condition                          | Resolves to        |
 |-----------------------------------------|------------------------------------|--------------------|
 | `/play`                                 | `!hasData` (no `dlng_history`)     | `welcome`          |
+| `/play`                                 | `todayEntry` (already solved)      | `solved`           |
 | `/play`                                 | otherwise                          | `play`             |
+| `/welcome`                              | `todayEntry` (already solved)      | `solved`           |
 | `/solved`                               | `!todayEntry`                      | `welcome`          |
 | `/solved`                               | otherwise                          | `solved`           |
 | `/archive/<YYYY-MM-DD>`                 | invalid date or future date        | `archive`          |
 | `/archive/<YYYY-MM-DD>`                 | otherwise                          | `archive-date`     |
 | `/archive` or `/archive/<garbage>`      | —                                  | `archive`          |
 | `/welcome`, `/`, anything else          | —                                  | `welcome`          |
+
+**The home rule.** Pre-solve, `/welcome` is the homepage; `/play` and `/solved`
+are reachable but redirect to `/welcome` if state is missing. Post-solve,
+`/solved` is the homepage; `/welcome` and `/play` both redirect to `/solved`.
+The only way to reach `/play` after solving is the explicit Show-puzzle link
+on `/solved` (which uses `skipResolve` to bypass the redirect).
 
 `hasData` is `localStorage.getItem('dlng_history')` only — `dlng_uid` (analytics
 UID, set unconditionally at boot) does NOT count. Otherwise a stranger sharing
@@ -82,8 +90,8 @@ links.
 | nothing                   | `/archive/<past-date>`     | game screen, replay-able        |
 | nothing                   | `/archive/<future-date>`   | `/archive` (ARC-03)             |
 | nothing                   | `/archive/<garbage>`       | `/archive` (ARC-03)             |
-| solved today              | `/welcome`                 | `/welcome` *(see open question)* |
-| solved today              | `/play`                    | game screen, solved-replay UI   |
+| solved today              | `/welcome`                 | `/solved` (post-solve home)     |
+| solved today              | `/play`                    | `/solved` (post-solve home)     |
 | solved today              | `/solved`                  | `/solved`                       |
 | solved past date          | `/archive/<that-date>`     | game screen, solved-replay UI   |
 | `cw-last-visit-date < today` | `/play` or `/solved`    | `/welcome` (rollover)           |
@@ -92,22 +100,27 @@ links.
 
 ## Navigation transitions
 
-| From                                       | Action               | Goes to                            | URL change       |
-|--------------------------------------------|----------------------|------------------------------------|------------------|
-| `/welcome`                                 | click Play           | `/play` (game)                     | `pushState`      |
-| `/play`                                    | submit correct guess | `/solved` (completion)             | `pushState`      |
-| `/solved` (today)                          | click Show puzzle    | `/play`                            | `pushState`      |
-| `/solved` (archive solve)                  | click Show puzzle    | `/archive/<that-date>`             | `pushState`      |
-| `/solved`                                  | click Archive        | `/archive`                         | full nav         |
-| `/play` (solved-replay)                    | click Show stats     | `/solved`                          | `pushState`      |
-| `/archive` (list)                          | click puzzle row     | `/archive/<that-date>`             | full nav (worker) |
-| `/archive/<date>` (replay-able)            | submit correct guess | `/solved` then auto-resolves       | `pushState`      |
-| `/archive/<date>` (replay-able)            | click Back to archive| `/archive`                         | full nav         |
-| any                                        | back button          | previous history entry, re-resolves | popstate         |
+| From                                       | Action               | Goes to                                    | URL change       |
+|--------------------------------------------|----------------------|--------------------------------------------|------------------|
+| `/welcome`                                 | click Play           | `/play` (game)                             | `pushState`      |
+| `/play` (today)                            | submit correct guess | `/solved` (completion)                     | `replaceState`   |
+| `/solved`                                  | click Show puzzle    | `/play` (solved-replay)                    | `pushState`      |
+| `/solved`                                  | click Archive        | `/archive`                                 | full nav         |
+| `/play` (solved-replay)                    | click Show stats     | `/solved`                                  | `pushState`      |
+| `/archive` (list)                          | click puzzle row     | `/archive/<date>`                          | full nav (worker) |
+| `/archive/<date>` (replay-able)            | submit correct guess | stays on `/archive/<date>`, solved-replay  | none             |
+| `/archive/<date>` (replay-able or solved)  | click Back to archive| `/archive`                                 | full nav         |
+| `/archive/<date>` (replay-able or solved)  | click Latest puzzle  | `/`                                        | full nav         |
+| any                                        | back button          | previous history entry, re-resolves        | popstate         |
 
-The router uses `pushState` for solves so the back button unwinds the journey
-naturally: `/welcome` → `/play` → `/solved` → back → `/play` (solved-replay)
-→ back → `/welcome`.
+Today's solve uses `replaceState` so the `/play` entry is replaced by `/solved`
+in history. Combined with the "/welcome with todayEntry → /solved" redirect,
+back from `/solved` goes to `/welcome` which re-resolves to `/solved` —
+making `/solved` the effective post-solve home. From `/solved`, Show puzzle
+pushes `/play` so back from `/play` (solved-replay) → `/solved`.
+
+Archive solves never enter the `/solved` flow; they stay on `/archive/<date>`
+the whole way, so the URL always reflects the puzzle being viewed.
 
 ---
 
@@ -185,11 +198,8 @@ showing input UI.
 
 ## Open questions
 
-1. **Should `/welcome` redirect to `/solved` if today is already solved?**
-   Currently `/welcome` is a stable landing page regardless of state.
-   The user-facing argument for redirecting: solved players don't need
-   to see the Play button again. The argument against: `/welcome` is the
-   starting point and shouldn't move under the user.
+*(none currently — pre-solve home is `/welcome`, post-solve home is `/solved`,
+archive views stay on `/archive/<date>`. See the "home rule" above.)*
 
 ---
 

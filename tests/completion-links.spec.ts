@@ -30,24 +30,15 @@ describe('completion links (ARC-02)', () => {
     expect(archive.getAttribute('href')).toBe('/archive');
   });
 
-  it('ARC-02: /archive/<other-date> solved view shows Show puzzle (carries activeDate) + Archive link → /archive', async () => {
+  it('ARC-02: /archive/<other-date> never shows Show puzzle (archive solves stay on /archive/<date>; completion screen is today-only)', async () => {
     const mod = await import('../src/completion.ts');
     mod.renderCompletion(10, 3, false, { activeDate: '2026-04-01', todayLocal: '2026-05-03' });
 
     const links = document.querySelector('[data-completion-links]')!;
-    const showPuzzle = links.querySelector('[data-completion-show-puzzle]') as HTMLAnchorElement | null;
+    const showPuzzle = links.querySelector('[data-completion-show-puzzle]');
     const archive = links.querySelector('[data-completion-archive]') as HTMLAnchorElement;
-    expect(showPuzzle).not.toBeNull();
+    expect(showPuzzle).toBeNull();
     expect(archive.getAttribute('href')).toBe('/archive');
-
-    // Show puzzle dispatches the event with the archive date so the handler can
-    // route to /archive/<date> instead of /play.
-    let received: { activeDate?: string } | undefined;
-    document.addEventListener('completion:show-puzzle', (e) => {
-      received = (e as CustomEvent).detail;
-    }, { once: true });
-    showPuzzle!.click();
-    expect(received?.activeDate).toBe('2026-04-01');
   });
 
   it('ARC-02: daily /play solved view (no opts) keeps existing Show puzzle + /archive links', async () => {

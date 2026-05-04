@@ -8,7 +8,7 @@ import { initTheme } from './theme.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { showScreen } from './screens.ts';
-import { navigate, initRouter } from './router.ts';
+import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
 
@@ -649,25 +649,24 @@ async function handleGuess() {
         recordGame(gameState.date, tries, guess);
       }
 
-      // Render completion content before transition so it's ready when fade reveals it.
-      // Pass activeDate when solving an archived puzzle so completion.ts wires Show-puzzle
-      // back to /archive/<date> rather than /play (URL must reflect archive context).
       const isArchiveSolve = !!gameState.date && gameState.date !== todayLocal();
-      renderCompletion(
-        gameState.puzzleNum ?? 0,
-        tries,
-        !!gameState.isRandom,
-        isArchiveSolve ? { activeDate: gameState.date, todayLocal: todayLocal() } : undefined,
-      );
 
-      // RTE-03: pushState (not replace) so back from /solved lands on /play with the
-      // solved state visible — the user explicitly asked to see "their puzzle". /welcome
-      // is reachable via second back press. resolveRoute treats /play with todayEntry as
-      // /play (not /solved) so the back-pop doesn't bounce-loop.
-      // Fire sync — never inside celebrateOcto's callback. If celebration is interrupted
-      // (page hidden, rAF paused, transition cancelled) the user could be stranded on /play
-      // with the puzzle solved but no path to /solved except a refresh (#solve-stranding).
-      navigate('/solved');
+      if (isArchiveSolve) {
+        // Archive solve stays on /archive/<date> the whole way — no /solved hop.
+        // /solved is reserved for today's puzzle (overall stats live there).
+        // Render the minimal solved-replay view inline.
+        showCompletedState(tries, gameState.date);
+      } else {
+        // Today's solve: paint the completion screen and replace history (no /play
+        // entry to back into; back from /solved goes to /welcome, which itself
+        // redirects to /solved post-solve so the back lands on the same screen
+        // — effectively making /solved the post-solve home).
+        renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
+        // Fire sync — never inside celebrateOcto's callback. If celebration is
+        // interrupted (page hidden, rAF paused) the user could otherwise be
+        // stranded on /play with the puzzle solved (#solve-stranding).
+        replaceRoute('/solved');
+      }
 
       // Celebration is visual only (D-13: skip under reduced motion).
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -933,14 +932,13 @@ if (isRandomBoot) {
   if (!isArchiveDateBoot) loadPuzzle();
 }
 
-// SLV-03: "Show puzzle" link on completion screen → /play (today) or
-// /archive/<date> (archive solve). Activate date carried in event detail.
-// The screens:enter listener re-applies showCompletedState afterwards so the
-// /play view is consistent with cold-load and archive paths.
-document.addEventListener('completion:show-puzzle', (e) => {
-  const detail = (e as CustomEvent).detail as { activeDate?: string } | undefined;
-  const target = detail?.activeDate ? `/archive/${detail.activeDate}` : '/play';
-  navigate(target, { skipResolve: true });
+// "Show puzzle" link on /solved → /play (today's solved-replay view).
+// skipResolve bypasses the /play-with-todayEntry → /solved redirect.
+// The screens:enter listener re-applies showCompletedState so /play renders
+// the minimal solved-replay UI consistent with cold-load (when the redirect
+// is bypassed).
+document.addEventListener('completion:show-puzzle', () => {
+  navigate('/play', { skipResolve: true });
 });
 
 // Re-apply solved-replay state every time the game screen becomes active.

@@ -67,6 +67,10 @@ describe('router (RTE-01, POL-01..04)', () => {
       todayEntry: () => todayEntry,
       midInteraction: () => false,
     });
+    // Park location somewhere that requires an actual URL change so the test
+    // can observe the replaceState call (initRouter's own redirects may have
+    // already landed on /solved depending on the resolver's current rules).
+    history.replaceState(null, '', '/play');
     const replaceSpy = vi.spyOn(history, 'replaceState');
     const pushSpy = vi.spyOn(history, 'pushState');
     replaceRoute('/solved');

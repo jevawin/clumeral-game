@@ -28,11 +28,17 @@ export function isValidDate(d: string): boolean {
 }
 
 export function resolveRoute(path: string, ctx: ResolveCtx): Route {
-  // /play redirect rules (RTE-03). Returning solvers see /play in solved-replay
-  // mode rather than auto-redirecting to /solved — back-from-/solved should land
-  // on /play (the puzzle they solved), not skip past it. Solver navigates to
-  // /solved via the explicit "Show stats" link or the original solve push.
+  // /play redirect rules (RTE-03).
+  // !hasData (no history): stranger/fresh visitor — bounce to /welcome.
+  // todayEntry exists (already solved today): /solved is the post-solve home —
+  // /play is only reachable inwards via the explicit Show-puzzle link
+  // (skipResolve), never as a deep-link destination.
   if (path === '/play' && !ctx.hasData) return { kind: 'welcome' };
+  if (path === '/play' && ctx.todayEntry) return { kind: 'solved' };
+
+  // /welcome redirect: post-solve, /solved is home — never re-show the welcome
+  // landing if today's puzzle is already done.
+  if (path === '/welcome' && ctx.todayEntry) return { kind: 'solved' };
 
   // /solved redirect rules (RTE-03)
   if (path === '/solved' && !ctx.todayEntry) return { kind: 'welcome' };
