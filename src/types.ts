@@ -9,6 +9,7 @@ export interface GameState {
   answer: number | null;
   guesses: number[];
   solved: boolean;
+  tries?: number;
   puzzleNum?: number;
   isRandom?: boolean;
   date?: string;

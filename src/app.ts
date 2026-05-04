@@ -78,9 +78,6 @@ const dom = {
 let gameState: GameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
 let submitting = false; // guard against double-submit during API call
-// SLV-03: when true, renderStats / renderStatsUpTo skip rendering.
-// Set when the user clicks "Show puzzle" on the completion screen.
-let suppressStats = false;
 
 function initPossibles(): Set<number>[] {
   return [
@@ -340,71 +337,6 @@ function renderHistory(guesses: number[]): void {
   }
 }
 
-// Solved-replay mode covers two paths: explicit Show-puzzle click (suppressStats
-// flag) AND cold-load on /play with a todayEntry. Computing this at render time
-// (rather than checking only the flag) means the cold-load case works even when
-// renderStats happens to fire while another route is active — the rendered DOM
-// reflects current state, not the state at render trigger time.
-function inSolvedReplayMode(): boolean {
-  return suppressStats || (location.pathname === '/play' && !!todayEntry());
-}
-
-function renderStats() {
-  if (!dom.stats) return;
-  if (inSolvedReplayMode()) {
-    // Solved-replay mode: hide stats numbers but keep a way back to /solved.
-    dom.stats.classList.remove("hidden");
-    dom.stats.innerHTML = `<p class="mt-3 font-[Quicksand]"><a href="/solved" data-show-stats class="text-accent underline">Show stats</a></p>`;
-    return;
-  }
-  const history = loadHistory();
-  if (history.length === 0) {
-    dom.stats.classList.add("hidden");
-    return;
-  }
-  const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
-  const last5 = history.slice(0, 5);
-  dom.stats.innerHTML = `
-    <p class="font-mono text-base font-bold uppercase tracking-widest text-text mb-2">Your stats</p>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-text font-[Quicksand]">Played</span></div>
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-text font-[Quicksand]">Avg tries</span></div>
-    </div>
-    <p class="text-sm text-text mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
-    <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
-  `;
-  dom.stats.classList.remove("hidden");
-}
-
-function renderStatsUpTo(upToDate: string) {
-  if (!dom.stats) return;
-  if (suppressStats) {
-    dom.stats.classList.add("hidden");
-    dom.stats.innerHTML = "";
-    return;
-  }
-  const history = loadHistory().filter(h => h.date <= upToDate);
-  const fDate = formatDate(upToDate);
-  if (history.length === 0) {
-    dom.stats.innerHTML = `<p class="mt-3 font-[Quicksand]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>`;
-    dom.stats.classList.remove("hidden");
-    return;
-  }
-  const avg = (history.reduce((s, h) => s + h.tries, 0) / history.length).toFixed(1);
-  const last5 = history.slice(0, 5);
-  dom.stats.innerHTML = `
-    <p class="font-mono text-base font-bold uppercase tracking-widest text-text mb-2">Your stats (to ${fDate})</p>
-    <div class="grid grid-cols-2 gap-4">
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${history.length}</span><span class="text-sm text-text font-[Quicksand]">Played</span></div>
-      <div class="text-center"><span class="block text-2xl font-bold text-text">${avg}</span><span class="text-sm text-text font-[Quicksand]">Avg tries</span></div>
-    </div>
-    <p class="text-sm text-text mt-3 font-[Quicksand]">Last ${last5.length} game${last5.length !== 1 ? "s" : ""}</p>
-    <div class="flex gap-2 mt-1">${last5.map((h) => `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-surface border border-border text-sm font-mono">${h.tries}</span>`).join("")}</div>
-    <p class="mt-3 font-[Quicksand]"><a href="/" class="text-accent underline">Go to latest puzzle</a></p>
-  `;
-  dom.stats.classList.remove("hidden");
-}
-
 // ─── Digit boxes ──────────────────────────────────────────────────────────────
 
 function renderBox(i: number): void {
@@ -530,19 +462,14 @@ function showNextPuzzle() {
 }
 
 function showCompletedState(tries: number, replayDate?: string): void {
-  // /play in solved-replay mode is intentionally minimal — digits revealed plus
-  // a Show stats link via renderStats. The legacy "You already solved..." banner
-  // and "Puzzle X is available tomorrow" line live on /solved (renderCompletion)
-  // and would only duplicate that screen's content here. Archive replays
-  // (replayDate set) keep the "You solved this puzzle in N tries" message
-  // because the contextual completion content is on /solved, but their stats
-  // history view via renderStatsUpTo provides the "Go to latest puzzle" link.
-  if (replayDate && dom.feedback) {
-    const t = tries === 1 ? "1 try" : `${tries} tries`;
-    dom.feedback.innerHTML = `${ICON_CHECK} You solved this puzzle in ${t}!`;
+  // /play in solved-replay mode is the same minimal view for today and archive:
+  // clues + revealed digits + "Solved in N tries!" + a context-specific link.
+  // Stats panel never appears here — it lives on /solved.
+  const t = tries === 1 ? "1 try" : `${tries} tries`;
+  if (dom.feedback) {
+    dom.feedback.innerHTML = `${ICON_CHECK} Solved in ${t}!`;
     dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
-  } else {
-    renderFeedback(null);
+    dom.feedback.classList.remove("hidden");
   }
   // Show the answer digits in the boxes
   if (gameState.answer != null) {
@@ -557,13 +484,17 @@ function showCompletedState(tries: number, replayDate?: string): void {
     }
   }
   dom.submitWrap?.classList.add("hidden");
-  // Hide the "Puzzle X is available tomorrow" line — it lives on /solved.
   dom.next?.classList.add("hidden");
   dom.history?.classList.add("hidden");
-  if (replayDate) {
-    renderStatsUpTo(replayDate);
-  } else {
-    renderStats();
+
+  if (dom.stats) {
+    // Archive solved: link back to /archive list + /random→latest. Today: Show stats.
+    const linksHtml = replayDate
+      ? `<p class="mt-3 font-[Quicksand]"><a href="/archive" class="text-accent underline">Back to archive</a></p>
+         <p class="mt-2 font-[Quicksand]"><a href="/" class="text-accent underline">Latest puzzle</a></p>`
+      : `<p class="mt-3 font-[Quicksand]"><a href="/solved" data-show-stats class="text-accent underline">Show stats</a></p>`;
+    dom.stats.innerHTML = linksHtml;
+    dom.stats.classList.remove("hidden");
   }
 }
 
@@ -605,7 +536,7 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 
   const entry = todayEntry();
   if (entry) {
-    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, puzzleNum: num, date };
+    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entry.tries, puzzleNum: num, date };
     showCompletedState(entry.tries);
     return;
   }
@@ -641,7 +572,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
         }
       } catch { /* leave as null */ }
     }
-    gameState = { answer, guesses: [], solved: true, puzzleNum: num, date };
+    gameState = { answer, guesses: [], solved: true, tries: entry.tries, puzzleNum: num, date };
     showCompletedState(entry.tries, date);
     showBanner();
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
@@ -701,6 +632,7 @@ async function handleGuess() {
 
     if (result.correct) {
       gameState.solved = true;
+      gameState.tries = tries;
       gameState.answer = guess; // now we know the answer (it was our correct guess)
       track("puzzle_complete", tries);
       renderFeedback("correct", guess);
@@ -993,39 +925,33 @@ if (isRandomBoot) {
   if (!isArchiveDateBoot) loadPuzzle();
 }
 
-// SLV-03: "Show puzzle" link on completion screen → back to game with stats suppressed.
+// SLV-03: "Show puzzle" link on completion screen → /play. The screens:enter
+// listener below re-applies showCompletedState for the solved state, so the
+// /play view ends up consistent with cold-load and archive paths.
 document.addEventListener('completion:show-puzzle', () => {
-  suppressStats = true;
-  // Render the suppressStats variant of stats — this injects the "Show stats" return link
-  // so the user has a way back to /solved without refreshing the page.
-  renderStats();
-  // SLV-03 + RTE-01: route to /play via the router so title + analytics go through the single
-  // source of truth (titleFor + emitAnalytics). skipResolve bypasses the /play → /solved
-  // redirect that would otherwise loop today's solved player back to the completion screen.
-  // Do NOT call showScreen('game') here — applyRoute already does that for kind: 'play'
-  // (Pitfall 3: double view-transition).
   navigate('/play', { skipResolve: true });
 });
 
-// Re-render stats when the game screen becomes active. Without this, a cold
-// load on /welcome can pre-render the full stats panel into the (hidden) game
-// DOM with location.pathname still '/welcome' — then a subsequent Play click
-// shows the stale full panel instead of the Show stats link. inSolvedReplayMode()
-// reads location.pathname live, so re-rendering on screen entry is enough.
+// Re-apply solved-replay state every time the game screen becomes active.
+// Two paths reach /play in solved mode without going through showCompletedState:
+//   - Show puzzle from /solved (after a fresh solve in this session)
+//   - history.back() from /solved
+// Without this, /play would show the post-solve "Correct! That's puzzle #N"
+// feedback or stale stats from earlier renders. Using showCompletedState keeps
+// the message consistent with cold-load and archive replay paths.
 document.addEventListener('screens:enter', (e) => {
   const screen = (e as CustomEvent).detail?.screen;
-  if (screen === 'game' && gameState.solved) {
-    renderStats();
-  }
+  if (screen !== 'game' || !gameState.solved || gameState.tries == null) return;
+  const replayDate = gameState.date && gameState.date !== todayLocal() ? gameState.date : undefined;
+  showCompletedState(gameState.tries, replayDate);
 });
 
-// "Show stats" link on /play (solved-replay mode) → back to /solved.
-// Delegated because the link is rendered into dom.stats lazily by renderStats().
+// "Show stats" link on /play (today's solved-replay) → /solved. Delegated because
+// the link is written into dom.stats lazily by showCompletedState.
 document.addEventListener('click', (e) => {
   const target = (e.target as HTMLElement).closest('[data-show-stats]');
   if (!target) return;
   e.preventDefault();
-  suppressStats = false;
   navigate('/solved');
 });
 
