@@ -340,9 +340,18 @@ function renderHistory(guesses: number[]): void {
   }
 }
 
+// Solved-replay mode covers two paths: explicit Show-puzzle click (suppressStats
+// flag) AND cold-load on /play with a todayEntry. Computing this at render time
+// (rather than checking only the flag) means the cold-load case works even when
+// renderStats happens to fire while another route is active — the rendered DOM
+// reflects current state, not the state at render trigger time.
+function inSolvedReplayMode(): boolean {
+  return suppressStats || (location.pathname === '/play' && !!todayEntry());
+}
+
 function renderStats() {
   if (!dom.stats) return;
-  if (suppressStats) {
+  if (inSolvedReplayMode()) {
     // Solved-replay mode: hide stats numbers but keep a way back to /solved.
     dom.stats.classList.remove("hidden");
     dom.stats.innerHTML = `<p class="mt-3 font-[Quicksand]"><a href="/solved" data-show-stats class="text-accent underline">Show stats</a></p>`;
@@ -973,14 +982,6 @@ if (isRandomBoot) {
   // owns the puzzle fetch via startReplayPuzzle. Otherwise loadPuzzle() races and
   // overwrites the archived clues with today's.
   const isArchiveDateBoot = /^\/archive\/[^/]+$/.test(window.location.pathname);
-  // Refresh on /play after solving today should mirror Show-puzzle mode: hide
-  // the full stats panel and render a "Show stats" link instead. The router's
-  // back-loop fix (resolveRoute no longer auto-redirects /play→/solved) means
-  // this branch is now reachable; without it the user sees the full stats
-  // panel which is jarring against the also-visible reveal-answer state.
-  if (window.location.pathname === '/play' && todayEntry()) {
-    suppressStats = true;
-  }
   if (!isArchiveDateBoot) loadPuzzle();
 }
 
@@ -996,6 +997,18 @@ document.addEventListener('completion:show-puzzle', () => {
   // Do NOT call showScreen('game') here — applyRoute already does that for kind: 'play'
   // (Pitfall 3: double view-transition).
   navigate('/play', { skipResolve: true });
+});
+
+// Re-render stats when the game screen becomes active. Without this, a cold
+// load on /welcome can pre-render the full stats panel into the (hidden) game
+// DOM with location.pathname still '/welcome' — then a subsequent Play click
+// shows the stale full panel instead of the Show stats link. inSolvedReplayMode()
+// reads location.pathname live, so re-rendering on screen entry is enough.
+document.addEventListener('screens:enter', (e) => {
+  const screen = (e as CustomEvent).detail?.screen;
+  if (screen === 'game' && gameState.solved) {
+    renderStats();
+  }
 });
 
 // "Show stats" link on /play (solved-replay mode) → back to /solved.

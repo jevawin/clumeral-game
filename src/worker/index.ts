@@ -275,6 +275,16 @@ export default {
       return new Response(null, { status: 302, headers: { Location: `/archive/${date}` } });
     }
 
+    // GET /puzzles/<YYYY-MM-DD> — old shareable URL shape, 302 to /archive/<date>.
+    if (request.method === 'GET' && /^\/puzzles\/\d{4}-\d{2}-\d{2}$/.test(url.pathname)) {
+      const date = url.pathname.slice('/puzzles/'.length);
+      return new Response(null, { status: 302, headers: { Location: `/archive/${date}` } });
+    }
+    // Anything else under /puzzles/* — fall back to archive list.
+    if (request.method === 'GET' && url.pathname.startsWith('/puzzles/')) {
+      return new Response(null, { status: 302, headers: { Location: '/archive' } });
+    }
+
     // ── Static pages ──
 
     // GET / and client SPA routes — serve static HTML (client router handles in-page nav).

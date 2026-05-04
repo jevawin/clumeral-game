@@ -33,6 +33,12 @@ function showHeader(visible: boolean): void {
   appHeader.style.display = visible ? "" : "none";
 }
 
+function emitEnter(next: ScreenId): void {
+  // Lets app.ts re-render screen-specific content (e.g. stats) when this screen
+  // becomes active — without leaking screen state into shared modules.
+  document.dispatchEvent(new CustomEvent("screens:enter", { detail: { screen: next } }));
+}
+
 function paintScreen(next: ScreenId): void {
   (["welcome", "game", "completion"] as ScreenId[]).forEach((id) => {
     const el = dom[id];
@@ -65,6 +71,7 @@ function paintScreen(next: ScreenId): void {
   }
 
   currentScreen = next;
+  emitEnter(next);
 }
 
 
@@ -117,6 +124,7 @@ export function showScreen(next: ScreenId): void {
       nextEl.classList.replace("opacity-0", "opacity-100");
     });
     currentScreen = next;
+    emitEnter(next);
   }, FADE_OUT_MS);
 
   pendingTransition = { timer, target: next };
