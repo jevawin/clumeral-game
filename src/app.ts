@@ -954,9 +954,8 @@ if (isRandomBoot) {
   loadPuzzle();
 } else {
   initRouter({
-    // hasData = user has played at least one puzzle. cw-htp-seen alone doesn't count —
-    // a stranger sharing /play with a friend who's never played should still see /welcome
-    // (the goal of RTE-03 deep-link redirect). Only dlng_history proves they've solved.
+    // hasData = user has played at least one puzzle. RTE-03 deep-link redirect:
+    // a stranger sharing /play with someone who's never played should see /welcome.
     hasData: () => !!localStorage.getItem('dlng_history'),
     todayLocal,
     todayEntry,

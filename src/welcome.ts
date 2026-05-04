@@ -125,7 +125,7 @@ function playButton(): string {
   return `<button type="button" data-play-btn class="w-full min-h-[48px] rounded-lg bg-accent text-white text-base font-semibold">Play</button>`;
 }
 
-function renderWelcome(isNew: boolean): void {
+function renderWelcome(): void {
   const screen = document.querySelector('[data-screen="welcome"]') as HTMLElement | null;
   if (!screen) return;
 
@@ -134,38 +134,24 @@ function renderWelcome(isNew: boolean): void {
   const formattedDate = new Date(today + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const puzzleNumHtml = num > 0 ? `<p class="text-base text-text text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
 
-  const header = `
-    <div class="flex flex-col items-center gap-1">
-      <h1 class="text-4xl font-bold font-[Comfortaa] text-text tracking-tight">Clumeral</h1>
-      <p class="text-base text-text text-center">A daily number puzzle</p>
-    </div>
-    ${OCTO_SVG}
-    ${puzzleNumHtml}`;
-
-  // First visit: HTP above Play button; return visit: HTP below
-  const body = isNew
-    ? `${htpSteps()}
-    ${playButton()}`
-    : `${playButton()}
-    ${htpSteps()}`;
-
   screen.innerHTML = `
     <div class="w-full max-w-[390px] mx-auto min-h-full flex flex-col items-center justify-center gap-6 px-6 py-8">
-      ${header}
-      ${body}
+      <div class="flex flex-col items-center gap-1">
+        <h1 class="text-4xl font-bold font-[Comfortaa] text-text tracking-tight">Clumeral</h1>
+        <p class="text-base text-text text-center">A daily number puzzle</p>
+      </div>
+      ${OCTO_SVG}
+      ${puzzleNumHtml}
+      ${playButton()}
+      ${htpSteps()}
     </div>`;
 }
 
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-function hasClumeralData(): boolean {
-  return ["dlng_history", "dlng_prefs", "dlng_uid", "dlng_theme", "dlng_colour", "cw-htp-seen"].some((k) => localStorage.getItem(k) !== null);
-}
-
 export function initWelcome(): void {
-  const isNew = !hasClumeralData();
-  renderWelcome(isNew);
+  renderWelcome();
 
   const playBtn = document.querySelector('[data-play-btn]') as HTMLButtonElement | null;
   playBtn?.addEventListener("click", () => {
