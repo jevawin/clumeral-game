@@ -80,6 +80,10 @@
 - [x] 03-06-PLAN.md — Wave 2: completion-screen back-links date-aware; replace /puzzles with /archive (ARC-02)
 **UI hint:** no (no new visuals — pure routing/structure change)
 
+## Backlog
+
+- **Notification / message component** — Design a fixed (non-toast) inline message style and apply it to the archived-puzzle indicator on the game screen. Current implementation is a small text banner above the clue list — easy to miss. Likely uses: archived-puzzle indicator, stale-day warning, "puzzle of the day refreshed" cue. Surfaced from preview testing 2026-05-04 during phase 3 verification.
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |

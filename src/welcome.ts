@@ -169,9 +169,8 @@ export function initWelcome(): void {
 
   const playBtn = document.querySelector('[data-play-btn]') as HTMLButtonElement | null;
   playBtn?.addEventListener("click", () => {
-    // Mark user as engaged so RTE-03 hasData gate lets /play through.
-    // A fresh visitor with only dlng_uid (analytics) would otherwise bounce back here.
-    try { localStorage.setItem('cw-htp-seen', '1'); } catch { /* private mode */ }
-    navigate('/play');
+    // skipResolve bypasses the RTE-03 hasData gate — the user explicitly asked to play
+    // by clicking the button, so the deep-link redirect rule doesn't apply.
+    navigate('/play', { skipResolve: true });
   });
 }

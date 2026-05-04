@@ -708,16 +708,19 @@ async function handleGuess() {
         recordGame(gameState.date, tries, guess);
       }
 
-      // Render completion content before transition so it's ready when cross-fade reveals it
+      // Render completion content before transition so it's ready when fade reveals it.
       renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
 
-      // Celebration → completion screen (per D-13: skip celebration under reduced motion)
       // RTE-03: replaceState so back from /solved lands on /welcome, not the finished /play.
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        replaceRoute('/solved');
-      } else {
+      // Fire sync — never inside celebrateOcto's callback. If celebration is interrupted
+      // (page hidden, rAF paused, transition cancelled) the user could be stranded on /play
+      // with the puzzle solved but no path to /solved except a refresh (#solve-stranding).
+      replaceRoute('/solved');
+
+      // Celebration is visual only (D-13: skip under reduced motion).
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         launchBubbles();
-        celebrateOcto(() => replaceRoute('/solved'));
+        celebrateOcto();
       }
     } else {
       gameState.guesses.push(guess);
@@ -956,10 +959,10 @@ if (isRandomBoot || oldReplayBoot) {
   loadPuzzle();
 } else {
   initRouter({
-    // hasData = user has meaningful state. dlng_uid is set unconditionally at boot for
-    // analytics, so it must NOT count — only history (has played) or cw-htp-seen (has
-    // opened how-to-play / dismissed welcome) prove the user has engaged.
-    hasData: () => !!localStorage.getItem('dlng_history') || !!localStorage.getItem('cw-htp-seen'),
+    // hasData = user has played at least one puzzle. cw-htp-seen alone doesn't count —
+    // a stranger sharing /play with a friend who's never played should still see /welcome
+    // (the goal of RTE-03 deep-link redirect). Only dlng_history proves they've solved.
+    hasData: () => !!localStorage.getItem('dlng_history'),
     todayLocal,
     todayEntry,
     midInteraction: () => activeBox !== null || submitting,
