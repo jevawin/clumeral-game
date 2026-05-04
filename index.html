@@ -37,9 +37,9 @@
       })();
     </script>
   </head>
-  <body>
-    <a href="#game-content" class="skip-link">Skip to puzzle</a>
-    <div class="h-screen flex flex-col bg-bg overflow-hidden">
+  <body class="min-h-screen flex flex-col bg-bg">
+    <a href="#main" class="skip-link">Skip to puzzle</a>
+
       <!-- ── Feedback modal ── -->
       <dialog data-fb-modal aria-labelledby="cw-fb-modal-title">
         <div data-fb-modal-box
@@ -76,11 +76,11 @@
       </dialog>
 
 
-      <!-- Legacy octo host: kept in DOM so celebrateOcto/sadOcto can measure it,
-           but pulled offscreen so it doesn't push the screens stack down. -->
-      <main aria-hidden="true" class="absolute -left-[9999px] top-0 max-w-[390px] mx-auto px-4 pointer-events-none">
-        <header class="flex items-center gap-3.5 mb-2.5">
-          <div data-octo-slot>
+      <!-- Octo measurement host: celebrateOcto / sadOcto query [data-octo-wrap] /
+           [data-octo-slot] for getBoundingClientRect. Kept offscreen so it doesn't
+           contribute to layout. Plain div — was a <main>; only one <main> per spec. -->
+      <div aria-hidden="true" class="absolute -left-[9999px] top-0 pointer-events-none">
+        <div data-octo-slot>
           <div data-octo-wrap title="click to replay" aria-hidden="true">
             <svg data-octo width="53" height="52" viewBox="0 0 53 52" fill="none" xmlns="http://www.w3.org/2000/svg">
               <mask id="octo-mask" fill="white">
@@ -126,60 +126,57 @@
               </g>
             </svg>
           </div>
-          </div>
-        </header>
+        </div>
+      </div>
 
-      </main>
-
+      <!-- Toast: fixed by design — must hover above the page during scroll -->
       <div data-toast aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex flex-col items-center gap-2 pointer-events-none"></div>
 
-    <!-- ── New screen architecture (Phase 1) ── -->
-    <main data-screens class="relative flex-1 z-10">
-      <!-- Cold-load overlay: hides screen-swap flicker until the router resolves
-           the initial route. JS removes opacity-100 once the first showScreen lands. -->
-      <div data-app-loading class="absolute inset-0 z-40 bg-bg opacity-100 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
-      <section data-screen="welcome" class="absolute inset-0 overflow-y-auto bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
-        <!-- Phase 2 content -->
-      </section>
-      <section data-screen="game" class="absolute inset-0 flex flex-col bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
-
-        <!-- ── Game header ── -->
-        <header data-game-header class="h-14 sticky top-0 z-30 flex items-center justify-between px-4 bg-bg border-b border-border">
-          <div class="flex items-center gap-2">
-            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 53 52" fill="none" class="shrink-0">
-              <path d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z" fill="var(--color-accent)"/>
-              <circle cx="19" cy="15" r="2.5" fill="#F6F0E8"/>
-              <circle cx="33" cy="15" r="2.5" fill="#F6F0E8"/>
-              <path d="M21 26C24.3333 27.3333 27.6667 27.3333 31 26" stroke="#F6F0E8" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            <span class="text-xl font-bold text-text font-[Comfortaa]">Clumeral</span>
-          </div>
-          <button data-menu-btn class="burger-btn relative h-10 w-10 flex items-center justify-center text-text" type="button" aria-expanded="false" aria-controls="game-menu" aria-label="Open menu">
-            <span aria-hidden="true" class="burger-bar"></span>
-            <span aria-hidden="true" class="burger-bar"></span>
-          </button>
-        </header>
-
-        <!-- ── Menu dropdown ── -->
-        <div id="game-menu" data-menu role="dialog" aria-label="Game menu"
-             class="hidden absolute top-14 right-0 z-40 min-w-[200px] py-2 bg-surface border border-border rounded-lg shadow-lg">
-          <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
-            <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
-            <span data-theme-label>Dark mode</span>
-          </button>
-          <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
-            <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
-            Feedback
-          </button>
-          <button data-htp-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
-            <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
-            How to play
-          </button>
+      <!-- ── App header (game/completion only — JS hides it on /welcome) ── -->
+      <header data-app-header class="flex items-center justify-between h-14 px-4 bg-bg border-b border-border">
+        <div class="flex items-center gap-2">
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 53 52" fill="none" class="shrink-0">
+            <path d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z" fill="var(--color-accent)"/>
+            <circle cx="19" cy="15" r="2.5" fill="#F6F0E8"/>
+            <circle cx="33" cy="15" r="2.5" fill="#F6F0E8"/>
+            <path d="M21 26C24.3333 27.3333 27.6667 27.3333 31 26" stroke="#F6F0E8" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="text-xl font-bold text-text font-[Comfortaa]">Clumeral</span>
         </div>
+        <button data-menu-btn class="burger-btn relative h-10 w-10 flex items-center justify-center text-text" type="button" aria-expanded="false" aria-controls="app-menu" aria-label="Open menu">
+          <span aria-hidden="true" class="burger-bar"></span>
+          <span aria-hidden="true" class="burger-bar"></span>
+        </button>
+      </header>
 
-        <!-- ── Scrollable content ── -->
-        <div id="game-content" data-game-content class="flex-1 min-h-0 overflow-y-auto px-4 pt-8 pb-24">
-          <div class="w-full max-w-[390px] mx-auto flex flex-col">
+      <!-- Menu dropdown — anchored to the header right edge -->
+      <div id="app-menu" data-menu role="dialog" aria-label="App menu"
+           class="hidden absolute top-14 right-0 z-40 min-w-[200px] py-2 bg-surface border border-border rounded-lg shadow-lg">
+        <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
+          <span data-theme-label>Dark mode</span>
+        </button>
+        <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
+          Feedback
+        </button>
+        <button data-htp-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
+          How to play
+        </button>
+      </div>
+
+    <!-- ── New screen architecture (Phase 1) ── -->
+    <main id="main" data-screens class="relative flex-1 flex flex-col">
+      <!-- Cold-load overlay: hides screen-swap flicker until the router resolves
+           the initial route. JS fades opacity-100 → 0 once the first showScreen lands. -->
+      <div data-app-loading class="absolute inset-0 z-40 bg-bg opacity-100 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
+      <section data-screen="welcome" class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <!-- Welcome content rendered by initWelcome — fills remaining viewport
+             (flex-1) and centres content; footer pushes it slightly above visual centre. -->
+      </section>
+      <section data-screen="game" data-game-content class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out px-4 pt-6 pb-8" aria-hidden="true">
+        <div class="w-full max-w-[390px] mx-auto flex flex-col">
 
             <!-- Archive banner — shown by renderClues when replaying a dated puzzle -->
             <p data-archive-banner class="hidden mb-4 inline-flex items-center gap-1.5 self-start text-sm font-[Quicksand] text-text"></p>
@@ -261,12 +258,10 @@
               <a href="/random" class="text-accent underline">Play another random puzzle</a>
             </p>
 
-          </div>
         </div>
-
       </section>
-      <section data-screen="completion" class="absolute inset-0 overflow-y-auto bg-bg opacity-0 pointer-events-none transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
-        <div class="w-full max-w-[390px] mx-auto min-h-full flex flex-col items-center justify-center gap-6 px-6 py-8 text-center">
+      <section data-screen="completion" class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <div class="w-full max-w-[390px] mx-auto flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 text-center">
 
           <!-- Logo + octo header (parity with welcome screen — LAY-02) -->
           <div class="flex flex-col items-center gap-1">
@@ -298,10 +293,9 @@
       </section>
     </main>
 
-      <footer data-footer class="mt-auto text-center py-4 text-text text-sm font-[Quicksand]">
-        Made with &#10084;&#65039; by Jamie &amp; Dave. &copy; 2026.
-      </footer>
-    </div>
+    <footer class="text-center py-4 text-text text-sm font-[Quicksand]">
+      Made with &#10084;&#65039; by Jamie &amp; Dave. &copy; 2026.
+    </footer>
 
     <script type="module" src="/src/app.ts"></script>
   </body>

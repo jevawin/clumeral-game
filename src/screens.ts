@@ -1,6 +1,7 @@
 // Clumeral — screens.ts
-// Screen state machine. Three screens — welcome, game, completion —
-// toggled via opacity with View Transition API cross-fade (CSS fallback).
+// Screen state machine. Three screens — welcome, game, completion — render in
+// natural document flow; only the active screen is displayed. Sequential fade:
+// outgoing fades to 0 → display:none → incoming display:flex + opacity-0 → fade in.
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,8 @@ const dom = {
   completion: document.querySelector('[data-screen="completion"]') as HTMLElement,
 };
 
+const appHeader = document.querySelector('[data-app-header]') as HTMLElement | null;
+
 
 // ─── Module State ─────────────────────────────────────────────────────────────
 
@@ -25,27 +28,37 @@ let currentScreen: ScreenId | null = null;
 
 // ─── Internal ─────────────────────────────────────────────────────────────────
 
-function updateScreenDOM(next: ScreenId): void {
+function showHeader(visible: boolean): void {
+  if (!appHeader) return;
+  appHeader.style.display = visible ? "" : "none";
+}
+
+function paintScreen(next: ScreenId): void {
   (["welcome", "game", "completion"] as ScreenId[]).forEach((id) => {
     const el = dom[id];
     const active = id === next;
-    el.classList.toggle("opacity-0", !active);
-    el.classList.toggle("opacity-100", active);
-    el.classList.toggle("pointer-events-none", !active);
-    el.classList.toggle("pointer-events-auto", active);
-    el.setAttribute("aria-hidden", active ? "false" : "true");
+    if (active) {
+      el.style.display = "flex";
+      el.classList.remove("opacity-0");
+      el.classList.add("opacity-100");
+      el.setAttribute("aria-hidden", "false");
+    } else {
+      el.style.display = "none";
+      el.classList.remove("opacity-100");
+      el.classList.add("opacity-0");
+      el.setAttribute("aria-hidden", "true");
+    }
   });
 
-  // First showScreen call dismisses the cold-load overlay. The 300ms fade hides
-  // any pre-paint flash from initial HTML/loadPuzzle DOM writes.
+  // App header: hidden on welcome (welcome is self-contained); shown elsewhere.
+  showHeader(next !== "welcome");
+
+  // First showScreen call dismisses the cold-load overlay (300ms fade).
   if (currentScreen === null) {
     const loader = document.querySelector('[data-app-loading]');
     if (loader) {
-      // Defer one frame so the screen swap paints before the loader fades out —
-      // otherwise on slow paints the loader fades to a still-empty screen.
       requestAnimationFrame(() => {
         loader.classList.replace("opacity-100", "opacity-0");
-        // Remove from DOM after fade completes so it can never trap clicks again.
         setTimeout(() => loader.remove(), 350);
       });
     }
@@ -57,28 +70,54 @@ function updateScreenDOM(next: ScreenId): void {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-// Sequential fade: outgoing screen fades to 0, then the incoming screen fades in.
-// Avoids the cross-fade bleed where both screens are visible together (which made
-// stale destination DOM — e.g. last completion result — flash during back/forward).
+// Sequential fade: outgoing screen fades to 0, then is hidden, then the incoming
+// screen is displayed and fades in. No cross-fade bleed.
 const FADE_OUT_MS = 200;
 
-export function showScreen(next: ScreenId): void {
-  if (next === currentScreen) return;
+// Tracks an in-flight transition so a rapid showScreen() can cancel it cleanly.
+// Without this, a back→forward inside one fade-out window leaves the header /
+// display state from the cancelled transition still pending, then it fires after
+// the new transition completes and stomps the correct state.
+let pendingTransition: { timer: ReturnType<typeof setTimeout>; target: ScreenId } | null = null;
 
-  // First call (cold load) — paint immediately, no fade-out from a prior screen.
+export function showScreen(next: ScreenId): void {
+  // If a transition is in flight to this same target, no-op.
+  if (pendingTransition && pendingTransition.target === next) return;
+  if (!pendingTransition && next === currentScreen) return;
+
+  // Cancel any in-flight transition before starting a new one.
+  if (pendingTransition) {
+    clearTimeout(pendingTransition.timer);
+    pendingTransition = null;
+  }
+
+  // First call (cold load) — paint immediately, no prior screen to fade out.
   if (currentScreen === null) {
-    updateScreenDOM(next);
+    paintScreen(next);
     return;
   }
 
-  const prev = currentScreen;
-  const prevEl = dom[prev];
-  // Fade the outgoing screen out first.
-  prevEl.classList.add("opacity-0");
-  prevEl.classList.remove("opacity-100", "pointer-events-auto");
-  prevEl.classList.add("pointer-events-none");
+  const prevEl = dom[currentScreen];
+  // Fade the outgoing screen.
+  prevEl.classList.replace("opacity-100", "opacity-0");
   prevEl.setAttribute("aria-hidden", "true");
 
-  setTimeout(() => updateScreenDOM(next), FADE_OUT_MS);
-}
+  const timer = setTimeout(() => {
+    pendingTransition = null;
+    // Hide outgoing, show incoming starting at opacity-0, then transition to opacity-100
+    // on the next frame so the CSS transition fires.
+    prevEl.style.display = "none";
+    const nextEl = dom[next];
+    nextEl.style.display = "flex";
+    nextEl.classList.add("opacity-0");
+    nextEl.classList.remove("opacity-100");
+    nextEl.setAttribute("aria-hidden", "false");
+    showHeader(next !== "welcome");
+    requestAnimationFrame(() => {
+      nextEl.classList.replace("opacity-0", "opacity-100");
+    });
+    currentScreen = next;
+  }, FADE_OUT_MS);
 
+  pendingTransition = { timer, target: next };
+}

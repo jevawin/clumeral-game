@@ -134,8 +134,12 @@ function renderWelcome(): void {
   const formattedDate = new Date(today + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const puzzleNumHtml = num > 0 ? `<p class="text-base text-text text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
 
+  // Section is `flex flex-col flex-1` (filling remaining viewport between header
+   // and footer). Set items-center + justify-center on the section so content
+  // vertically centres without relying on min-h-full inside.
+  screen.classList.add("items-center", "justify-center");
   screen.innerHTML = `
-    <div class="w-full max-w-[390px] mx-auto min-h-full flex flex-col items-center justify-center gap-6 px-6 py-8">
+    <div class="w-full max-w-[390px] flex flex-col items-center gap-6 px-6 py-8">
       <div class="flex flex-col items-center gap-1">
         <h1 class="text-4xl font-bold font-[Comfortaa] text-text tracking-tight">Clumeral</h1>
         <p class="text-base text-text text-center">A daily number puzzle</p>
