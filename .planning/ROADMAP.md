@@ -89,8 +89,8 @@
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|---------------:|--------|-----------|
 | 1. Refinements wave 1 | v1.1 | 4/4 | Complete | 2026-05-02 |
-| 2. Clue density | v1.1 | 0/0 | Not started | — |
-| 3. URL routing | v1.1 | 0/6 | Planned | — |
+| 2. Clue density | v1.1 | 0/0 | Deferred | — |
+| 3. URL routing | v1.1 | 6/6 | Complete | 2026-05-04 |
 
 ---
-*Last updated: 2026-05-03 — Phase 3 plans created (6 plans, 3 waves)*
+*Last updated: 2026-05-04 — Phase 3 complete (URL routing + home rule + layout restructure)*

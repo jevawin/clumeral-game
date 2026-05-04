@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Design Refinements
 status: completed
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-05-03T13:21:47.719Z"
-last_activity: 2026-05-03
+stopped_at: Completed 03-06-PLAN.md
+last_updated: "2026-05-04T21:04:01.939Z"
+last_activity: 2026-05-04
 progress:
   total_phases: 3
   completed_phases: 2
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** The game screen works flawlessly — clues, digit elimination, guess submission, and answer validation behave exactly as they always did, in a cleaner, calmer layout.
-**Current focus:** Phase null
+**Current focus:** Phase 03 — url-routing (complete; awaiting merge)
 
 ## Current Position
 
-Phase: null — COMPLETE
-Plan: 1 of ?
-Status: Phase null complete
-Last activity: 2026-05-03
+Phase: 03 (url-routing) — COMPLETE
+Plan: 6 of 6
+Status: Phase 3 complete; v1.1 milestone 2/3 phases done. Phase 2 (clue density) deferred.
+Last activity: 2026-05-04 — phase 3 follow-up fixes (home rule, archive solved-replay, layout restructure)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
