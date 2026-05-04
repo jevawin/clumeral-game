@@ -31,6 +31,7 @@ Prompt the user to run `/clear` at these trigger points:
 | Working on | Read |
 |------------|------|
 | Puzzle logic, seeding, storage | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Routing, URL rules, screen transitions | [docs/URL-ARCHITECTURE.md](docs/URL-ARCHITECTURE.md) |
 | CSS, theming, clue display | [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |
 | Code patterns, accessibility, DOM | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
 | Git workflow, branch strategy, recovery | [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md) |
