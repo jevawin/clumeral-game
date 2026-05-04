@@ -530,13 +530,19 @@ function showNextPuzzle() {
 }
 
 function showCompletedState(tries: number, replayDate?: string): void {
-  const t = tries === 1 ? "1 try" : `${tries} tries`;
-  if (dom.feedback) {
-    const message = replayDate
-      ? `You solved this puzzle in ${t}!`
-      : `You already solved today's puzzle in ${t}!`;
-    dom.feedback.innerHTML = `${ICON_CHECK} ${message}`;
+  // /play in solved-replay mode is intentionally minimal — digits revealed plus
+  // a Show stats link via renderStats. The legacy "You already solved..." banner
+  // and "Puzzle X is available tomorrow" line live on /solved (renderCompletion)
+  // and would only duplicate that screen's content here. Archive replays
+  // (replayDate set) keep the "You solved this puzzle in N tries" message
+  // because the contextual completion content is on /solved, but their stats
+  // history view via renderStatsUpTo provides the "Go to latest puzzle" link.
+  if (replayDate && dom.feedback) {
+    const t = tries === 1 ? "1 try" : `${tries} tries`;
+    dom.feedback.innerHTML = `${ICON_CHECK} You solved this puzzle in ${t}!`;
     dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
+  } else {
+    renderFeedback(null);
   }
   // Show the answer digits in the boxes
   if (gameState.answer != null) {
@@ -551,11 +557,13 @@ function showCompletedState(tries: number, replayDate?: string): void {
     }
   }
   dom.submitWrap?.classList.add("hidden");
+  // Hide the "Puzzle X is available tomorrow" line — it lives on /solved.
+  dom.next?.classList.add("hidden");
+  dom.history?.classList.add("hidden");
   if (replayDate) {
     renderStatsUpTo(replayDate);
   } else {
     renderStats();
-    showNextPuzzle();
   }
 }
 
