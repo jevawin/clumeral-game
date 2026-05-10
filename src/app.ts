@@ -441,6 +441,8 @@ function checkSubmit() {
   if (dom.submitWrap) {
     dom.submitWrap.classList.toggle("hidden", !allResolved);
   }
+  // Once every box is resolved, close the keypad so the submit button isn't pushed off-screen.
+  if (allResolved && activeBox !== null) closeKeypad();
 }
 
 // ─── Game ─────────────────────────────────────────────────────────────────────
