@@ -144,7 +144,7 @@ html, body { font-family: var(--font-sans); }
   }
 
   [data-octo].celebrate > path:first-of-type {
-    animation: octo-colours 4s ease-in-out 0.5s infinite;
+    animation: octo-colours 1s ease-in-out 0s infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {

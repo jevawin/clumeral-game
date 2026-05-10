@@ -48,7 +48,7 @@ This file is the source of truth between sessions. Everything needed to resume a
 
 ---
 
-### [ ] 2. Tune winning animation — colour cycle visibility
+### [x] 2. Tune winning animation — colour cycle visibility
 
 **Type:** Polish.
 **Source:** Friend "did you make the winning animation longer? feels like it." User: "I think it actually got shorter. Need to put the colours back in."
