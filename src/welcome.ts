@@ -69,7 +69,7 @@ function htpSteps(): string {
               <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/5"></span>
             </div>
           </div>
-          <div class="text-lg font-light text-text font-[Quicksand]">The <span class="font-bold text-accent">first</span> digit is <span class="font-bold text-accent whitespace-nowrap">a prime number</span></div>
+          <div class="text-lg text-text font-[Quicksand]">The <span class="font-bold text-accent">first</span> digit is <span class="font-bold text-accent whitespace-nowrap">a prime number</span></div>
         </div>
       </div>
 

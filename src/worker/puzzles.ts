@@ -77,7 +77,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   body {
     background: var(--color-bg);
     color: var(--color-text);
-    font-weight: 300;
+    font-weight: 400;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -133,7 +133,6 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   }
   .subtitle {
     font-size: 1rem;
-    font-weight: 300;
     color: var(--color-text);
     margin-bottom: 1.5rem;
   }

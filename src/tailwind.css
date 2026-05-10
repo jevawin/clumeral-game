@@ -44,7 +44,7 @@
 }
 
 /* Default body font — Quicksand 300 to match the clue lead style. Buttons / headings / tag pills override via font-bold etc. */
-html, body { font-family: var(--font-sans); font-weight: 300; }
+html, body { font-family: var(--font-sans); font-weight: 400; }
 
 /* Dark mode overrides — in theme layer so they beat @theme's :root tokens via specificity */
 @layer theme {

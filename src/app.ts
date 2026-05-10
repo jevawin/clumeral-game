@@ -268,7 +268,7 @@ function renderClues(clues: ClueData[]): void {
         </button>
         <div class="flex justify-between gap-1" data-clue-digits aria-hidden="true">${miniDigitsHtml}</div>
       </div>
-      <div class="text-lg font-light text-text font-[Quicksand]" data-clue-line1></div>
+      <div class="text-lg text-text font-[Quicksand]" data-clue-line1></div>
     `;
 
     const tagBtn = clueEl.querySelector("[data-clue-tag]") as HTMLButtonElement;
