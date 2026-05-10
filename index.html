@@ -282,13 +282,13 @@
           <!-- Countdown -->
           <p data-completion-countdown class="text-base text-text"></p>
 
-          <!-- Action row: feedback (solid) + show puzzle / archive (hollow, injected) -->
-          <div class="flex w-full gap-2">
-            <button data-completion-feedback type="button" class="btn btn-solid flex-1">
+          <!-- Action stack: feedback (full-width, solid) above show puzzle + archive row -->
+          <div class="flex flex-col gap-2 w-full">
+            <button data-completion-feedback type="button" class="btn btn-solid w-full">
               <svg aria-hidden="true"><use href="/sprites.svg#icon-send"/></svg>
               Feedback
             </button>
-            <div data-completion-links class="contents"></div>
+            <div data-completion-links class="flex gap-2 w-full"></div>
           </div>
 
         </div>

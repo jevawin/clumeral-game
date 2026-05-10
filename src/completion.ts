@@ -168,7 +168,7 @@ export function renderCompletion(
       a.href = '#';
       a.className = 'btn btn-hollow flex-1';
       a.dataset.completionShowPuzzle = '';
-      a.innerHTML = '<svg aria-hidden="true"><use href="/sprites.svg#icon-play"/></svg>Puzzle';
+      a.innerHTML = '<svg aria-hidden="true"><use href="/sprites.svg#icon-puzzle"/></svg>Show puzzle';
       a.addEventListener('click', (e) => {
         e.preventDefault();
         document.dispatchEvent(new CustomEvent('completion:show-puzzle'));
