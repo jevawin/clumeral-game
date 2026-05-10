@@ -140,7 +140,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
   .btn-sm svg { width: 0.875rem; height: 0.875rem; }
 
-  .back { margin-bottom: 1rem; }
+  .back { width: 100%; margin-bottom: 1rem; }
 
   h1 {
     font-family: "Comfortaa", "Quicksand", system-ui, sans-serif;
