@@ -19,8 +19,7 @@ Each item is self-contained. After finishing one, do this exact sequence before 
 4. **Commit** with focused message referencing the item (e.g. `phase 4 item 1: fix sadOcto offscreen regression`).
 5. **Push** to `new-design`.
 6. **Tick the box** in this file (edit the `[ ]` → `[x]`). Commit + push that edit.
-7. **`/clear`** the conversation.
-8. **Resume** with: `/gsd-quick read .planning/phases/04-pre-ship-polish/PRE-SHIP-ROADMAP.md and start the next unchecked item`
+7. **Give the user the command for the next action** (see Appendix B), then prompt them to `/clear` and paste it.
 
 This file is the source of truth between sessions. Everything needed to resume after `/clear` is captured here — feedback, decisions, files, acceptance criteria.
 
@@ -209,12 +208,10 @@ Tracked separately:
 
 ## Appendix B — Resume cheatsheet
 
-After `/clear`, paste:
+After finishing an item (commit + push + tick box done): tell the user `/clear` and give them the command for the next action. The command is always:
 
 ```
-Read .planning/phases/04-pre-ship-polish/PRE-SHIP-ROADMAP.md.
-Start the next unchecked item. Surface its decisions for sign-off, then implement.
-Branch: new-design. Commit + push after, tick the box.
+/gsd-quick read .planning/phases/04-pre-ship-polish/PRE-SHIP-ROADMAP.md and start the next unchecked item, talk through with me first don't just do
 ```
 
-Branch state expected: `new-design`, working tree clean (or only this roadmap file modified).
+Branch state expected: `new-design`, working tree clean.
