@@ -48,17 +48,24 @@
                   class="absolute top-4 right-4 min-w-[44px] min-h-[44px] flex items-center justify-center bg-transparent border-none text-text/50 hover:text-text text-xl leading-none cursor-pointer"
                   type="button" aria-label="Close feedback modal">&#10005;</button>
           <h2 id="cw-fb-modal-title" class="text-[26px] font-semibold leading-[1.2] text-text font-[Quicksand] m-0">Send feedback</h2>
-          <p class="text-text text-base font-[Quicksand] mt-1 mb-3">Let us know what you think.</p>
+          <p class="text-text text-base font-[Quicksand] mt-3 mb-2">Type (optional):</p>
 
           <div data-fb-cats role="radiogroup" aria-label="Feedback category" class="flex flex-wrap gap-2 mb-3">
-            <button class="fb-cat px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
-                    data-cat="general" role="radio" aria-checked="true">General</button>
-            <button class="fb-cat px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
-                    data-cat="bug" role="radio" aria-checked="false">Bug</button>
-            <button class="fb-cat px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
-                    data-cat="suggestion" role="radio" aria-checked="false">Idea</button>
-            <button class="fb-cat px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
-                    data-cat="praise" role="radio" aria-checked="false">Praise</button>
+            <button class="fb-cat inline-flex items-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="bug" role="radio" aria-checked="false">
+              <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-bug"/></svg>
+              Bug
+            </button>
+            <button class="fb-cat inline-flex items-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="suggestion" role="radio" aria-checked="false">
+              <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-lightbulb"/></svg>
+              Idea
+            </button>
+            <button class="fb-cat inline-flex items-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="praise" role="radio" aria-checked="false">
+              <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-heart"/></svg>
+              Praise
+            </button>
           </div>
 
           <label for="cw-fb-msg" class="sr-only">Your feedback message</label>
