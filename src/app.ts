@@ -695,18 +695,8 @@ async function handleGuess() {
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 async function loadPuzzle() {
-  const path = window.location.pathname;
-  const isRandom = path === '/random';
-  const replayMatch = path.match(/^\/puzzles\/(\d+)$/);
-
-  let endpoint: string;
-  if (isRandom) {
-    endpoint = '/api/puzzle/random';
-  } else if (replayMatch) {
-    endpoint = `/api/puzzle/${replayMatch[1]}`;
-  } else {
-    endpoint = '/api/puzzle';
-  }
+  const isRandom = window.location.pathname === '/random';
+  const endpoint = isRandom ? '/api/puzzle/random' : '/api/puzzle';
 
   try {
     const res = await fetch(endpoint);
@@ -716,20 +706,13 @@ async function loadPuzzle() {
 
     if (isRandom) {
       startRandomPuzzle(data.clues, data.token);
-    } else if (replayMatch) {
-      startReplayPuzzle(data.date, data.puzzleNumber, data.clues);
     } else {
       startDailyPuzzle(data.date, data.puzzleNumber, data.clues);
     }
   } catch {
-    if (dom.feedback) {
-      dom.feedback.textContent = 'Could not load the puzzle. Please refresh the page.';
-      dom.feedback.classList.remove('hidden');
-    }
-    // Show error in clue list area and clear skeleton
     if (dom.clueList) {
       dom.clueList.removeAttribute("aria-busy");
-      dom.clueList.innerHTML = '<p class="col-span-2 text-base text-text font-[Quicksand]">Couldn\'t load the puzzle. Please refresh the page.</p>';
+      dom.clueList.innerHTML = '<p class="col-span-2 text-base text-text font-[Quicksand]">Could not load the puzzle. Please refresh the page.</p>';
     }
   }
 }
@@ -971,8 +954,9 @@ document.addEventListener('click', (e) => {
 
 // ─── Analytics event listeners ───────────────────────────────────────────────
 
-// HTP: navigate to welcome screen from menu
-document.querySelector('[data-htp-btn]')?.addEventListener('click', () => { showScreen('welcome'); track('htp_opened', undefined, 'manual'); });
+// HTP: route to welcome screen from menu so the back button works.
+// skipResolve so users who already solved today still see HTP — resolver would otherwise redirect /welcome → /solved.
+document.querySelector('[data-htp-btn]')?.addEventListener('click', () => { navigate('/welcome', { skipResolve: true }); track('htp_opened', undefined, 'manual'); });
 // Feedback submitted
 document.querySelector('[data-fb-send]')?.addEventListener('click', () => track('feedback_submitted'));
 // Theme toggle

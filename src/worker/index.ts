@@ -23,8 +23,8 @@ interface StoredPuzzle {
 
 const VALID_EVENTS = new Set([
   'puzzle_start', 'puzzle_complete', 'incorrect_guess',
-  'htp_opened', 'htp_dismissed', 'feedback_submitted',
-  'theme_toggle', 'colour_change', 'tooltip_opened',
+  'htp_opened', 'feedback_submitted',
+  'theme_toggle', 'tooltip_opened',
   'route_change',
 ]);
 

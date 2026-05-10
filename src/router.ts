@@ -85,8 +85,10 @@ function emitAnalytics(path: string): void {
 function emitAnalyticsBeacon(path: string): void {
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      // Use string body — valid sendBeacon BodyInit, simpler than Blob, and easier to assert in jsdom tests.
-      const body = JSON.stringify({ event: 'route_change', source: path });
+      // Worker /api/event rejects payloads without uid; read the same key app.ts writes.
+      const uid = (typeof localStorage !== 'undefined' && localStorage.getItem('dlng_uid')) || '';
+      if (!uid) return;
+      const body = JSON.stringify({ event: 'route_change', uid, source: path });
       navigator.sendBeacon('/api/event', body);
     }
   } catch { /* swallow — analytics is non-critical */ }
@@ -154,7 +156,7 @@ function checkStaleDay(): void {
 // On cold-load, if this is older than today, redirect to /welcome regardless of
 // the requested path — the puzzle has rolled over and any prior /play/solved
 // view is stale (D-rollover policy, surfaced from preview testing 2026-05-04).
-const LAST_VISIT_KEY = 'cw-last-visit-date';
+const LAST_VISIT_KEY = 'dlng_last_visit_date';
 
 export function initRouter(d: RouterDeps): void {
   deps = d;

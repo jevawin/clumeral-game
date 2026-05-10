@@ -220,13 +220,17 @@ export function celebrateOcto(onComplete?: () => void): void {
   // Timer refs stored here so the skip handler can cancel them.
   let returnTimer: ReturnType<typeof setTimeout>;
 
-  // Skip: tap anywhere during celebration to jump straight to onComplete.
+  // Skip: tap on empty space (not on an interactive element) during celebration.
+  // The completion screen renders before celebrateOcto runs, so a naive body
+  // listener would steal the first click on Feedback / Show puzzle / Archive.
   const removeSkipListeners = () => {
     document.body.removeEventListener('click', onSkip);
     document.body.removeEventListener('touchstart', onSkip);
   };
 
-  const onSkip = () => {
+  const onSkip = (e: Event) => {
+    if (!octoAnimating) { removeSkipListeners(); return; }
+    if (e.target instanceof Element && e.target.closest('button, a, input, textarea, select, [role="button"]')) return;
     removeSkipListeners();
     clearTimeout(returnTimer);
 
@@ -252,8 +256,8 @@ export function celebrateOcto(onComplete?: () => void): void {
     if (onComplete) onComplete();
   };
 
-  document.body.addEventListener('click', onSkip, { once: true });
-  document.body.addEventListener('touchstart', onSkip, { once: true });
+  document.body.addEventListener('click', onSkip);
+  document.body.addEventListener('touchstart', onSkip);
 
   // Lead-in: slide from the header slot to the `octo-fly` keyframe's 0%
   // position (centre + translateY(-55vh)) over 200ms. The keyframe 0% is
