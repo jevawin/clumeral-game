@@ -92,7 +92,7 @@ Special-type clues (e.g. "is prime", "is a square") stay as-is — no operator t
 
 ---
 
-### [ ] 4. Archive back-link from `/archive/<date>`
+### [x] 4. Archive back-link from `/archive/<date>`
 
 **Type:** Navigation gap. Friend: "if you click an archived puzzle, there's no button to go back to stats or archive without completing the puzzle."
 

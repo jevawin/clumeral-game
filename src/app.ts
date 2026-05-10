@@ -68,6 +68,7 @@ const dom = {
   nextNumber: $('[data-next-number]') as HTMLElement | null,
   again: $('[data-again]') as HTMLElement | null,
   archiveBanner: $('[data-archive-banner]') as HTMLElement | null,
+  archiveBack: $('[data-archive-back]') as HTMLElement | null,
   history: $('[data-history]') as HTMLElement | null,
   historyList: $('[data-history-list]') as HTMLElement | null,
   clueList: $('[data-clue-list]') as HTMLElement | null,
@@ -500,6 +501,10 @@ function resetPuzzleUI() {
     dom.archiveBanner.classList.remove("inline-flex");
     dom.archiveBanner.innerHTML = "";
   }
+  if (dom.archiveBack) {
+    dom.archiveBack.classList.add("hidden");
+    dom.archiveBack.classList.remove("inline-flex");
+  }
   // Remove correct state from digit boxes
   for (let i = 0; i < 3; i++) {
     const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
@@ -549,6 +554,10 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     dom.archiveBanner.innerHTML = `<svg width="14" height="14" class="text-text shrink-0" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg><span>Archived puzzle · #${num} · ${formatDate(date)}</span>`;
     dom.archiveBanner.classList.remove("hidden");
     dom.archiveBanner.classList.add("inline-flex");
+    if (dom.archiveBack) {
+      dom.archiveBack.classList.remove("hidden");
+      dom.archiveBack.classList.add("inline-flex");
+    }
   };
 
   // Check if already solved
