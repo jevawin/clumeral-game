@@ -128,7 +128,7 @@ Re-add colour picker entry in menu. Likely a sub-row of swatches or a "Theme col
 
 ---
 
-### [ ] 6. Footer hidden behind iOS Safari bottom toolbar
+### [x] 6. Footer hidden behind iOS Safari bottom toolbar
 
 **Type:** Mobile layout bug. Tested on iPhone Safari (2026-05-10).
 **Severity:** "Made with ❤ by Jamie & Dave" footer sits under the URL/search bar at the bottom of the screen — invisible until the bar collapses on scroll.
