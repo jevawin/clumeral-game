@@ -121,8 +121,8 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 2.75rem;
-    padding: 0.625rem 1rem;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
     border-radius: 0.375rem;
     font-family: "Quicksand", system-ui, sans-serif;
     font-weight: 600;
