@@ -478,14 +478,11 @@ function showCompletedState(tries: number, replayDate?: string): void {
   dom.history?.classList.add("hidden");
 
   if (dom.stats) {
-    // Archive solved: Back-to-archive returns to the list; Latest goes to
-    // today's puzzle via /play, which the resolver routes to /solved (if today
-    // is solved), /welcome (no data yet), or /play (game) as appropriate.
-    // Today's solved-replay: Show stats deep-links to /solved.
+    // Archive solved: solid Archive button returns to list; Latest opens today's puzzle.
+    // Today's solved-replay: hollow Stats button deep-links to /solved.
     const linksHtml = replayDate
-      ? `<p class="mt-3 font-[Quicksand]"><a href="/archive" class="text-accent underline">Back to archive</a></p>
-         <p class="mt-2 font-[Quicksand]"><a href="/play" class="text-accent underline">Latest puzzle</a></p>`
-      : `<p class="mt-3 font-[Quicksand]"><a href="/solved" data-show-stats class="text-accent underline">Show stats</a></p>`;
+      ? `<div class="mt-4 flex gap-2"><a href="/archive" class="btn btn-solid flex-1"><svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>Archive</a><a href="/play" class="btn btn-hollow flex-1"><svg aria-hidden="true"><use href="/sprites.svg#icon-calendar"/></svg>Today</a></div>`
+      : `<div class="mt-4"><a href="/solved" data-show-stats class="btn btn-hollow"><svg aria-hidden="true"><use href="/sprites.svg#icon-stats"/></svg>Show stats</a></div>`;
     dom.stats.innerHTML = linksHtml;
     dom.stats.classList.remove("hidden");
   }

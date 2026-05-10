@@ -119,7 +119,7 @@ function htpSteps(): string {
 }
 
 function playButton(): string {
-  return `<button type="button" data-play-btn class="w-full min-h-[48px] rounded-lg bg-accent text-white text-base font-semibold">Play</button>`;
+  return `<button type="button" data-play-btn class="btn btn-solid w-full"><svg aria-hidden="true"><use href="/sprites.svg#icon-play"/></svg>Play</button>`;
 }
 
 function renderWelcome(): void {

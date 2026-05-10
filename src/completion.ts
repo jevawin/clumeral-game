@@ -166,9 +166,9 @@ export function renderCompletion(
     if (!isRandom && !isArchivedOtherDate) {
       const a = document.createElement('a');
       a.href = '#';
-      a.className = 'link';
+      a.className = 'btn btn-hollow flex-1';
       a.dataset.completionShowPuzzle = '';
-      a.textContent = 'Show puzzle';
+      a.innerHTML = '<svg aria-hidden="true"><use href="/sprites.svg#icon-play"/></svg>Puzzle';
       a.addEventListener('click', (e) => {
         e.preventDefault();
         document.dispatchEvent(new CustomEvent('completion:show-puzzle'));
@@ -179,9 +179,9 @@ export function renderCompletion(
     // Archive link: always present. Renamed from /puzzles to /archive (ARC-01).
     const archive = document.createElement('a');
     archive.href = '/archive';
-    archive.className = 'link';
+    archive.className = 'btn btn-hollow flex-1';
     archive.dataset.completionArchive = '';
-    archive.textContent = 'Archive';
+    archive.innerHTML = '<svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>Archive';
     dom.links.appendChild(archive);
   }
 }

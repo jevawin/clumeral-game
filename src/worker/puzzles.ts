@@ -115,15 +115,32 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     padding: 1.25rem 1rem 2rem;
   }
 
-  .back {
+  /* Button system — mirrors src/tailwind.css .btn/.btn-solid/.btn-hollow/.btn-sm */
+  .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.375rem;
+    font-family: "Quicksand", system-ui, sans-serif;
+    font-weight: 600;
     font-size: 1rem;
-    color: var(--color-accent);
-    text-decoration: underline;
-    margin-bottom: 1rem;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
   }
+  .btn-solid { background: var(--color-accent); color: #FFFFFF; border: 1.5px solid var(--color-accent); }
+  .btn-solid:hover { filter: brightness(1.08); }
+  .btn-hollow { background: transparent; color: var(--color-accent); border: 1.5px solid var(--color-accent); }
+  .btn-hollow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
+  .btn-sm { min-height: 2rem; padding: 0.375rem 0.75rem; font-size: 0.875rem; gap: 0.375rem; }
+  .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+  .btn-sm svg { width: 0.875rem; height: 0.875rem; }
+
+  .back { margin-bottom: 1rem; }
 
   h1 {
     font-family: "Comfortaa", "Quicksand", system-ui, sans-serif;
@@ -181,12 +198,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   td:first-child a { color: var(--color-accent); text-decoration: underline; }
   .num-col { font-family: "Inconsolata", ui-monospace, monospace; font-weight: 600; text-align: right; }
   th.num-header { text-align: right; }
-  .play-link {
-    font-family: "Quicksand", system-ui, sans-serif;
-    font-weight: 600;
-    font-size: 1rem;
-    text-decoration: underline;
-  }
+  td.action-col { text-align: right; }
 
   tr.row { cursor: pointer; transition: background 0.1s; }
   tr.row:hover { background: color-mix(in srgb, var(--color-accent) 6%, transparent); }
@@ -221,7 +233,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   </header>
 
   <main class="archive">
-    <a href="/" class="back">&larr; Back to today's puzzle</a>
+    <a href="/" class="btn btn-hollow back"><svg aria-hidden="true"><use href="/sprites.svg#icon-calendar"/></svg>Today's puzzle</a>
     <h1>Every Clumeral ever.</h1>
     <p class="subtitle">Tap to view a puzzle. Tap a column to sort by it.</p>
 
@@ -261,7 +273,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     if (byDate[date] != null) {
       cell.textContent = byDate[date];
     } else {
-      cell.innerHTML = '<a href="/archive/' + rows[r].getAttribute("data-date") + '" class="play-link">Play</a>';
+      cell.innerHTML = '<a href="/archive/' + rows[r].getAttribute("data-date") + '" class="btn btn-solid btn-sm"><svg aria-hidden="true"><use href="/sprites.svg#icon-play"/></svg>Play</a>';
     }
   }
 })();
@@ -303,7 +315,7 @@ document.querySelectorAll("th.sortable").forEach(function(th) {
 // Row click navigation
 document.querySelectorAll("tr.row").forEach(function(row) {
   row.addEventListener("click", function(e) {
-    if (e.target.tagName === "A") return;
+    if (e.target.closest && e.target.closest("a")) return;
     location.href = "/archive/" + row.getAttribute("data-date");
   });
 });

@@ -180,7 +180,7 @@
         <div class="w-full max-w-[390px] mx-auto flex flex-col">
 
             <!-- Archive banner — shown by renderClues when replaying a dated puzzle -->
-            <a data-archive-back href="/archive" class="hidden mb-2 items-center gap-1 self-start text-base font-[Quicksand] text-accent underline">&larr; Back to archive</a>
+            <a data-archive-back href="/archive" class="hidden btn btn-solid btn-sm self-start mb-3"><svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>Archive</a>
             <p data-archive-banner class="hidden mb-8 items-center gap-1.5 self-start text-sm font-[Quicksand] text-text"></p>
 
             <!-- Clue list (skeletons replaced by renderClues) -->
@@ -282,14 +282,14 @@
           <!-- Countdown -->
           <p data-completion-countdown class="text-base text-text"></p>
 
-          <!-- Leave feedback button -->
-          <button data-completion-feedback type="button"
-            class="w-full bg-accent text-white font-semibold text-base py-3 px-6 rounded-md min-h-[44px]">
-            Leave feedback
-          </button>
-
-          <!-- Show puzzle + Archive links (SLV-01, LNK-01) -->
-          <div data-completion-links class="flex flex-col items-center gap-3"></div>
+          <!-- Action row: feedback (solid) + show puzzle / archive (hollow, injected) -->
+          <div class="flex w-full gap-2">
+            <button data-completion-feedback type="button" class="btn btn-solid flex-1">
+              <svg aria-hidden="true"><use href="/sprites.svg#icon-send"/></svg>
+              Feedback
+            </button>
+            <div data-completion-links class="contents"></div>
+          </div>
 
         </div>
       </section>
