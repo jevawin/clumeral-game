@@ -287,6 +287,15 @@ export default {
 
     // ── Static pages ──
 
+    // /sw.js must never sit in any CDN or browser cache or stale deploys would
+    // keep serving the old bundle. Override the asset response's headers.
+    if (request.method === 'GET' && url.pathname === '/sw.js') {
+      const res = await env.ASSETS.fetch(request);
+      const headers = new Headers(res.headers);
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+    }
+
     // GET / and client SPA routes — serve static HTML (client router handles in-page nav).
     if (request.method === 'GET' && (
       url.pathname === '/' ||

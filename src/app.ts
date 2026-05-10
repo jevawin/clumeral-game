@@ -719,10 +719,18 @@ async function loadPuzzle() {
 // ─── Service worker ───────────────────────────────────────────────────────────
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+  // updateViaCache: 'none' makes the browser bypass the HTTP cache when checking
+  // /sw.js for updates, so a new deploy is picked up on the next navigation
+  // instead of waiting up to 24h for the cached SW script to expire.
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
   navigator.serviceWorker.addEventListener('message', (e) => {
     if (e.data?.type === 'SW_UPDATED') window.location.reload();
   });
+  // Force an update check whenever the page regains focus — covers PWAs and
+  // long-lived tabs where navigation alone wouldn't trigger one.
+  const checkForUpdate = () => navigator.serviceWorker.getRegistration().then(r => r?.update());
+  window.addEventListener('focus', checkForUpdate);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 }
 
 // ─── Event listeners (module-level) ───────────────────────────────────────────
