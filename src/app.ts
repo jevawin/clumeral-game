@@ -489,7 +489,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
     // Today's solved-replay: hollow Stats button deep-links to /solved.
     const linksHtml = replayDate
       ? `<div class="mt-4 flex gap-2"><a href="/archive" class="btn btn-solid flex-1"><svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>Archive</a><a href="/play" class="btn btn-hollow flex-1"><svg aria-hidden="true"><use href="/sprites.svg#icon-calendar"/></svg>Today</a></div>`
-      : `<div class="mt-4"><a href="/solved" data-show-stats class="btn btn-hollow w-full"><svg aria-hidden="true"><use href="/sprites.svg#icon-stats"/></svg>Show stats</a></div>`;
+      : `<div class="mt-4 flex gap-2"><a href="/solved" data-show-stats class="btn btn-hollow flex-1"><svg aria-hidden="true"><use href="/sprites.svg#icon-stats"/></svg>Show stats</a><a href="/archive" class="btn btn-hollow flex-1"><svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>Archive</a></div>`;
     dom.stats.innerHTML = linksHtml;
     dom.stats.classList.remove("hidden");
   }
