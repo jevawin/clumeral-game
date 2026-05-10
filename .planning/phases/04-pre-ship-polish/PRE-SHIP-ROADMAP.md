@@ -5,6 +5,8 @@
 **Workflow:** Do one item at a time. Commit + push after each. Re-test in preview between items.
 **Source feedback:** WhatsApp review thread (2026-05-10) — full quote in Appendix A below.
 
+> **PLAN TOGETHER, DON'T JUST DO.** Every item: surface decisions, get sign-off, then implement. No autonomous coding before alignment.
+
 ---
 
 ## Per-item protocol (run between every item)
