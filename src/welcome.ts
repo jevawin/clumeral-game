@@ -56,7 +56,7 @@ function htpSteps(): string {
 
       <!-- Step 1: Read the clues -->
       <div>
-        <p class="text-base font-medium text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-accent" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
+        <p class="text-base text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-accent" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
         <div class="grid [grid-template-columns:max-content_1fr] gap-x-4 items-center">
           <div class="flex flex-col gap-2">
             <span class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide">
@@ -75,7 +75,7 @@ function htpSteps(): string {
 
       <!-- Step 2: Open the digit boxes -->
       <div>
-        <p class="text-base font-medium text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
+        <p class="text-base text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
         <div class="flex items-start gap-2.5">
           <div class="digit-box flex-1 aspect-square min-w-0">
             <div class="digit-box__grid four-col">
@@ -113,7 +113,7 @@ function htpSteps(): string {
       </div>
 
       <!-- Step 3: Submit -->
-      <p class="text-base font-medium text-text">3. When 1 digit remains in each, submit your answer</p>
+      <p class="text-base text-text">3. When 1 digit remains in each, submit your answer</p>
 
     </div>`;
 }

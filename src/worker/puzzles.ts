@@ -77,6 +77,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   body {
     background: var(--color-bg);
     color: var(--color-text);
+    font-weight: 300;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
