@@ -957,6 +957,15 @@ document.addEventListener('click', (e) => {
 // HTP: route to welcome screen from menu so the back button works.
 // skipResolve so users who already solved today still see HTP — resolver would otherwise redirect /welcome → /solved.
 document.querySelector('[data-htp-btn]')?.addEventListener('click', () => { navigate('/welcome', { skipResolve: true }); track('htp_opened', undefined, 'manual'); });
+// Header brand: tap toggles between play and HTP. On /play go to HTP (welcome). Anywhere else go to /play.
+document.querySelector('[data-brand]')?.addEventListener('click', () => {
+  if (location.pathname === '/play') {
+    navigate('/welcome', { skipResolve: true });
+    track('htp_opened', undefined, 'brand');
+  } else {
+    navigate('/play');
+  }
+});
 // Feedback submitted
 document.querySelector('[data-fb-send]')?.addEventListener('click', () => track('feedback_submitted'));
 // Theme toggle

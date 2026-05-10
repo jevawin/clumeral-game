@@ -134,7 +134,7 @@
 
       <!-- ── App header (game/completion only — JS hides it on /welcome) ── -->
       <header data-app-header class="flex items-center justify-between h-14 px-4 bg-bg border-b border-border">
-        <div class="flex items-center gap-2">
+        <button data-brand class="flex items-center gap-2 rounded -mx-1 px-1 py-1 text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" type="button" aria-label="Home">
           <svg aria-hidden="true" width="24" height="24" viewBox="0 0 53 52" fill="none" class="shrink-0">
             <path d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z" fill="var(--color-accent)"/>
             <circle cx="19" cy="15" r="2.5" fill="#F6F0E8"/>
@@ -142,7 +142,7 @@
             <path d="M21 26C24.3333 27.3333 27.6667 27.3333 31 26" stroke="#F6F0E8" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
           <span class="text-xl font-bold text-text font-[Comfortaa]">Clumeral</span>
-        </div>
+        </button>
         <button data-menu-btn class="burger-btn relative h-10 w-10 flex items-center justify-center text-text" type="button" aria-expanded="false" aria-controls="app-menu" aria-label="Open menu">
           <span aria-hidden="true" class="burger-bar"></span>
           <span aria-hidden="true" class="burger-bar"></span>
