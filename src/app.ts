@@ -958,12 +958,13 @@ document.addEventListener('click', (e) => {
 // skipResolve so users who already solved today still see HTP — resolver would otherwise redirect /welcome → /solved.
 document.querySelector('[data-htp-btn]')?.addEventListener('click', () => { navigate('/welcome', { skipResolve: true }); track('htp_opened', undefined, 'manual'); });
 // Header brand: tap toggles between play and HTP. On /play go to HTP (welcome). Anywhere else go to /play.
+// skipResolve so already-solved users land on the solved-replay /play view (matches "Show puzzle" link).
 document.querySelector('[data-brand]')?.addEventListener('click', () => {
   if (location.pathname === '/play') {
     navigate('/welcome', { skipResolve: true });
     track('htp_opened', undefined, 'brand');
   } else {
-    navigate('/play');
+    navigate('/play', { skipResolve: true });
   }
 });
 // Feedback submitted
