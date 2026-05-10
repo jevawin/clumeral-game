@@ -113,7 +113,7 @@ html, body { font-family: var(--font-sans); }
   }
   [data-octo-wrap].celebrating {
     z-index: 9999;
-    animation: octo-fly 2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+    animation: octo-fly 2.88s cubic-bezier(0.4, 0, 0.6, 1) forwards;
   }
   [data-octo-wrap].floating {
     position: fixed;
@@ -133,7 +133,7 @@ html, body { font-family: var(--font-sans); }
     50%  { transform: translate(-50%, -50%) translate(-35vw, 18vh) scale(2.2) rotate(25deg); }
     70%  { transform: translate(-50%, -50%) translate(30vw, 15vh) scale(1.6) rotate(-15deg); }
     85%  { transform: translate(-50%, -50%) translate(-30vw, -15vh) scale(1.3) rotate(10deg); }
-    100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) translateY(-55vh) scale(1) rotate(0deg); }
   }
 
   @keyframes octo-colours {
@@ -144,7 +144,7 @@ html, body { font-family: var(--font-sans); }
   }
 
   [data-octo].celebrate > path:first-of-type {
-    animation: octo-colours 1s ease-in-out 0s infinite;
+    animation: octo-colours 1.44s ease-in-out 0s infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {

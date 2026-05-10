@@ -219,7 +219,6 @@ export function celebrateOcto(onComplete?: () => void): void {
 
   // Timer refs stored here so the skip handler can cancel them.
   let returnTimer: ReturnType<typeof setTimeout>;
-  let cleanupTimer: ReturnType<typeof setTimeout>;
 
   // Skip: tap anywhere during celebration to jump straight to onComplete.
   const removeSkipListeners = () => {
@@ -230,7 +229,6 @@ export function celebrateOcto(onComplete?: () => void): void {
   const onSkip = () => {
     removeSkipListeners();
     clearTimeout(returnTimer);
-    clearTimeout(cleanupTimer);
 
     // Snap octo back to header instantly (no return transition).
     if (octoWrapEl) {
@@ -261,7 +259,7 @@ export function celebrateOcto(onComplete?: () => void): void {
   // position (centre + translateY(-55vh)) over 200ms. The keyframe 0% is
   // identical to where we end, so handing off to the CSS animation after
   // the transition is seamless — no jump.
-  const LEAD_IN_MS = 200;
+  const LEAD_IN_MS = 288;
   requestAnimationFrame(() => {
     if (!octoWrapEl || !octoEl) return;
     octoWrapEl.style.transition = `left ${LEAD_IN_MS}ms ease-in, top ${LEAD_IN_MS}ms ease-in, transform ${LEAD_IN_MS}ms ease-in`;
@@ -277,47 +275,31 @@ export function celebrateOcto(onComplete?: () => void): void {
     }, LEAD_IN_MS);
   });
 
-  // After lead-in + fly animation ends, transition back to header.
+  // After lead-in + fly animation ends, snap back to the header slot.
+  // The fly keyframe now exits the top of the screen (opacity 0), so we
+  // skip the visible return tween — octo just teleports back to its slot
+  // invisibly, then fades in for the next round.
   returnTimer = setTimeout(() => {
     if (!octoWrapEl || !octoEl) return;
-    octoWrapEl.style.transform = 'translate(-50%, -50%)';
     octoWrapEl.classList.remove('celebrating');
     octoEl.classList.remove('celebrate');
+    octoWrapEl.style.position = '';
+    octoWrapEl.style.left = '';
+    octoWrapEl.style.top = '';
+    octoWrapEl.style.margin = '';
+    octoWrapEl.style.transition = '';
+    octoWrapEl.style.transform = '';
+    octoWrapEl.style.opacity = '1';
 
-    // Re-measure the slot NOW so we animate back to where home actually
-    // is at this moment — not where it was when the celebration started.
-    // Handles resize/scroll mid-celebration and avoids a settle-snap on cleanup.
-    const home = octoSlotEl?.getBoundingClientRect();
-    const returnLeft = home ? home.left : origLeft;
-    const returnTop = home ? home.top : origTop;
+    const digitsEl = document.querySelector('[data-digits]') as HTMLElement | null;
+    if (digitsEl) digitsEl.classList.add('digit-correct');
 
-    requestAnimationFrame(() => {
-      if (!octoWrapEl) return;
-      octoWrapEl.style.transition = 'left 0.4s ease-in-out, top 0.4s ease-in-out, transform 0.4s ease-in-out';
-      octoWrapEl.style.left = returnLeft + 'px';
-      octoWrapEl.style.top = returnTop + 'px';
-      octoWrapEl.style.transform = '';
-
-      cleanupTimer = setTimeout(() => {
-        if (!octoWrapEl) return;
-        octoWrapEl.style.position = '';
-        octoWrapEl.style.left = '';
-        octoWrapEl.style.top = '';
-        octoWrapEl.style.margin = '';
-        octoWrapEl.style.transition = '';
-        octoWrapEl.style.opacity = '1';
-
-        const digitsEl = document.querySelector('[data-digits]') as HTMLElement | null;
-        if (digitsEl) digitsEl.classList.add('digit-correct');
-
-        document.body.style.overflow = '';
-        exprMode = 'round';
-        octoAnimating = false;
-        removeSkipListeners();
-        if (onComplete) onComplete();
-      }, 400);
-    });
-  }, 2000 + 200);
+    document.body.style.overflow = '';
+    exprMode = 'round';
+    octoAnimating = false;
+    removeSkipListeners();
+    if (onComplete) onComplete();
+  }, 2880 + 288);
 }
 
 function sadBounce(el: HTMLElement, fallDist: number, onDone: () => void): void {
