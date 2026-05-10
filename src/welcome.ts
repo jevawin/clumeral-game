@@ -58,21 +58,18 @@ function htpSteps(): string {
       <div>
         <p class="text-base font-medium text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-accent" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
         <div class="grid [grid-template-columns:max-content_1fr] gap-x-4 items-center">
-          <div class="flex flex-col items-stretch justify-center gap-2 self-stretch py-[0.1875rem]">
-            <span class="font-mono text-base font-bold tracking-wider uppercase h-[1.375rem] leading-[1.375rem] rounded-sm border-[1.5px] px-1 flex items-center justify-between gap-1 bg-accent/5 text-accent border-accent cursor-pointer">
+          <div class="flex flex-col gap-2">
+            <span class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide">
               <span>PRIME</span>
-              <svg class="shrink-0 stroke-[2.5]" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
+              <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
             </span>
-            <div class="flex justify-between gap-[2.5px]" aria-hidden="true">
-              <span class="w-[1.375rem] h-[1.375rem] shrink-0 rounded-[1px] border border-accent bg-accent/50"></span>
-              <span class="w-[1.375rem] h-[1.375rem] shrink-0 rounded-[1px] border border-accent bg-accent/5"></span>
-              <span class="w-[1.375rem] h-[1.375rem] shrink-0 rounded-[1px] border border-accent bg-accent/5"></span>
+            <div class="flex justify-between gap-1" aria-hidden="true">
+              <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/50"></span>
+              <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/5"></span>
+              <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/5"></span>
             </div>
           </div>
-          <div class="flex flex-col gap-1 justify-center">
-            <div class="text-base font-medium leading-snug text-text">The first digit</div>
-            <div class="font-mono text-2xl font-bold leading-tight text-accent">is a prime number</div>
-          </div>
+          <div class="text-lg font-light text-text font-[Quicksand]">The <span class="font-bold">first</span> digit is <span class="font-bold text-accent whitespace-nowrap">a prime number</span></div>
         </div>
       </div>
 
