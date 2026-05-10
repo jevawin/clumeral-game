@@ -49,7 +49,7 @@ function track(event: string, value?: number, source?: string): void {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EPOCH_DATE = "2026-03-08";
-const OPERATOR_WORDS: Record<string, string> = { "<": "less than", ">": "greater than", "<=": "at most", ">=": "at least", "=": "equal to", "!=": "not equal to" };
+const OPERATOR_SYMBOLS: Record<string, string> = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
 
 // ─── DOM cache ───────────────────────────────────────────────────────────────
 
@@ -250,11 +250,11 @@ function renderClues(clues: ClueData[]): void {
       leadText = subject + " is";
       emphHtml = (isAffirmative ? "" : "not ") + predicate;
     } else {
-      leadText = label;
+      leadText = operator === "=" ? label.replace(/\s+is$/, "") : label;
       const formatted = formatClueValue(value);
-      const opWord = OPERATOR_WORDS[operator] ?? operator;
+      const opSymbol = OPERATOR_SYMBOLS[operator] ?? operator;
       const valuePart = formatted.html ?? formatted.text;
-      emphHtml = `${opWord} ${valuePart}`;
+      emphHtml = `${opSymbol} ${valuePart}`;
     }
 
     const clueEl = document.createElement("div");
@@ -276,7 +276,7 @@ function renderClues(clues: ClueData[]): void {
 
     const l1El = clueEl.querySelector("[data-clue-line1]");
     const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold">$1</span>');
-    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent">${emphHtml}</span>`;
+    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent whitespace-nowrap">${emphHtml}</span>`;
     dom.clueList.appendChild(clueEl);
   }
 }
