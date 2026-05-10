@@ -135,7 +135,6 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     font-size: 1rem;
     font-weight: 300;
     color: var(--color-text);
-    opacity: 0.7;
     margin-bottom: 1.5rem;
   }
 
@@ -151,7 +150,6 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--color-text);
-    opacity: 0.6;
     white-space: nowrap;
     user-select: none;
   }
@@ -160,10 +158,10 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     text-decoration: underline;
     text-underline-offset: 0.2em;
     text-decoration-thickness: 1.5px;
-    text-decoration-color: color-mix(in srgb, var(--color-text) 30%, transparent);
+    text-decoration-color: var(--color-text);
   }
   th.sortable:hover .sort-label {
-    text-decoration-color: color-mix(in srgb, var(--color-text) 60%, transparent);
+    text-decoration-color: var(--color-text);
   }
   .sort-icon {
     display: none;
