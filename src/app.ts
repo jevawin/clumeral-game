@@ -70,6 +70,7 @@ const dom = {
   again: $('[data-again]') as HTMLElement | null,
   archiveBanner: $('[data-archive-banner]') as HTMLElement | null,
   archiveBack: $('[data-archive-back]') as HTMLElement | null,
+  archiveRow: $('[data-archive-row]') as HTMLElement | null,
   history: $('[data-history]') as HTMLElement | null,
   historyList: $('[data-history-list]') as HTMLElement | null,
   clueList: $('[data-clue-list]') as HTMLElement | null,
@@ -477,15 +478,10 @@ function showCompletedState(tries: number, replayDate?: string): void {
   dom.next?.classList.add("hidden");
   dom.history?.classList.add("hidden");
 
-  // Archive banner + back-button visibility tied to replayDate so a daily /play view
-  // never inherits archive chrome from a prior /archive/<date> visit.
-  if (dom.archiveBack) {
-    dom.archiveBack.classList.toggle("hidden", !replayDate);
-    dom.archiveBack.classList.toggle("inline-flex", !!replayDate);
-  }
-  if (dom.archiveBanner) {
-    dom.archiveBanner.classList.toggle("hidden", !replayDate);
-    dom.archiveBanner.classList.toggle("inline-flex", !!replayDate);
+  // Archive row visibility tied to replayDate so a daily /play view never inherits archive chrome.
+  if (dom.archiveRow) {
+    dom.archiveRow.classList.toggle("hidden", !replayDate);
+    dom.archiveRow.classList.toggle("flex", !!replayDate);
   }
 
   if (dom.stats) {
@@ -504,16 +500,12 @@ function resetPuzzleUI() {
   renderHistory([]);
   dom.stats?.classList.add("hidden");
   dom.next?.classList.add("hidden");
-  // Hide archive banner by default; startReplayPuzzle re-enables it for dated replays.
-  if (dom.archiveBanner) {
-    dom.archiveBanner.classList.add("hidden");
-    dom.archiveBanner.classList.remove("inline-flex");
-    dom.archiveBanner.innerHTML = "";
+  // Hide archive row by default; startReplayPuzzle re-enables it for dated replays.
+  if (dom.archiveRow) {
+    dom.archiveRow.classList.add("hidden");
+    dom.archiveRow.classList.remove("flex");
   }
-  if (dom.archiveBack) {
-    dom.archiveBack.classList.add("hidden");
-    dom.archiveBack.classList.remove("inline-flex");
-  }
+  if (dom.archiveBanner) dom.archiveBanner.innerHTML = "";
   // Remove correct state from digit boxes
   for (let i = 0; i < 3; i++) {
     const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
@@ -559,13 +551,10 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): Promise<void> {
   renderClues(clues);
   const showBanner = () => {
-    if (!dom.archiveBanner) return;
-    dom.archiveBanner.innerHTML = `<svg width="14" height="14" class="text-text shrink-0" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg><span>Archived puzzle · #${num} · ${formatDate(date)}</span>`;
-    dom.archiveBanner.classList.remove("hidden");
-    dom.archiveBanner.classList.add("inline-flex");
-    if (dom.archiveBack) {
-      dom.archiveBack.classList.remove("hidden");
-      dom.archiveBack.classList.add("inline-flex");
+    if (dom.archiveBanner) dom.archiveBanner.textContent = `Archived puzzle · #${num} · ${formatDate(date)}`;
+    if (dom.archiveRow) {
+      dom.archiveRow.classList.remove("hidden");
+      dom.archiveRow.classList.add("flex");
     }
   };
 
@@ -896,11 +885,9 @@ document.addEventListener('analytics:track', (e) => {
   if (detail?.event) track(detail.event, detail.value, detail.source);
   if (detail?.event === 'route_change') {
     const onArchiveDate = /^\/archive\/\d{4}-\d{2}-\d{2}$/.test(location.pathname);
-    if (!onArchiveDate) {
-      dom.archiveBack?.classList.add('hidden');
-      dom.archiveBack?.classList.remove('inline-flex');
-      dom.archiveBanner?.classList.add('hidden');
-      dom.archiveBanner?.classList.remove('inline-flex');
+    if (!onArchiveDate && dom.archiveRow) {
+      dom.archiveRow.classList.add('hidden');
+      dom.archiveRow.classList.remove('flex');
     }
   }
 });
