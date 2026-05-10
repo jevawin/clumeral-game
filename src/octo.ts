@@ -371,14 +371,16 @@ export function sadOcto(): void {
   setOpacity(eyeRX as HTMLElement | null, '1');
   setOpacity(mouthSad as HTMLElement | null, '1');
 
-  // Save original position, switch to fixed at current spot
+  // [data-octo-wrap] is parked offscreen (-9999px) as a measurement host,
+  // so its bounding rect is useless as a fall origin. Pin to a fixed viewport
+  // anchor — top-center, just below where the header would be.
   const rect = octoWrapEl.getBoundingClientRect();
-  const origLeft = rect.left + rect.width / 2;
-  const origTop = rect.top;
+  const origLeft = window.innerWidth / 2;
+  const origTop = Math.max(48, window.innerHeight * 0.08);
   // transform-origin is center bottom, so at 90° the lowest point
   // is at top + height + width/2. We want that flush with viewport bottom.
   const restTop = window.innerHeight - rect.height - rect.width / 2;
-  const fallDist = restTop - rect.top;
+  const fallDist = restTop - origTop;
 
   octoWrapEl.style.position = 'fixed';
   octoWrapEl.style.left = origLeft + 'px';

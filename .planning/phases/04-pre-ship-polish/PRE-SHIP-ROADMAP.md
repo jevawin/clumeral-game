@@ -26,7 +26,7 @@ This file is the source of truth between sessions. Everything needed to resume a
 
 ## Items
 
-### [ ] 1. Fix sadOcto offscreen regression
+### [x] 1. Fix sadOcto offscreen regression
 
 **Type:** Bug fix (regression introduced by new-design octopus relocation).
 **Severity:** Visible — friend flagged "what happened to the octopus dying animation?"
