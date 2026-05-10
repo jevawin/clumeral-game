@@ -232,6 +232,35 @@ html, body { font-family: var(--font-sans); }
     [data-menu] .menu-item { transition: none; }
   }
 
+  /* ─── Accent colour swatches (menu) ─── */
+  [data-swatches] {
+    /* radiogroup wrapper */
+  }
+  .swatch-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background: var(--swatch-light);
+    box-shadow: 0 0 0 2px transparent;
+    transition: box-shadow 150ms ease;
+  }
+  html.dark .swatch-btn {
+    background: var(--swatch-dark);
+  }
+  .swatch-btn[aria-checked="true"] {
+    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text);
+  }
+  .swatch-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .swatch-btn { transition: none; }
+  }
+
   /* ─── Save score row — hidden by default, shown when submit sibling is visible ─── */
   [data-save] {
     display: none;

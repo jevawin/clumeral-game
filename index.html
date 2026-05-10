@@ -152,10 +152,6 @@
       <!-- Menu dropdown — anchored to the header right edge -->
       <div id="app-menu" data-menu role="dialog" aria-label="App menu"
            class="hidden absolute top-14 right-0 z-40 min-w-[200px] py-2 bg-surface border border-border rounded-lg shadow-lg">
-        <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
-          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
-          <span data-theme-label>Dark mode</span>
-        </button>
         <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
           Feedback
@@ -164,6 +160,11 @@
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
           How to play
         </button>
+        <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
+          <span data-theme-label>Dark mode</span>
+        </button>
+        <div data-swatches class="flex items-center gap-3 px-4 py-2"></div>
       </div>
 
     <!-- ── New screen architecture (Phase 1) ── -->

@@ -107,7 +107,7 @@ Add back-link inside or beside `[data-archive-banner]`: `← Archive` (or `← B
 
 ---
 
-### [ ] 5. Restore accent-colour picker in top-corner menu
+### [x] 5. Restore accent-colour picker in top-corner menu
 
 **Type:** Restore feature removed in v1.1.
 **Source:** Friend asked from start; user originally removed; multiple people asked → restore for ship.

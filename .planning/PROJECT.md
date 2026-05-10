@@ -24,7 +24,7 @@ The game screen works flawlessly — clues, digit elimination, guess submission,
 - Feedback modal: pills, char counter (warns at 400, blocks at 500), metadata line, Google Apps Script submit with retry
 - Celebration: octopus + bubbles ~2.6s, skippable, prefers-reduced-motion respected, then completion screen
 - Completion: stats (games/win%/streaks), feedback prompt, countdown
-- Tailwind v4 with 6 semantic tokens (bg, text, muted, accent, surface, border), `dark:` variants only, green accent only
+- Tailwind v4 with 6 semantic tokens (bg, text, muted, accent, surface, border), `dark:` variants only; accent picker restored in v1.1 (Berry/Blue/Lime/Violet, default Lime)
 - Old style.css fully removed; Phase 7 dead-code pass removed letter-reveal system, four orphan sprite icons, duplicate welcome h1, and audited tailwind.css component classes
 
 **Known tech debt** (carried into v1.1 backlog — see `.planning/milestones/v1.0-MILESTONE-AUDIT.md`):

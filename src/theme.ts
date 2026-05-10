@@ -12,6 +12,7 @@ function applyTheme(dark: boolean): void {
   root.classList.toggle("light", !dark);
   if (togLabel) togLabel.textContent = dark ? "Light mode" : "Dark mode";
   if (togBtn) togBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  window._refreshAccent?.();
 }
 
 export function toggleTheme(): void {

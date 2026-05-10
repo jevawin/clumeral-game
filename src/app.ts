@@ -5,6 +5,7 @@ import type { GameState, ClueData } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
 import { initTheme } from './theme.ts';
+import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
 import { showScreen } from './screens.ts';
@@ -877,6 +878,7 @@ function initMenu(): void {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 initTheme();
+initColours();
 initMenu();
 initFeedbackModal(todayLocal, puzzleNumber, formatDate);
 
