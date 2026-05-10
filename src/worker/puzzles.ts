@@ -140,7 +140,8 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
   .btn-sm svg { width: 0.875rem; height: 0.875rem; }
 
-  .back { width: 100%; margin-bottom: 1rem; }
+  .archive-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .archive-actions .btn { flex: 1; }
 
   h1 {
     font-family: "Comfortaa", "Quicksand", system-ui, sans-serif;
@@ -233,7 +234,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   </header>
 
   <main class="archive">
-    <a href="/" class="btn btn-hollow back"><svg aria-hidden="true"><use href="/sprites.svg#icon-calendar"/></svg>Today's puzzle</a>
+    <div class="archive-actions"><a href="/play" class="btn btn-hollow"><svg aria-hidden="true"><use href="/sprites.svg#icon-puzzle"/></svg>Show puzzle</a><a href="/solved" class="btn btn-hollow"><svg aria-hidden="true"><use href="/sprites.svg#icon-stats"/></svg>Show stats</a></div>
     <h1>Every Clumeral ever.</h1>
     <p class="subtitle">Tap to view a puzzle. Tap a column to sort by it.</p>
 
