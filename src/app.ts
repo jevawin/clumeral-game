@@ -477,6 +477,17 @@ function showCompletedState(tries: number, replayDate?: string): void {
   dom.next?.classList.add("hidden");
   dom.history?.classList.add("hidden");
 
+  // Archive banner + back-button visibility tied to replayDate so a daily /play view
+  // never inherits archive chrome from a prior /archive/<date> visit.
+  if (dom.archiveBack) {
+    dom.archiveBack.classList.toggle("hidden", !replayDate);
+    dom.archiveBack.classList.toggle("inline-flex", !!replayDate);
+  }
+  if (dom.archiveBanner) {
+    dom.archiveBanner.classList.toggle("hidden", !replayDate);
+    dom.archiveBanner.classList.toggle("inline-flex", !!replayDate);
+  }
+
   if (dom.stats) {
     // Archive solved: solid Archive button returns to list; Latest opens today's puzzle.
     // Today's solved-replay: hollow Stats button deep-links to /solved.
@@ -878,9 +889,20 @@ if (_todayHistoryAtBoot) {
 // to /play (welcome appeared at opacity-100 before the router swapped to game).
 
 // Bridge router-emitted analytics events to the existing track() helper.
+// Also use route_change as a sync point for URL-tied UI (e.g. archive chrome must hide
+// when leaving /archive/<date>, even on same-screen game→game navigation).
 document.addEventListener('analytics:track', (e) => {
   const detail = (e as CustomEvent).detail as { event: string; value?: number; source?: string };
   if (detail?.event) track(detail.event, detail.value, detail.source);
+  if (detail?.event === 'route_change') {
+    const onArchiveDate = /^\/archive\/\d{4}-\d{2}-\d{2}$/.test(location.pathname);
+    if (!onArchiveDate) {
+      dom.archiveBack?.classList.add('hidden');
+      dom.archiveBack?.classList.remove('inline-flex');
+      dom.archiveBanner?.classList.add('hidden');
+      dom.archiveBanner?.classList.remove('inline-flex');
+    }
+  }
 });
 
 // Boot the router — sets scrollRestoration, registers popstate + visibility/focus,
@@ -935,7 +957,10 @@ document.addEventListener('completion:show-puzzle', () => {
 document.addEventListener('screens:enter', (e) => {
   const screen = (e as CustomEvent).detail?.screen;
   if (screen !== 'game' || !gameState.solved || gameState.tries == null) return;
-  const replayDate = gameState.date && gameState.date !== todayLocal() ? gameState.date : undefined;
+  // replayDate is only meaningful on /archive/<date>. On /play the puzzle is today's daily, even if
+  // gameState still holds a previous archive date because the user navigated without reloading.
+  const onArchiveDate = location.pathname.startsWith('/archive/');
+  const replayDate = onArchiveDate && gameState.date && gameState.date !== todayLocal() ? gameState.date : undefined;
   showCompletedState(gameState.tries, replayDate);
 });
 
