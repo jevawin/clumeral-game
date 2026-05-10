@@ -275,7 +275,7 @@ function renderClues(clues: ClueData[]): void {
     tagBtn.addEventListener("click", () => showTagTip(tag, tagBtn));
 
     const l1El = clueEl.querySelector("[data-clue-line1]");
-    const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold">$1</span>');
+    const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold text-accent">$1</span>');
     if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent whitespace-nowrap">${emphHtml}</span>`;
     dom.clueList.appendChild(clueEl);
   }
