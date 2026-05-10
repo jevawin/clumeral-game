@@ -374,7 +374,7 @@ function buildKeypad() {
     btn.type = "button";
     const disabled = activeBox === 0 && d === 0;
     const elim = disabled || !possibles[activeBox].has(d);
-    btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+    btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
         ? 'bg-surface text-text/25 border-border shadow-none'
         : 'bg-surface text-text border-border shadow-[2px_2px_0_rgba(38,38,36,0.12)] dark:shadow-[2px_2px_0_rgba(0,0,0,0.25)]'

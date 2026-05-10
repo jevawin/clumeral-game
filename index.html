@@ -222,9 +222,9 @@
 
             <!-- Digit boxes -->
             <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Digit entry boxes">
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>
             </div>
 
             <!-- Keypad -->
@@ -234,7 +234,7 @@
 
             <!-- Submit -->
             <div data-submit-wrap class="w-full mt-4 hidden">
-              <button data-submit class="btn btn-solid w-full" type="button"><svg aria-hidden="true"><use href="/sprites.svg#icon-arrow-right"/></svg>Submit answer</button>
+              <button data-submit class="btn btn-solid w-full" type="button"><svg aria-hidden="true"><use href="/sprites.svg#icon-tick"/></svg>Submit answer</button>
             </div>
 
             <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css) -->
