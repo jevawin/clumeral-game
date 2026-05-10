@@ -37,7 +37,7 @@
       })();
     </script>
   </head>
-  <body class="min-h-screen flex flex-col bg-bg">
+  <body class="min-h-dvh flex flex-col bg-bg">
     <a href="#main" class="skip-link">Skip to puzzle</a>
 
       <!-- ── Feedback modal ── -->
@@ -176,11 +176,11 @@
         <!-- Welcome content rendered by initWelcome — fills remaining viewport
              (flex-1) and centres content; footer pushes it slightly above visual centre. -->
       </section>
-      <section data-screen="game" data-game-content class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out px-4 pt-5 pb-8" aria-hidden="true">
+      <section data-screen="game" data-game-content class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out px-4 py-5" aria-hidden="true">
         <div class="w-full max-w-[390px] mx-auto flex flex-col">
 
             <!-- Archive banner — shown by renderClues when replaying a dated puzzle -->
-            <a data-archive-back href="/archive" class="hidden mb-2 items-center gap-1 self-start text-sm font-[Quicksand] text-accent underline">&larr; Back to archive</a>
+            <a data-archive-back href="/archive" class="hidden mb-2 items-center gap-1 self-start text-base font-[Quicksand] text-accent underline">&larr; Back to archive</a>
             <p data-archive-banner class="hidden mb-8 items-center gap-1.5 self-start text-sm font-[Quicksand] text-text"></p>
 
             <!-- Clue list (skeletons replaced by renderClues) -->
@@ -296,7 +296,7 @@
     </main>
 
     <footer class="text-center py-4 text-text text-sm font-[Quicksand]">
-      Made with &#10084;&#65039; by Jamie &amp; Dave. &copy; 2026.
+      Made with <svg role="img" aria-label="love" class="inline-block w-4 h-4 align-[-0.15em] text-accent" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> by Jamie &amp; Dave. &copy; 2026.
     </footer>
 
     <script type="module" src="/src/app.ts"></script>
