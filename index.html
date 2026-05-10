@@ -6,7 +6,7 @@
     <title>Clumeral</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Inconsolata:wght@400;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Inconsolata:wght@400;700&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <meta name="theme-color" content="#f5edd8" />
     <meta name="description" content="Work out the number from 100–999. New puzzle every day." />
 
@@ -175,11 +175,11 @@
         <!-- Welcome content rendered by initWelcome — fills remaining viewport
              (flex-1) and centres content; footer pushes it slightly above visual centre. -->
       </section>
-      <section data-screen="game" data-game-content class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out px-4 pt-6 pb-8" aria-hidden="true">
+      <section data-screen="game" data-game-content class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out px-4 pt-5 pb-8" aria-hidden="true">
         <div class="w-full max-w-[390px] mx-auto flex flex-col">
 
             <!-- Archive banner — shown by renderClues when replaying a dated puzzle -->
-            <p data-archive-banner class="hidden mb-4 inline-flex items-center gap-1.5 self-start text-sm font-[Quicksand] text-text"></p>
+            <p data-archive-banner class="hidden mb-4 items-center gap-1.5 self-start text-sm font-[Quicksand] text-text"></p>
 
             <!-- Clue list (skeletons replaced by renderClues) -->
             <div data-clue-list role="list" aria-label="Puzzle clues" aria-busy="true"
@@ -208,7 +208,7 @@
             </div>
 
             <!-- Digit boxes -->
-            <div data-digits class="flex gap-2 w-full mt-2" role="group" aria-label="Digit entry boxes">
+            <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Digit entry boxes">
               <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
               <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
               <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_rgba(0,0,0,0.25)] cursor-pointer" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>

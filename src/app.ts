@@ -48,7 +48,7 @@ function track(event: string, value?: number, source?: string): void {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EPOCH_DATE = "2026-03-08";
-const OPERATOR_SYMBOLS: Record<string, string> = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
+const OPERATOR_WORDS: Record<string, string> = { "<": "less than", ">": "greater than", "<=": "at most", ">=": "at least", "=": "equal to", "!=": "not equal to" };
 
 // ─── DOM cache ───────────────────────────────────────────────────────────────
 
@@ -238,23 +238,21 @@ function renderClues(clues: ClueData[]): void {
       `<span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border ${on ? 'border-accent bg-accent/50' : 'border-accent bg-accent/5'}"></span>`
     ).join("");
 
-    let l1Text: string | undefined, l2Text: string | undefined, l2Html: string | undefined;
+    let leadText: string;
+    let emphHtml: string;
     if (typeof value === "boolean") {
       const isAffirmative = operator === "=" ? value : !value;
       const idx = label.indexOf(" is ");
       const subject = label.slice(0, idx);
       const predicate = label.slice(idx + 4);
-      l1Text = subject;
-      l2Text = "is" + (isAffirmative ? "" : " not") + " " + predicate;
+      leadText = subject + " is";
+      emphHtml = (isAffirmative ? "" : "not ") + predicate;
     } else {
-      l1Text = label;
+      leadText = label;
       const formatted = formatClueValue(value);
-      const opSymbol = OPERATOR_SYMBOLS[operator] ?? operator;
-      if (formatted.html) {
-        l2Html = `${opSymbol} ${formatted.html}`;
-      } else {
-        l2Text = `${opSymbol} ${formatted.text}`;
-      }
+      const opWord = OPERATOR_WORDS[operator] ?? operator;
+      const valuePart = formatted.html ?? formatted.text;
+      emphHtml = `${opWord} ${valuePart}`;
     }
 
     const clueEl = document.createElement("div");
@@ -262,31 +260,21 @@ function renderClues(clues: ClueData[]): void {
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="flex flex-col gap-2">
-        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border-[1.5px] border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
+        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
           <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
         <div class="flex justify-between gap-1" data-clue-digits aria-hidden="true">${miniDigitsHtml}</div>
       </div>
-      <div class="flex flex-col gap-1">
-        <div class="text-base font-medium text-text font-[Quicksand]" data-clue-line1></div>
-        <div class="text-2xl font-bold text-accent font-mono" data-clue-line2></div>
-      </div>
+      <div class="text-lg font-light text-text font-[Quicksand]" data-clue-line1></div>
     `;
 
     const tagBtn = clueEl.querySelector("[data-clue-tag]") as HTMLButtonElement;
     tagBtn.addEventListener("click", () => showTagTip(tag, tagBtn));
 
     const l1El = clueEl.querySelector("[data-clue-line1]");
-    const l2El = clueEl.querySelector("[data-clue-line2]");
-    if (l1El) l1El.textContent = l1Text ?? "";
-    if (l2El) {
-      if (l2Html) {
-        l2El.innerHTML = l2Html;
-      } else {
-        l2El.textContent = l2Text ?? "";
-      }
-    }
+    const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold">$1</span>');
+    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent">${emphHtml}</span>`;
     dom.clueList.appendChild(clueEl);
   }
 }
@@ -509,6 +497,7 @@ function resetPuzzleUI() {
   // Hide archive banner by default; startReplayPuzzle re-enables it for dated replays.
   if (dom.archiveBanner) {
     dom.archiveBanner.classList.add("hidden");
+    dom.archiveBanner.classList.remove("inline-flex");
     dom.archiveBanner.innerHTML = "";
   }
   // Remove correct state from digit boxes
@@ -559,6 +548,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     if (!dom.archiveBanner) return;
     dom.archiveBanner.innerHTML = `<svg width="14" height="14" class="text-text shrink-0" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg><span>Archived puzzle · #${num} · ${formatDate(date)}</span>`;
     dom.archiveBanner.classList.remove("hidden");
+    dom.archiveBanner.classList.add("inline-flex");
   };
 
   // Check if already solved

@@ -71,7 +71,7 @@ Octo `.celebrate` class lives ~2.4s (2s fly + 0.4s return). Cycle barely starts 
 
 ---
 
-### [ ] 3. Inline inequality emphasis (issue #177)
+### [x] 3. Inline inequality emphasis (issue #177)
 
 **Type:** UX clarity. Multi-person feedback that `>` `<` `=` symbols are easy to miss.
 **Issue:** [#177](https://github.com/jevawin/clumeral-game/issues/177)
@@ -129,6 +129,26 @@ Re-add colour picker entry in menu. Likely a sub-row of swatches or a "Theme col
 
 ---
 
+### [ ] 6. Footer hidden behind iOS Safari bottom toolbar
+
+**Type:** Mobile layout bug. Tested on iPhone Safari (2026-05-10).
+**Severity:** "Made with ❤ by Jamie & Dave" footer sits under the URL/search bar at the bottom of the screen — invisible until the bar collapses on scroll.
+
+**Likely cause:**
+Layout uses `100vh` / `min-h-screen` somewhere. On iOS Safari, `100vh` = the *largest* viewport (toolbar collapsed), not the currently visible area. Bottom-pinned footer ends up behind the toolbar.
+
+**Fix options:**
+- (a) Replace `100vh` / `min-h-screen` with `100dvh` (dynamic — resizes as toolbar shows/hides) or `100svh` (small — always visible).
+- (b) Add `padding-bottom: env(safe-area-inset-bottom)` to the wrapper that contains the footer.
+- (c) Both — `100dvh` for the layout height, `env(safe-area-inset-bottom)` padding belt-and-braces.
+
+**Decision needed:** confirm fix approach. Recommend (c) — Tailwind has `min-h-dvh` (Tailwind 4) and `pb-[env(safe-area-inset-bottom)]` works inline. Cheap insurance.
+
+**Files:** `index.html` (root wrapper height class), possibly `src/tailwind.css` if utility needs adding.
+**Acceptance:** On iPhone Safari with toolbar visible, footer fully on screen above the URL bar. No regression on desktop or Android Chrome.
+
+---
+
 ## Out of scope (next milestone)
 
 Tracked separately:
@@ -142,9 +162,9 @@ Tracked separately:
 
 ---
 
-## Ship checklist (after items 1–5)
+## Ship checklist (after items 1–6)
 
-- [ ] All 5 items committed + pushed
+- [ ] All 6 items committed + pushed
 - [ ] Cloudflare preview smoke-tested on mobile + desktop
 - [ ] DA review (per `docs/DA-REVIEW.md`)
 - [ ] Self-review (per `docs/SELF-REVIEW.md`)
