@@ -12,7 +12,7 @@ export type Route =
 export interface ResolveCtx {
   hasData: boolean; // any dlng_* storage key present
   todayEntry: HistoryEntry | null;
-  todayLocal: string; // YYYY-MM-DD
+  todayUTC: string; // YYYY-MM-DD
   midInteraction: boolean; // ignored here; the router uses it for stale-day skip
 }
 
@@ -47,7 +47,7 @@ export function resolveRoute(path: string, ctx: ResolveCtx): Route {
   const m = path.match(ARCHIVE_DATE_RE);
   if (m) {
     const d = m[1];
-    if (!isValidDate(d) || d > ctx.todayLocal) return { kind: 'archive' };
+    if (!isValidDate(d) || d > ctx.todayUTC) return { kind: 'archive' };
     return { kind: 'archive-date', date: d };
   }
 

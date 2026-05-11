@@ -55,7 +55,7 @@ function routeFromPath(path: string): Route {
 
 interface RouterDeps {
   hasData: () => boolean;
-  todayLocal: () => string;
+  todayUTC: () => string;
   todayEntry: () => HistoryEntry | null;
   midInteraction: () => boolean;
   onArchiveDate?: (date: string) => void;
@@ -69,7 +69,7 @@ function ctx(): ResolveCtx {
   return {
     hasData: deps.hasData(),
     todayEntry: deps.todayEntry(),
-    todayLocal: deps.todayLocal(),
+    todayUTC: deps.todayUTC(),
     midInteraction: deps.midInteraction(),
   };
 }
@@ -144,7 +144,7 @@ function checkStaleDay(): void {
   if (!deps) return;
   // POL-04 + RTE-03: skip mid-interaction.
   if (deps.midInteraction()) return;
-  const real = deps.todayLocal();
+  const real = deps.todayUTC();
   if (real === lastKnownDate) return;
   lastKnownDate = real;
   if (location.pathname === '/solved' && !deps.todayEntry()) {
@@ -160,7 +160,7 @@ const LAST_VISIT_KEY = 'dlng_last_visit_date';
 
 export function initRouter(d: RouterDeps): void {
   deps = d;
-  const today = d.todayLocal();
+  const today = d.todayUTC();
   lastKnownDate = today;
 
   // Cold-load rollover redirect — runs before the first navigate so the user

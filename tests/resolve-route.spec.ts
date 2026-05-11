@@ -5,7 +5,7 @@ function ctx(over: Partial<ResolveCtx> = {}): ResolveCtx {
   return {
     hasData: true,
     todayEntry: null,
-    todayLocal: '2026-05-03',
+    todayUTC: '2026-05-03',
     midInteraction: false,
     ...over,
   };

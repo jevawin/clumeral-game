@@ -1,7 +1,7 @@
 // Worker entry point — serves API routes for puzzle data and guess validation.
 // The answer is never sent to the client.
 
-import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber, puzzleDate } from './puzzle.ts';
+import { runFilterLoop, makeRng, dateSeedInt, todayUTC, puzzleNumber, puzzleDate } from './puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
@@ -53,7 +53,7 @@ async function getDailyPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
 async function handleGetPuzzle(env: Env): Promise<Response> {
-  const today = todayLocal();
+  const today = todayUTC();
   const puzzle = await getDailyPuzzle(env, today);
   return json({
     date: today,
@@ -98,7 +98,7 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
       return json({ error: 'Invalid date format' }, 400);
     }
-    if (body.date > todayLocal()) {
+    if (body.date > todayUTC()) {
       return json({ error: 'Cannot guess future puzzles' }, 400);
     }
     const puzzle = await getDailyPuzzle(env, body.date);
@@ -134,7 +134,7 @@ export default {
       const num = parseInt(puzzleByNum[1], 10);
       if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
       const date = puzzleDate(num);
-      if (date > todayLocal()) return json({ error: 'Puzzle not available yet' }, 400);
+      if (date > todayUTC()) return json({ error: 'Puzzle not available yet' }, 400);
       const puzzle = await getDailyPuzzle(env, date);
       return json({ date, puzzleNumber: num, clues: puzzle.clues });
     }
@@ -147,7 +147,7 @@ export default {
       const num = parseInt(solutionByNum[1], 10);
       if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
       const date = puzzleDate(num);
-      if (date >= todayLocal()) return json({ error: 'Solution not available' }, 403);
+      if (date >= todayUTC()) return json({ error: 'Solution not available' }, 403);
       const puzzle = await getDailyPuzzle(env, date);
       return json({ answer: puzzle.answer });
     }
@@ -163,7 +163,7 @@ export default {
         const { answer } = runFilterLoop(rng);
         return json({ answer });
       }
-      const today = todayLocal();
+      const today = todayUTC();
       const puzzle = await getDailyPuzzle(env, today);
       return json({ answer: puzzle.answer });
     }
@@ -233,7 +233,7 @@ export default {
 
     // GET /archive — Worker-rendered archive list (renamed from /puzzles).
     if (request.method === 'GET' && url.pathname === '/archive') {
-      const today = todayLocal();
+      const today = todayUTC();
       const todayNum = puzzleNumber(today);
       const keys = await env.PUZZLES.list();
       const puzzles = await Promise.all(
@@ -313,7 +313,7 @@ export default {
 
   // ── Cron: pre-generate today's puzzle at midnight UTC ──
   async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
-    const today = todayLocal();
+    const today = todayUTC();
     await getDailyPuzzle(env, today);
   },
 };
