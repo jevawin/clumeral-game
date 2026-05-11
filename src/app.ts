@@ -95,9 +95,13 @@ let activeBox: number | null = null; // 0 | 1 | 2 | null
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
-function todayLocal() {
+// UTC, not local: the puzzle rolls over at UTC midnight (cron `0 0 * * *`) and
+// puzzleNumber() is anchored to T00:00:00Z. Using the user's local date here
+// would mismatch the server for the duration of the user's UTC offset every
+// night, breaking history lookup and the isArchiveSolve check.
+function todayUTC() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 function puzzleNumber(dateStr: string): number {
@@ -113,10 +117,10 @@ function formatDate(dateStr: string): string {
   });
 }
 
-// ─── Storage helper (uses todayLocal, stays in app.ts) ───────────────────────
+// ─── Storage helper (uses todayUTC, stays in app.ts) ───────────────────────
 
 function todayEntry() {
-  const today = todayLocal();
+  const today = todayUTC();
   return loadHistory().find((h) => h.date === today) || null;
 }
 
@@ -580,7 +584,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
     // when the user reaches the completion screen via /archive/<date>. The renderCompletion
     // signature accepting opts ships in Plan 06 — this call site depends on that change.
-    renderCompletion(num, entry.tries, false, { activeDate: date, todayLocal: todayLocal() });
+    renderCompletion(num, entry.tries, false, { activeDate: date, todayUTC: todayUTC() });
     return;
   }
 
@@ -651,7 +655,7 @@ async function handleGuess() {
         recordGame(gameState.date, tries, guess);
       }
 
-      const isArchiveSolve = !!gameState.date && gameState.date !== todayLocal();
+      const isArchiveSolve = !!gameState.date && gameState.date !== todayUTC();
 
       if (isArchiveSolve) {
         // Archive solve stays on /archive/<date> the whole way — no /solved hop.
@@ -719,10 +723,18 @@ async function loadPuzzle() {
 // ─── Service worker ───────────────────────────────────────────────────────────
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+  // updateViaCache: 'none' makes the browser bypass the HTTP cache when checking
+  // /sw.js for updates, so a new deploy is picked up on the next navigation
+  // instead of waiting up to 24h for the cached SW script to expire.
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
   navigator.serviceWorker.addEventListener('message', (e) => {
     if (e.data?.type === 'SW_UPDATED') window.location.reload();
   });
+  // Force an update check whenever the page regains focus — covers PWAs and
+  // long-lived tabs where navigation alone wouldn't trigger one.
+  const checkForUpdate = () => navigator.serviceWorker.getRegistration().then(r => r?.update());
+  window.addEventListener('focus', checkForUpdate);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 }
 
 // ─── Event listeners (module-level) ───────────────────────────────────────────
@@ -862,7 +874,7 @@ function initMenu(): void {
 initTheme();
 initColours();
 initMenu();
-initFeedbackModal(todayLocal, puzzleNumber, formatDate);
+initFeedbackModal(todayUTC, puzzleNumber, formatDate);
 
 // Pre-render welcome content so navigate('/welcome') has something to show.
 initWelcome();
@@ -870,7 +882,7 @@ initWelcome();
 // Pre-render completion content if today is already solved (SLV-02 parity).
 const _todayHistoryAtBoot = todayEntry();
 if (_todayHistoryAtBoot) {
-  const _todayDate = todayLocal();
+  const _todayDate = todayUTC();
   const _num = puzzleNumber(_todayDate);
   renderCompletion(_num, _todayHistoryAtBoot.tries, false);
 }
@@ -908,7 +920,7 @@ if (isRandomBoot) {
     // hasData = user has played at least one puzzle. RTE-03 deep-link redirect:
     // a stranger sharing /play with someone who's never played should see /welcome.
     hasData: () => !!localStorage.getItem('dlng_history'),
-    todayLocal,
+    todayUTC,
     todayEntry,
     midInteraction: () => activeBox !== null || submitting,
     onArchiveDate: (date) => {
@@ -949,7 +961,7 @@ document.addEventListener('screens:enter', (e) => {
   // replayDate is only meaningful on /archive/<date>. On /play the puzzle is today's daily, even if
   // gameState still holds a previous archive date because the user navigated without reloading.
   const onArchiveDate = location.pathname.startsWith('/archive/');
-  const replayDate = onArchiveDate && gameState.date && gameState.date !== todayLocal() ? gameState.date : undefined;
+  const replayDate = onArchiveDate && gameState.date && gameState.date !== todayUTC() ? gameState.date : undefined;
   showCompletedState(gameState.tries, replayDate);
 });
 

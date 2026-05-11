@@ -21,7 +21,7 @@ describe('completion links (ARC-02)', () => {
 
   it('ARC-02: /archive/<today> solved view links Show puzzle to in-app handler and Archive to /archive', async () => {
     const mod = await import('../src/completion.ts');
-    mod.renderCompletion(42, 2, false, { activeDate: '2026-05-03', todayLocal: '2026-05-03' });
+    mod.renderCompletion(42, 2, false, { activeDate: '2026-05-03', todayUTC: '2026-05-03' });
 
     const links = document.querySelector('[data-completion-links]')!;
     const showPuzzle = links.querySelector('[data-completion-show-puzzle]') as HTMLAnchorElement | null;
@@ -32,7 +32,7 @@ describe('completion links (ARC-02)', () => {
 
   it('ARC-02: /archive/<other-date> never shows Show puzzle (archive solves stay on /archive/<date>; completion screen is today-only)', async () => {
     const mod = await import('../src/completion.ts');
-    mod.renderCompletion(10, 3, false, { activeDate: '2026-04-01', todayLocal: '2026-05-03' });
+    mod.renderCompletion(10, 3, false, { activeDate: '2026-04-01', todayUTC: '2026-05-03' });
 
     const links = document.querySelector('[data-completion-links]')!;
     const showPuzzle = links.querySelector('[data-completion-show-puzzle]');

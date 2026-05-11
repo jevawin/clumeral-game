@@ -82,9 +82,11 @@ function computeStats(history: HistoryEntry[]): Stats {
 
 function formatCountdown(isRandom: boolean): string | null {
   if (isRandom) return null;
+  // Count down to the next UTC midnight — that's when the cron generates the
+  // new daily puzzle. Using local midnight here would mislead non-UTC users
+  // (e.g. a UK player at 23:30 BST would see "30m" when it's actually 1h 30m).
   const now = new Date();
-  const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0);
+  const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
   const msUntil = midnight.getTime() - now.getTime();
   const hours = Math.floor(msUntil / 3600000);
   const minutes = Math.floor((msUntil % 3600000) / 60000);
@@ -102,7 +104,7 @@ function renderStatBox(value: string | number, label: string): string {
   </div>`;
 }
 
-export interface RenderCompletionOpts { activeDate?: string; todayLocal?: string }
+export interface RenderCompletionOpts { activeDate?: string; todayUTC?: string }
 
 export function renderCompletion(
   puzzleNum: number,
@@ -157,8 +159,8 @@ export function renderCompletion(
     const isArchivedOtherDate =
       !isRandom &&
       typeof opts.activeDate === 'string' &&
-      typeof opts.todayLocal === 'string' &&
-      opts.activeDate !== opts.todayLocal;
+      typeof opts.todayUTC === 'string' &&
+      opts.activeDate !== opts.todayUTC;
 
     // Show puzzle: only on today's solved view. Archive solves stay on
     // /archive/<date> and never reach the completion screen, so no Show-puzzle

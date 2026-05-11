@@ -20,7 +20,7 @@ beforeEach(() => {
   // Default deps: data present, no today entry, today=2026-05-03, not mid-interaction.
   initRouter({
     hasData: () => true,
-    todayLocal: () => '2026-05-03',
+    todayUTC: () => '2026-05-03',
     todayEntry: () => null,
     midInteraction: () => false,
   });
@@ -63,7 +63,7 @@ describe('router (RTE-01, POL-01..04)', () => {
     const todayEntry = { date: '2026-05-03', tries: 2 };
     initRouter({
       hasData: () => true,
-      todayLocal: () => '2026-05-03',
+      todayUTC: () => '2026-05-03',
       todayEntry: () => todayEntry,
       midInteraction: () => false,
     });
@@ -92,7 +92,7 @@ describe('router (RTE-01, POL-01..04)', () => {
     const todayEntry = { date: '2026-05-03', tries: 2 };
     initRouter({
       hasData: () => true,
-      todayLocal: () => '2026-05-03',
+      todayUTC: () => '2026-05-03',
       todayEntry: () => todayEntry,
       midInteraction: () => false,
     });
@@ -167,7 +167,7 @@ describe('router (RTE-01, POL-01..04)', () => {
     let now = '2026-05-03';
     initRouter({
       hasData: () => true,
-      todayLocal: () => now,
+      todayUTC: () => now,
       todayEntry: () => null, // stale
       midInteraction: () => true,
     });

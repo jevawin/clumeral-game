@@ -12,9 +12,12 @@ import { navigate } from './router.ts';
 
 const EPOCH_DATE = "2026-03-08";
 
-function todayLocal(): string {
+// UTC, not local — see comment on todayUTC in app.ts. The puzzle's identity is
+// UTC-anchored; mismatching here would surface the wrong puzzleNumber on the
+// welcome screen for the duration of the user's UTC offset every night.
+function todayUTC(): string {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 function puzzleNumber(dateStr: string): number {
@@ -126,7 +129,7 @@ function renderWelcome(): void {
   const screen = document.querySelector('[data-screen="welcome"]') as HTMLElement | null;
   if (!screen) return;
 
-  const today = todayLocal();
+  const today = todayUTC();
   const num = puzzleNumber(today);
   const formattedDate = new Date(today + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const puzzleNumHtml = num > 0 ? `<p class="text-base text-text text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
