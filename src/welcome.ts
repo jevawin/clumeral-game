@@ -4,23 +4,7 @@
 // This module populates its content and handles the first-visit / return-visit layout.
 
 import { navigate } from './router.ts';
-
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-// Replicated from app.ts to avoid circular imports (RESEARCH.md recommendation).
-
-const EPOCH_DATE = "2026-03-08";
-
-function todayLocal(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function puzzleNumber(dateStr: string): number {
-  const ms = new Date(dateStr + "T00:00:00Z").getTime() - new Date(EPOCH_DATE + "T00:00:00Z").getTime();
-  return Math.max(1, Math.floor(ms / 86400000) + 1);
-}
+import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
 
 
 // ─── SVG ──────────────────────────────────────────────────────────────────────
@@ -126,9 +110,9 @@ function renderWelcome(): void {
   const screen = document.querySelector('[data-screen="welcome"]') as HTMLElement | null;
   if (!screen) return;
 
-  const today = todayLocal();
-  const num = puzzleNumber(today);
-  const formattedDate = new Date(today + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const today = todayKey();
+  const num = puzzleNumberFor(today);
+  const formattedDate = formatDate(today);
   const puzzleNumHtml = num > 0 ? `<p class="text-base text-text text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
 
   // Section is `flex flex-col flex-1` (filling remaining viewport between header
