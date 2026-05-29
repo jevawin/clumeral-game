@@ -663,9 +663,13 @@ async function handleGuess() {
       }
       dom.submitWrap?.classList.add("hidden");
 
-      // Record game before rendering completion so loadHistory includes today's entry
-      if (!gameState.isRandom && saveScore && gameState.date) {
-        recordGame(gameState.date, tries, guess);
+      // Record game before rendering completion so loadHistory includes today's entry.
+      // Always record daily solves so a reload can detect "already solved today" even when
+      // saveScore is off (WR-02). Include the answer only when saveScore is on — that way
+      // the history entry exists (prevents re-solving) but the answer is omitted when the
+      // player has opted out of saving stats. Random puzzles are never written to history.
+      if (!gameState.isRandom && gameState.date) {
+        recordGame(gameState.date, tries, saveScore ? guess : undefined);
       }
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();
