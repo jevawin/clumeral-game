@@ -1,9 +1,9 @@
 // Clumeral — app.ts
 // Puzzle data is fetched from the API. The answer never reaches the client.
 
-import type { GameState, ClueData } from './types.ts';
+import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
-import { loadPrefs, persistPrefs, loadHistory, recordGame } from './storage.ts';
+import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive } from './storage.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
@@ -98,6 +98,19 @@ let activeBox: number | null = null; // 0 | 1 | 2 | null
 function todayEntry() {
   const today = todayKey();
   return loadHistory().find((h) => h.date === today) || null;
+}
+
+// Snapshot current board state for mid-game persistence (D-06). Date uses gameState.date
+// (the local puzzle date) so the stale-date guard in loadActive discards yesterday's state.
+function buildActiveState(): ActiveState {
+  return {
+    v: 1,
+    date: gameState.date ?? todayKey(),
+    possibles: possibles.map((s) => [...s]),
+    guesses: [...gameState.guesses],
+    activeBox,
+    feedbackKey: null,
+  };
 }
 
 // ─── Clue helpers ─────────────────────────────────────────────────────────────
@@ -393,6 +406,9 @@ function toggleDigit(digit: number): void {
   } else {
     s.add(digit);
   }
+  // Save mid-game state after every digit mutation — daily only (D-06, D-08).
+  // Payload is tiny so no debounce needed (Pitfall 5).
+  if (!gameState.isRandom) saveActive(buildActiveState());
   renderBox(activeBox);
   buildKeypad();
   checkSubmit();
@@ -400,6 +416,8 @@ function toggleDigit(digit: number): void {
 
 function openBox(i: number): void {
   activeBox = i;
+  // Save active-box selection — daily only (D-06, D-08). Lets restore re-open the right box.
+  if (!gameState.isRandom) saveActive(buildActiveState());
   renderAllBoxes();
   buildKeypad();
   openKeypad();
@@ -512,13 +530,32 @@ function startRandomPuzzle(clues: ClueData[], token: string): void {
 }
 
 function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
-  renderClues(clues);
+  renderClues(clues); // clues in DOM first — restore renderers need digit boxes to exist (Pitfall 2)
 
   const entry = todayEntry();
   if (entry) {
     gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entry.tries, puzzleNum: num, date };
     showCompletedState(entry.tries);
     return;
+  }
+
+  // Attempt to restore a mid-game board from the previous session (D-06).
+  // loadActive returns null if missing, stale, or invalid — Pitfall 4: no re-check needed here.
+  const draft = loadActive();
+  if (draft !== null) {
+    gameState = { answer: null, guesses: draft.guesses, solved: false, puzzleNum: num, date };
+    // Rebuild possibles from the stored arrays (Array → Set per box).
+    possibles = draft.possibles.map((arr) => new Set(arr));
+    // Reuse idempotent renderers — no new DOM logic (Pitfall 2: boxes are in DOM from renderClues above).
+    renderAllBoxes();
+    renderHistory(gameState.guesses);
+    if (draft.activeBox !== null) openBox(draft.activeBox);
+    if (draft.feedbackKey === 'incorrect') renderFeedback('incorrect');
+
+    const prefs = loadPrefs();
+    saveScore = prefs.saveScore;
+    if (dom.saveCheck) dom.saveCheck.checked = saveScore;
+    return; // skip fresh-start path
   }
 
   gameState = { answer: null, guesses: [], solved: false, puzzleNum: num, date };
@@ -630,6 +667,8 @@ async function handleGuess() {
       if (!gameState.isRandom && saveScore && gameState.date) {
         recordGame(gameState.date, tries, guess);
       }
+      // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
+      clearActive();
 
       const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
 
@@ -657,6 +696,12 @@ async function handleGuess() {
       }
     } else {
       gameState.guesses.push(guess);
+      // Save after push so guesses array includes this wrong guess in the restore (D-06, D-08).
+      if (!gameState.isRandom) {
+        const snap = buildActiveState();
+        snap.feedbackKey = 'incorrect';
+        saveActive(snap);
+      }
       track("incorrect_guess");
       renderFeedback("incorrect");
       renderHistory(gameState.guesses);
