@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Design Refinements
 status: completed
-stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-05-04T21:04:01.939Z"
-last_activity: 2026-05-04
+stopped_at: Phase 5 context gathered
+last_updated: "2026-05-29T21:56:50.934Z"
+last_activity: 2026-05-04 — phase 3 follow-up fixes (home rule, archive solved-replay, layout restructure)
 progress:
-  total_phases: 3
+  total_phases: 6
   completed_phases: 2
   total_plans: 10
   completed_plans: 10
-  percent: 100
+  percent: 33
 ---
 
 # Project State
@@ -63,6 +63,9 @@ Progress: [██████████] 100%
 
 - v1.1 milestone added (2026-05-02): Design Refinements — 2 phases. Phase 1 batches 13 design items. Phase 2 deferred clue density review.
 - Phase 3 added (2026-05-03): URL routing — semantic client routes (/welcome, /play, /solved, /archive, /archive/<date>) with worker fallback, redirect rules, and dated puzzle replay. Decided to ship under v1.1 rather than spin up v1.2.
+- Phase 5 added (2026-05-29): Timezone + state-persistence bug cluster — fix #205 (reset at midnight Europe/London + puzzleNumber timezone), #206 (persist mid-game state across reload), #209 (streak under-counting). Shared root cause suspected: date keyed UTC on write vs local on read. P1 bugs.
+- Phase 6 added (2026-05-29): Add 'Guess the number from 100-999' copy to welcome + play screens (#207). P2 UX.
+- Phase 7 added (2026-05-29): Archive replay header CTAs stay visible so user can exit without solving (#208). P3 bug.
 
 ### Decisions
 
@@ -93,6 +96,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-04
-Stopped at: Phase 03 complete + follow-up fixes (home rule, archive solved-replay, layout restructure). Awaiting design tweaks next session.
-Resume file: None
+Last session: 2026-05-29T21:56:50.931Z
+Stopped at: Phase 5 context gathered
+Resume file: .planning/phases/05-timezone-state-persistence-bug-cluster-fix-205-reset-at-midn/05-CONTEXT.md
