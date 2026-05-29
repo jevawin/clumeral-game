@@ -24,7 +24,14 @@ function todayUtcStr(): string {
 
 // Returns false when date should be allowed (today, past, or today+1).
 // Returns true when date is today+2 or later (true future — reject).
+// PRECONDITION: date must be a well-formed YYYY-MM-DD string — string comparison is
+// used internally and behaves correctly only for that format (WR-06).
+// Malformed input (wrong length, non-digit characters, e.g. "2026-5-9") returns true
+// (reject) as a fail-safe so a bad caller cannot accidentally allow a forged date.
 export function isFuturePuzzleDate(date: string): boolean {
+  // Fail-safe: reject any date that is not a valid YYYY-MM-DD shape.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return true;
+
   const todayUtc = todayUtcStr();
   if (date <= todayUtc) return false;
   const tomorrow = new Date(todayUtc + 'T00:00:00Z');
