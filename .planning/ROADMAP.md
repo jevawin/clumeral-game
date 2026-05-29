@@ -114,10 +114,18 @@
 
 Plans:
 
+**Wave 1**
+
 - [ ] 05-01-PLAN.md — Wave 1: shared `src/date.ts` (todayKey/puzzleNumberFor/localDateKey/formatDate) + tests (D-01, D-02, D-03)
-- [ ] 05-02-PLAN.md — Wave 2: de-dup client consumers — app.ts + welcome.ts import date.ts, delete duplicate helpers, formatDate-local (D-01, D-02, D-03)
 - [ ] 05-03-PLAN.md — Wave 1: worker future-guard widening via pure `src/worker/date-guard.ts` + tests; /solution untouched (D-04, D-05; #205)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 05-02-PLAN.md — Wave 2: de-dup client consumers — app.ts + welcome.ts import date.ts, delete duplicate helpers, formatDate-local (D-01, D-02, D-03)
 - [ ] 05-04-PLAN.md — Wave 2: mid-game persistence storage — ActiveState type + saveActive/loadActive/clearActive under dlng_active, fail-safe loader + tests (D-06, D-07)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 05-05-PLAN.md — Wave 3: app.ts save/clear/restore hooks (daily-only) + computeStats streak verify/test (D-06, D-07, D-08; #206, #209)
 
 **UI hint:** no (correctness fix — no new visuals)

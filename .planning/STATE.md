@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Design Refinements
-status: completed
+status: executing
 stopped_at: Phase 5 context gathered
-last_updated: "2026-05-29T21:56:50.934Z"
-last_activity: 2026-05-04 — phase 3 follow-up fixes (home rule, archive solved-replay, layout restructure)
+last_updated: "2026-05-29T22:40:10.067Z"
+last_activity: 2026-05-29 -- Phase 05 planning complete
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 10
+  total_plans: 15
   completed_plans: 10
   percent: 33
 ---
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 
 Phase: 03 (url-routing) — COMPLETE
 Plan: 6 of 6
-Status: Phase 3 complete; v1.1 milestone 2/3 phases done. Phase 2 (clue density) deferred.
-Last activity: 2026-05-04 — phase 3 follow-up fixes (home rule, archive solved-replay, layout restructure)
+Status: Ready to execute
+Last activity: 2026-05-29 -- Phase 05 planning complete
 
 Progress: [██████████] 100%
 
