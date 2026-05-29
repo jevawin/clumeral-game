@@ -115,4 +115,35 @@ describe('computeStats streak logic (#209)', () => {
     mod.renderCompletion(42, 3, false);
     expect(getStreak()).toBe('0');
   });
+
+  it('stale run ending 10 days ago reports streak of 0 (WR-01 recency gate)', async () => {
+    // Today is 2026-05-30. History: [2026-05-20, 2026-05-19, 2026-05-18] — 3 consecutive
+    // days, but the run ended 10 days ago. Without the recency gate this would report 3.
+    vi.setSystemTime(new Date('2026-05-30T10:00:00'));
+    localStorage.setItem('dlng_history', JSON.stringify([
+      { date: '2026-05-20', tries: 2 },
+      { date: '2026-05-19', tries: 3 },
+      { date: '2026-05-18', tries: 4 },
+    ]));
+    const mod = await import('../src/completion.ts');
+    mod.renderCompletion(42, 2, false);
+    expect(getStreak()).toBe('0');
+  });
+
+  it('bestStreak is still reported correctly for a stale run', async () => {
+    // The bestStreak stat must reflect the historical best even when current streak is 0.
+    vi.setSystemTime(new Date('2026-05-30T10:00:00'));
+    localStorage.setItem('dlng_history', JSON.stringify([
+      { date: '2026-05-20', tries: 2 },
+      { date: '2026-05-19', tries: 3 },
+      { date: '2026-05-18', tries: 4 },
+    ]));
+    const mod = await import('../src/completion.ts');
+    mod.renderCompletion(42, 2, false);
+    // bestStreak box is index 3
+    const stats = document.querySelector('[data-completion-stats]')!;
+    const boxes = stats.querySelectorAll('div');
+    const bestStreakVal = boxes[3]?.querySelector('span')?.textContent ?? '';
+    expect(bestStreakVal).toBe('3');
+  });
 });

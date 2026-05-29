@@ -2,6 +2,7 @@
 // Renders completion screen: heading, stats grid, countdown, feedback button.
 
 import { loadHistory } from './storage.ts';
+import { todayKey, localDateKey } from './date.ts';
 import type { HistoryEntry } from './types.ts';
 
 
@@ -74,7 +75,17 @@ function computeStats(history: HistoryEntry[]): Stats {
   // If streak never broke, the entire history is one consecutive run
   if (!streakBroken) streak = currentRun;
 
-  return { played, avgTries, streak, bestStreak };
+  // Recency gate (WR-01): only report a live streak when the leading entry is today or
+  // yesterday. A run that ended more than 1 day ago is stale — report 0 so the UI does
+  // not show a "current streak" for a player who has not played in days.
+  const todayStr = todayKey();
+  const yesterdayDate = new Date(todayStr + 'T00:00:00');
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterdayStr = localDateKey(yesterdayDate);
+  const mostRecent = history[0]?.date;
+  const recent = mostRecent === todayStr || mostRecent === yesterdayStr;
+
+  return { played, avgTries, streak: recent ? streak : 0, bestStreak };
 }
 
 
