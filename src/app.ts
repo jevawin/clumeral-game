@@ -12,6 +12,7 @@ import { showScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
+import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
 
@@ -48,7 +49,6 @@ function track(event: string, value?: number, source?: string): void {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EPOCH_DATE = "2026-03-08";
 const OPERATOR_SYMBOLS: Record<string, string> = { "<": "<", ">": ">", "<=": "≤", ">=": "≥", "=": "=", "!=": "≠" };
 
 // ─── DOM cache ───────────────────────────────────────────────────────────────
@@ -93,30 +93,10 @@ function initPossibles(): Set<number>[] {
 let possibles: Set<number>[] = initPossibles();
 let activeBox: number | null = null; // 0 | 1 | 2 | null
 
-// ─── Date helpers ─────────────────────────────────────────────────────────────
-
-function todayLocal() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function puzzleNumber(dateStr: string): number {
-  const ms = new Date(dateStr + "T00:00:00Z").getTime() - new Date(EPOCH_DATE + "T00:00:00Z").getTime();
-  return Math.max(1, Math.floor(ms / 86400000) + 1);
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-// ─── Storage helper (uses todayLocal, stays in app.ts) ───────────────────────
+// ─── Storage helper (uses todayKey from date.ts) ─────────────────────────────
 
 function todayEntry() {
-  const today = todayLocal();
+  const today = todayKey();
   return loadHistory().find((h) => h.date === today) || null;
 }
 
@@ -580,7 +560,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
     // when the user reaches the completion screen via /archive/<date>. The renderCompletion
     // signature accepting opts ships in Plan 06 — this call site depends on that change.
-    renderCompletion(num, entry.tries, false, { activeDate: date, todayLocal: todayLocal() });
+    renderCompletion(num, entry.tries, false, { activeDate: date, todayLocal: todayKey() });
     return;
   }
 
@@ -651,7 +631,7 @@ async function handleGuess() {
         recordGame(gameState.date, tries, guess);
       }
 
-      const isArchiveSolve = !!gameState.date && gameState.date !== todayLocal();
+      const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
 
       if (isArchiveSolve) {
         // Archive solve stays on /archive/<date> the whole way — no /solved hop.
@@ -862,7 +842,7 @@ function initMenu(): void {
 initTheme();
 initColours();
 initMenu();
-initFeedbackModal(todayLocal, puzzleNumber, formatDate);
+initFeedbackModal(todayKey, puzzleNumberFor, formatDate);
 
 // Pre-render welcome content so navigate('/welcome') has something to show.
 initWelcome();
@@ -870,8 +850,8 @@ initWelcome();
 // Pre-render completion content if today is already solved (SLV-02 parity).
 const _todayHistoryAtBoot = todayEntry();
 if (_todayHistoryAtBoot) {
-  const _todayDate = todayLocal();
-  const _num = puzzleNumber(_todayDate);
+  const _todayDate = todayKey();
+  const _num = puzzleNumberFor(_todayDate);
   renderCompletion(_num, _todayHistoryAtBoot.tries, false);
 }
 
@@ -908,12 +888,12 @@ if (isRandomBoot) {
     // hasData = user has played at least one puzzle. RTE-03 deep-link redirect:
     // a stranger sharing /play with someone who's never played should see /welcome.
     hasData: () => !!localStorage.getItem('dlng_history'),
-    todayLocal,
+    todayLocal: todayKey,
     todayEntry,
     midInteraction: () => activeBox !== null || submitting,
     onArchiveDate: (date) => {
-      // Convert date → puzzleNumber → /api/puzzle/:num and replay via startReplayPuzzle.
-      const num = puzzleNumber(date);
+      // Convert date → puzzleNumberFor → /api/puzzle/:num and replay via startReplayPuzzle.
+      const num = puzzleNumberFor(date);
       fetch(`/api/puzzle/${num}`)
         .then((r) => r.ok ? r.json() as Promise<{ date: string; puzzleNumber: number; clues: ClueData[] }> : Promise.reject(new Error('puzzle fetch failed')))
         .then((data) => startReplayPuzzle(data.date, data.puzzleNumber, data.clues))
@@ -949,7 +929,7 @@ document.addEventListener('screens:enter', (e) => {
   // replayDate is only meaningful on /archive/<date>. On /play the puzzle is today's daily, even if
   // gameState still holds a previous archive date because the user navigated without reloading.
   const onArchiveDate = location.pathname.startsWith('/archive/');
-  const replayDate = onArchiveDate && gameState.date && gameState.date !== todayLocal() ? gameState.date : undefined;
+  const replayDate = onArchiveDate && gameState.date && gameState.date !== todayKey() ? gameState.date : undefined;
   showCompletedState(gameState.tries, replayDate);
 });
 
