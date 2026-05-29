@@ -110,7 +110,7 @@
   4. The streak counts consecutive local days, stays alive when today is unplayed, breaks on a real gap, and ignores same-day duplicates (fixes #209).
   5. Restored localStorage state is validated (version, date, shape, size) and fails safe to a fresh game on any malformed/stale payload — never crashes, never trusts persisted clues.
 
-**Plans:** 2/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 
@@ -121,8 +121,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-02-PLAN.md — Wave 2: de-dup client consumers — app.ts + welcome.ts import date.ts, delete duplicate helpers, formatDate-local (D-01, D-02, D-03)
-- [ ] 05-04-PLAN.md — Wave 2: mid-game persistence storage — ActiveState type + saveActive/loadActive/clearActive under dlng_active, fail-safe loader + tests (D-06, D-07)
+- [x] 05-02-PLAN.md — Wave 2: de-dup client consumers — app.ts + welcome.ts import date.ts, delete duplicate helpers, formatDate-local (D-01, D-02, D-03)
+- [x] 05-04-PLAN.md — Wave 2: mid-game persistence storage — ActiveState type + saveActive/loadActive/clearActive under dlng_active, fail-safe loader + tests (D-06, D-07)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -159,7 +159,7 @@ Plans:
 | 1. Refinements wave 1 | v1.1 | 4/4 | Complete | 2026-05-02 |
 | 2. Clue density | v1.1 | 0/0 | Deferred | — |
 | 3. URL routing | v1.1 | 6/6 | Complete | 2026-05-04 |
-| 5. Timezone + state-persistence | v1.1 | 2/5 | In Progress|  |
+| 5. Timezone + state-persistence | v1.1 | 4/5 | In Progress|  |
 
 ---
 *Last updated: 2026-05-29 — Phase 5 planned (5 plans, 3 waves; timezone + state-persistence bug cluster)*
