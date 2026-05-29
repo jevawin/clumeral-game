@@ -3,6 +3,7 @@
 
 import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber, puzzleDate } from './puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
+import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
 
@@ -98,7 +99,7 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
       return json({ error: 'Invalid date format' }, 400);
     }
-    if (body.date > todayLocal()) {
+    if (isFuturePuzzleDate(body.date)) {
       return json({ error: 'Cannot guess future puzzles' }, 400);
     }
     const puzzle = await getDailyPuzzle(env, body.date);
@@ -134,7 +135,7 @@ export default {
       const num = parseInt(puzzleByNum[1], 10);
       if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
       const date = puzzleDate(num);
-      if (date > todayLocal()) return json({ error: 'Puzzle not available yet' }, 400);
+      if (isFuturePuzzleDate(date)) return json({ error: 'Puzzle not available yet' }, 400);
       const puzzle = await getDailyPuzzle(env, date);
       return json({ date, puzzleNumber: num, clues: puzzle.clues });
     }
