@@ -110,7 +110,7 @@
   4. The streak counts consecutive local days, stays alive when today is unplayed, breaks on a real gap, and ignores same-day duplicates (fixes #209).
   5. Restored localStorage state is validated (version, date, shape, size) and fails safe to a fresh game on any malformed/stale payload — never crashes, never trusts persisted clues.
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 
@@ -126,7 +126,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 05-05-PLAN.md — Wave 3: app.ts save/clear/restore hooks (daily-only) + computeStats streak verify/test (D-06, D-07, D-08; #206, #209)
+- [x] 05-05-PLAN.md — Wave 3: app.ts save/clear/restore hooks (daily-only) + computeStats streak verify/test (D-06, D-07, D-08; #206, #209)
 
 **UI hint:** no (correctness fix — no new visuals)
 
@@ -159,7 +159,7 @@ Plans:
 | 1. Refinements wave 1 | v1.1 | 4/4 | Complete | 2026-05-02 |
 | 2. Clue density | v1.1 | 0/0 | Deferred | — |
 | 3. URL routing | v1.1 | 6/6 | Complete | 2026-05-04 |
-| 5. Timezone + state-persistence | v1.1 | 4/5 | In Progress|  |
+| 5. Timezone + state-persistence | v1.1 | 5/5 | Complete   | 2026-05-29 |
 
 ---
 *Last updated: 2026-05-29 — Phase 5 planned (5 plans, 3 waves; timezone + state-persistence bug cluster)*
