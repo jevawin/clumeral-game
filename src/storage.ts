@@ -72,11 +72,26 @@ export function loadActive(): ActiveState | null {
     // Shape validation — possibles must be a length-3 array of arrays (T-05-08).
     if (!Array.isArray(d.possibles) || d.possibles.length !== 3 || !d.possibles.every(Array.isArray)) return null;
 
-    // guesses must be an array.
-    if (!Array.isArray(d.guesses)) return null;
+    // Cell content validation (CR-01) — each box must be a non-empty array of integer
+    // digits 0–9; the hundreds box (index 0) forbids 0 (invariant from initPossibles).
+    // Reject any forged payload with empty cells, non-digits, floats, or out-of-range values.
+    const digitsOk = (d.possibles as unknown[]).every((arr, i) =>
+      Array.isArray(arr) &&
+      arr.length >= 1 &&
+      (arr as unknown[]).every((n) => Number.isInteger(n) && n >= 0 && n <= 9 && !(i === 0 && n === 0))
+    );
+    if (!digitsOk) return null;
 
-    // activeBox must be a number or null (not a string or other type).
-    if (d.activeBox !== null && typeof d.activeBox !== 'number') return null;
+    // guesses must be an array of integers in the valid puzzle range (100–999).
+    if (!Array.isArray(d.guesses)) return null;
+    if (!(d.guesses as unknown[]).every((g) => Number.isInteger(g) && (g as number) >= 100 && (g as number) <= 999)) return null;
+
+    // activeBox must be null or an integer in the valid box range 0–2 (WR-04).
+    // Rejecting out-of-range values prevents openBox(5) throwing on restore.
+    if (d.activeBox !== null && !(Number.isInteger(d.activeBox) && (d.activeBox as number) >= 0 && (d.activeBox as number) <= 2)) return null;
+
+    // feedbackKey must be one of the documented sentinel values (WR-03).
+    if (d.feedbackKey !== null && d.feedbackKey !== 'incorrect' && d.feedbackKey !== 'error') return null;
 
     return d as unknown as ActiveState;
   } catch {

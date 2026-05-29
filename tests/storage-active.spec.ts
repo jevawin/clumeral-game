@@ -148,6 +148,97 @@ describe('loadActive fail-safe — wrong shape', () => {
   });
 });
 
+describe('loadActive fail-safe — forged cell contents (CR-01)', () => {
+  // All forged-payload tests need a current date so the stale-date guard passes.
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  function forged(possibles: unknown[], guesses: unknown[] = [123], activeBox: unknown = 1, feedbackKey: unknown = null): void {
+    vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+    localStorage.setItem('dlng_active', JSON.stringify({ v: 1, date: TODAY, possibles, guesses, activeBox, feedbackKey }));
+  }
+
+  it('returns null when an inner array is empty (self-lock via size===0)', () => {
+    forged([[], [4, 5], [7]]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when a cell contains a non-integer string ("x")', () => {
+    forged([[1, 2], [4, 'x'], [7]]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when a cell contains an out-of-range integer (999)', () => {
+    forged([[1], [5, 5, 5], ['x', 999]]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when a cell contains a negative digit (-1)', () => {
+    forged([[1], [-1, 5], [7]]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when a cell contains a float (1.5)', () => {
+    forged([[1], [1.5], [7]]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when hundreds box contains 0 (violates no-zero-in-hundreds invariant)', () => {
+    forged([[0, 1], [4, 5], [7]]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when hundreds box is [0] only', () => {
+    forged([[0], [4, 5], [7]]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when a guess is outside 100–999 (e.g. 42)', () => {
+    forged([[1], [4], [7]], [42]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when a guess is a float (123.5)', () => {
+    forged([[1], [4], [7]], [123.5]);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when a guess is a string ("abc")', () => {
+    forged([[1], [4], [7]], ['abc']);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when activeBox is out of range (5)', () => {
+    forged([[1], [4], [7]], [], 5);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when activeBox is a float (1.5)', () => {
+    forged([[1], [4], [7]], [], 1.5);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when feedbackKey is an arbitrary string ("hacked")', () => {
+    forged([[1], [4], [7]], [], null, 'hacked');
+    expect(loadActive()).toBeNull();
+  });
+
+  it('returns null when feedbackKey is a number (123)', () => {
+    forged([[1], [4], [7]], [], null, 123);
+    expect(loadActive()).toBeNull();
+  });
+
+  it('accepts a valid payload with feedbackKey: "error"', () => {
+    forged([[1, 2], [4, 5], [7]], [123], 1, 'error');
+    expect(loadActive()).not.toBeNull();
+  });
+
+  it('accepts a valid payload with zeros in non-hundreds boxes', () => {
+    forged([[1], [0, 4], [0, 7]], [], null, null);
+    expect(loadActive()).not.toBeNull();
+  });
+});
+
 describe('loadActive fail-safe — oversized payload', () => {
   it('returns null when the stored value exceeds the max-length guard', () => {
     // Generate a payload well over 4096 bytes
