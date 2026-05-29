@@ -942,6 +942,12 @@ if (isRandomBoot) {
     midInteraction: () => activeBox !== null || submitting,
     onArchiveDate: (date) => {
       // Convert date → puzzleNumberFor → /api/puzzle/:num and replay via startReplayPuzzle.
+      // puzzleNumberFor uses Z-anchored epoch arithmetic on two fixed date strings (date.ts:35).
+      // todayKey() (used elsewhere for keying) is LOCAL, but the number↔date mapping is
+      // consistently UTC-anchored in both client and worker, so round-trips are safe.
+      // For a UTC+14 player: their local date may be one day ahead of UTC; the worker's
+      // +1 calendar-day tolerance (date-guard.ts) is what allows that puzzle number to be
+      // fetched without a "future puzzle" rejection (WR-05).
       const num = puzzleNumberFor(date);
       fetch(`/api/puzzle/${num}`)
         .then((r) => r.ok ? r.json() as Promise<{ date: string; puzzleNumber: number; clues: ClueData[] }> : Promise.reject(new Error('puzzle fetch failed')))
