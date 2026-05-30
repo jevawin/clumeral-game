@@ -4,12 +4,12 @@ milestone: v1.1
 milestone_name: Design Refinements
 status: executing
 stopped_at: Phase 6 context gathered
-last_updated: "2026-05-30T15:29:22.720Z"
-last_activity: 2026-05-30
+last_updated: "2026-05-30T20:00:35.889Z"
+last_activity: 2026-05-30 -- Phase 06 execution started
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 15
+  total_plans: 16
   completed_plans: 15
   percent: 50
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** The game screen works flawlessly — clues, digit elimination, guess submission, and answer validation behave exactly as they always did, in a cleaner, calmer layout.
-**Current focus:** Phase 03 — url-routing (complete; awaiting merge)
+**Current focus:** Phase 06 — Add 'Guess the number from 100-999' copy to welcome + play screens
 
 ## Current Position
 
-Phase: 06
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-05-30
+Phase: 06 (Add 'Guess the number from 100-999' copy to welcome + play screens) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 06
+Last activity: 2026-05-30 -- Phase 06 execution started
 
 Progress: [██████████] 100%
 
