@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Design Refinements
-status: completed
+status: verifying
 stopped_at: Phase 6 context gathered
-last_updated: "2026-05-30T20:16:33.249Z"
-last_activity: 2026-05-30 -- Phase 06 marked complete
+last_updated: "2026-05-30T22:08:42.023Z"
+last_activity: 2026-05-30
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
-  percent: 67
+  completed_phases: 5
+  total_plans: 17
+  completed_plans: 17
+  percent: 83
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** The game screen works flawlessly — clues, digit elimination, guess submission, and answer validation behave exactly as they always did, in a cleaner, calmer layout.
-**Current focus:** Phase 06 — Add 'Guess the number from 100-999' copy to welcome + play screens
+**Current focus:** Phase 07 — archive-replay-keep-header-date-archive-button-visible-so-us
 
 ## Current Position
 
-Phase: 06 — COMPLETE
+Phase: 07 (archive-replay-keep-header-date-archive-button-visible-so-us) — EXECUTING
 Plan: 1 of 1
-Status: Phase 06 complete
-Last activity: 2026-05-30 -- Phase 06 marked complete
+Status: Phase complete — ready for verification
+Last activity: 2026-05-30
 
 Progress: [██████████] 100%
 
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 | Phase 01-refinements-wave-1 P03 | 1 min | 1 tasks | 2 files |
 | Phase 01-refinements-wave-1 P02 | 1 min | 2 tasks | 2 files |
 | Phase 01-refinements-wave-1 P04 | 4 min | 2 tasks tasks | 3 files files |
+| Phase 07-archive-replay-keep-header-date-archive-button-visible-so-us P01 | 10min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ v1.1 starting decisions:
 - [Phase 01-refinements-wave-1]: Plan 04 — Solved screen uses pre-render before initScreens to avoid flash on returning-solver auto-route; todayEntry() is synchronous (localStorage).
 - [Phase 01-refinements-wave-1]: Plan 04 — Cross-screen state mutation (suppressStats) stays in app.ts; completion.ts dispatches a document CustomEvent (completion:show-puzzle) so stats ownership is not split across modules.
 - [Phase 01-refinements-wave-1]: Plan 04 — Decorative octo SVG copied with mask id renamed to completion-octo-mask; both screens live in DOM simultaneously, so duplicate ids would be invalid.
+- [Phase ?]: archive exit routing
+- [Phase ?]: archive-row visibility anchor
 
 ### Pending Todos
 
@@ -96,6 +99,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-30T15:29:22.717Z
+Last session: 2026-05-30T22:08:42.020Z
 Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-add-guess-the-number-from-100-999-copy-to-welcome-play-scree/06-CONTEXT.md
+Resume file: None

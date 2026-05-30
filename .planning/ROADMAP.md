@@ -146,11 +146,11 @@ Plans:
 **Goal:** On /play for an archive puzzle, the archive date banner and Archive button stay visible before, during, and after solve, so the user always has an exit without being forced to solve. The brand (Clumeral logo) button exits to the archive list instead of stranding the user on the game screen.
 **Requirements**: AC1 (date + Archive CTA visible the entire archive session — before/during/after solve), AC2 (verified on mobile 375px + desktop 1280px)
 **Depends on:** Phase 6
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 
-- [ ] 07-01-PLAN.md — Brand button exits to /archive from archive URLs; anchor `[data-archive-row]` visibility to `gameState.date` (not `location.pathname`); update URL-ARCHITECTURE doc; manual verify matrix (AC1, AC2)
+- [x] 07-01-PLAN.md — Brand button exits to /archive from archive URLs; anchor `[data-archive-row]` visibility to `gameState.date` (not `location.pathname`); update URL-ARCHITECTURE doc; manual verify matrix (AC1, AC2)
 
 ## Progress
 
@@ -161,7 +161,7 @@ Plans:
 | 3. URL routing | v1.1 | 6/6 | Complete | 2026-05-04 |
 | 5. Timezone + state-persistence | v1.1 | 5/5 | Complete    | 2026-05-30 |
 | 6. Range copy welcome + play | v1.1 | 1/1 | Complete | 2026-05-30 |
-| 7. Archive replay exit visibility | v1.1 | 0/1 | Planned | — |
+| 7. Archive replay exit visibility | v1.1 | 1/1 | Complete   | 2026-05-30 |
 
 ---
 *Last updated: 2026-05-30 — Phase 7 planned (1 plan, 1 wave; archive replay exit visibility, #208)*
