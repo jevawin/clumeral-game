@@ -111,7 +111,18 @@ links.
 | `/archive/<date>` (replay-able)            | submit correct guess | stays on `/archive/<date>`, solved-replay  | none             |
 | `/archive/<date>` (replay-able or solved)  | click Back to archive| `/archive`                                 | full nav         |
 | `/archive/<date>` (replay-able or solved)  | click Latest puzzle  | `/`                                        | full nav         |
+| `/archive/<date>` (replay-able or solved)  | tap brand (logo)     | `/archive`                                 | `pushState`      |
 | any                                        | back button          | previous history entry, re-resolves        | popstate         |
+
+**Brand button (Clumeral logo) routing:**
+
+| Current path         | Tap brand goes to | Notes                                                              |
+|----------------------|-------------------|--------------------------------------------------------------------|
+| `/archive/<date>`    | `/archive`        | Archive exit — prevents stranding on the game screen.             |
+| `/play`              | `/welcome`        | Opens how-to-play. `skipResolve` so already-solved users see HTP. |
+| anywhere else        | `/play`           | Default — returns to the game.                                     |
+
+All brand navigations use `skipResolve: true` (bypass the resolver redirect chain).
 
 Today's solve uses `replaceState` so the `/play` entry is replaced by `/solved`
 in history. Combined with the "/welcome with todayEntry → /solved" redirect,
