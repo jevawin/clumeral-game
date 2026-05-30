@@ -10,7 +10,8 @@
       "/archive", "/archive/*",
       "/random",
       "/puzzles", "/puzzles/*",
-      "/api/*", "/stats"
+      "/api/*", "/stats",
+      "/sw.js"
     ]
   },
   "analytics_engine_datasets": [

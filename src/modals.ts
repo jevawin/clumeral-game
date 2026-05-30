@@ -22,7 +22,7 @@ export function showToast(message: string, duration: number = 3000): void {
 // ─── Feedback modal ─────────────────────────────────────────────────────────
 
 export function initFeedbackModal(
-  todayLocal: () => string,
+  todayUTC: () => string,
   puzzleNumber: (dateStr: string) => number,
   formatDate: (dateStr: string) => string,
 ): void {
@@ -100,7 +100,7 @@ export function initFeedbackModal(
     else if (/Android/i.test(ua)) device = /Mobi/i.test(ua) ? "Android Phone" : "Android Tablet";
     else if (/Mobi/i.test(ua)) device = "Mobile";
 
-    const dateStr = todayLocal();
+    const dateStr = todayUTC();
     const pNum = puzzleNumber(dateStr);
 
     return {

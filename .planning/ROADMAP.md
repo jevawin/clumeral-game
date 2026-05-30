@@ -143,14 +143,14 @@ Plans:
 
 ### Phase 7: Archive replay: keep header date + Archive button visible so user can exit without solving (#208)
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** On /play for an archive puzzle, the archive date banner and Archive button stay visible before, during, and after solve, so the user always has an exit without being forced to solve. The brand (Clumeral logo) button exits to the archive list instead of stranding the user on the game screen.
+**Requirements**: AC1 (date + Archive CTA visible the entire archive session — before/during/after solve), AC2 (verified on mobile 375px + desktop 1280px)
 **Depends on:** Phase 6
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
 
-- [ ] TBD (run /gsd:plan-phase 7 to break down)
+- [ ] 07-01-PLAN.md — Brand button exits to /archive from archive URLs; anchor `[data-archive-row]` visibility to `gameState.date` (not `location.pathname`); update URL-ARCHITECTURE doc; manual verify matrix (AC1, AC2)
 
 ## Progress
 
@@ -160,6 +160,8 @@ Plans:
 | 2. Clue density | v1.1 | 0/0 | Deferred | — |
 | 3. URL routing | v1.1 | 6/6 | Complete | 2026-05-04 |
 | 5. Timezone + state-persistence | v1.1 | 5/5 | Complete    | 2026-05-30 |
+| 6. Range copy welcome + play | v1.1 | 1/1 | Complete | 2026-05-30 |
+| 7. Archive replay exit visibility | v1.1 | 0/1 | Planned | — |
 
 ---
-*Last updated: 2026-05-29 — Phase 5 planned (5 plans, 3 waves; timezone + state-persistence bug cluster)*
+*Last updated: 2026-05-30 — Phase 7 planned (1 plan, 1 wave; archive replay exit visibility, #208)*
