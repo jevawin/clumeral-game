@@ -128,6 +128,9 @@ describe('router (RTE-01, POL-01..04)', () => {
       value: { ...originalLocation, assign, pathname: originalLocation.pathname },
     });
 
+    // emitAnalyticsBeacon bails without a uid (worker /api/event rejects uid-less payloads).
+    localStorage.setItem('dlng_uid', 'test-uid');
+
     navigate('/archive');
 
     expect(beacon).toHaveBeenCalled();
@@ -153,6 +156,7 @@ describe('router (RTE-01, POL-01..04)', () => {
 
     // Restore window.location for subsequent tests.
     Object.defineProperty(window, 'location', { configurable: true, writable: true, value: originalLocation });
+    localStorage.removeItem('dlng_uid');
   });
 
   it('POL-03: initRouter sets history.scrollRestoration to "manual"', () => {

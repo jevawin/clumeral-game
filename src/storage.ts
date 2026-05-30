@@ -78,7 +78,7 @@ export function loadActive(): ActiveState | null {
     const digitsOk = (d.possibles as unknown[]).every((arr, i) =>
       Array.isArray(arr) &&
       arr.length >= 1 &&
-      (arr as unknown[]).every((n) => Number.isInteger(n) && n >= 0 && n <= 9 && !(i === 0 && n === 0))
+      (arr as unknown[]).every((n) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 9 && !(i === 0 && (n as number) === 0))
     );
     if (!digitsOk) return null;
 
