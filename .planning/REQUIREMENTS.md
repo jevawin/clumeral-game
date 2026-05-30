@@ -112,6 +112,7 @@ Filled in during roadmap creation.
 | POL-04 | Phase 3 | Pending |
 
 **Coverage:**
+
 - v1.1 requirements: 24 total
 - Mapped to phases: 24
 - Unmapped: 0
