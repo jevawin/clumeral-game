@@ -917,14 +917,16 @@ if (_todayHistoryAtBoot) {
 // to /play (welcome appeared at opacity-100 before the router swapped to game).
 
 // Bridge router-emitted analytics events to the existing track() helper.
-// Also use route_change as a sync point for URL-tied UI (e.g. archive chrome must hide
-// when leaving /archive/<date>, even on same-screen game→game navigation).
+// Also use route_change as a sync point for archive chrome visibility.
+// The row is hidden only when the current puzzle is NOT an archive puzzle — anchored to
+// gameState.date so URL/state divergence (e.g. brand navigate rewriting the URL while the
+// archive game screen stays active) can never incorrectly hide the row mid-session.
 document.addEventListener('analytics:track', (e) => {
   const detail = (e as CustomEvent).detail as { event: string; value?: number; source?: string };
   if (detail?.event) track(detail.event, detail.value, detail.source);
   if (detail?.event === 'route_change') {
-    const onArchiveDate = /^\/archive\/\d{4}-\d{2}-\d{2}$/.test(location.pathname);
-    if (!onArchiveDate && dom.archiveRow) {
+    const isArchive = !!gameState.date && gameState.date !== todayKey();
+    if (!isArchive && dom.archiveRow) {
       dom.archiveRow.classList.add('hidden');
       dom.archiveRow.classList.remove('flex');
     }
@@ -1011,10 +1013,13 @@ document.addEventListener('click', (e) => {
 // HTP: route to welcome screen from menu so the back button works.
 // skipResolve so users who already solved today still see HTP — resolver would otherwise redirect /welcome → /solved.
 document.querySelector('[data-htp-btn]')?.addEventListener('click', () => { navigate('/welcome', { skipResolve: true }); track('htp_opened', undefined, 'manual'); });
-// Header brand: tap toggles between play and HTP. On /play go to HTP (welcome). Anywhere else go to /play.
-// skipResolve so already-solved users land on the solved-replay /play view (matches "Show puzzle" link).
+// Header brand: context-aware exit. On /archive/<date> go to the archive list (user's natural exit
+// — prevents stranding on a game screen with no visible way back). On /play go to HTP (welcome).
+// Anywhere else go to /play. skipResolve keeps the target route exact (no resolver redirect).
 document.querySelector('[data-brand]')?.addEventListener('click', () => {
-  if (location.pathname === '/play') {
+  if (location.pathname.startsWith('/archive/')) {
+    navigate('/archive', { skipResolve: true });
+  } else if (location.pathname === '/play') {
     navigate('/welcome', { skipResolve: true });
     track('htp_opened', undefined, 'brand');
   } else {
