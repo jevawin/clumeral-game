@@ -132,14 +132,14 @@ Plans:
 
 ### Phase 6: Add 'Guess the number from 100-999' copy to welcome + play screens (#207)
 
-**Goal:** [To be planned]
+**Goal:** Players see an explicit “Work out the number from 100–999” line on the welcome screen and a “Work out the number from 100–999. Clues:” line heading the clue list on the game screen, matching the shipped meta/OG wording.
 **Requirements**: TBD
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
 
-- [ ] TBD (run /gsd:plan-phase 6 to break down)
+- [ ] 06-01-PLAN.md — Add range-copy line to welcome (above Play button) and play (above clue list) screens
 
 ### Phase 7: Archive replay: keep header date + Archive button visible so user can exit without solving (#208)
 
