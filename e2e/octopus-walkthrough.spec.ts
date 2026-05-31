@@ -23,34 +23,34 @@ test("walkthrough types into the header on a first visit", async ({ page }) => {
   await gotoPlayAsNewUser(page);
   // The wordmark leaves "Clumeral" and types the first tutorial sentence.
   await expect(brand(page)).not.toHaveText("Clumeral", { timeout: 10_000 });
-  await expect(brand(page)).toContainText("first time", { timeout: 10_000 });
+  await expect(brand(page)).toContainText("first time", { timeout: 12_000 });
 });
 
 test("aria-live announces the full sentence per step", async ({ page }) => {
   await gotoPlayAsNewUser(page);
-  await expect(live(page)).toContainText("first time", { timeout: 10_000 });
+  await expect(live(page)).toContainText("first time", { timeout: 12_000 });
 });
 
 test("gated step 2 holds until a digit box is opened", async ({ page }) => {
   await gotoPlayAsNewUser(page);
   // Wait for the box-tap prompt (step 2).
-  await expect(brand(page)).toContainText("digit boxes", { timeout: 20_000 });
+  await expect(brand(page)).toContainText("digit boxes", { timeout: 32_000 });
   // It holds on this prompt — no auto-advance while waiting on the user.
   await page.waitForTimeout(1500);
   await expect(brand(page)).toContainText("digit boxes");
   // Open a box → advances to step 3.
   await page.locator('[data-digit="0"]').click();
-  await expect(brand(page)).toContainText("disable digits", { timeout: 10_000 });
+  await expect(brand(page)).toContainText("deselect digits", { timeout: 12_000 });
 });
 
 test("gated step 3 advances after a digit is eliminated, then restores the wordmark", async ({ page }) => {
   await gotoPlayAsNewUser(page);
-  await expect(brand(page)).toContainText("digit boxes", { timeout: 20_000 });
+  await expect(brand(page)).toContainText("digit boxes", { timeout: 32_000 });
   await page.locator('[data-digit="0"]').click();
-  await expect(brand(page)).toContainText("disable digits", { timeout: 10_000 });
+  await expect(brand(page)).toContainText("deselect digits", { timeout: 12_000 });
   // Holds until a digit is eliminated.
   await page.waitForTimeout(1500);
-  await expect(brand(page)).toContainText("disable digits");
+  await expect(brand(page)).toContainText("deselect digits");
   // Eliminate a digit via the keypad (key "1" is selectable in the hundreds box).
   await page.locator('[data-key="1"]').click();
   // Sequence ends → wordmark restored.
@@ -74,7 +74,7 @@ test("prefers-reduced-motion: text appears instantly and still advances", async 
   await page.locator("[data-play-btn]").click();
   await expect(page.locator('[data-digit="0"]')).toBeVisible();
   // Full sentence present immediately (no per-char animation).
-  await expect(brand(page)).toContainText("first time", { timeout: 5_000 });
+  await expect(brand(page)).toContainText("first time", { timeout: 10_000 });
   // Still reaches the gated box-tap prompt.
-  await expect(brand(page)).toContainText("digit boxes", { timeout: 15_000 });
+  await expect(brand(page)).toContainText("digit boxes", { timeout: 25_000 });
 });

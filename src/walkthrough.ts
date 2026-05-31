@@ -18,12 +18,17 @@ export const STEPS: Step[] = [
   { kind: 'timed', text: "Looks like it's your first time here…" },
   { kind: 'timed', text: 'The goal: work out the 3-digit number.' },
   { kind: 'gated', text: 'Tap one of those big digit boxes to open it…', gate: 'game:box-opened' },
-  { kind: 'gated', text: "Now disable digits it can't be, using the clues.", gate: 'game:digit-eliminated' },
+  { kind: 'gated', text: "Now deselect digits it can't be using the clues", gate: 'game:digit-eliminated' },
   { kind: 'end', text: '' },
 ];
 
 export const TYPE_MS = 45;
 export const DELETE_MS = 25;
+// Hold on the normal logo for a beat before the octopus starts talking.
+export const START_DELAY_MS = 5000;
+// While talking, the brand text drops to clue size (16px), left-aligned, in the
+// clue font (Quicksand) — not the bold Comfortaa wordmark size.
+const WALKTHROUGH_CLASS = 'text-base font-normal text-text font-[Quicksand] text-left leading-tight';
 
 // True iff `event` is the gate this step is waiting on.
 export function gateMatches(step: Step, event: GateEvent): boolean {
@@ -48,6 +53,7 @@ let stepIndex = 0;
 let waitingGate: GateEvent | null = null;
 let typing = false;
 let pendingGateHit = false;
+let brandOriginalClass: string | null = null; // captured before the first style swap
 const timers: ReturnType<typeof setTimeout>[] = [];
 
 function later(fn: () => void, ms: number): void {
@@ -148,6 +154,7 @@ function finish(): void {
     el.style.transition = '';
     el.style.opacity = '1';
     el.removeAttribute('aria-hidden');
+    if (brandOriginalClass !== null) el.className = brandOriginalClass; // restore wordmark size/font
   }
   setBrand('Clumeral');
 }
@@ -202,10 +209,22 @@ function start(): void {
   waitingGate = null;
   typing = false;
   pendingGateHit = false;
-  // Hide the typed prose from the a11y tree — the [data-walkthrough-live] region
-  // is the spoken channel. Prevents a Label-in-Name mismatch on the brand button
-  // (its aria-label stays "Home" while the visible text becomes tutorial prose).
-  brandTextEl()?.setAttribute('aria-hidden', 'true');
+  // Hold on the normal logo for ~5s, then the octopus starts talking.
+  later(begin, START_DELAY_MS);
+}
+
+// Fade the wordmark out and start the script. Runs after the start delay.
+function begin(): void {
+  if (!active) return;
+  const el = brandTextEl();
+  if (el) {
+    if (brandOriginalClass === null) brandOriginalClass = el.className;
+    el.className = WALKTHROUGH_CLASS;
+    // Hide the typed prose from the a11y tree — the [data-walkthrough-live] region
+    // is the spoken channel. Prevents a Label-in-Name mismatch on the brand button
+    // (its aria-label stays "Home" while the visible text becomes tutorial prose).
+    el.setAttribute('aria-hidden', 'true');
+  }
   fadeOutWordmark(() => runStep(0));
 }
 
