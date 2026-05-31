@@ -17,14 +17,14 @@ Clumeral is a daily number puzzle at [clumeral.com](https://clumeral.com). Proje
 
 Every roadmap item follows at least a minimal **discuss → plan → execute → review** cycle:
 
-1. **Discuss** — confirm scope, surface assumptions and gray areas before building. Small tweaks inside an ongoing task can skip this.
-2. **Plan** — break the work into steps. Proportional to size: a sentence for small items, a written plan for big ones.
+1. **Discuss** — confirm scope, surface assumptions and gray areas, and **agree the QA level** the change warrants, before building. Small tweaks inside an ongoing task can skip this.
+2. **Plan** — break the work into steps proportional to size (a sentence for small items, a written plan for big ones) and **state the QA scope** the plan will deliver.
 3. **Execute** — build it with atomic commits.
 4. **Review** — the review gates above (DA review → self-review) before any PR.
 
 **Tooling is your discretion.** Run it yourself following this cycle, use GSD (`/gsd-*`), or use superpowers skills — whichever fits the item.
 
-**Automated QA.** Run Playwright e2e against the production build automatically for any UI-touching item. For non-UI items, propose QA at the end of the item (or a logical group of items) and confirm with the user before running. Suite design: [QA regression spec](docs/superpowers/specs/2026-05-31-playwright-qa-regression-design.md).
+**QA is proportional and decided up front.** The level of automated QA (Playwright e2e against the production build) is set during discuss/plan, matched to the change — a header tweak warrants little or none; a long or logic-heavy task warrants the full suite. Don't run a 40-minute QA battering on a trivial change. Suite design: [QA regression spec](docs/superpowers/specs/2026-05-31-playwright-qa-regression-design.md).
 
 When starting work, committing, pushing, or merging, follow [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md) — branches, preview URLs, staging/main flow, and recovery paths.
 

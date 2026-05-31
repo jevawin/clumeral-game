@@ -36,8 +36,8 @@ thematic label (UI/UX, gameplay, accessibility, hygiene, SEO, analytics, bug).
 
 ## Definition of done
 <!-- The execution convention from CLAUDE.md. Every roadmap item runs at least this minimal cycle. -->
-- [ ] **Discuss** — scope confirmed, assumptions/gray areas surfaced
-- [ ] **Plan** — steps broken out (proportional to size)
+- [ ] **Discuss** — scope confirmed, assumptions/gray areas surfaced, QA level agreed
+- [ ] **Plan** — steps broken out (proportional to size), QA scope stated
 - [ ] **Execute** — built with atomic commits
 - [ ] **Review** — DA review → self-review passed before PR
-- [ ] **QA** — Playwright e2e run for UI changes; for non-UI, QA proposed + confirmed (or consciously skipped)
+- [ ] **QA** — automated testing run at the level agreed in discuss/plan (proportional to scope)
