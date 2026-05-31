@@ -7,7 +7,7 @@ import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActiv
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
-import { celebrateOcto, sadOcto } from './octo.ts';
+import { celebrateOcto, sadOcto, bounceBrand } from './octo.ts';
 import './walkthrough.ts';
 import { showScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
@@ -1018,19 +1018,9 @@ document.addEventListener('click', (e) => {
 // HTP: route to welcome screen from menu so the back button works.
 // skipResolve so users who already solved today still see HTP — resolver would otherwise redirect /welcome → /solved.
 document.querySelector('[data-htp-btn]')?.addEventListener('click', () => { navigate('/welcome', { skipResolve: true }); track('htp_opened', undefined, 'manual'); });
-// Header brand: context-aware exit. On /archive/<date> go to the archive list (user's natural exit
-// — prevents stranding on a game screen with no visible way back). On /play go to HTP (welcome).
-// Anywhere else go to /play. skipResolve keeps the target route exact (no resolver redirect).
-document.querySelector('[data-brand]')?.addEventListener('click', () => {
-  if (location.pathname.startsWith('/archive/')) {
-    navigate('/archive', { skipResolve: true });
-  } else if (location.pathname === '/play') {
-    navigate('/welcome', { skipResolve: true });
-    track('htp_opened', undefined, 'brand');
-  } else {
-    navigate('/play', { skipResolve: true });
-  }
-});
+// Header brand: no navigation. Tapping the octopus logo or the "Clumeral"
+// wordmark bounces the logo — restores the old site's tap-to-bounce mascot.
+document.querySelector('[data-brand]')?.addEventListener('click', () => { bounceBrand(); });
 // Feedback submitted
 document.querySelector('[data-fb-send]')?.addEventListener('click', () => track('feedback_submitted'));
 // Theme toggle

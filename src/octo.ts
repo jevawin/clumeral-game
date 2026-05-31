@@ -137,9 +137,10 @@ scheduleSquint();
 
 // ─── Spring bounce ──────────────────────────────────────────────────────────
 
-function springBounce(cb?: () => void) {
-  if (!octoWrapEl) return;
-  const H = 56, dur = 660, s = performance.now();
+// Spring-bounce any element: hop up by `H`px, then a damped squash-and-stretch
+// settle. `H` is the hop height so callers can scale it to the element's size.
+function springBounceEl(el: HTMLElement, H: number, cb?: () => void) {
+  const dur = 660, s = performance.now();
   (function f(now: number) {
     const r = Math.min((now - s) / dur, 1);
     let y = 0, sx = 1, sy = 1;
@@ -151,14 +152,32 @@ function springBounce(cb?: () => void) {
       y = -(1 - p * p) * H;
     } else {
       const p = (r - 0.78) / 0.22;
-      y = Math.exp(-13 * p) * Math.cos(Math.PI * p) * 10;
+      y = Math.exp(-13 * p) * Math.cos(Math.PI * p) * (H / 5.6);
       const sq = Math.exp(-9 * p);
       sx = 1 + 0.28 * sq; sy = 1 - 0.22 * sq;
     }
-    octoWrapEl!.style.transform = `translateY(${y}px) scaleX(${sx}) scaleY(${sy})`;
+    el.style.transform = `translateY(${y}px) scaleX(${sx}) scaleY(${sy})`;
     if (r < 1) requestAnimationFrame(f);
-    else { octoWrapEl!.style.transform = ''; if (cb) cb(); }
+    else { el.style.transform = ''; if (cb) cb(); }
   })(performance.now());
+}
+
+function springBounce(cb?: () => void) {
+  if (!octoWrapEl) return;
+  springBounceEl(octoWrapEl, 56, cb);
+}
+
+// ─── Header brand-logo bounce ────────────────────────────────────────────────
+// The small octopus SVG in the header brand button. Tapping the logo or the
+// "Clumeral" wordmark replays this — restores the old site's tap-to-bounce, no
+// navigation. Guarded so rapid taps don't stack transforms.
+const brandOctoEl = document.querySelector('[data-brand-octo]') as HTMLElement | null;
+let brandBouncing = false;
+
+export function bounceBrand(): void {
+  if (!brandOctoEl || brandBouncing) return;
+  brandBouncing = true;
+  springBounceEl(brandOctoEl, 12, () => { brandBouncing = false; });
 }
 
 // ─── Letter reveal ──────────────────────────────────────────────────────────
