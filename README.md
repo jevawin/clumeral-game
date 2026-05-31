@@ -71,6 +71,15 @@ npm run dev
 
 The dev server runs the Worker in Cloudflare's local runtime, so API endpoints and KV behave the same as production.
 
+## Testing
+
+```bash
+npm test          # Unit tests (Vitest + jsdom)
+npm run test:e2e  # End-to-end browser tests (Playwright)
+```
+
+Playwright runs against the **production build** (`vite preview`), not the dev server. Some bugs only exist in built output — Tailwind v4's Lightning CSS optimize pass runs on build but not dev. The e2e suite catches those (e.g. #210, where `light-dark()` in an SVG fill keyframe broke only after the build transform). E2e specs live in `e2e/`.
+
 ## API endpoints
 
 | Route | Purpose |

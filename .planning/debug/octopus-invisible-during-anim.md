@@ -28,7 +28,15 @@ Transition octopus colour smoothly between theme accent colours as it swims, so 
 
 ## Confirmation method
 
-User chose: code inspection of octo.ts colour/render logic + empirical Playwright confirmation (drive to completion screen, sample octopus pixels vs background during animation). Note: project uses Vitest/jsdom — no Playwright in this repo. Confirmed via CSS build inspection instead.
+User chose: code inspection of octo.ts colour/render logic + empirical Playwright confirmation.
+
+Playwright was added to the repo (`@playwright/test`, `playwright.config.ts`, `e2e/`). The regression test `e2e/octo-celebration.spec.ts` drives the celebration fill animation against the **production build** (`vite preview`, where the Lightning CSS transform applies) and samples the octopus body fill across the full 1.44s colour cycle in both themes.
+
+Proven both ways:
+- Fixed code → green (fill cycles through the full palette, never black, never the background).
+- Buggy code (light-dark() restored, rebuilt) → red (cycle collapses — intermediate stops dropped).
+
+Earlier build-inspection note superseded: the empirical Playwright confirmation now runs in CI/locally.
 
 ## Current Focus
 

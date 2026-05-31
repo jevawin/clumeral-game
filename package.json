@@ -7,8 +7,10 @@
   "scripts": {
     "dev": "vite dev",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "build": "vite build",
-    "preview": "vite build && vite preview --host",
+    "preview": "vite build && vite preview --host --port 4173",
     "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
   },
   "repository": {
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.31.0",
     "@cloudflare/workers-types": "^4.20260403.1",
+    "@playwright/test": "~1.60",
     "@types/jsdom": "^28.0.1",
     "jsdom": "^25.0.1",
     "typescript": "^6.0.2",
