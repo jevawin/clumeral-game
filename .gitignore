@@ -36,3 +36,6 @@ npm-debug.log*
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Image export scratch (Figma exports, processed then removed)
+NEW_IMAGES/
