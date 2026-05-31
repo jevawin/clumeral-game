@@ -15,8 +15,18 @@ Clumeral is a daily number puzzle at [clumeral.com](https://clumeral.com). Proje
 
 ## Workflow
 
-1. **Ask → Plan → Build** for new issues or tasks. Small tweaks inside an ongoing task can skip straight to building.
-2. When starting work, committing, pushing, or merging, follow [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md) — branches, preview URLs, staging/main flow, and recovery paths.
+Every roadmap item follows at least a minimal **discuss → plan → execute → review** cycle:
+
+1. **Discuss** — confirm scope, surface assumptions and gray areas before building. Small tweaks inside an ongoing task can skip this.
+2. **Plan** — break the work into steps. Proportional to size: a sentence for small items, a written plan for big ones.
+3. **Execute** — build it with atomic commits.
+4. **Review** — the review gates above (DA review → self-review) before any PR.
+
+**Tooling is your discretion.** Run it yourself following this cycle, use GSD (`/gsd-*`), or use superpowers skills — whichever fits the item.
+
+**Automated QA.** Run Playwright e2e against the production build automatically for any UI-touching item. For non-UI items, propose QA at the end of the item (or a logical group of items) and confirm with the user before running. Suite design: [QA regression spec](docs/superpowers/specs/2026-05-31-playwright-qa-regression-design.md).
+
+When starting work, committing, pushing, or merging, follow [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md) — branches, preview URLs, staging/main flow, and recovery paths.
 
 ## Context hygiene
 
