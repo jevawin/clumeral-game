@@ -26,6 +26,7 @@ Rules that keep it from rotting:
 ## Future / ideas — conditional
 
 - [#213](https://github.com/jevawin/clumeral-game/issues/213) Supabase feedback migration — `when:` QA suite is green (the one-line feedback-intercept swap is then covered by tests)
+- [#217](https://github.com/jevawin/clumeral-game/issues/217) Reset button — clear digit eliminations in one tap (UI/UX, P2) — `decide:` show always after eliminations vs only on unsuccessful submit
 
 ## Recently shipped
 
