@@ -15,15 +15,21 @@ export interface Step {
 }
 
 export const STEPS: Step[] = [
-  { kind: 'timed', text: "Looks like it's your first time here…" },
-  { kind: 'timed', text: 'The goal: work out the 3-digit number.' },
-  { kind: 'gated', text: 'Tap one of those big digit boxes to open it…', gate: 'game:box-opened' },
-  { kind: 'gated', text: "Now deselect digits it can't be using the clues", gate: 'game:digit-eliminated' },
+  { kind: 'gated', text: 'Tap a big number box to open it…', gate: 'game:box-opened' },
+  { kind: 'timed', text: 'Remove numbers based on the clues…' },
+  { kind: 'timed', text: "Example: clue says 'is a prime number'…" },
+  { kind: 'gated', text: 'Remove 0, 1, 4, 6, 8, and 9 (not prime)…', gate: 'game:digit-eliminated' },
+  { kind: 'timed', text: "When you're left with three, submit 💪" },
   { kind: 'end', text: '' },
 ];
 
 export const TYPE_MS = 45;
 export const DELETE_MS = 25;
+// Reading-gap scaling. With motion on, the type animation already paces reading,
+// so shorten the hold. With reduced motion the text appears instantly, so lengthen
+// it — otherwise it flashes by before it can be read.
+export const HOLD_FACTOR_MOTION = 0.75;
+export const HOLD_FACTOR_REDUCED = 1.25;
 // Hold on the normal logo for a beat before the octopus starts talking.
 export const START_DELAY_MS = 5000;
 // While talking, the brand text drops to clue size (16px), left-aligned, in the
@@ -178,7 +184,8 @@ function runStep(index: number): void {
   typeIn(step.text, () => {
     typing = false;
     if (step.kind === 'timed') {
-      later(() => deleteOut(() => runStep(index + 1)), holdMsFor(step.text));
+      const factor = REDUCED_MOTION() ? HOLD_FACTOR_REDUCED : HOLD_FACTOR_MOTION;
+      later(() => deleteOut(() => runStep(index + 1)), Math.round(holdMsFor(step.text) * factor));
     } else if (pendingGateHit) {
       // The user triggered the gate while the prompt was still typing — advance now.
       pendingGateHit = false;

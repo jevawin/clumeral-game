@@ -3,9 +3,13 @@ import { test, expect, type Page } from "@playwright/test";
 // E2E for issue #214 — first-play octopus walkthrough.
 // Runs against the PRODUCTION build (vite preview); see playwright.config.ts.
 //
-// A "new user" = no `dlng_history` in localStorage. The walkthrough types a
-// scripted tutorial into the /play header in place of the "Clumeral" wordmark,
-// then restores it once the gated steps complete.
+// A "new user" = no `dlng_history` in localStorage. The walkthrough waits ~5s,
+// then types a scripted tutorial into the /play header in place of the
+// "Clumeral" wordmark, and restores it once the gated steps complete.
+//
+// Script anchors: step 0 (gated, box-opened) = "number box"; after opening a box
+// the timed steps lead to step 3 (gated, digit-eliminated) = "not prime"; the
+// final timed step = "submit"; then the wordmark restores to "Clumeral".
 
 const brand = (p: Page) => p.locator("[data-brand-text]");
 const live = (p: Page) => p.locator("[data-walkthrough-live]");
@@ -21,40 +25,42 @@ async function gotoPlayAsNewUser(page: Page): Promise<void> {
 
 test("walkthrough types into the header on a first visit", async ({ page }) => {
   await gotoPlayAsNewUser(page);
-  // The wordmark leaves "Clumeral" and types the first tutorial sentence.
-  await expect(brand(page)).not.toHaveText("Clumeral", { timeout: 10_000 });
-  await expect(brand(page)).toContainText("first time", { timeout: 12_000 });
+  // After the ~5s hold the wordmark leaves "Clumeral" and types step 0.
+  await expect(brand(page)).not.toHaveText("Clumeral", { timeout: 12_000 });
+  await expect(brand(page)).toContainText("number box", { timeout: 12_000 });
 });
 
 test("aria-live announces the full sentence per step", async ({ page }) => {
   await gotoPlayAsNewUser(page);
-  await expect(live(page)).toContainText("first time", { timeout: 12_000 });
+  await expect(live(page)).toContainText("number box", { timeout: 12_000 });
 });
 
-test("gated step 2 holds until a digit box is opened", async ({ page }) => {
+test("gated step holds until a digit box is opened", async ({ page }) => {
   await gotoPlayAsNewUser(page);
-  // Wait for the box-tap prompt (step 2).
-  await expect(brand(page)).toContainText("digit boxes", { timeout: 32_000 });
+  await expect(brand(page)).toContainText("number box", { timeout: 12_000 });
   // It holds on this prompt — no auto-advance while waiting on the user.
   await page.waitForTimeout(1500);
-  await expect(brand(page)).toContainText("digit boxes");
-  // Open a box → advances to step 3.
+  await expect(brand(page)).toContainText("number box");
+  // Open a box → advances to the next (timed) step.
   await page.locator('[data-digit="0"]').click();
-  await expect(brand(page)).toContainText("deselect digits", { timeout: 12_000 });
+  await expect(brand(page)).toContainText("based on the clues", { timeout: 12_000 });
 });
 
-test("gated step 3 advances after a digit is eliminated, then restores the wordmark", async ({ page }) => {
+test("gated step holds for elimination, then restores the wordmark at the end", async ({ page }) => {
+  test.setTimeout(60_000); // full run-through: ~5s hold + 5 scripted steps
   await gotoPlayAsNewUser(page);
-  await expect(brand(page)).toContainText("digit boxes", { timeout: 32_000 });
+  await expect(brand(page)).toContainText("number box", { timeout: 12_000 });
   await page.locator('[data-digit="0"]').click();
-  await expect(brand(page)).toContainText("deselect digits", { timeout: 12_000 });
+  // Timed steps auto-advance to the second gated prompt.
+  await expect(brand(page)).toContainText("not prime", { timeout: 25_000 });
   // Holds until a digit is eliminated.
   await page.waitForTimeout(1500);
-  await expect(brand(page)).toContainText("deselect digits");
+  await expect(brand(page)).toContainText("not prime");
   // Eliminate a digit via the keypad (key "1" is selectable in the hundreds box).
   await page.locator('[data-key="1"]').click();
-  // Sequence ends → wordmark restored.
-  await expect(brand(page)).toHaveText("Clumeral", { timeout: 10_000 });
+  // Advances to the final timed step, then ends → wordmark restored.
+  await expect(brand(page)).toContainText("submit", { timeout: 12_000 });
+  await expect(brand(page)).toHaveText("Clumeral", { timeout: 15_000 });
 });
 
 test("returning player sees no walkthrough — wordmark from the start", async ({ page }) => {
@@ -62,8 +68,8 @@ test("returning player sees no walkthrough — wordmark from the start", async (
     localStorage.setItem("dlng_history", JSON.stringify([{ n: 1, t: 3 }])),
   );
   await page.goto("/play");
-  // Brand never leaves "Clumeral" for a returning player.
-  await page.waitForTimeout(2000);
+  // Brand never leaves "Clumeral" for a returning player (well past the 5s start delay).
+  await page.waitForTimeout(7000);
   await expect(brand(page)).toHaveText("Clumeral");
 });
 
@@ -73,8 +79,9 @@ test("prefers-reduced-motion: text appears instantly and still advances", async 
   await page.goto("/welcome");
   await page.locator("[data-play-btn]").click();
   await expect(page.locator('[data-digit="0"]')).toBeVisible();
-  // Full sentence present immediately (no per-char animation).
-  await expect(brand(page)).toContainText("first time", { timeout: 10_000 });
-  // Still reaches the gated box-tap prompt.
-  await expect(brand(page)).toContainText("digit boxes", { timeout: 25_000 });
+  // First gated prompt present (set instantly, no per-char animation).
+  await expect(brand(page)).toContainText("number box", { timeout: 12_000 });
+  // Opening a box still advances the machine under reduced motion.
+  await page.locator('[data-digit="0"]').click();
+  await expect(brand(page)).toContainText("based on the clues", { timeout: 12_000 });
 });
