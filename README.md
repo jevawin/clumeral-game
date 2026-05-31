@@ -22,21 +22,30 @@ Each puzzle gives you clues about a hidden three-digit number. Clues are based o
 ```
 src/
   worker/
-    index.ts     Worker entry — API routes, static page handlers, cron
-    puzzle.ts    Puzzle generation (server-only)
-    crypto.ts    AES-GCM token signing for random puzzles
-    puzzles.ts   Worker-rendered /puzzles archive page
-    stats.ts     Analytics Engine queries for /stats dashboard
-  app.ts         Client UI — fetches puzzle, renders clues, handles guesses
-  style.css      All styling (light-dark themes, accent-colour system)
-  storage.ts     localStorage helpers
-  theme.ts       Light/dark toggle
-  colours.ts     Accent colour picker
-  modals.ts      How-to-play + feedback modals
-  bubbles.ts     Correct-answer effect
-  octo.ts        Mascot animations
-public/          Static assets (icons, sprites.svg, manifest.json, sw.js)
-index.html       Game shell (Vite entry)
+    index.ts        Worker entry — API routes, static page handlers, cron
+    puzzle.ts        Puzzle generation (server-only)
+    crypto.ts        AES-GCM token signing for random puzzles
+    puzzles.ts       Worker-rendered /puzzles archive page
+    stats.ts         Analytics Engine queries for /stats dashboard
+    date-guard.ts    Worker-side future-puzzle date guard (+1 day tolerance)
+  app.ts             Client UI — fetches puzzle, renders clues, handles guesses
+  route-resolver.ts  Pure route resolver (no side effects/I/O)
+  router.ts          Client-side router — history, title, analytics, scroll restoration
+  screens.ts         Three-screen state machine (welcome/game/completion) + fade transitions
+  welcome.ts         Welcome screen content + Play button
+  completion.ts      Completion screen — stats grid, countdown, feedback button
+  date.ts            Shared client date helpers (epoch, puzzle-day keying)
+  storage.ts         localStorage helpers (history, prefs)
+  theme.ts           Light/dark toggle
+  colours.ts         Accent colour picker
+  modals.ts          How-to-play + feedback modals
+  bubbles.ts         Correct-answer effect
+  octo.ts            Mascot animations
+  tailwind.css       Tailwind styles
+  types.ts           Shared client type definitions
+  global.d.ts        Global/window type declarations
+public/              Static assets (icons, sprites.svg, manifest.json, sw.js)
+index.html           Game shell (Vite entry)
 ```
 
 ### Puzzle generation
