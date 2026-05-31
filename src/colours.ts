@@ -1,5 +1,6 @@
 // Clumeral — colours.ts
-// Accent colour picker. 4 themes, persists in localStorage, swaps favicon per mode.
+// Accent colour picker. 4 themes, persists in localStorage. The app icon is
+// fixed (green octopus on black) and does not follow the accent or theme.
 
 const STORAGE_COLOUR = 'dlng_colour';
 
@@ -25,20 +26,10 @@ function isDark(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
-function swapIcons(name: string): void {
-  const mode = isDark() ? 'dark' : 'light';
-  const dir = `/icons/${name.toLowerCase()}/${mode}/`;
-  const ico = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
-  if (ico) ico.href = dir + 'icon-192.png';
-  const ati = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
-  if (ati) ati.href = dir + 'apple-touch-icon.png';
-}
-
 function applyColour(theme: ColourTheme): void {
   active = theme;
   const colour = isDark() ? theme.dark : theme.light;
   root.style.setProperty('--color-accent', colour);
-  swapIcons(theme.name);
   window._currentColour = theme.name;
   refreshSwatchState();
 }
