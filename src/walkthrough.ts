@@ -38,8 +38,8 @@ export const HOLD_FACTOR_REDUCED = 1.25;
 // Hold on the normal logo for a beat before the octopus starts talking.
 export const START_DELAY_MS = 5000;
 // While talking, the brand text drops to clue size (16px), left-aligned, in the
-// clue font (Quicksand) — not the bold Comfortaa wordmark size.
-const WALKTHROUGH_CLASS = 'text-base font-normal text-text font-[Quicksand] text-left leading-tight';
+// clue font (Quicksand), in the theme accent colour — not the bold Comfortaa wordmark.
+const WALKTHROUGH_CLASS = 'text-base font-normal text-accent font-[Quicksand] text-left leading-tight';
 
 // True iff `event` is the gate this step is waiting on.
 export function gateMatches(step: Step, event: GateEvent): boolean {
