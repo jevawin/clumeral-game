@@ -8,6 +8,7 @@ import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto } from './octo.ts';
+import './walkthrough.ts';
 import { showScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
@@ -403,6 +404,8 @@ function toggleDigit(digit: number): void {
   if (s.has(digit)) {
     if (s.size === 1) return; // guard: cannot eliminate last digit
     s.delete(digit);
+    // First-play walkthrough hook (issue #214). Fires only on elimination. No-op once dlng_history exists.
+    document.dispatchEvent(new CustomEvent("game:digit-eliminated"));
   } else {
     s.add(digit);
   }
@@ -421,6 +424,8 @@ function openBox(i: number): void {
   renderAllBoxes();
   buildKeypad();
   openKeypad();
+  // First-play walkthrough hook (issue #214). No-op once dlng_history exists.
+  document.dispatchEvent(new CustomEvent("game:box-opened"));
 }
 
 // Called by click: toggles same box closed, otherwise switches to new box
