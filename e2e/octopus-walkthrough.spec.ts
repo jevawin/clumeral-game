@@ -48,6 +48,8 @@ test("gated step holds until a digit box is opened", async ({ page }) => {
   await expect(brand(page)).toContainText("number box");
   // Header is pinned (sticky) while the octopus is talking.
   expect(await headerPosition(page)).toBe("sticky");
+  // The "Tap a number box" lead is rendered bold (a <strong> inside the brand).
+  await expect(page.locator("[data-brand-text] strong")).toHaveText("Tap a number box");
   // Open a box → advances to the next (timed) step.
   await page.locator('[data-digit="0"]').click();
   await expect(brand(page)).toContainText("prime", { timeout: 12_000 });

@@ -20,6 +20,14 @@ describe('walkthrough step machine', () => {
     expect(STEPS[5].gate).toBe('game:digit-eliminated');
   });
 
+  it('bold prefixes are real leading substrings of their step text', () => {
+    expect(STEPS[2].boldPrefix).toBe('Tap a number box');
+    expect(STEPS[5].boldPrefix).toBe('Tap a number');
+    for (const step of STEPS) {
+      if (step.boldPrefix) expect(step.text.startsWith(step.boldPrefix)).toBe(true);
+    }
+  });
+
   it('gateMatches advances only on the step’s own event', () => {
     expect(gateMatches(STEPS[2], 'game:box-opened')).toBe(true);
     expect(gateMatches(STEPS[2], 'game:digit-eliminated')).toBe(false);

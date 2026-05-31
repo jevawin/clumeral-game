@@ -12,16 +12,18 @@ export interface Step {
   kind: StepKind;
   text: string;
   gate?: GateEvent;
+  // Leading substring of `text` to render bold (must be a prefix of `text`).
+  boldPrefix?: string;
 }
 
 export const STEPS: Step[] = [
   { kind: 'timed', text: "Looks like it's your first time here…" },
-  { kind: 'timed', text: 'Goal: work out the number from 100–999…' },
-  { kind: 'gated', text: 'Tap a number box to begin…', gate: 'game:box-opened' },
+  { kind: 'timed', text: 'Work out the number from 100–999…' },
+  { kind: 'gated', text: 'Tap a number box to begin…', gate: 'game:box-opened', boldPrefix: 'Tap a number box' },
   { kind: 'timed', text: "Example: clue says 'is a prime number'…" },
   { kind: 'timed', text: 'Remove 0, 1, 4, 6, 8, 9 (not primes)…' },
-  { kind: 'gated', text: 'Tap a number to remove it…', gate: 'game:digit-eliminated' },
-  { kind: 'timed', text: 'Go until you have three left…' },
+  { kind: 'gated', text: 'Tap a number to remove it…', gate: 'game:digit-eliminated', boldPrefix: 'Tap a number' },
+  { kind: 'timed', text: 'Go until each box has one number…' },
   { kind: 'timed', text: 'Then submit your answer 💪' },
   { kind: 'end', text: '' },
 ];
@@ -113,6 +115,23 @@ function setBrand(text: string): void {
   if (el) el.textContent = text;
 }
 
+// Paint the first `i` chars of `text` into the brand node, rendering any leading
+// `boldPrefix` chars inside a <strong>. All step text is hardcoded (no HTML
+// metacharacters), so innerHTML here is not an injection surface.
+function paintBrand(text: string, i: number, boldPrefix?: string): void {
+  const el = brandTextEl();
+  if (!el) return;
+  const visible = text.slice(0, Math.max(i, 0));
+  if (!visible) { el.textContent = ''; return; }
+  if (!boldPrefix) { el.textContent = visible; return; }
+  const bLen = boldPrefix.length;
+  if (i <= bLen) {
+    el.innerHTML = `<strong class="font-bold">${visible}</strong>`;
+  } else {
+    el.innerHTML = `<strong class="font-bold">${text.slice(0, bLen)}</strong>${text.slice(bLen, i)}`;
+  }
+}
+
 // Fade the wordmark out (≈250ms), empty it, then run `onDone`.
 function fadeOutWordmark(onDone: () => void): void {
   const el = brandTextEl();
@@ -135,27 +154,25 @@ function fadeOutWordmark(onDone: () => void): void {
 }
 
 // Type `text` in char-by-char, then `onDone`. Reduced-motion sets it instantly.
-function typeIn(text: string, onDone: () => void): void {
+function typeIn(text: string, boldPrefix: string | undefined, onDone: () => void): void {
   if (REDUCED_MOTION()) {
-    setBrand(text);
+    paintBrand(text, text.length, boldPrefix);
     onDone();
     return;
   }
   let i = 0;
   const tick = () => {
     i++;
-    setBrand(text.slice(0, i));
+    paintBrand(text, i, boldPrefix);
     if (i < text.length) later(tick, TYPE_MS);
     else onDone();
   };
-  setBrand('');
+  paintBrand(text, 0, boldPrefix);
   later(tick, TYPE_MS);
 }
 
-// Delete the current brand text char-by-char, then `onDone`.
-function deleteOut(onDone: () => void): void {
-  const el = brandTextEl();
-  const text = el?.textContent ?? '';
+// Delete `text` char-by-char, then `onDone`.
+function deleteOut(text: string, boldPrefix: string | undefined, onDone: () => void): void {
   if (REDUCED_MOTION()) {
     setBrand('');
     onDone();
@@ -164,7 +181,7 @@ function deleteOut(onDone: () => void): void {
   let i = text.length;
   const tick = () => {
     i--;
-    setBrand(text.slice(0, Math.max(i, 0)));
+    paintBrand(text, i, boldPrefix);
     if (i > 0) later(tick, DELETE_MS);
     else onDone();
   };
@@ -206,16 +223,19 @@ function runStep(index: number): void {
     pendingGateHit = false;
   }
   typing = true;
-  typeIn(step.text, () => {
+  typeIn(step.text, step.boldPrefix, () => {
     typing = false;
     if (step.kind === 'timed') {
       const factor = REDUCED_MOTION() ? HOLD_FACTOR_REDUCED : HOLD_FACTOR_MOTION;
-      later(() => deleteOut(() => runStep(index + 1)), Math.round(holdMsFor(step.text) * factor));
+      later(
+        () => deleteOut(step.text, step.boldPrefix, () => runStep(index + 1)),
+        Math.round(holdMsFor(step.text) * factor),
+      );
     } else if (pendingGateHit) {
       // The user triggered the gate while the prompt was still typing — advance now.
       pendingGateHit = false;
       waitingGate = null;
-      deleteOut(() => runStep(index + 1));
+      deleteOut(step.text, step.boldPrefix, () => runStep(index + 1));
     }
     // else gated: hold until the matching game event arrives (onGameEvent).
   });
@@ -231,7 +251,7 @@ function onGameEvent(event: GateEvent): void {
     return;
   }
   waitingGate = null;
-  deleteOut(() => runStep(stepIndex + 1));
+  deleteOut(step.text, step.boldPrefix, () => runStep(stepIndex + 1));
 }
 
 function start(): void {
