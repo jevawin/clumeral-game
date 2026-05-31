@@ -38,6 +38,11 @@
   --color-accent:  #0A850A;
   --color-surface: #FFFFFF;
   --color-border:  rgba(38, 38, 36, 0.12);
+  /* Offset drop-shadow colour. Light mode: the border value works as-is since
+     border and shadow sit on similarly light backdrops. Dark mode overrides
+     this with a solid grey (see html.dark) so the shadow over the black page
+     background reads the same as the border edge over the box surface. */
+  --color-box-shadow: rgba(38, 38, 36, 0.12);
 
   --font-sans: "Quicksand", system-ui, sans-serif;
   --font-mono: "Inconsolata", ui-monospace, monospace;
@@ -54,6 +59,9 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     --color-accent:  #1EAD52;
     --color-surface: #363634;
     --color-border:  rgba(246, 240, 232, 0.1);
+    /* Solid equivalent of --color-border composited over --color-surface, so an
+       offset shadow cast on the black page background matches the border edge. */
+    --color-box-shadow: #494946;
 
     /* Octo colour-cycle dark stops — plain custom properties so Lightning CSS
        cannot mangle them. light-dark() cannot be used in SVG fill keyframes
@@ -311,7 +319,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     position: relative;
     background-color: var(--color-surface);
     border: 1.5px solid var(--color-border);
-    box-shadow: 3px 3px 0 var(--color-border);
+    box-shadow: 3px 3px 0 var(--color-box-shadow);
   }
   .digit-box__resolved {
     font-family: "Inconsolata", monospace;

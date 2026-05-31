@@ -348,7 +348,7 @@ function renderBox(i: number): void {
   // Restore default border+shadow when not active. Shadow tracks the border
   // colour token so it stays visible in both light and dark mode.
   el.classList.toggle("border-border", i !== activeBox);
-  el.classList.toggle("shadow-[3px_3px_0_var(--color-border)]", i !== activeBox);
+  el.classList.toggle("shadow-[3px_3px_0_var(--color-box-shadow)]", i !== activeBox);
 
   el.setAttribute("aria-expanded", i === activeBox ? "true" : "false");
 }
@@ -371,7 +371,7 @@ function buildKeypad() {
     btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
         ? 'bg-surface text-text/25 border-border shadow-none'
-        : 'bg-surface text-text border-border shadow-[2px_2px_0_var(--color-border)]'
+        : 'bg-surface text-text border-border shadow-[2px_2px_0_var(--color-box-shadow)]'
     }`;
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
