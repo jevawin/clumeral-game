@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 Phase: 07 (archive-replay-keep-header-date-archive-button-visible-so-us) — COMPLETE
 Plan: 1 of 1
 Status: Phase 7 complete + pushed to new-design — phase-level PR deferred (ships with v1.1 milestone PR to main)
-Last activity: 2026-05-31 - Completed quick task 260531-qjn: docs cleanup (#215) — thin CLAUDE.md, refresh README structure
+Last activity: 2026-05-31 - Completed quick task 260531-vwi: remove brand nav, bounce octopus logo on tap
 
 Progress: [██████████] 100%
 
@@ -103,6 +103,7 @@ None.
 |---|-------------|------|--------|-----------|
 | 260531-nua | Remove range + "Clues:" copy from play screen | 2026-05-31 | 7abc418 | [260531-nua-remove-range-clues-copy-from-play-screen](./quick/260531-nua-remove-range-clues-copy-from-play-screen/) |
 | 260531-qjn | Docs cleanup (#215): thin CLAUDE.md to rules + pointers, refresh stale README structure | 2026-05-31 | 7434e9a | [260531-qjn-docs-cleanup-thin-claude-md-to-rules-poi](./quick/260531-qjn-docs-cleanup-thin-claude-md-to-rules-poi/) |
+| 260531-vwi | Remove nav from brand; tapping octopus logo / "Clumeral" wordmark bounces the logo | 2026-05-31 | 2302079 | [260531-vwi-remove-nav-from-brand-bounce-octopus-log](./quick/260531-vwi-remove-nav-from-brand-bounce-octopus-log/) |
 
 ## Session Continuity
 
