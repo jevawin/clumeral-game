@@ -32,7 +32,8 @@ site's tap-to-bounce mascot.
 - The brand used to be the exit path on `/archive/<date>` (back to the archive
   list) and a way to reach "How to play" from `/play`. Both are gone by design.
   Browser back still works; archive list also reachable via in-page buttons on
-  completion. Flag for the user if a header back-affordance is still wanted.
+  completion and the archive-row Archive button on archive games.
+- Considered adding an Archive item to the burger menu, then **rejected** it —
+  the user found it added confusion. No archive affordance added to the menu.
 - Pre-PR review gates (DA review → self-review) apply before any PR: this change
-  touches navigation + a11y across 3 files.
-</content>
+  touches navigation + a11y across `index.html`, `app.ts`, `octo.ts`.
