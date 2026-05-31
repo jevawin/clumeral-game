@@ -21,7 +21,8 @@ Rules that keep it from rotting:
 ## Next — in order
 
 1. [#214](https://github.com/jevawin/clumeral-game/issues/214) First-play octopus walkthrough (P1) — reshapes `/play`; must land before the QA suite is finalised
-2. QA regression suite — build per [the design spec](superpowers/specs/2026-05-31-playwright-qa-regression-design.md) _(no issue — the spec is the tracking artifact)_
+2. [#219](https://github.com/jevawin/clumeral-game/issues/219) Hundreds box: tooltip when tapping 0 — "can't start with 0" (P1, UI/UX) — quick win
+3. QA regression suite — build per [the design spec](superpowers/specs/2026-05-31-playwright-qa-regression-design.md) _(no issue — the spec is the tracking artifact)_
 
 ## Future / ideas — conditional
 
