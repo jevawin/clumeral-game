@@ -311,10 +311,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     position: relative;
     background-color: var(--color-surface);
     border: 1.5px solid var(--color-border);
-    box-shadow: 3px 3px 0 rgba(38, 38, 36, 0.12);
-  }
-  html.dark .digit-box {
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+    box-shadow: 3px 3px 0 var(--color-border);
   }
   .digit-box__resolved {
     font-family: "Inconsolata", monospace;
