@@ -45,6 +45,8 @@ const REDUCED_MOTION = () =>
 let active = false;
 let stepIndex = 0;
 let waitingGate: GateEvent | null = null;
+let typing = false;
+let pendingGateHit = false;
 const timers: ReturnType<typeof setTimeout>[] = [];
 
 function later(fn: () => void, ms: number): void {
@@ -137,6 +139,8 @@ function finish(): void {
   if (!active) return;
   active = false;
   waitingGate = null;
+  typing = false;
+  pendingGateHit = false;
   clearTimers();
   const el = brandTextEl();
   if (el) {
@@ -156,13 +160,23 @@ function runStep(index: number): void {
   }
 
   announce(step.text);
+  // Arm the gate BEFORE typing so a fast tap during the type-in is not lost.
+  if (step.kind === 'gated') {
+    waitingGate = step.gate ?? null;
+    pendingGateHit = false;
+  }
+  typing = true;
   typeIn(step.text, () => {
+    typing = false;
     if (step.kind === 'timed') {
       later(() => deleteOut(() => runStep(index + 1)), holdMsFor(step.text));
-    } else {
-      // gated: hold indefinitely until the matching game event arrives
-      waitingGate = step.gate ?? null;
+    } else if (pendingGateHit) {
+      // The user triggered the gate while the prompt was still typing — advance now.
+      pendingGateHit = false;
+      waitingGate = null;
+      deleteOut(() => runStep(index + 1));
     }
+    // else gated: hold until the matching game event arrives (onGameEvent).
   });
 }
 
@@ -170,6 +184,11 @@ function onGameEvent(event: GateEvent): void {
   if (!active || waitingGate !== event) return;
   const step = STEPS[stepIndex];
   if (!gateMatches(step, event)) return;
+  if (typing) {
+    // Event arrived mid-type; advance as soon as the prompt finishes typing.
+    pendingGateHit = true;
+    return;
+  }
   waitingGate = null;
   deleteOut(() => runStep(stepIndex + 1));
 }
@@ -179,6 +198,8 @@ function start(): void {
   active = true;
   stepIndex = 0;
   waitingGate = null;
+  typing = false;
+  pendingGateHit = false;
   fadeOutWordmark(() => runStep(0));
 }
 
