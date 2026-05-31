@@ -37,9 +37,10 @@ export const HOLD_FACTOR_MOTION = 0.75;
 export const HOLD_FACTOR_REDUCED = 1.25;
 // Hold on the normal logo for a beat before the octopus starts talking.
 export const START_DELAY_MS = 5000;
-// While talking, the brand text drops to clue size (16px), left-aligned, in the
-// clue font (Quicksand), in the theme accent colour — not the bold Comfortaa wordmark.
-const WALKTHROUGH_CLASS = 'text-base font-normal text-accent font-[Quicksand] text-left leading-tight';
+// While talking, the brand text drops to clue size (16px), bold, left-aligned, in
+// the clue font (Quicksand) and theme accent colour — not the Comfortaa wordmark.
+// The action lead (boldPrefix) is rendered bold + italic to stand apart.
+const WALKTHROUGH_CLASS = 'text-base font-bold text-accent font-[Quicksand] text-left leading-tight';
 
 // True iff `event` is the gate this step is waiting on.
 export function gateMatches(step: Step, event: GateEvent): boolean {
@@ -126,9 +127,9 @@ function paintBrand(text: string, i: number, boldPrefix?: string): void {
   if (!boldPrefix) { el.textContent = visible; return; }
   const bLen = boldPrefix.length;
   if (i <= bLen) {
-    el.innerHTML = `<strong class="font-bold">${visible}</strong>`;
+    el.innerHTML = `<strong class="font-bold italic">${visible}</strong>`;
   } else {
-    el.innerHTML = `<strong class="font-bold">${text.slice(0, bLen)}</strong>${text.slice(bLen, i)}`;
+    el.innerHTML = `<strong class="font-bold italic">${text.slice(0, bLen)}</strong>${text.slice(bLen, i)}`;
   }
 }
 
