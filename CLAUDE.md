@@ -30,6 +30,7 @@ Prompt the user to run `/clear` at these trigger points:
 
 | Working on | Read |
 |------------|------|
+| Starting any task — current priorities, what's next | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | Puzzle logic, seeding, storage | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Routing, URL rules, screen transitions | [docs/URL-ARCHITECTURE.md](docs/URL-ARCHITECTURE.md) |
 | CSS, theming, clue display | [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |
