@@ -61,7 +61,7 @@ function htpSteps(): string {
       <div>
         <p class="text-base text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
         <div class="flex items-start gap-2.5">
-          <div class="digit-box flex-1 aspect-square min-w-0">
+          <div class="digit-box flex-1 aspect-square min-w-0 shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946]">
             <div class="digit-box__grid four-col">
               <span class="elim">0</span>
               <span>1</span>
@@ -92,7 +92,7 @@ function htpSteps(): string {
             <span class="text-sm text-text text-center leading-tight">Tap to remove</span>
           </div>
           <span class="text-xl text-text shrink-0 self-center" aria-hidden="true">→</span>
-          <div class="digit-box flex-1 aspect-square min-w-0"><span class="digit-box__resolved">5</span></div>
+          <div class="digit-box flex-1 aspect-square min-w-0 shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946]"><span class="digit-box__resolved">5</span></div>
         </div>
       </div>
 

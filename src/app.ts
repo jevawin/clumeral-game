@@ -345,10 +345,12 @@ function renderBox(i: number): void {
   // Active state: accent border + accent shadow
   el.classList.toggle("border-accent", i === activeBox);
   el.classList.toggle("shadow-[3px_3px_0_rgba(10,133,10,0.3)]", i === activeBox);
-  // Restore default border+shadow when not active. Shadow tracks the border
-  // colour token so it stays visible in both light and dark mode.
+  // Restore default border+shadow when not active. Dark uses a solid grey
+  // (#494946 = the border colour composited over the surface) so the offset
+  // shadow stays visible against the black page background.
   el.classList.toggle("border-border", i !== activeBox);
-  el.classList.toggle("shadow-[3px_3px_0_var(--color-box-shadow)]", i !== activeBox);
+  el.classList.toggle("shadow-[3px_3px_0_rgba(38,38,36,0.12)]", i !== activeBox);
+  el.classList.toggle("dark:shadow-[3px_3px_0_#494946]", i !== activeBox);
 
   el.setAttribute("aria-expanded", i === activeBox ? "true" : "false");
 }
@@ -371,7 +373,7 @@ function buildKeypad() {
     btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
         ? 'bg-surface text-text/25 border-border shadow-none'
-        : 'bg-surface text-text border-border shadow-[2px_2px_0_var(--color-box-shadow)]'
+        : 'bg-surface text-text border-border shadow-[2px_2px_0_rgba(38,38,36,0.12)] dark:shadow-[2px_2px_0_#494946]'
     }`;
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
