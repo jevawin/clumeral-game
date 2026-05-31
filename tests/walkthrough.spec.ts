@@ -3,7 +3,7 @@ import { STEPS, gateMatches, holdMsFor, TYPE_MS, DELETE_MS } from '../src/walkth
 
 describe('walkthrough step machine', () => {
   it('opens with the two timed intro lines and ends in an end step', () => {
-    expect(STEPS).toHaveLength(8);
+    expect(STEPS).toHaveLength(9);
     expect(STEPS[0].kind).toBe('timed');
     expect(STEPS[1].kind).toBe('timed');
     expect(STEPS[2].kind).toBe('gated');
@@ -11,7 +11,8 @@ describe('walkthrough step machine', () => {
     expect(STEPS[4].kind).toBe('timed');
     expect(STEPS[5].kind).toBe('gated');
     expect(STEPS[6].kind).toBe('timed');
-    expect(STEPS[7].kind).toBe('end');
+    expect(STEPS[7].kind).toBe('timed');
+    expect(STEPS[8].kind).toBe('end');
   });
 
   it('gated steps carry the matching game event', () => {
@@ -28,7 +29,7 @@ describe('walkthrough step machine', () => {
 
   it('gateMatches is false for non-gated steps', () => {
     expect(gateMatches(STEPS[0], 'game:box-opened')).toBe(false);
-    expect(gateMatches(STEPS[7], 'game:digit-eliminated')).toBe(false);
+    expect(gateMatches(STEPS[8], 'game:digit-eliminated')).toBe(false);
   });
 
   it('holdMsFor: 200 wpm + 1s buffer, 2s floor', () => {

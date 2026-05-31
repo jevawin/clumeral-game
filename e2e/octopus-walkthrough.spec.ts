@@ -7,12 +7,15 @@ import { test, expect, type Page } from "@playwright/test";
 // then types a scripted tutorial into the /play header in place of the
 // "Clumeral" wordmark, and restores it once the gated steps complete.
 //
-// Script anchors: step 0 (gated, box-opened) = "number box"; after opening a box
-// the timed steps lead to step 3 (gated, digit-eliminated) = "not prime"; the
-// final timed step = "submit"; then the wordmark restores to "Clumeral".
+// Script anchors: intro = "first time"; first gated (box-opened) = "number box";
+// after opening a box, timed steps lead to the second gated (digit-eliminated) =
+// "remove it"; the final timed step = "submit"; then it restores to "Clumeral".
+// While talking the header is pinned (position: sticky) and reverts on finish.
 
 const brand = (p: Page) => p.locator("[data-brand-text]");
 const live = (p: Page) => p.locator("[data-walkthrough-live]");
+const headerPosition = (p: Page) =>
+  p.locator("[data-app-header]").evaluate((el) => getComputedStyle(el).position);
 
 // Drive a fresh (new-user) session to /play. dlng_history absent → walkthrough runs.
 // The welcome screen's Play button ([data-play-btn]) navigates to /play (welcome.ts).
@@ -43,9 +46,11 @@ test("gated step holds until a digit box is opened", async ({ page }) => {
   // It holds on this prompt — no auto-advance while waiting on the user.
   await page.waitForTimeout(1500);
   await expect(brand(page)).toContainText("number box");
+  // Header is pinned (sticky) while the octopus is talking.
+  expect(await headerPosition(page)).toBe("sticky");
   // Open a box → advances to the next (timed) step.
   await page.locator('[data-digit="0"]').click();
-  await expect(brand(page)).toContainText("based on the clues", { timeout: 12_000 });
+  await expect(brand(page)).toContainText("prime", { timeout: 12_000 });
 });
 
 test("gated step holds for elimination, then restores the wordmark at the end", async ({ page }) => {
@@ -54,15 +59,17 @@ test("gated step holds for elimination, then restores the wordmark at the end", 
   await expect(brand(page)).toContainText("number box", { timeout: 30_000 });
   await page.locator('[data-digit="0"]').click();
   // Timed steps auto-advance to the second gated prompt.
-  await expect(brand(page)).toContainText("not prime", { timeout: 25_000 });
+  await expect(brand(page)).toContainText("remove it", { timeout: 25_000 });
   // Holds until a digit is eliminated.
   await page.waitForTimeout(1500);
-  await expect(brand(page)).toContainText("not prime");
+  await expect(brand(page)).toContainText("remove it");
   // Eliminate a digit via the keypad (key "1" is selectable in the hundreds box).
   await page.locator('[data-key="1"]').click();
   // Advances to the final timed step, then ends → wordmark restored.
   await expect(brand(page)).toContainText("submit", { timeout: 12_000 });
   await expect(brand(page)).toHaveText("Clumeral", { timeout: 15_000 });
+  // Header reverts to its static position once the walkthrough finishes.
+  expect(await headerPosition(page)).not.toBe("sticky");
 });
 
 test("returning player sees no walkthrough — wordmark from the start", async ({ page }) => {
@@ -87,5 +94,5 @@ test("prefers-reduced-motion: text appears instantly and still advances", async 
   await expect(brand(page)).toContainText("number box", { timeout: 30_000 });
   // Opening a box still advances the machine under reduced motion.
   await page.locator('[data-digit="0"]').click();
-  await expect(brand(page)).toContainText("based on the clues", { timeout: 12_000 });
+  await expect(brand(page)).toContainText("prime", { timeout: 12_000 });
 });

@@ -16,12 +16,13 @@ export interface Step {
 
 export const STEPS: Step[] = [
   { kind: 'timed', text: "Looks like it's your first time here…" },
-  { kind: 'timed', text: 'The goal: work out the 3-digit number.' },
-  { kind: 'gated', text: 'Tap a big number box to open it…', gate: 'game:box-opened' },
-  { kind: 'timed', text: 'Remove numbers based on the clues…' },
+  { kind: 'timed', text: 'Goal: work out the number from 100–999…' },
+  { kind: 'gated', text: 'Tap a number box to begin…', gate: 'game:box-opened' },
   { kind: 'timed', text: "Example: clue says 'is a prime number'…" },
-  { kind: 'gated', text: 'Remove 0, 1, 4, 6, 8, and 9 (not prime)…', gate: 'game:digit-eliminated' },
-  { kind: 'timed', text: "When you're left with three, submit 💪" },
+  { kind: 'timed', text: 'Remove 0, 1, 4, 6, 8, 9 (not primes)…' },
+  { kind: 'gated', text: 'Tap a number to remove it…', gate: 'game:digit-eliminated' },
+  { kind: 'timed', text: 'Go until you have three left…' },
+  { kind: 'timed', text: 'Then submit your answer 💪' },
   { kind: 'end', text: '' },
 ];
 
@@ -75,6 +76,27 @@ function clearTimers(): void {
 
 function brandTextEl(): HTMLElement | null {
   return document.querySelector('[data-brand-text]');
+}
+
+function headerEl(): HTMLElement | null {
+  return document.querySelector('[data-app-header]');
+}
+
+// Pin the header while the octopus is talking so its message stays visible when
+// the player scrolls down to a digit box. Sticky keeps it in normal flow (no
+// content jump, unlike fixed). `pin(false)` restores the original static header.
+function pinHeader(on: boolean): void {
+  const el = headerEl();
+  if (!el) return;
+  if (on) {
+    el.style.position = 'sticky';
+    el.style.top = '0';
+    el.style.zIndex = '30';
+  } else {
+    el.style.position = '';
+    el.style.top = '';
+    el.style.zIndex = '';
+  }
 }
 
 function liveEl(): HTMLElement | null {
@@ -157,6 +179,7 @@ function finish(): void {
   typing = false;
   pendingGateHit = false;
   clearTimers();
+  pinHeader(false); // restore the static header
   const el = brandTextEl();
   if (el) {
     el.style.transition = '';
@@ -225,6 +248,7 @@ function start(): void {
 // Fade the wordmark out and start the script. Runs after the start delay.
 function begin(): void {
   if (!active) return;
+  pinHeader(true); // keep the header (and its message) visible while talking
   const el = brandTextEl();
   if (el) {
     if (brandOriginalClass === null) brandOriginalClass = el.className;
