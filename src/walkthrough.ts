@@ -15,6 +15,8 @@ export interface Step {
 }
 
 export const STEPS: Step[] = [
+  { kind: 'timed', text: "Looks like it's your first time here…" },
+  { kind: 'timed', text: 'The goal: work out the 3-digit number.' },
   { kind: 'gated', text: 'Tap a big number box to open it…', gate: 'game:box-opened' },
   { kind: 'timed', text: 'Remove numbers based on the clues…' },
   { kind: 'timed', text: "Example: clue says 'is a prime number'…" },
