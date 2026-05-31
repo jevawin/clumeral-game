@@ -127,7 +127,7 @@ function renderWelcome(): void {
       </div>
       ${OCTO_SVG}
       ${puzzleNumHtml}
-      <p class="text-base text-text text-center">Work out the number from 100–999</p>
+      <p class="text-base font-bold text-text text-center">Work out the number from 100–999</p>
       ${playButton()}
       ${htpSteps()}
     </div>`;
