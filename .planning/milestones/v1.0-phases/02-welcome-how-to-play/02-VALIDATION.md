@@ -29,7 +29,7 @@ created: 2026-04-11
 
 - **After every task commit:** Manual browser check (load page, inspect DOM)
 - **After every plan wave:** Full manual walkthrough (both first-visit and return-visit flows)
-- **Before `/gsd:verify-work`:** Full manual walkthrough must pass
+- **Before `/gsd-verify-work`:** Full manual walkthrough must pass
 - **Max feedback latency:** ~10 seconds (page reload)
 
 ---

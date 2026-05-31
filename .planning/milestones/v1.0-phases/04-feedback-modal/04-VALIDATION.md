@@ -29,7 +29,7 @@ created: 2026-04-12
 
 - **After every task commit:** Visual inspection in dev browser (dark and light mode)
 - **After every plan wave:** Full manual walkthrough of modal open → fill → submit flow
-- **Before `/gsd:verify-work`:** All 5 FBK requirements visually confirmed
+- **Before `/gsd-verify-work`:** All 5 FBK requirements visually confirmed
 - **Max feedback latency:** 30 seconds
 
 ---

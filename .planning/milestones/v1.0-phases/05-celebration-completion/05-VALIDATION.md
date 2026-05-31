@@ -29,7 +29,7 @@ created: 2026-04-12
 
 - **After every task commit:** Run `npx tsc --noEmit`
 - **After every plan wave:** Run `npx tsc --noEmit && npm run build`
-- **Before `/gsd:verify-work`:** Full suite must be green
+- **Before `/gsd-verify-work`:** Full suite must be green
 - **Max feedback latency:** 15 seconds
 
 ---

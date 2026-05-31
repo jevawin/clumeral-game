@@ -18,7 +18,7 @@ created: 2026-05-02
 
 ## Status
 
-This validation file is authored retroactively in Phase 9. Phase 7 was delivered via direct commit `2e13e2b` on 2026-04-21 without going through `/gsd:execute-phase`, so no Wave 0 test scaffold was authored, no per-task automated verification was sampled, and no validation strategy existed at execution time. **`nyquist_compliant: false` is the honest record.** Retroactively reconstructing a per-task automated harness is out of scope for this retrofit phase.
+This validation file is authored retroactively in Phase 9. Phase 7 was delivered via direct commit `2e13e2b` on 2026-04-21 without going through `/gsd-execute-phase`, so no Wave 0 test scaffold was authored, no per-task automated verification was sampled, and no validation strategy existed at execution time. **`nyquist_compliant: false` is the honest record.** Retroactively reconstructing a per-task automated harness is out of scope for this retrofit phase.
 
 ---
 
@@ -74,7 +74,7 @@ This phase is **non-compliant** with the Nyquist sampling discipline. No automat
 
 **Reason:** Retrofit — phase ran outside the GSD workflow, validation strategy never authored, applying retroactively is out of scope.
 
-**Optional follow-up:** `/gsd:validate-phase 7` may be run if a future maintainer wants to author a proper validation harness. **Not required for v1.0 milestone closure.**
+**Optional follow-up:** `/gsd-validate-phase 7` may be run if a future maintainer wants to author a proper validation harness. **Not required for v1.0 milestone closure.**
 
 ---
 

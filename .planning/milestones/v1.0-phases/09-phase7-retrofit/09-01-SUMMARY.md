@@ -61,7 +61,7 @@ completed: 2026-05-02
 - SIMP-01 marked complete in `.planning/REQUIREMENTS.md` and traceability row updated to "Phase 7 (retrofitted Phase 9) | Complete"
 - `.planning/phases/07-simplify/07-01-SUMMARY.md` authored from commit `2e13e2b` evidence — maps all five plan tasks to delivery proof, all six must-haves to grep verification
 - `.planning/phases/07-simplify/07-01-VERIFICATION.md` authored with `status: passed`, `score: 6/6 must-haves verified`, live grep outputs pasted as evidence
-- `.planning/phases/07-simplify/07-01-VALIDATION.md` authored with honest `nyquist_compliant: false` + retrofit reason + pointer to optional `/gsd:validate-phase 7`
+- `.planning/phases/07-simplify/07-01-VALIDATION.md` authored with honest `nyquist_compliant: false` + retrofit reason + pointer to optional `/gsd-validate-phase 7`
 - Zero source-code changes — `git diff --stat HEAD~4 -- src/ public/ index.html` returns empty
 
 ## Task Commits
@@ -83,7 +83,7 @@ Each task was committed atomically:
 ## Decisions Made
 
 - **Status `passed` awarded retroactively for Phase 7** — rests on three evidence sources: (a) live grep against the current tree on 2026-05-02, (b) v1.0 milestone audit observations, (c) commit `2e13e2b`'s diff history. Documented openly in 07-01-VERIFICATION.md "Retrofit Caveats" section.
-- **Nyquist compliance recorded honestly as `false`** — retroactively reconstructing a Wave 0 harness is out of scope. `/gsd:validate-phase 7` recorded as optional future work, not required for v1.0 milestone closure.
+- **Nyquist compliance recorded honestly as `false`** — retroactively reconstructing a Wave 0 harness is out of scope. `/gsd-validate-phase 7` recorded as optional future work, not required for v1.0 milestone closure.
 - **Task 5 (visual regression human checkpoint) marked `implicit_pass`** — the original 07-01-PLAN.md required a blocking human-verify checkpoint with no explicit "approved" record on file. The v1.0 audit (lines 158-167) later ran 5/7 E2E flows on the post-Phase-7 tree without flagging any Phase-7-introduced regression; the two flow failures trace to Phase 3, not Phase 7.
 
 ## Deviations from Plan
@@ -110,10 +110,10 @@ None - no external service configuration required.
 
 - Phase 3 partial requirements (GAM-01, GAM-06) — closed in Phase 8
 - FBK-01 dead query — closed in Phase 8
-- Nyquist non-compliance across phases 1-6 — optional `/gsd:validate-phase` per phase, not blocking v1.0
+- Nyquist non-compliance across phases 1-6 — optional `/gsd-validate-phase` per phase, not blocking v1.0
 - Phase 7 retrofit — **closed by this plan**
 
-Ready for `/gsd:complete-milestone` (v1.0) once user runs the optional `/gsd:verify-work` against the retrofitted Phase 7 if desired.
+Ready for `/gsd-complete-milestone` (v1.0) once user runs the optional `/gsd-verify-work` against the retrofitted Phase 7 if desired.
 
 ## Self-Check: PASSED
 

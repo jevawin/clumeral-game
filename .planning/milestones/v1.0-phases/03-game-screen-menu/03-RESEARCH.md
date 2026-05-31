@@ -406,7 +406,7 @@ No automated test infrastructure exists. All validation is manual browser testin
 
 - **Per task commit:** `npm run build` — catches TypeScript errors
 - **Per wave merge:** `npm run build` + manual browser smoke of changed area
-- **Phase gate:** All requirements manually verified in browser before `/gsd:verify-work`
+- **Phase gate:** All requirements manually verified in browser before `/gsd-verify-work`
 
 ### Wave 0 Gaps
 

@@ -29,7 +29,7 @@ created: 2026-04-12
 
 - **After every task commit:** Run `npm run build` (catches type errors, import issues)
 - **After every plan wave:** Full build + manual browser test of game flow
-- **Before `/gsd:verify-work`:** Full build clean + all game flows tested in browser
+- **Before `/gsd-verify-work`:** Full build clean + all game flows tested in browser
 - **Max feedback latency:** 10 seconds
 
 ---

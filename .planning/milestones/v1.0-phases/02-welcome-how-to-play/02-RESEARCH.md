@@ -370,7 +370,7 @@ The project has no test infrastructure. Setting it up is out of scope for this p
 | No worker/API changes | `puzzleNumber()` computed locally, no new API calls |
 | ES2022 target | TypeScript config unchanged |
 | Under 15 semantic colour tokens | Phase 1 defined 6 tokens; Phase 2 adds none |
-| GSD workflow enforcement | Changes go through `/gsd:execute-phase` |
+| GSD workflow enforcement | Changes go through `/gsd-execute-phase` |
 
 ---
 

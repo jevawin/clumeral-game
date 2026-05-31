@@ -64,7 +64,7 @@
   2. Tap targets for digit elimination remain at or above the v1.0 size
   3. No visual regression in the typography hierarchy (clue label vs body)
 
-**Plans:** TBD (run `/gsd:plan-phase 2`)
+**Plans:** TBD (run `/gsd-plan-phase 2`)
 **UI hint:** yes
 
 ### Phase 3: URL routing

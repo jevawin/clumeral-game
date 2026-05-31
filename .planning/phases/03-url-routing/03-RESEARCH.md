@@ -478,7 +478,7 @@ Source: `wrangler.jsonc` (current) + Cloudflare Workers Static Assets docs. Path
 
 - **Per task commit:** `npx vitest run tests/<file>.spec.ts` for the touched module (< 5 s).
 - **Per wave merge:** `npx vitest run` (full suite, < 30 s expected at this size).
-- **Phase gate:** Full suite green, plus the integration `curl` checks for Worker fallback and 302s, plus the manual deep-link refresh smoke (table below), before `/gsd:verify-work`.
+- **Phase gate:** Full suite green, plus the integration `curl` checks for Worker fallback and 302s, plus the manual deep-link refresh smoke (table below), before `/gsd-verify-work`.
 
 ### Manual smoke matrix (browser, must pass before gate)
 

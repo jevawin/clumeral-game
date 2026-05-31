@@ -35,7 +35,7 @@ key-files:
     - src/worker/stats.ts
 
 key-decisions:
-  - "Phase 7 work merged via direct commit (2e13e2b) rather than /gsd:execute-phase — artifacts produced retroactively in Phase 9"
+  - "Phase 7 work merged via direct commit (2e13e2b) rather than /gsd-execute-phase — artifacts produced retroactively in Phase 9"
   - "Visual regression checkpoint (Task 5 of 07-01-PLAN.md) was confirmed implicitly via the v1.0 audit and Phase 8 work which exercised the same UI without finding regressions tied to Phase 7 removals"
 
 patterns-established:
@@ -50,7 +50,7 @@ requirements-completed: [SIMP-01]
 
 ## Status
 
-The original `07-01-PLAN.md` was executed via direct commit `2e13e2b` ("feat: phase 7 simplify + design polish") on 2026-04-21, bypassing the standard `/gsd:execute-phase` workflow. As a result, no SUMMARY/VERIFICATION/VALIDATION artifacts were authored at the time. This summary is authored retroactively in Phase 9 (`09-phase7-retrofit`) on 2026-05-02 to close the audit gap surfaced in `.planning/v1.0-MILESTONE-AUDIT.md`. **No source code is modified by Phase 9** — every claim below is backed by commit evidence, audit observations, or live grep on the current tree.
+The original `07-01-PLAN.md` was executed via direct commit `2e13e2b` ("feat: phase 7 simplify + design polish") on 2026-04-21, bypassing the standard `/gsd-execute-phase` workflow. As a result, no SUMMARY/VERIFICATION/VALIDATION artifacts were authored at the time. This summary is authored retroactively in Phase 9 (`09-phase7-retrofit`) on 2026-05-02 to close the audit gap surfaced in `.planning/v1.0-MILESTONE-AUDIT.md`. **No source code is modified by Phase 9** — every claim below is backed by commit evidence, audit observations, or live grep on the current tree.
 
 ## Tasks Completed
 

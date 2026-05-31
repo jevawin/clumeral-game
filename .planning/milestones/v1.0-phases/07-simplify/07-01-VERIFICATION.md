@@ -72,7 +72,7 @@ All four greps produced the expected results: three returned empty (confirming d
 
 - Status of `passed` is awarded **retroactively** — the original execution did not produce per-task verification at commit time. The verification rests on (a) live grep against the current tree, (b) the v1.0 milestone audit observations, and (c) commit `2e13e2b`'s diff history.
 - Task 5 (visual regression human checkpoint) is marked `implicit_pass` because the v1.0 audit later exercised the UI end-to-end on the same tree without flagging Phase-7-introduced regressions. The audit's two flow failures (replay flow, `[data-plabel]`) trace to Phase 3, not Phase 7.
-- Nyquist compliance is **non-compliant** for this phase; see `07-01-VALIDATION.md` for the honest record and the optional `/gsd:validate-phase 7` follow-up path.
+- Nyquist compliance is **non-compliant** for this phase; see `07-01-VALIDATION.md` for the honest record and the optional `/gsd-validate-phase 7` follow-up path.
 
 ## Sign-Off
 

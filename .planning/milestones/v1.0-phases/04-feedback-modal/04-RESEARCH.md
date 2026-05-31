@@ -298,7 +298,7 @@ Step 2.6: SKIPPED (no external dependencies beyond the existing Vite + Tailwind 
 ### Sampling Rate
 - **Per task commit:** Visual inspection in dev browser (dark and light mode)
 - **Per wave merge:** Full manual walkthrough of modal open → fill → submit flow
-- **Phase gate:** All 5 FBK requirements visually confirmed before `/gsd:verify-work`
+- **Phase gate:** All 5 FBK requirements visually confirmed before `/gsd-verify-work`
 
 ### Wave 0 Gaps
 None — no automated test infrastructure exists or is expected for this phase.

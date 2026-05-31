@@ -29,7 +29,7 @@ created: 2026-05-30
 
 - **After every task commit:** Run `npm run build` — must compile clean (no TS errors).
 - **After every plan wave:** Run `npm run build` + the relevant manual verify steps.
-- **Before `/gsd:verify-work`:** Build green AND all manual verify steps pass on both breakpoints.
+- **Before `/gsd-verify-work`:** Build green AND all manual verify steps pass on both breakpoints.
 - **Max feedback latency:** ~20 seconds (build) + manual pass.
 
 ---

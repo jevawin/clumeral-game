@@ -446,7 +446,7 @@ export function initScreens(): void {
 
 - **Per task commit:** `npm run build` (confirms no build errors)
 - **Per wave merge:** `npm run build` + manual browser check in both dark/light modes
-- **Phase gate:** All smoke commands green + manual cross-fade and dark mode check before `/gsd:verify-work`
+- **Phase gate:** All smoke commands green + manual cross-fade and dark mode check before `/gsd-verify-work`
 
 ### Wave 0 Gaps
 

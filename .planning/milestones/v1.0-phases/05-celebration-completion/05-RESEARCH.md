@@ -493,7 +493,7 @@ All requirements are DOM/animation/interaction based. No pure-function logic exi
 ### Sampling Rate
 - **Per task commit:** Manual browser check — does the changed behaviour work?
 - **Per wave merge:** Full manual walkthrough — correct answer → celebration → completion screen → stats visible → feedback button opens modal.
-- **Phase gate:** Manual verification per `/gsd:verify-work` checklist before PR.
+- **Phase gate:** Manual verification per `/gsd-verify-work` checklist before PR.
 
 ### Wave 0 Gaps
 No test framework to install within phase scope. If unit tests for `computeStats` are desired, that would require:

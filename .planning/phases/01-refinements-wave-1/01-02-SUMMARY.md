@@ -89,7 +89,7 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- Plan 01-03 already merged ahead of this one in the wave (commit `e71473f`); the next outstanding plan in this phase will be picked up by `/gsd:execute-phase`.
+- Plan 01-03 already merged ahead of this one in the wave (commit `e71473f`); the next outstanding plan in this phase will be picked up by `/gsd-execute-phase`.
 - Header and menu surface area is now clean for any future v1.1 menu/header items (theme polish, share button, etc.).
 
 ## Self-Check

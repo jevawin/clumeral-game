@@ -29,7 +29,7 @@ created: 2026-04-11
 
 - **After every task commit:** Run `npm run build`
 - **After every plan wave:** Run `npm run build && npm run dev` (visual check)
-- **Before `/gsd:verify-work`:** Full build must succeed, dev server must render all screens
+- **Before `/gsd-verify-work`:** Full build must succeed, dev server must render all screens
 - **Max feedback latency:** 10 seconds
 
 ---

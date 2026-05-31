@@ -34,23 +34,23 @@
 ### What Was Inefficient
 
 - **Phase 7 ran as a direct commit, no GSD plan** — saved ceremony in the moment but cost a full retrofit phase (Phase 9) to backfill SUMMARY/VERIFICATION/VALIDATION when the v1.0 audit found the artifact gap. Net-negative trade.
-- **REQUIREMENTS.md checkbox + traceability drift** — phases passed verification but the requirements doc wasn't synced; flagged twice (audit + pre-archive). The `/gsd:transition` step was skipped or under-utilised.
+- **REQUIREMENTS.md checkbox + traceability drift** — phases passed verification but the requirements doc wasn't synced; flagged twice (audit + pre-archive). The `/gsd-transition` step was skipped or under-utilised.
 - **FBK-01 deferred-by-design** — Phase 4 explicitly scoped completion-screen wiring to Phase 5, but the requirement was logged as partial across two phases and resurfaced as a Phase 8 audit fix. A single-phase-completes-the-requirement rule would have avoided this.
 - **Three rounds of audit/fix on Phase 7** — direct commit → audit flags missing artifacts → Phase 8 fixes code → Phase 9 fixes docs. Could have been one Phase 7 done correctly.
 
 ### Patterns Established
 
 - **Per-plan SUMMARY frontmatter must list `requirements-completed`** — early phases (01, 02, 04, 06-02) shipped without it, which forced manual reconstruction during audit
-- **Direct commits should still produce a SUMMARY** — even when skipping `/gsd:plan-phase`, leaving the artifact behind avoids retrofit cost
-- **Audit before archive** — `/gsd:audit-milestone` before `/gsd:complete-milestone` caught real partial requirements that the per-phase verifications had passed
+- **Direct commits should still produce a SUMMARY** — even when skipping `/gsd-plan-phase`, leaving the artifact behind avoids retrofit cost
+- **Audit before archive** — `/gsd-audit-milestone` before `/gsd-complete-milestone` caught real partial requirements that the per-phase verifications had passed
 - **Preview-mode automation > manual UAT** — for visual/flow verification, scripted browser automation produced higher-confidence sign-off than manual checklists
 - **One requirement, one phase** — splitting a single REQ across phases (FBK-01 in Phases 4 + 5) creates partial-state confusion
 
 ### Key Lessons
 
 1. **Don't bypass GSD for "small" passes.** Phase 7 felt like a quick dead-code sweep; it cost a full retrofit phase later. The artifact discipline pays its own cost in audit time.
-2. **Run `/gsd:audit-milestone` before declaring done.** v1.0 audit found 4 partial requirements that all per-phase verifications had passed. Audit's job is to catch what passes individually but fails together.
-3. **Sync REQUIREMENTS.md after every phase.** Stale checkboxes and traceability rows compound and require pre-archive cleanup. `/gsd:transition` should be the default chase-step.
+2. **Run `/gsd-audit-milestone` before declaring done.** v1.0 audit found 4 partial requirements that all per-phase verifications had passed. Audit's job is to catch what passes individually but fails together.
+3. **Sync REQUIREMENTS.md after every phase.** Stale checkboxes and traceability rows compound and require pre-archive cleanup. `/gsd-transition` should be the default chase-step.
 4. **Preview-mode automation is the right tool for UI sign-off.** Saved an entire round of human UAT churn in Phase 8.
 5. **Defer requirements deliberately, not implicitly.** If a requirement spans phases, name it explicitly in both phase plans and mark partial-by-design in the requirement.
 

@@ -78,7 +78,7 @@ The game screen works flawlessly — clues, digit elimination, guess submission,
 | Feedback modal stays (restyled) | Works well | ✓ Good — Tailwind restyle with fade+scale + toast |
 | Guide modal removed | Visual steps inline on welcome read better | ✓ Good — Phase 4 |
 | Skippable celebration with onComplete callback | Avoids waiting on animations | ✓ Good — compressed ~6s → ~2.6s, tap-to-skip |
-| Phase 7 ran as direct commit (no GSD plan) | Speed over ceremony for dead-code pass | ⚠️ Revisit — required Phase 9 retrofit; future simplify passes should run through `/gsd:plan-phase` |
+| Phase 7 ran as direct commit (no GSD plan) | Speed over ceremony for dead-code pass | ⚠️ Revisit — required Phase 9 retrofit; future simplify passes should run through `/gsd-plan-phase` |
 | Defer FBK-01 completion-screen wiring to Phase 5 | Single-responsibility per phase | ⚠️ Revisit — created a partial requirement that surfaced as audit gap; eventually closed in Phase 8 |
 
 ## Context
@@ -93,14 +93,14 @@ Backend deliberately untouched: same Cloudflare Workers, same KV cache, same Ana
 
 This document evolves at phase transitions and milestone boundaries.
 
-**After each phase transition** (via `/gsd:transition`):
+**After each phase transition** (via `/gsd-transition`):
 1. Requirements invalidated? → Move to Out of Scope with reason
 2. Requirements validated? → Move to Validated with phase reference
 3. New requirements emerged? → Add to Active
 4. Decisions to log? → Add to Key Decisions
 5. "What This Is" still accurate? → Update if drifted
 
-**After each milestone** (via `/gsd:complete-milestone`):
+**After each milestone** (via `/gsd-complete-milestone`):
 1. Full review of all sections
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?

@@ -23,7 +23,7 @@ re_verification: false
 | 1 | SIMP-01 traceability row reads "SIMP-01 \| Phase 7 (retrofitted Phase 9) \| Complete" | VERIFIED | REQUIREMENTS.md line 156 contains exact match: `\| SIMP-01 \| Phase 7 (retrofitted Phase 9) \| Complete \|` |
 | 2 | 07-01-SUMMARY.md exists and lists all dead-code removals from commit 2e13e2b | VERIFIED | File present at `.planning/phases/07-simplify/07-01-SUMMARY.md` (6870 bytes); body documents letter-reveal removal, sprite pruning, duplicate welcome h1, CSS audit; cites commit 2e13e2b throughout |
 | 3 | 07-01-VERIFICATION.md exists, status passed, references grep evidence for SIMP-01 truths | VERIFIED | File present (5788 bytes); frontmatter `status: passed`, `score: 6/6 must-haves verified`; body contains "Live Evidence" grep block with all four pasted outputs |
-| 4 | 07-01-VALIDATION.md exists with honest nyquist_compliant: false + reason | VERIFIED | File present (4569 bytes); frontmatter `nyquist_compliant: false`, `wave_0_complete: false`; "Nyquist Compliance" section states retrofit reason and points to optional `/gsd:validate-phase 7` |
+| 4 | 07-01-VALIDATION.md exists with honest nyquist_compliant: false + reason | VERIFIED | File present (4569 bytes); frontmatter `nyquist_compliant: false`, `wave_0_complete: false`; "Nyquist Compliance" section states retrofit reason and points to optional `/gsd-validate-phase 7` |
 
 **Score:** 4/4 truths verified.
 

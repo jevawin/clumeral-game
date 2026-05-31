@@ -380,7 +380,7 @@ Based on risk and dependency analysis, this is the safest sequence:
 
 - **Per task commit:** `npm run dev` and spot-check the converted element visually
 - **Per wave merge:** Build check — `npm run build` succeeds with no errors
-- **Phase gate:** Full manual walkthrough per D-06 before `/gsd:verify-work`
+- **Phase gate:** Full manual walkthrough per D-06 before `/gsd-verify-work`
 
 ### Wave 0 Gaps
 

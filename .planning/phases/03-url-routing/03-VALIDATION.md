@@ -30,7 +30,7 @@ updated: 2026-05-03
 
 - **After every task commit:** Run `npx vitest run tests/<touched-module>.spec.ts`
 - **After every plan wave:** Run `npx vitest run` (full suite)
-- **Before `/gsd:verify-work`:** Full suite green + integration curl checks + manual deep-link smoke
+- **Before `/gsd-verify-work`:** Full suite green + integration curl checks + manual deep-link smoke
 - **Max feedback latency:** 30 seconds
 
 ---
