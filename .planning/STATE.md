@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 
 Phase: 07 (archive-replay-keep-header-date-archive-button-visible-so-us) — COMPLETE
 Plan: 1 of 1
-Status: Phase complete — verified (Task 3 manual matrix passed 16/16 via automated Playwright, 375px + 1280px)
+Status: Phase 7 complete + pushed to new-design — phase-level PR deferred (ships with v1.1 milestone PR to main)
 Last activity: 2026-05-31
 
 Progress: [██████████] 100%
