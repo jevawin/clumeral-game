@@ -36,3 +36,167 @@ export function holdMsFor(text: string): number {
   const ms = Math.round((words / 200) * 60_000) + 1000;
   return Math.max(ms, 2000);
 }
+
+// ─── Runtime (DOM + timers) ──────────────────────────────────────────────────
+
+const REDUCED_MOTION = () =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+let active = false;
+let stepIndex = 0;
+let waitingGate: GateEvent | null = null;
+const timers: ReturnType<typeof setTimeout>[] = [];
+
+function later(fn: () => void, ms: number): void {
+  timers.push(setTimeout(fn, ms));
+}
+
+function clearTimers(): void {
+  for (const t of timers) clearTimeout(t);
+  timers.length = 0;
+}
+
+function brandTextEl(): HTMLElement | null {
+  return document.querySelector('[data-brand-text]');
+}
+
+function liveEl(): HTMLElement | null {
+  return document.querySelector('[data-walkthrough-live]');
+}
+
+function announce(text: string): void {
+  const el = liveEl();
+  if (el) el.textContent = text;
+}
+
+function setBrand(text: string): void {
+  const el = brandTextEl();
+  if (el) el.textContent = text;
+}
+
+// Fade the wordmark out (≈250ms), empty it, then run `onDone`.
+function fadeOutWordmark(onDone: () => void): void {
+  const el = brandTextEl();
+  if (!el) {
+    onDone();
+    return;
+  }
+  if (REDUCED_MOTION()) {
+    el.textContent = '';
+    onDone();
+    return;
+  }
+  el.style.transition = 'opacity 0.25s ease-out';
+  el.style.opacity = '0';
+  later(() => {
+    el.textContent = '';
+    el.style.opacity = '1'; // text is empty, so safe to restore opacity now
+    onDone();
+  }, 260);
+}
+
+// Type `text` in char-by-char, then `onDone`. Reduced-motion sets it instantly.
+function typeIn(text: string, onDone: () => void): void {
+  if (REDUCED_MOTION()) {
+    setBrand(text);
+    onDone();
+    return;
+  }
+  let i = 0;
+  const tick = () => {
+    i++;
+    setBrand(text.slice(0, i));
+    if (i < text.length) later(tick, TYPE_MS);
+    else onDone();
+  };
+  setBrand('');
+  later(tick, TYPE_MS);
+}
+
+// Delete the current brand text char-by-char, then `onDone`.
+function deleteOut(onDone: () => void): void {
+  const el = brandTextEl();
+  const text = el?.textContent ?? '';
+  if (REDUCED_MOTION()) {
+    setBrand('');
+    onDone();
+    return;
+  }
+  let i = text.length;
+  const tick = () => {
+    i--;
+    setBrand(text.slice(0, Math.max(i, 0)));
+    if (i > 0) later(tick, DELETE_MS);
+    else onDone();
+  };
+  later(tick, DELETE_MS);
+}
+
+// Restore the wordmark and tear down. Idempotent.
+function finish(): void {
+  if (!active) return;
+  active = false;
+  waitingGate = null;
+  clearTimers();
+  const el = brandTextEl();
+  if (el) {
+    el.style.transition = '';
+    el.style.opacity = '1';
+  }
+  setBrand('Clumeral');
+}
+
+function runStep(index: number): void {
+  if (!active) return;
+  stepIndex = index;
+  const step = STEPS[index];
+  if (!step || step.kind === 'end') {
+    finish();
+    return;
+  }
+
+  announce(step.text);
+  typeIn(step.text, () => {
+    if (step.kind === 'timed') {
+      later(() => deleteOut(() => runStep(index + 1)), holdMsFor(step.text));
+    } else {
+      // gated: hold indefinitely until the matching game event arrives
+      waitingGate = step.gate ?? null;
+    }
+  });
+}
+
+function onGameEvent(event: GateEvent): void {
+  if (!active || waitingGate !== event) return;
+  const step = STEPS[stepIndex];
+  if (!gateMatches(step, event)) return;
+  waitingGate = null;
+  deleteOut(() => runStep(stepIndex + 1));
+}
+
+function start(): void {
+  if (active) return;
+  active = true;
+  stepIndex = 0;
+  waitingGate = null;
+  fadeOutWordmark(() => runStep(0));
+}
+
+export function initWalkthrough(): void {
+  const isNewUser = !localStorage.getItem('dlng_history');
+
+  document.addEventListener('screens:enter', (e) => {
+    const screen = (e as CustomEvent).detail?.screen;
+    if (screen !== 'game') {
+      // Leaving /play mid-sequence reverts the wordmark.
+      if (active) finish();
+      return;
+    }
+    if (isNewUser && !active) start();
+  });
+
+  document.addEventListener('game:box-opened', () => onGameEvent('game:box-opened'));
+  document.addEventListener('game:digit-eliminated', () => onGameEvent('game:digit-eliminated'));
+}
+
+initWalkthrough();
