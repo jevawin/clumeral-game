@@ -43,6 +43,7 @@ const REDUCED_MOTION = () =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 let active = false;
+let hasRun = false;
 let stepIndex = 0;
 let waitingGate: GateEvent | null = null;
 let typing = false;
@@ -146,6 +147,7 @@ function finish(): void {
   if (el) {
     el.style.transition = '';
     el.style.opacity = '1';
+    el.removeAttribute('aria-hidden');
   }
   setBrand('Clumeral');
 }
@@ -200,12 +202,14 @@ function start(): void {
   waitingGate = null;
   typing = false;
   pendingGateHit = false;
+  // Hide the typed prose from the a11y tree — the [data-walkthrough-live] region
+  // is the spoken channel. Prevents a Label-in-Name mismatch on the brand button
+  // (its aria-label stays "Home" while the visible text becomes tutorial prose).
+  brandTextEl()?.setAttribute('aria-hidden', 'true');
   fadeOutWordmark(() => runStep(0));
 }
 
 export function initWalkthrough(): void {
-  const isNewUser = !localStorage.getItem('dlng_history');
-
   document.addEventListener('screens:enter', (e) => {
     const screen = (e as CustomEvent).detail?.screen;
     if (screen !== 'game') {
@@ -213,7 +217,13 @@ export function initWalkthrough(): void {
       if (active) finish();
       return;
     }
-    if (isNewUser && !active) start();
+    // Read `dlng_history` live (not a load-time snapshot) so the walkthrough never
+    // replays once the player has solved a puzzle. `hasRun` latches it to once per
+    // page session — re-navigating game→welcome→game won't re-trigger it.
+    if (!active && !hasRun && !localStorage.getItem('dlng_history')) {
+      hasRun = true;
+      start();
+    }
   });
 
   document.addEventListener('game:box-opened', () => onGameEvent('game:box-opened'));
