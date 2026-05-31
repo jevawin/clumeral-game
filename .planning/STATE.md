@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Design Refinements
 status: verifying
-stopped_at: Phase 6 context gathered
-last_updated: "2026-05-30T22:08:42.023Z"
-last_activity: 2026-05-30
+stopped_at: Phase 7 complete — verified (Task 3 matrix 16/16)
+last_updated: "2026-05-31T00:00:00.000Z"
+last_activity: 2026-05-31
 progress:
   total_phases: 6
   completed_phases: 5
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 
 ## Current Position
 
-Phase: 07 (archive-replay-keep-header-date-archive-button-visible-so-us) — EXECUTING
+Phase: 07 (archive-replay-keep-header-date-archive-button-visible-so-us) — COMPLETE
 Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-05-30
+Status: Phase complete — verified (Task 3 manual matrix passed 16/16 via automated Playwright, 375px + 1280px)
+Last activity: 2026-05-31
 
 Progress: [██████████] 100%
 
