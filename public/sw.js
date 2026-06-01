@@ -5,6 +5,7 @@ const STATIC_ASSETS = [
   '/icon-512.png',
   '/manifest.json',
   '/sprites.svg'
+  /* __PRECACHE_ASSETS__ */
 ];
 
 self.addEventListener('install', (e) => {
