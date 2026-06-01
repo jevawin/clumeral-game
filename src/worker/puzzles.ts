@@ -108,6 +108,10 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     font: inherit;
     cursor: pointer;
   }
+  header.app-header .brand:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
   header.app-header .brand .brand-octo {
     transform-origin: center bottom;
   }

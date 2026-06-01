@@ -29,10 +29,10 @@ const VALID_EVENTS = new Set([
   'route_change',
 ]);
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
 }
 
@@ -66,11 +66,17 @@ async function handleGetPuzzle(env: Env, url: URL): Promise<Response> {
   const requested = url.searchParams.get('date');
   const date = requested && !isFuturePuzzleDate(requested) ? requested : todayUTC();
   const puzzle = await getDailyPuzzle(env, date);
-  return json({
-    date,
-    puzzleNumber: puzzle.puzzleNumber,
-    clues: puzzle.clues,
-  });
+  // no-store: the response now varies by ?date= and is day-sensitive — never let
+  // an intermediary pin one player's local-day (or today+1) response past rollover.
+  return json(
+    {
+      date,
+      puzzleNumber: puzzle.puzzleNumber,
+      clues: puzzle.clues,
+    },
+    200,
+    { 'Cache-Control': 'no-store' },
+  );
 }
 
 async function handleGetRandomPuzzle(env: Env): Promise<Response> {

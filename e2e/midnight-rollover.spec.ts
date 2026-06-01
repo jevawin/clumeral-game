@@ -69,6 +69,19 @@ test.describe("client keys the puzzle day on the browser-local date", () => {
     expect(url.searchParams.get("date")).toBe(LOCAL_TODAY);
   });
 
+  test("negative-offset late evening: still keys on the player's local date, not UTC tomorrow", async ({ browser }) => {
+    // Mirror of the BST bug. UTC-5 (New York) at 23:30 local: UTC has already
+    // rolled to the next day, so a UTC-keyed client would request tomorrow.
+    // 2026-06-01T03:30:00Z === 2026-05-31 23:30 EDT → local date is 2026-05-31.
+    const ctx = await browser.newContext({ timezoneId: "America/New_York", locale: "en-US" });
+    const page = await ctx.newPage();
+    await page.clock.install({ time: new Date("2026-06-01T03:30:00Z") });
+    const req = page.waitForRequest((r) => r.url().includes("/api/puzzle?date="));
+    await page.goto("/play");
+    expect(new URL((await req).url()).searchParams.get("date")).toBe("2026-05-31");
+    await ctx.close();
+  });
+
   test("a puzzle solved under the local date is recognised — /play redirects to the solved view, not a fresh board", async ({ page }) => {
     await seedSolvedToday(page);
 
