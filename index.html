@@ -28,12 +28,27 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
-    <link rel="stylesheet" href="/src/tailwind.css" />
+    <link rel="stylesheet" href="/src/tailwind.css" onerror="window.__clumeralReloadGuard && window.__clumeralReloadGuard()" />
     <script>
       (function () {
         var t = localStorage.getItem("dlng_theme");
         if (!t) t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         document.documentElement.classList.add(t);
+      })();
+    </script>
+    <script>
+      (function () {
+        var KEY = 'clumeral_asset_reload';
+        window.__clumeralReloadGuard = function () {
+          var count = parseInt(sessionStorage.getItem(KEY) || '0', 10);
+          if (count < 1) {
+            sessionStorage.setItem(KEY, String(count + 1));
+            location.reload();
+          }
+        };
+        window.addEventListener('load', function () {
+          sessionStorage.removeItem(KEY);
+        });
       })();
     </script>
   </head>
@@ -304,6 +319,6 @@
       Made with <svg role="img" aria-label="love" class="inline-block w-4 h-4 align-[-0.15em] text-accent" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> by Jamie &amp; Dave. &copy; 2026.
     </footer>
 
-    <script type="module" src="/src/app.ts"></script>
+    <script type="module" src="/src/app.ts" onerror="window.__clumeralReloadGuard && window.__clumeralReloadGuard()"></script>
   </body>
 </html>
