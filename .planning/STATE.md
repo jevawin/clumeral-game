@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 Phase: 07 (archive-replay-keep-header-date-archive-button-visible-so-us) — COMPLETE
 Plan: 1 of 1
 Status: Phase 7 complete + pushed to new-design — phase-level PR deferred (ships with v1.1 milestone PR to main)
-Last activity: 2026-06-01 - Completed quick task 260601-auy: fix midnight date divergence + stale archive brand
+Last activity: 2026-06-01 - Completed quick task 260601-bva: fix PWA stale-asset / unstyled-stacked render on iOS resume
 
 Progress: [██████████] 100%
 
@@ -105,6 +105,7 @@ None.
 | 260531-qjn | Docs cleanup (#215): thin CLAUDE.md to rules + pointers, refresh stale README structure | 2026-05-31 | 7434e9a | [260531-qjn-docs-cleanup-thin-claude-md-to-rules-poi](./quick/260531-qjn-docs-cleanup-thin-claude-md-to-rules-poi/) |
 | 260531-vwi | Remove nav from brand; tapping octopus logo / "Clumeral" wordmark bounces the logo | 2026-05-31 | 2302079 | [260531-vwi-remove-nav-from-brand-bounce-octopus-log](./quick/260531-vwi-remove-nav-from-brand-bounce-octopus-log/) |
 | 260601-auy | Fix midnight date divergence (UTC vs local) + stale archive brand link | 2026-06-01 | 60b8c9f | [260601-auy-midnight-date-divergence](./quick/260601-auy-midnight-date-divergence/) |
+| 260601-bva | Fix PWA stale-asset / unstyled-stacked render on iOS resume after deploy (precache bundles + catch fallback + capped reload guard) | 2026-06-01 | 9d91fd7 | [260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren](./quick/260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren/) |
 
 ## Session Continuity
 
