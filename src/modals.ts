@@ -3,7 +3,7 @@
 
 import { todayKey } from './date.ts';
 
-const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0kv6I7xacnvDvcw_lgM_gBF6TzvPtqNvAlnxM7UJi-sjMku8bSQKw/exec";
+const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbymbf3ukZNtmZLm9Qbffecjbyoy5-gUq1QWlWrUKT4Jteul4u7A93wBZJvT0WDoF9a6pg/exec";
 
 // ─── Debug payload ────────────────────────────────────────────────────────────
 
