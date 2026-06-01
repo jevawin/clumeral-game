@@ -53,11 +53,21 @@ async function getDailyPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
-async function handleGetPuzzle(env: Env): Promise<Response> {
-  const today = todayUTC();
-  const puzzle = await getDailyPuzzle(env, today);
+async function handleGetPuzzle(env: Env, url: URL): Promise<Response> {
+  // The client keys the puzzle day on its LOCAL date (date.ts todayKey) and
+  // sends it as ?date=. Honour it when it's a well-formed, in-range date so the
+  // served puzzle matches the client's local day — otherwise a UTC+offset player
+  // in the window between local and UTC midnight gets the wrong day's puzzle
+  // (the divergence behind the not-completed / stats-bounce / streak bugs).
+  // isFuturePuzzleDate already rejects today+2 and malformed input (the +1-day
+  // tolerance is exactly the ahead-of-UTC local-midnight case, #205), so any
+  // rejected value falls back to the worker's UTC today (also the no-param
+  // back-compat path).
+  const requested = url.searchParams.get('date');
+  const date = requested && !isFuturePuzzleDate(requested) ? requested : todayUTC();
+  const puzzle = await getDailyPuzzle(env, date);
   return json({
-    date: today,
+    date,
     puzzleNumber: puzzle.puzzleNumber,
     clues: puzzle.clues,
   });
@@ -118,7 +128,7 @@ export default {
     // ── API routes ──
 
     if (request.method === 'GET' && url.pathname === '/api/puzzle') {
-      return handleGetPuzzle(env);
+      return handleGetPuzzle(env, url);
     }
 
     if (request.method === 'GET' && url.pathname === '/api/puzzle/random') {
