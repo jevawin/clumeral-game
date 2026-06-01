@@ -218,7 +218,7 @@ export function initFeedbackModal(
     }
 
     // All retries exhausted
-    console.error("Feedback submission failed after retries", payload);
+    console.error("Feedback submission failed after retries");
     sending = false;
     if (sendBtn) sendBtn.disabled = false;
     showToast("Couldn't send feedback. Try again later.");
