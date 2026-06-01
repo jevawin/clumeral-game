@@ -48,8 +48,10 @@ export default defineConfig({
         }
 
         // Replace the comment marker with the discovered paths.
-        // Marker sits after the last real entry; inject as trailing comma + paths.
-        const injection = assetPaths.map((p) => `  '${p}'`).join(",\n");
+        // The marker sits on its own line after the last real entry (which now
+        // carries a trailing comma), so inject bare quoted paths — the marker's
+        // own 2-space indent prefixes the first path; subsequent lines re-indent.
+        const injection = assetPaths.map((p) => `'${p}'`).join(",\n  ");
         swContent = swContent.replace(
           "/* __PRECACHE_ASSETS__ */",
           injection

@@ -28,6 +28,14 @@ describe('sw-precache build-output assertions (BVA-PWA-01)', () => {
   const swContent = readFileSync(SW_PATH, 'utf-8');
   const indexContent = existsSync(INDEX_PATH) ? readFileSync(INDEX_PATH, 'utf-8') : '';
 
+  it('built sw.js is syntactically valid JavaScript', () => {
+    // Guards against a malformed precache injection (e.g. a missing comma
+    // between STATIC_ASSETS entries) shipping a SW that fails to parse — which
+    // breaks registration entirely, worse than the bug being fixed. new Function
+    // parses the source without executing it, so it throws on a syntax error.
+    expect(() => new Function(swContent)).not.toThrow();
+  });
+
   it('__PRECACHE_ASSETS__ token is fully replaced in built sw.js', () => {
     expect(swContent).not.toContain('__PRECACHE_ASSETS__');
   });

@@ -4,7 +4,7 @@ const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/manifest.json',
-  '/sprites.svg'
+  '/sprites.svg',
   /* __PRECACHE_ASSETS__ */
 ];
 
