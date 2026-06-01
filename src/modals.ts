@@ -1,7 +1,39 @@
 // Clumeral — modals.ts
 // How-to-Play modal, toast notifications, and feedback modal.
 
+import { todayKey } from './date.ts';
+
 const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0kv6I7xacnvDvcw_lgM_gBF6TzvPtqNvAlnxM7UJi-sjMku8bSQKw/exec";
+
+// ─── Debug payload ────────────────────────────────────────────────────────────
+
+/**
+ * Reads a single localStorage key safely. Returns "" when the key is missing OR
+ * when access throws (private mode, blocked, quota) — never throws, never blocks
+ * the feedback send.
+ */
+function safeGet(key: string): string {
+  try {
+    return localStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Collects browser diagnostic context attached to every feedback submission.
+ * Raw localStorage strings are forwarded unparsed for server-side reproduction.
+ */
+export function collectDebug() {
+  return {
+    history: safeGet("dlng_history"),
+    prefs: safeGet("dlng_prefs"),
+    active: safeGet("dlng_active"),
+    tzOffset: new Date().getTimezoneOffset(),
+    localToday: todayKey(),
+    screen: `${window.innerWidth}x${window.innerHeight}`,
+  };
+}
 
 // ─── Toast ──────────────────────────────────────────────────────────────────
 
@@ -159,6 +191,7 @@ export function initFeedbackModal(
       device: meta.device,
       browser: meta.browser,
       userAgent: meta.userAgent,
+      ...collectDebug(),
     };
 
     const MAX_RETRIES = 3;
