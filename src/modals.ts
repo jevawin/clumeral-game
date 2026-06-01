@@ -147,7 +147,7 @@ export function initFeedbackModal(
   function renderMeta() {
     if (!metaEl) return;
     const meta = collectMetadata();
-    metaEl.textContent = `Puzzle ${meta.puzzleNumber} · ${formatDate(meta.date)} · ${meta.device} · ${meta.browser}`;
+    metaEl.textContent = `Puzzle ${meta.puzzleNumber} · ${formatDate(meta.date)} · ${meta.device} · ${meta.browser} · Game data attached to help debug.`;
   }
 
   // Category toggle
