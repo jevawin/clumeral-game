@@ -100,6 +100,33 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     align-items: center;
     gap: 0.5rem;
     color: var(--color-text);
+    /* Button reset — the brand is a no-nav bounce trigger, not a link, so it
+       matches the SPA header brand (tap bounces the octopus, never navigates). */
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+  }
+  header.app-header .brand:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  header.app-header .brand .brand-octo {
+    transform-origin: center bottom;
+  }
+  header.app-header .brand.bounce .brand-octo {
+    animation: brand-bounce 0.5s ease;
+  }
+  @keyframes brand-bounce {
+    0%   { transform: translateY(0); }
+    30%  { transform: translateY(-12px); }
+    55%  { transform: translateY(0); }
+    75%  { transform: translateY(-4px); }
+    100% { transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    header.app-header .brand.bounce .brand-octo { animation: none; }
   }
   header.app-header .wordmark {
     font-family: "Comfortaa", "Quicksand", system-ui, sans-serif;
@@ -222,15 +249,15 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
 </head>
 <body>
   <header class="app-header">
-    <a href="/" class="brand" aria-label="Clumeral home">
-      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 53 52" fill="none">
+    <button type="button" class="brand" aria-label="Bounce Clumeral">
+      <svg class="brand-octo" aria-hidden="true" width="24" height="24" viewBox="0 0 53 52" fill="none">
         <path d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z" fill="var(--color-accent)"/>
         <circle cx="19" cy="15" r="2.5" fill="#F6F0E8"/>
         <circle cx="33" cy="15" r="2.5" fill="#F6F0E8"/>
         <path d="M21 26C24.3333 27.3333 27.6667 27.3333 31 26" stroke="#F6F0E8" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
       <span class="wordmark">Clumeral</span>
-    </a>
+    </button>
   </header>
 
   <main class="archive">
@@ -260,6 +287,21 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   </footer>
 
 <script>
+// Header brand: bounce the octopus on tap, never navigate — mirrors the SPA
+// header brand (src/app.ts [data-brand] → bounceBrand). Re-armable each tap.
+(function() {
+  var brand = document.querySelector(".brand");
+  if (!brand) return;
+  brand.addEventListener("click", function() {
+    brand.classList.remove("bounce");
+    void brand.offsetWidth; // reflow so the animation can replay
+    brand.classList.add("bounce");
+  });
+  brand.addEventListener("animationend", function() {
+    brand.classList.remove("bounce");
+  });
+})();
+
 // Populate tries column from localStorage
 (function() {
   var history = [];

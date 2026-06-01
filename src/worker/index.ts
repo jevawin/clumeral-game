@@ -29,10 +29,10 @@ const VALID_EVENTS = new Set([
   'route_change',
 ]);
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
 }
 
@@ -53,14 +53,30 @@ async function getDailyPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
-async function handleGetPuzzle(env: Env): Promise<Response> {
-  const today = todayUTC();
-  const puzzle = await getDailyPuzzle(env, today);
-  return json({
-    date: today,
-    puzzleNumber: puzzle.puzzleNumber,
-    clues: puzzle.clues,
-  });
+async function handleGetPuzzle(env: Env, url: URL): Promise<Response> {
+  // The client keys the puzzle day on its LOCAL date (date.ts todayKey) and
+  // sends it as ?date=. Honour it when it's a well-formed, in-range date so the
+  // served puzzle matches the client's local day — otherwise a UTC+offset player
+  // in the window between local and UTC midnight gets the wrong day's puzzle
+  // (the divergence behind the not-completed / stats-bounce / streak bugs).
+  // isFuturePuzzleDate already rejects today+2 and malformed input (the +1-day
+  // tolerance is exactly the ahead-of-UTC local-midnight case, #205), so any
+  // rejected value falls back to the worker's UTC today (also the no-param
+  // back-compat path).
+  const requested = url.searchParams.get('date');
+  const date = requested && !isFuturePuzzleDate(requested) ? requested : todayUTC();
+  const puzzle = await getDailyPuzzle(env, date);
+  // no-store: the response now varies by ?date= and is day-sensitive — never let
+  // an intermediary pin one player's local-day (or today+1) response past rollover.
+  return json(
+    {
+      date,
+      puzzleNumber: puzzle.puzzleNumber,
+      clues: puzzle.clues,
+    },
+    200,
+    { 'Cache-Control': 'no-store' },
+  );
 }
 
 async function handleGetRandomPuzzle(env: Env): Promise<Response> {
@@ -118,7 +134,7 @@ export default {
     // ── API routes ──
 
     if (request.method === 'GET' && url.pathname === '/api/puzzle') {
-      return handleGetPuzzle(env);
+      return handleGetPuzzle(env, url);
     }
 
     if (request.method === 'GET' && url.pathname === '/api/puzzle/random') {
