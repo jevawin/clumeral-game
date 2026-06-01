@@ -106,6 +106,7 @@ None.
 | 260531-vwi | Remove nav from brand; tapping octopus logo / "Clumeral" wordmark bounces the logo | 2026-05-31 | 2302079 | [260531-vwi-remove-nav-from-brand-bounce-octopus-log](./quick/260531-vwi-remove-nav-from-brand-bounce-octopus-log/) |
 | 260601-auy | Fix midnight date divergence (UTC vs local) + stale archive brand link | 2026-06-01 | 60b8c9f | [260601-auy-midnight-date-divergence](./quick/260601-auy-midnight-date-divergence/) |
 | 260601-bva | Fix PWA stale-asset / unstyled-stacked render on iOS resume after deploy (precache bundles + catch fallback + capped reload guard) | 2026-06-01 | 9d91fd7 | [260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren](./quick/260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren/) |
+| 260601-dcx | Attach browser diagnostics (localStorage dump + tzOffset + localToday + screen) to feedback POST for debugging | 2026-06-01 | fb5c13b | [260601-dcx-feedback-debug-payload](./quick/260601-dcx-feedback-debug-payload/) |
 
 ## Session Continuity
 
