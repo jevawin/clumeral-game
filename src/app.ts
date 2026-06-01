@@ -731,7 +731,12 @@ async function handleGuess() {
 
 async function loadPuzzle() {
   const isRandom = window.location.pathname === '/random';
-  const endpoint = isRandom ? '/api/puzzle/random' : '/api/puzzle';
+  // Send the browser-LOCAL date so the worker serves the puzzle for the player's
+  // local day, not UTC today. This keeps the served puzzle, recordGame, and
+  // todayEntry all keyed on the same date (todayKey) — without it, a UTC+offset
+  // player in the local/UTC-midnight window gets a mismatched day (the
+  // not-completed / stats-bounce / streak-reset bugs).
+  const endpoint = isRandom ? '/api/puzzle/random' : `/api/puzzle?date=${encodeURIComponent(todayKey())}`;
 
   try {
     const res = await fetch(endpoint);
