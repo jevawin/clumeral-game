@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-02)
 Phase: 07 (archive-replay-keep-header-date-archive-button-visible-so-us) — COMPLETE
 Plan: 1 of 1
 Status: Phase 7 complete + pushed to new-design — phase-level PR deferred (ships with v1.1 milestone PR to main)
-Last activity: 2026-06-01 - Completed quick task 260601-bva: fix PWA stale-asset / unstyled-stacked render on iOS resume
+Last activity: 2026-06-07 - Completed quick task 260607-df0: fix streak/best-streak under-counting from unsorted history
 
 Progress: [██████████] 100%
 
@@ -107,6 +107,7 @@ None.
 | 260601-auy | Fix midnight date divergence (UTC vs local) + stale archive brand link | 2026-06-01 | 60b8c9f | [260601-auy-midnight-date-divergence](./quick/260601-auy-midnight-date-divergence/) |
 | 260601-bva | Fix PWA stale-asset / unstyled-stacked render on iOS resume after deploy (precache bundles + catch fallback + capped reload guard) | 2026-06-01 | 9d91fd7 | [260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren](./quick/260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren/) |
 | 260601-dcx | Attach browser diagnostics (localStorage dump + tzOffset + localToday + screen) to feedback POST for debugging | 2026-06-01 | fb5c13b | [260601-dcx-feedback-debug-payload](./quick/260601-dcx-feedback-debug-payload/) |
+| 260607-df0 | Fix streak/best-streak under-counting — computeStats sorts a copy of history before the walk + recency gate; recordGame sorts on write (root cause of friend's "Streak 5 / Best 16" on a 25-day run) | 2026-06-07 | c7e4f36 | [260607-df0-fix-streak-best-streak-under-counting-fr](./quick/260607-df0-fix-streak-best-streak-under-counting-fr/) |
 
 ## Session Continuity
 
