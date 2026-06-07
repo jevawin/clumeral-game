@@ -16,14 +16,11 @@ Rules that keep it from rotting:
 
 ## Now — WIP 1
 
-- QA regression suite — build per [the design spec](superpowers/specs/2026-05-31-playwright-qa-regression-design.md) _(no issue — the spec is the tracking artifact; `/play` walkthrough behaviour is now stable enough to assert against)_
-
-## Future / ideas — conditional
-
-- [#213](https://github.com/jevawin/clumeral-game/issues/213) Supabase feedback migration — `when:` QA suite is green (the one-line feedback-intercept swap is then covered by tests)
+- [#213](https://github.com/jevawin/clumeral-game/issues/213) Supabase feedback migration — now unblocked (QA suite green); the one-line feedback-intercept swap is covered by `e2e/specs/menu.spec.ts`. `when:` QA suite branch merges.
 
 ## Recently shipped
 
+- 2026-06-08 — QA regression suite — 38 Playwright specs, full 5-engine matrix green (branch `qa/playwright-regression-suite`, [design](superpowers/specs/2026-05-31-playwright-qa-regression-design.md))
 - 2026-06-07 — [#214](https://github.com/jevawin/clumeral-game/issues/214) First-play octopus walkthrough — header tutorial on `/play` (`src/walkthrough.ts`)
 - 2026-06-07 — DST date tests made timezone-deterministic (`451879e`)
 - 2026-06-07 — Streak under-counting fix — sort history before streak walk (`13d98da`, 260607-df0)

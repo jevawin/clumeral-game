@@ -1,7 +1,25 @@
 # Playwright QA Regression Suite — Design
 
 Date: 2026-05-31
-Status: Approved (design) → implementation pending
+Status: Implemented 2026-06-08 (branch `qa/playwright-regression-suite`)
+
+## Implementation notes (2026-06-08)
+
+Built per this design. 38 specs across `e2e/specs/`, green on the full 5-engine
+matrix (chromium/webkit/firefox desktop + mobile chromium/webkit): 175 passed,
+0 failed. Existing ad-hoc specs kept under a `legacy-chromium` project.
+
+Deviations from the design, all deliberate:
+- **a11y scope:** axe runs on Chromium desktop + mobile only (DOM/ARIA/contrast
+  are engine-independent); behavioral specs cover all 5 engines.
+- **Countdown:** asserted as a clock-derived static value — the countdown renders
+  once, it does not tick live (design assumed a live tick).
+- **Brand "home":** dropped — the brand is a no-nav bounce since 260601-auy, not a
+  home link.
+- **Deferred (fragile, lower value):** the /archive SSR-handoff analytics beacon
+  assertion and the visibility/focus stale-day rollover test. Tracked here for a
+  later pass.
+- **Console guard** allowlists external Google-Fonts/SW noise (offline hosts).
 
 ## Goal
 
