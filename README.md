@@ -41,6 +41,7 @@ src/
   modals.ts          How-to-play + feedback modals
   bubbles.ts         Correct-answer effect
   octo.ts            Mascot animations
+  walkthrough.ts     First-play octopus walkthrough (header tutorial, issue #214)
   tailwind.css       Tailwind styles
   types.ts           Shared client type definitions
   global.d.ts        Global/window type declarations
