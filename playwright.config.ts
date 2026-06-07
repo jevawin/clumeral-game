@@ -7,6 +7,17 @@ import { defineConfig, devices } from "@playwright/test";
 // Test what ships.
 const PORT = 4173;
 
+// The structured regression suite lives in e2e/specs/** and runs across the full
+// browser matrix. The older ad-hoc specs sit in e2e/ root and stay chromium-only
+// (their original scope) so the matrix doesn't change their behaviour.
+const SUITE = /specs[\\/].*\.spec\.ts$/;
+const LEGACY = /e2e[\\/][^\\/]+\.spec\.ts$/;
+
+// Deterministic clock context for the suite: UTC so the browser-local day matches
+// the worker's todayUTC() (which /api/dev/answer keys on). Specs that test timezone
+// divergence override timezoneId per-describe.
+const SUITE_USE = { timezoneId: "UTC", locale: "en-GB" } as const;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -20,7 +31,14 @@ export default defineConfig({
     reducedMotion: "no-preference",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // ── Structured regression suite — full browser matrix ──
+    { name: "chromium-desktop", testMatch: SUITE, use: { ...devices["Desktop Chrome"], ...SUITE_USE } },
+    { name: "webkit-desktop", testMatch: SUITE, use: { ...devices["Desktop Safari"], ...SUITE_USE } },
+    { name: "firefox-desktop", testMatch: SUITE, use: { ...devices["Desktop Firefox"], ...SUITE_USE } },
+    { name: "mobile-chromium", testMatch: SUITE, use: { ...devices["Pixel 5"], ...SUITE_USE } },
+    { name: "mobile-webkit", testMatch: SUITE, use: { ...devices["iPhone 13"], ...SUITE_USE } },
+    // ── Existing ad-hoc specs — chromium only, unchanged scope ──
+    { name: "legacy-chromium", testMatch: LEGACY, use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
     // `preview` = `vite build && vite preview`. Always rebuild before serving —
