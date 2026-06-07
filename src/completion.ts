@@ -49,6 +49,11 @@ function computeStats(history: HistoryEntry[]): Stats {
     ? (history.reduce((s, h) => s + h.tries, 0) / played).toFixed(1)
     : '0';
 
+  // Stored dlng_history may be unsorted (recordGame historically prepended in play order),
+  // so a single out-of-order entry would create a false early gap and under-count the streak.
+  // Sort a COPY date-descending before walking — never mutate the passed-in array.
+  const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date));
+
   // Single pass for bestStreak; capture current streak (from today) at first gap
   let bestStreak = 0;
   let currentRun = 0;
@@ -56,7 +61,7 @@ function computeStats(history: HistoryEntry[]): Stats {
   let streakBroken = false;
   let prevDate: Date | null = null;
 
-  for (const entry of history) {
+  for (const entry of sorted) {
     const d = new Date(entry.date + 'T00:00:00'); // local midnight — avoids UTC date shift
     if (!prevDate) {
       currentRun = 1;
@@ -82,7 +87,7 @@ function computeStats(history: HistoryEntry[]): Stats {
   const yesterdayDate = new Date(todayStr + 'T00:00:00');
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
   const yesterdayStr = localDateKey(yesterdayDate);
-  const mostRecent = history[0]?.date;
+  const mostRecent = sorted[0]?.date;
   const recent = mostRecent === todayStr || mostRecent === yesterdayStr;
 
   return { played, avgTries, streak: recent ? streak : 0, bestStreak };

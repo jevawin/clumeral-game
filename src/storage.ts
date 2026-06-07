@@ -34,7 +34,10 @@ export function loadHistory(): HistoryEntry[] {
 
 export function recordGame(dateStr: string, tries: number, answer?: number): void {
   const history = loadHistory().filter((h) => h.date !== dateStr);
-  history.unshift({ date: dateStr, tries, ...(answer != null && { answer }) });
+  history.push({ date: dateStr, tries, ...(answer != null && { answer }) });
+  // Keep stored history sorted date-descending so out-of-order inserts never create a
+  // false gap when computeStats walks it (push + sort makes insertion position irrelevant).
+  history.sort((a, b) => b.date.localeCompare(a.date));
   localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history));
 }
 
