@@ -9,21 +9,17 @@ const ALLOW: RegExp[] = [
   // app swallows these by design and they are not user-facing errors.
   /script\.google\.com/i,
   /\/api\/event/i,
-  // Documented /stats fallback: the Worker returns 503 when analytics secrets are
-  // absent (the usual case on local preview). The browser logs the failed document
-  // load as a console error — expected, not a regression.
-  /Failed to load resource: the server responded with a status of 503/i,
   // External Google Fonts noise. When the test host can't reach fonts.gstatic.com
   // (offline CI / sandbox), the @font-face downloads fail and the SW can't return a
   // Response for the cross-origin fetch. Firefox surfaces all of this as console
   // errors; the app falls back to system fonts. Environmental, not a regression —
   // production reaches Google Fonts normally. (SW cross-origin handling is tracked
-  // separately as a minor follow-up.)
-  /fonts\.gstatic\.com|fonts\.googleapis\.com/i,
-  /downloadable font/i,
-  /Cross-Origin Request Blocked/i,
-  /ServiceWorker passed a promise to FetchEvent\.respondWith/i,
-  /not, or is no longer, usable/i,
+  // separately as a minor follow-up.) Patterns are scoped to the fonts host / SW
+  // wording so they can't mask a genuine same-origin error.
+  /fonts\.(gstatic|googleapis)\.com/i, // also matches the "Cross-Origin Request Blocked … fonts.gstatic.com" line
+  /downloadable font: download failed/i,
+  /ServiceWorker passed a promise to FetchEvent\.respondWith\(\) that resolved with non-Response/i,
+  /An attempt was made to use an object that is not, or is no longer, usable/i,
 ];
 
 export interface ConsoleGuard {

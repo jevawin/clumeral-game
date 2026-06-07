@@ -37,16 +37,15 @@ test.describe("smoke: routes load clean", () => {
     await expect(page.locator("h1")).toContainText("Every Clumeral");
   });
 
-  test("/stats renders the dashboard or the documented 503", async ({ page }) => {
-    // Local preview usually lacks analytics secrets → documented 503. With secrets
-    // present it renders the dashboard. Assert the documented either/or.
-    const res = await page.goto("/stats");
-    const status = res?.status() ?? 0;
-    expect([200, 503]).toContain(status);
-    if (status === 200) {
-      await expect(page.locator("h1")).toContainText("Clumeral Stats");
-    } else {
-      await expect(page.locator("body")).toContainText("Analytics secrets not configured");
-    }
+  test("/stats serves the dashboard or the documented 503", async ({ page }) => {
+    // Checked at the request level: a browser navigation to the 503 fallback would
+    // log an (expected) resource-load console error, which the guard shouldn't have
+    // to allowlist. Local preview usually lacks analytics secrets → documented 503;
+    // with secrets it renders the dashboard.
+    const res = await page.request.get("/stats");
+    expect([200, 503]).toContain(res.status());
+    const body = await res.text();
+    if (res.status() === 200) expect(body).toContain("Clumeral Stats");
+    else expect(body).toContain("Analytics secrets not configured");
   });
 });

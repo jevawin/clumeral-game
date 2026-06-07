@@ -18,14 +18,23 @@ test.describe("game — wrong guess", () => {
     await expectActiveScreen(page, "game");
   });
 
-  test("the submit button re-enables after a wrong guess (no stuck state)", async ({ page }) => {
+  test("after a wrong guess submit hides but is not stuck — a box re-engages to retry", async ({ page }) => {
     await gotoPlayableGame(page);
     const game = new GamePage(page);
 
     await submitWrongGuess(page);
+    // Wait for the guess handler to finish (feedback paints in the same branch that
+    // hides submit), so we assert settled state, not the in-flight race.
+    await expect(game.feedback).toBeVisible();
 
-    // Boxes stay resolved, so submit stays available and clickable for a retry.
-    await expect(game.submit).toBeVisible();
+    // Real behavior (app.ts: wrong branch hides submitWrap): submit is hidden after
+    // a wrong guess; the player re-engages a box to try again.
+    await expect(game.submit).toBeHidden();
+    // But it is NOT stuck in the submitting state — the disabled flag is cleared.
     await expect(game.submit).toBeEnabled();
+
+    // Re-opening a box reopens the keypad, so a retry is possible (no dead end).
+    await game.openBox(0);
+    await expect(game.keypad).toBeVisible();
   });
 });
