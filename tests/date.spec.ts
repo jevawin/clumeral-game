@@ -3,66 +3,63 @@ import { EPOCH_DATE, todayKey, localDateKey, puzzleNumberFor, formatDate } from 
 
 // ─── todayKey (DST boundary) ──────────────────────────────────────────────────
 //
-// vitest runs in the Node.js process timezone, which is UTC in most CI/test environments.
-// In UTC, getDate() (local getter) == getUTCDate(), so both return the same value.
-// The key correctness guarantee is that the IMPLEMENTATION uses local getters (getDate),
-// not UTC getters (getUTCDate) or toISOString() — proven by grep in the acceptance criteria.
-//
-// The DST-transition tests below assert UTC values (since the test runtime is UTC).
-// In a +01:00 browser, 2026-03-29T00:30:00+01:00 is epoch 2026-03-28T23:30:00Z.
-// getDate() (local) returns 29 in that +01:00 browser — the LOCAL date, not UTC.
-// getUTCDate() returns 28 in that browser — the UTC date.
-// Our implementation uses getDate(), so it will return the correct LOCAL date in browsers.
+// todayKey() is LOCAL-keyed: it uses local getters (getDate/getMonth/getFullYear via
+// localDateKey), NOT getUTC* or toISOString. So its result depends on the runner's
+// timezone. To stay deterministic on any machine — a UTC CI runner OR a UTC+ dev box —
+// each test below PINS process.env.TZ to a specific zone, then asserts the true LOCAL
+// date that a player's browser clock would show in that zone. Node re-reads process.env.TZ
+// on the next Date operation, so setting it before vi.setSystemTime() takes effect.
 
 describe('todayKey (DST boundary)', () => {
+  const ORIGINAL_TZ = process.env.TZ;
+
   beforeEach(() => {
     vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    process.env.TZ = ORIGINAL_TZ;
   });
 
-  it('returns a YYYY-MM-DD string at BST spring-forward epoch (2026-03-28T23:30:00Z)', () => {
-    // 2026-03-29T00:30:00+01:00 = 2026-03-28T23:30:00Z (UTC).
-    // In UTC runtime: getDate() returns 28 (local == UTC in this environment).
-    // In a +01:00 browser: getDate() returns 29 — correct local date for the player.
-    // This test validates format and that the call does not throw.
-    vi.setSystemTime(new Date('2026-03-29T00:30:00+01:00'));
+  it('keys to the LOCAL date at a UTC+01:00 instant (epoch 2026-03-28T23:30:00Z → 2026-03-29)', () => {
+    // Europe/Madrid is CET (+01:00) on 2026-03-28. Epoch 23:30Z is local 2026-03-29T00:30.
+    // Local date (29) differs from the UTC date (28) — todayKey must return the LOCAL date.
+    process.env.TZ = 'Europe/Madrid';
+    vi.setSystemTime(new Date('2026-03-28T23:30:00Z'));
     const result = todayKey();
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    // UTC runtime: epoch is 2026-03-28T23:30:00Z so local UTC date is 2026-03-28
-    expect(result).toBe('2026-03-28');
+    expect(result).toBe('2026-03-29');
   });
 
-  it('returns a YYYY-MM-DD string on GMT fall-back day (2026-10-25T00:30:00Z)', () => {
-    // 2026-10-25T00:30:00+00:00 = 2026-10-25T00:30:00Z
-    // In UTC runtime and in a GMT browser: local date is 2026-10-25.
-    vi.setSystemTime(new Date('2026-10-25T00:30:00+00:00'));
+  it('keys to the LOCAL date on the GMT fall-back day (2026-10-25T00:30:00Z, London)', () => {
+    // Europe/London is BST (+01:00) at 00:30Z on the 2026-10-25 fall-back day (clocks go
+    // back at 02:00 BST). Local time is 01:30, so the local date is 2026-10-25.
+    process.env.TZ = 'Europe/London';
+    vi.setSystemTime(new Date('2026-10-25T00:30:00Z'));
     expect(todayKey()).toBe('2026-10-25');
   });
 
-  it('returns local date in UTC offset (UTC+00:00) — 2026-06-01', () => {
-    vi.setSystemTime(new Date('2026-06-01T12:00:00+00:00'));
-    expect(todayKey()).toBe('2026-06-01');
-  });
-
-  it('returns UTC date when system time is set to a UTC timestamp', () => {
-    // 2026-06-01T12:00:00Z — in UTC runtime, local date is 2026-06-01
+  it('keys to the LOCAL date in a UTC+00:00 zone (2026-06-01)', () => {
+    process.env.TZ = 'UTC';
     vi.setSystemTime(new Date('2026-06-01T12:00:00Z'));
     expect(todayKey()).toBe('2026-06-01');
   });
 
-  it('returns date for 2026-06-01 in UTC-05:00 system: epoch is 2026-06-02T04:30:00Z', () => {
-    // 2026-06-01T23:30:00-05:00 = 2026-06-02T04:30:00Z
-    // In UTC runtime: getDate() returns 2 (2026-06-02) — that is the UTC date.
-    // In a -05:00 browser: getDate() returns 1 (2026-06-01) — local date for that player.
-    // This test verifies we return what the local clock says, which in UTC runtime == UTC date.
-    vi.setSystemTime(new Date('2026-06-01T23:30:00-05:00'));
+  it('stays on the same date just before UTC midnight (2026-06-01T23:59:00Z, UTC zone)', () => {
+    process.env.TZ = 'UTC';
+    vi.setSystemTime(new Date('2026-06-01T23:59:00Z'));
+    expect(todayKey()).toBe('2026-06-01');
+  });
+
+  it('keys to the LOCAL date at a UTC-05:00 instant (epoch 2026-06-02T04:30:00Z → 2026-06-01)', () => {
+    // America/Lima is -05:00 year-round (no DST). Epoch 04:30Z is local 2026-06-01T23:30.
+    // Local date (1 June) differs from the UTC date (2 June) — todayKey must return LOCAL.
+    process.env.TZ = 'America/Lima';
+    vi.setSystemTime(new Date('2026-06-02T04:30:00Z'));
     const result = todayKey();
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    // UTC runtime: epoch is 2026-06-02T04:30:00Z so local UTC date is 2026-06-02
-    expect(result).toBe('2026-06-02');
+    expect(result).toBe('2026-06-01');
   });
 
   it('agrees with localDateKey(new Date()) at a fixed system time', () => {
@@ -74,12 +71,17 @@ describe('todayKey (DST boundary)', () => {
 // ─── localDateKey ─────────────────────────────────────────────────────────────
 
 describe('localDateKey', () => {
+  // Pin TZ to UTC so "local == UTC" holds regardless of the runner's timezone.
+  const ORIGINAL_TZ = process.env.TZ;
+
   beforeEach(() => {
+    process.env.TZ = 'UTC';
     vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    process.env.TZ = ORIGINAL_TZ;
   });
 
   it('formats a UTC-midnight Date to local YYYY-MM-DD (UTC runtime: local == UTC)', () => {
