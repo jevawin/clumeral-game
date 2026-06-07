@@ -24,6 +24,13 @@ function getStreak(): string {
   return boxes[2]?.querySelector('span')?.textContent ?? '';
 }
 
+// Extract best-streak value from the 4th stat box (index 3).
+function getBestStreak(): string {
+  const stats = document.querySelector('[data-completion-stats]')!;
+  const boxes = stats.querySelectorAll('div');
+  return boxes[3]?.querySelector('span')?.textContent ?? '';
+}
+
 describe('computeStats streak logic (#209)', () => {
   beforeEach(() => {
     setupDOM();
@@ -145,5 +152,101 @@ describe('computeStats streak logic (#209)', () => {
     const boxes = stats.querySelectorAll('div');
     const bestStreakVal = boxes[3]?.querySelector('span')?.textContent ?? '';
     expect(bestStreakVal).toBe('3');
+  });
+});
+
+describe('jumbled history (#streak-fix)', () => {
+  // Builds the player's real-world shape: an unbroken daily run 2026-05-08 → 2026-06-01
+  // (25 entries) with a genuine gap at 2026-05-07 (no entry), plus a misplaced earlier
+  // 2026-05-06 entry sitting near the TOP of the array (out of date order). The array is
+  // shuffled so it is NOT sorted newest-first — reproducing the unsorted dlng_history bug.
+  function buildJumbledHistory(): { date: string; tries: number }[] {
+    // Consecutive run: 2026-05-08 through 2026-06-01 inclusive = 25 days.
+    const run: { date: string; tries: number }[] = [];
+    for (let day = 8; day <= 31; day++) {
+      run.push({ date: `2026-05-${String(day).padStart(2, '0')}`, tries: 3 });
+    }
+    run.push({ date: '2026-06-01', tries: 3 }); // 25th entry, the run's leading date (today)
+    // Genuine gap: NO 2026-05-07 entry. A single misplaced earlier entry before the gap.
+    const stray = { date: '2026-05-06', tries: 4 };
+
+    // Jumble: put the stray earlier-date entry near the TOP, then scatter the run so the
+    // array is clearly not date-descending. index 0 is intentionally an OLD misplaced date.
+    return [
+      stray,
+      run[24], // 2026-06-01 (today) buried, not at index 0
+      run[0],  // 2026-05-08
+      run[12], // 2026-05-20
+      run[5],
+      run[23], // 2026-05-31
+      run[1],
+      run[18],
+      run[3],
+      run[9],
+      run[22],
+      run[2],
+      run[14],
+      run[7],
+      run[20],
+      run[4],
+      run[16],
+      run[10],
+      run[21],
+      run[6],
+      run[13],
+      run[8],
+      run[19],
+      run[11],
+      run[15],
+      run[17],
+    ];
+  }
+
+  beforeEach(() => {
+    setupDOM();
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T10:00:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('A: real case — 25-day run with one gap yields streak 25 / best 25', async () => {
+    localStorage.setItem('dlng_history', JSON.stringify(buildJumbledHistory()));
+    const mod = await import('../src/completion.ts');
+    mod.renderCompletion(42, 3, false);
+    expect(getStreak()).toBe('25');
+    expect(getBestStreak()).toBe('25');
+  });
+
+  it('B: anti-regression — same data never yields old buggy streak 5 / best 16', async () => {
+    localStorage.setItem('dlng_history', JSON.stringify(buildJumbledHistory()));
+    const mod = await import('../src/completion.ts');
+    mod.renderCompletion(42, 3, false);
+    expect(getStreak()).not.toBe('5');
+    expect(getBestStreak()).not.toBe('16');
+  });
+
+  it('C: recency on max date — jumbled history whose max date is today reports a live streak', async () => {
+    localStorage.setItem('dlng_history', JSON.stringify(buildJumbledHistory()));
+    const mod = await import('../src/completion.ts');
+    mod.renderCompletion(42, 3, false);
+    // Live streak proves the recency gate uses the sorted most-recent date, not array index 0
+    // (whose date is an older, misplaced entry).
+    expect(Number(getStreak())).toBeGreaterThan(0);
+  });
+
+  it('D: no mutation — computeStats does not write back a reordered array', async () => {
+    const jumbled = buildJumbledHistory();
+    const seededOrder = JSON.stringify(jumbled.map((h) => h.date));
+    localStorage.setItem('dlng_history', JSON.stringify(jumbled));
+    const mod = await import('../src/completion.ts');
+    mod.renderCompletion(42, 3, false);
+    // Re-read localStorage: order must be identical to what was seeded. If computeStats sorted
+    // in place and the app persisted it, the order would change.
+    const after = JSON.parse(localStorage.getItem('dlng_history')!) as { date: string }[];
+    expect(JSON.stringify(after.map((h) => h.date))).toBe(seededOrder);
   });
 });
