@@ -19,3 +19,14 @@ export async function expectActiveScreen(page: Page, name: ScreenName): Promise<
     );
   }
 }
+
+// Wait for a screen to finish its fade-in (opacity → 1). The screens cross-fade
+// over ~250ms; run this before injecting axe so analysis doesn't race the
+// transition (which under parallel load can destroy the eval context).
+export async function waitForScreenSettled(page: Page, name: ScreenName): Promise<void> {
+  const loc = page.locator(`[data-screen="${name}"]`);
+  await expect(loc).not.toHaveAttribute("aria-hidden", "true");
+  await expect
+    .poll(async () => loc.evaluate((el) => getComputedStyle(el).opacity), { timeout: 10_000 })
+    .toBe("1");
+}
