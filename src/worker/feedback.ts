@@ -1,6 +1,7 @@
-// Admin feedback view (#213). Renders submissions from D1 as a simple HTML table.
-// Token-guarded by the caller (see GET /feedback in index.ts). All user-controlled
-// values are HTML-escaped here — message/category/userAgent are attacker-influenced.
+// Admin feedback view (#213). Renders submissions from D1 as a mobile-first card
+// list. Access-gated by the caller (see GET /feedback in index.ts). All
+// user-controlled values are HTML-escaped — message/category/userAgent etc. are
+// attacker-influenced.
 
 export interface FeedbackRow {
   id: number;
@@ -36,51 +37,70 @@ function esc(v: unknown): string {
     .replaceAll('"', "&quot;");
 }
 
-// Collapsible cell for the raw localStorage debug blobs — kept out of the way but
-// available for reproducing a report.
+// Sample cards shown ONLY when the database returns no rows, so the layout can be
+// previewed locally without seeding. Clearly flagged as fake by the banner.
+const SAMPLE: FeedbackRow[] = [
+  { id: 5, created_at: "2026-04-30 09:21:24", category: "general", message: "Great game! Would be useful to have ‘undo’ and ‘restart’ buttons. Is there a reason the number can’t start with 0?", puzzle_number: "#54", puzzle_date: "2026-04-30", device: "iPhone", browser: "Safari 26.4", user_agent: "Mozilla/5.0 (iPhone …) Version/26.4 Mobile/15E148 Safari/604.1", history: null, prefs: null, active: null, tz_offset: 60, local_today: "2026-04-30", screen: "390x844", host: "clumeral.com" },
+  { id: 4, created_at: "2026-04-22 13:46:22", category: "praise", message: "Absolutely love this puzzle game! I've shared it with work colleagues and friends.", puzzle_number: "#46", puzzle_date: "2026-04-22", device: "Desktop", browser: "Edge 147.0.0.0", user_agent: null, history: null, prefs: null, active: null, tz_offset: null, local_today: null, screen: null, host: "clumeral.com" },
+  { id: 3, created_at: "2026-04-17 07:42:05", category: "suggestion", message: "It would be good to see your winning streak.", puzzle_number: "#41", puzzle_date: "2026-04-17", device: "Android Phone", browser: "Chrome 147.0.0.0", user_agent: null, history: null, prefs: null, active: null, tz_offset: null, local_today: null, screen: null, host: "clumeral.com" },
+  { id: 2, created_at: "2026-04-09 11:32:18", category: "bug", message: "Couldn't select 0 as the first number once I'd deselected it accidentally.", puzzle_number: "#33", puzzle_date: "2026-04-09", device: "Android Phone", browser: "Chrome 146.0.0.0", user_agent: "Mozilla/5.0 (Linux; Android 10; K) … Chrome/146.0.0.0 Mobile Safari/537.36", history: '[{"date":"2026-04-09","tries":2,"answer":800}]', prefs: '{"theme":"dark"}', active: null, tz_offset: 0, local_today: "2026-04-09", screen: "412x915", host: "clumeral.com" },
+  { id: 1, created_at: "2026-06-08 21:10:00", category: "general", message: "testing the form on the preview build", puzzle_number: "#93", puzzle_date: "2026-06-08", device: "Desktop", browser: "Firefox 150.0.2", user_agent: "Mozilla/5.0 (Windows NT 10.0 …) Firefox/150.0.2", history: null, prefs: null, active: null, tz_offset: 0, local_today: "2026-06-08", screen: "1280x720", host: "new-design-clumeral-game.jevawin.workers.dev" },
+];
+
+function source(host: string | null): string {
+  if (isTest(host)) return `<span class="badge test" title="${esc(host)}">test</span>`;
+  return `<span class="badge live">live</span>`;
+}
+
+// Raw localStorage / diagnostic blobs, tucked behind an expander.
 function debug(row: FeedbackRow): string {
-  const parts = [
-    ["history", row.history],
-    ["prefs", row.prefs],
-    ["active", row.active],
+  const parts = ([
+    ["host", row.host],
     ["userAgent", row.user_agent],
     ["screen", row.screen],
     ["tzOffset", row.tz_offset],
     ["localToday", row.local_today],
-  ].filter(([, v]) => v !== null && v !== "");
-  if (!parts.length) return "<span class=\"muted\">—</span>";
-  const body = parts.map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v)}</div>`).join("");
-  return `<details><summary>debug</summary><div class="dbg">${body}</div></details>`;
+    ["history", row.history],
+    ["prefs", row.prefs],
+    ["active", row.active],
+  ] as [string, unknown][]).filter(([, v]) => v !== null && v !== "");
+  if (!parts.length) return "";
+  const body = parts.map(([k, v]) => `<div><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join("");
+  return `<details class="dbg"><summary>Diagnostics</summary><div class="dbg-body">${body}</div></details>`;
 }
 
-function source(host: string | null): string {
-  if (isTest(host)) return `<span class="test" title="${esc(host)}">test</span>`;
-  return `<span class="muted">live</span>`;
+function card(r: FeedbackRow): string {
+  const meta = [r.puzzle_number, r.puzzle_date, r.device, r.browser]
+    .filter((v) => v !== null && v !== "")
+    .map((v) => `<span>${esc(v)}</span>`)
+    .join("");
+  return `<article class="card${isTest(r.host) ? " is-test" : ""}">
+    <div class="row">
+      <span class="cat cat-${esc(r.category)}">${esc(r.category)}</span>
+      ${source(r.host)}
+      <time>${esc(r.created_at)}</time>
+    </div>
+    <p class="msg">${esc(r.message)}</p>
+    <div class="meta">${meta}</div>
+    ${debug(r)}
+  </article>`;
 }
 
-export function renderFeedbackTable(rows: FeedbackRow[], hostname: string, showAll: boolean): string {
-  const tbody = rows.length
-    ? rows
-        .map(
-          (r) => `<tr class="${isTest(r.host) ? "is-test" : ""}">
-        <td class="num">${esc(r.id)}</td>
-        <td class="nowrap">${esc(r.created_at)}</td>
-        <td>${source(r.host)}</td>
-        <td><span class="cat cat-${esc(r.category)}">${esc(r.category)}</span></td>
-        <td class="msg">${esc(r.message)}</td>
-        <td class="nowrap">${esc(r.puzzle_number)}</td>
-        <td class="nowrap">${esc(r.puzzle_date)}</td>
-        <td>${esc(r.device)}</td>
-        <td>${esc(r.browser)}</td>
-        <td>${debug(r)}</td>
-      </tr>`,
-        )
-        .join("")
-    : `<tr><td colspan="10" class="muted center">No feedback yet.</td></tr>`;
+export function renderFeedbackPage(rows: FeedbackRow[], hostname: string, showAll: boolean): string {
+  const fake = rows.length === 0;
+  const list = fake ? SAMPLE : rows;
+
+  const banner = fake
+    ? `<div class="banner" role="alert">⚠ No feedback in this database yet — showing <b>sample data</b> so you can preview the layout. These are not real submissions.</div>`
+    : "";
 
   const toggle = showAll
-    ? `all sources · <a href="/feedback">show clumeral.com only</a>`
-    : `clumeral.com only · <a href="/feedback?all=1">show all (incl. test)</a>`;
+    ? `<a class="toggle" href="/feedback">Show clumeral.com only</a>`
+    : `<a class="toggle" href="/feedback?all=1">Show all (incl. test)</a>`;
+
+  const countLabel = fake
+    ? "sample data"
+    : `${list.length} ${showAll ? "submission" + (list.length === 1 ? "" : "s") + " · all sources" : "submission" + (list.length === 1 ? "" : "s")}`;
 
   return `<!doctype html>
 <html lang="en">
@@ -90,43 +110,57 @@ export function renderFeedbackTable(rows: FeedbackRow[], hostname: string, showA
 <meta name="robots" content="noindex, nofollow">
 <title>Feedback · ${esc(hostname)}</title>
 <style>
-  :root { color-scheme: light dark; --acc: light-dark(#2563eb, #60a5fa); --line: light-dark(#e5e7eb, #374151); --muted: light-dark(#6b7280, #9ca3af); }
+  :root {
+    color-scheme: light dark;
+    --acc: light-dark(#2563eb, #60a5fa);
+    --line: light-dark(#e5e7eb, #2b3240);
+    --card: light-dark(#ffffff, #161b22);
+    --muted: light-dark(#6b7280, #9aa4b2);
+    --warn-fg: light-dark(#92400e, #fbbf24);
+    --warn-bd: #f59e0b;
+    --warn-bg: light-dark(#fffbeb, #2a230f);
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 1.5rem; line-height: 1.4; }
-  h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
-  .sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 1rem; }
-  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
-  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { position: sticky; top: 0; background: Canvas; font-weight: 600; white-space: nowrap; }
-  .num { color: var(--muted); }
-  .nowrap { white-space: nowrap; }
-  .center { text-align: center; }
-  .muted { color: var(--muted); }
-  .msg { max-width: 38ch; white-space: pre-wrap; word-break: break-word; }
-  .cat { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; border: 1px solid var(--line); font-size: 0.75rem; }
+  body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: Canvas; line-height: 1.45; -webkit-text-size-adjust: 100%; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+  header.top { position: sticky; top: 0; background: Canvas; padding: 0.75rem 0; border-bottom: 1px solid var(--line); z-index: 1; }
+  h1 { font-size: 1.15rem; margin: 0; }
+  .sub { color: var(--muted); font-size: 0.82rem; margin: 0.2rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; }
+  .toggle { margin-left: auto; color: var(--acc); text-decoration: none; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; display: inline-flex; align-items: center; }
+  .banner { margin: 0.9rem 0 0; padding: 0.7rem 0.85rem; border: 1px solid var(--warn-bd); background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; font-size: 0.85rem; }
+  .list { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem 0.9rem; }
+  .card.is-test { opacity: 0.72; }
+  .row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .row time { margin-left: auto; color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+  .cat { display: inline-block; padding: 0.12rem 0.5rem; border-radius: 999px; border: 1px solid var(--line); font-size: 0.72rem; text-transform: capitalize; }
   .cat-bug { color: #dc2626; border-color: #dc2626; }
   .cat-praise { color: #16a34a; border-color: #16a34a; }
   .cat-suggestion { color: var(--acc); border-color: var(--acc); }
-  .test { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; font-size: 0.72rem; color: #b45309; border: 1px solid #f59e0b; background: light-dark(#fffbeb, transparent); }
-  tr.is-test { opacity: 0.7; }
-  details summary { cursor: pointer; color: var(--acc); }
-  .dbg { margin-top: 0.4rem; font-family: ui-monospace, monospace; font-size: 0.72rem; max-width: 40ch; word-break: break-all; }
-  .dbg div { margin: 0.15rem 0; }
-  a { color: var(--acc); }
+  .badge { display: inline-block; padding: 0.12rem 0.5rem; border-radius: 999px; font-size: 0.7rem; }
+  .badge.live { color: var(--muted); border: 1px solid var(--line); }
+  .badge.test { color: var(--warn-fg); border: 1px solid var(--warn-bd); }
+  .msg { margin: 0.55rem 0 0; white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; }
+  .meta { margin-top: 0.55rem; display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; color: var(--muted); font-size: 0.76rem; }
+  .meta span:not(:last-child)::after { content: " ·"; margin-left: 0.5rem; }
+  .dbg { margin-top: 0.55rem; }
+  .dbg summary { cursor: pointer; color: var(--acc); font-size: 0.8rem; min-height: 32px; display: inline-flex; align-items: center; }
+  .dbg-body { margin-top: 0.4rem; font-family: ui-monospace, monospace; font-size: 0.72rem; }
+  .dbg-body div { display: flex; gap: 0.5rem; padding: 0.2rem 0; border-top: 1px solid var(--line); }
+  .dbg-body b { color: var(--muted); flex: 0 0 5.5rem; }
+  .dbg-body span { word-break: break-all; min-width: 0; }
+  .empty { color: var(--muted); text-align: center; padding: 2rem 0; }
 </style>
 </head>
 <body>
-  <h1>Feedback</h1>
-  <p class="sub">${esc(hostname)} · ${rows.length} submission${rows.length === 1 ? "" : "s"} · ${toggle}</p>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th><th>Received</th><th>Source</th><th>Type</th><th>Message</th>
-        <th>Puzzle</th><th>Date</th><th>Device</th><th>Browser</th><th>Debug</th>
-      </tr>
-    </thead>
-    <tbody>${tbody}</tbody>
-  </table>
+  <div class="wrap">
+    <header class="top">
+      <h1>Feedback</h1>
+      <p class="sub"><span>${esc(hostname)}</span><span>${countLabel}</span>${toggle}</p>
+    </header>
+    ${banner}
+    <div class="list">${list.map(card).join("")}</div>
+  </div>
 </body>
 </html>`;
 }

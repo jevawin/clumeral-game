@@ -6,7 +6,7 @@ import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
-import { renderFeedbackTable, type FeedbackRow } from './feedback.ts';
+import { renderFeedbackPage, type FeedbackRow } from './feedback.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -304,7 +304,7 @@ export default {
                 ORDER BY id DESC LIMIT ?`,
             ).bind(limit);
         const { results } = await stmt.all<FeedbackRow>();
-        return new Response(renderFeedbackTable(results, url.hostname, showAll), {
+        return new Response(renderFeedbackPage(results, url.hostname, showAll), {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
         });
       } catch (err: unknown) {
