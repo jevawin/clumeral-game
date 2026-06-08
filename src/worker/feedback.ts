@@ -18,6 +18,14 @@ export interface FeedbackRow {
   tz_offset: number | null;
   local_today: string | null;
   screen: string | null;
+  host: string | null;
+}
+
+// Real feedback comes from the production host; everything else (preview
+// deploys, localhost) is test traffic.
+const REAL_HOST = "clumeral.com";
+function isTest(host: string | null): boolean {
+  return host !== null && host !== REAL_HOST;
 }
 
 function esc(v: unknown): string {
@@ -45,13 +53,19 @@ function debug(row: FeedbackRow): string {
   return `<details><summary>debug</summary><div class="dbg">${body}</div></details>`;
 }
 
-export function renderFeedbackTable(rows: FeedbackRow[], hostname: string): string {
+function source(host: string | null): string {
+  if (isTest(host)) return `<span class="test" title="${esc(host)}">test</span>`;
+  return `<span class="muted">live</span>`;
+}
+
+export function renderFeedbackTable(rows: FeedbackRow[], hostname: string, showAll: boolean): string {
   const tbody = rows.length
     ? rows
         .map(
-          (r) => `<tr>
+          (r) => `<tr class="${isTest(r.host) ? "is-test" : ""}">
         <td class="num">${esc(r.id)}</td>
         <td class="nowrap">${esc(r.created_at)}</td>
+        <td>${source(r.host)}</td>
         <td><span class="cat cat-${esc(r.category)}">${esc(r.category)}</span></td>
         <td class="msg">${esc(r.message)}</td>
         <td class="nowrap">${esc(r.puzzle_number)}</td>
@@ -62,7 +76,11 @@ export function renderFeedbackTable(rows: FeedbackRow[], hostname: string): stri
       </tr>`,
         )
         .join("")
-    : `<tr><td colspan="9" class="muted center">No feedback yet.</td></tr>`;
+    : `<tr><td colspan="10" class="muted center">No feedback yet.</td></tr>`;
+
+  const toggle = showAll
+    ? `all sources · <a href="/feedback">show clumeral.com only</a>`
+    : `clumeral.com only · <a href="/feedback?all=1">show all (incl. test)</a>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -89,18 +107,21 @@ export function renderFeedbackTable(rows: FeedbackRow[], hostname: string): stri
   .cat-bug { color: #dc2626; border-color: #dc2626; }
   .cat-praise { color: #16a34a; border-color: #16a34a; }
   .cat-suggestion { color: var(--acc); border-color: var(--acc); }
+  .test { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; font-size: 0.72rem; color: #b45309; border: 1px solid #f59e0b; background: light-dark(#fffbeb, transparent); }
+  tr.is-test { opacity: 0.7; }
   details summary { cursor: pointer; color: var(--acc); }
   .dbg { margin-top: 0.4rem; font-family: ui-monospace, monospace; font-size: 0.72rem; max-width: 40ch; word-break: break-all; }
   .dbg div { margin: 0.15rem 0; }
+  a { color: var(--acc); }
 </style>
 </head>
 <body>
   <h1>Feedback</h1>
-  <p class="sub">${esc(hostname)} · ${rows.length} most recent submission${rows.length === 1 ? "" : "s"}</p>
+  <p class="sub">${esc(hostname)} · ${rows.length} submission${rows.length === 1 ? "" : "s"} · ${toggle}</p>
   <table>
     <thead>
       <tr>
-        <th>#</th><th>Received</th><th>Type</th><th>Message</th>
+        <th>#</th><th>Received</th><th>Source</th><th>Type</th><th>Message</th>
         <th>Puzzle</th><th>Date</th><th>Device</th><th>Browser</th><th>Debug</th>
       </tr>
     </thead>

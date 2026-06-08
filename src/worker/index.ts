@@ -183,12 +183,16 @@ async function handleFeedbackSubmit(request: Request, env: Env): Promise<Respons
     ? Math.trunc(body.tzOffset)
     : null;
 
+  // Server-set: which host received this submission. clumeral.com = real;
+  // preview/localhost = test. Never trust the client for this.
+  const host = new URL(request.url).hostname;
+
   try {
     await env.FEEDBACK_DB.prepare(
       `INSERT INTO feedback
          (category, message, puzzle_number, puzzle_date, device, browser,
-          user_agent, history, prefs, active, tz_offset, local_today, screen)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          user_agent, history, prefs, active, tz_offset, local_today, screen, host)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       category,
       message,
@@ -203,6 +207,7 @@ async function handleFeedbackSubmit(request: Request, env: Env): Promise<Respons
       tzOffset,
       str(body.localToday, 16),
       str(body.screen, 32),
+      host,
     ).run();
   } catch (err: unknown) {
     // Log the real cause (visible via `wrangler tail`); never leak schema/SQL to the client.
@@ -285,13 +290,21 @@ export default {
     // players can still submit.
     if (request.method === 'GET' && url.pathname === '/feedback') {
       const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 200, 500));
+      // Default to real (clumeral.com) feedback; ?all=1 includes preview/test rows.
+      // Legacy rows were backfilled to clumeral.com, so the NULL case = real too.
+      const showAll = url.searchParams.get('all') === '1';
+      const cols = `id, created_at, category, message, puzzle_number, puzzle_date, device,
+                    browser, user_agent, history, prefs, active, tz_offset, local_today, screen, host`;
       try {
-        const { results } = await env.FEEDBACK_DB.prepare(
-          `SELECT id, created_at, category, message, puzzle_number, puzzle_date, device,
-                  browser, user_agent, history, prefs, active, tz_offset, local_today, screen
-             FROM feedback ORDER BY id DESC LIMIT ?`,
-        ).bind(limit).all<FeedbackRow>();
-        return new Response(renderFeedbackTable(results, url.hostname), {
+        const stmt = showAll
+          ? env.FEEDBACK_DB.prepare(`SELECT ${cols} FROM feedback ORDER BY id DESC LIMIT ?`).bind(limit)
+          : env.FEEDBACK_DB.prepare(
+              `SELECT ${cols} FROM feedback
+                WHERE host = 'clumeral.com' OR host IS NULL
+                ORDER BY id DESC LIMIT ?`,
+            ).bind(limit);
+        const { results } = await stmt.all<FeedbackRow>();
+        return new Response(renderFeedbackTable(results, url.hostname, showAll), {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
         });
       } catch (err: unknown) {

@@ -11,7 +11,7 @@
     "test:e2e:ui": "playwright test --ui",
     "build": "vite build",
     "preview": "vite build && vite preview --host --port 4173",
-    "e2e:db": "wrangler d1 execute clumeral-feedback --local --file=migrations/0001_create_feedback.sql && wrangler d1 execute clumeral-feedback --local --command=\"DELETE FROM feedback;\"",
+    "e2e:db": "wrangler d1 execute clumeral-feedback --local --command=\"DROP TABLE IF EXISTS feedback;\" && wrangler d1 execute clumeral-feedback --local --file=migrations/0001_create_feedback.sql",
     "e2e:serve": "npm run e2e:db && npm run preview",
     "db:migrate:remote": "wrangler d1 execute clumeral-feedback --remote --file=migrations/0001_create_feedback.sql",
     "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
