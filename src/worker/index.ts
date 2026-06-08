@@ -6,11 +6,13 @@ import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
+import { renderFeedbackPage, type FeedbackRow } from './feedback.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
   ANALYTICS: AnalyticsEngineDataset;
   PUZZLES: KVNamespace;
+  FEEDBACK_DB: D1Database;
   HMAC_SECRET: string;
   CF_ACCOUNT_ID: string;
   CF_API_TOKEN: string;
@@ -125,6 +127,97 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
   return json({ error: 'Provide either date or token' }, 400);
 }
 
+// ─── Feedback (D1) ───────────────────────────────────────────────────────────
+
+interface FeedbackBody {
+  category?: string;
+  message?: string;
+  puzzleNumber?: string;
+  date?: string;
+  device?: string;
+  browser?: string;
+  userAgent?: string;
+  history?: string;
+  prefs?: string;
+  active?: string;
+  tzOffset?: number;
+  localToday?: string;
+  screen?: string;
+}
+
+// Coerce any client value to a trimmed, length-capped string (or null when empty).
+function str(v: unknown, max: number): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.length > max ? t.slice(0, max) : t;
+}
+
+// Known feedback categories — anything else is bucketed as 'other' so the column
+// stays a bounded, predictable set (the client only sends these four).
+const FEEDBACK_CATEGORIES = new Set(['general', 'bug', 'praise', 'suggestion']);
+
+// Reject oversized bodies before buffering. The per-field caps below sum to ~30KB;
+// 64KB leaves headroom for JSON overhead while bounding memory per request.
+const MAX_FEEDBACK_BODY = 64 * 1024;
+
+async function handleFeedbackSubmit(request: Request, env: Env): Promise<Response> {
+  const declaredLen = Number(request.headers.get('content-length') || 0);
+  if (declaredLen > MAX_FEEDBACK_BODY) {
+    return json({ error: 'Payload too large' }, 413);
+  }
+
+  let body: FeedbackBody;
+  try {
+    body = await request.json() as FeedbackBody;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+
+  const rawCategory = str(body.category, 32) ?? 'general';
+  const category = FEEDBACK_CATEGORIES.has(rawCategory) ? rawCategory : 'other';
+  const message = str(body.message, 2000);
+  if (!message) return json({ error: 'Message required' }, 400);
+
+  const tzOffset = typeof body.tzOffset === 'number' && Number.isFinite(body.tzOffset)
+    ? Math.trunc(body.tzOffset)
+    : null;
+
+  // Server-set: which host received this submission. clumeral.com = real;
+  // preview/localhost = test. Never trust the client for this.
+  const host = new URL(request.url).hostname;
+
+  try {
+    await env.FEEDBACK_DB.prepare(
+      `INSERT INTO feedback
+         (category, message, puzzle_number, puzzle_date, device, browser,
+          user_agent, history, prefs, active, tz_offset, local_today, screen, host)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      category,
+      message,
+      str(body.puzzleNumber, 16),
+      str(body.date, 16),
+      str(body.device, 64),
+      str(body.browser, 64),
+      str(body.userAgent, 512),
+      str(body.history, 8192),
+      str(body.prefs, 4096),
+      str(body.active, 4096),
+      tzOffset,
+      str(body.localToday, 16),
+      str(body.screen, 32),
+      host,
+    ).run();
+  } catch (err: unknown) {
+    // Log the real cause (visible via `wrangler tail`); never leak schema/SQL to the client.
+    console.error('Feedback insert failed:', err instanceof Error ? err.message : String(err));
+    return json({ error: 'Could not save feedback' }, 500);
+  }
+
+  return json({ ok: true }, 200);
+}
+
 // ─── Main fetch handler ──────────────────────────────────────────────────────
 
 export default {
@@ -183,6 +276,41 @@ export default {
       const today = todayUTC();
       const puzzle = await getDailyPuzzle(env, today);
       return json({ answer: puzzle.answer });
+    }
+
+    // ── Feedback ──
+
+    if (request.method === 'POST' && url.pathname === '/api/feedback') {
+      return handleFeedbackSubmit(request, env);
+    }
+
+    // GET /feedback — admin HTML table. Access control is enforced at the edge by
+    // Cloudflare Access (Zero Trust app on this path), not in code — like an
+    // unlinked dashboard, but private. POST /api/feedback above stays public so
+    // players can still submit.
+    if (request.method === 'GET' && url.pathname === '/feedback') {
+      const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 200, 500));
+      // Default to real (clumeral.com) feedback; ?all=1 includes preview/test rows.
+      // Legacy rows were backfilled to clumeral.com, so the NULL case = real too.
+      const showAll = url.searchParams.get('all') === '1';
+      const cols = `id, created_at, category, message, puzzle_number, puzzle_date, device,
+                    browser, user_agent, history, prefs, active, tz_offset, local_today, screen, host`;
+      try {
+        const stmt = showAll
+          ? env.FEEDBACK_DB.prepare(`SELECT ${cols} FROM feedback ORDER BY id DESC LIMIT ?`).bind(limit)
+          : env.FEEDBACK_DB.prepare(
+              `SELECT ${cols} FROM feedback
+                WHERE host = 'clumeral.com' OR host IS NULL
+                ORDER BY id DESC LIMIT ?`,
+            ).bind(limit);
+        const { results } = await stmt.all<FeedbackRow>();
+        return new Response(renderFeedbackPage(results, url.hostname, showAll), {
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      } catch (err: unknown) {
+        console.error('Feedback page query failed:', err instanceof Error ? err.message : String(err));
+        return new Response('Could not load feedback', { status: 500, headers: { 'Content-Type': 'text/plain' } });
+      }
     }
 
     // ── Analytics ──

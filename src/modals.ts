@@ -3,7 +3,8 @@
 
 import { todayKey } from './date.ts';
 
-const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbymbf3ukZNtmZLm9Qbffecjbyoy5-gUq1QWlWrUKT4Jteul4u7A93wBZJvT0WDoF9a6pg/exec";
+// Same-origin Worker route — inserts the submission into D1 (#213).
+const FEEDBACK_URL = "/api/feedback";
 
 // ─── Debug payload ────────────────────────────────────────────────────────────
 
@@ -199,21 +200,23 @@ export function initFeedbackModal(
       try {
         const res = await fetch(FEEDBACK_URL, {
           method: "POST",
-          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        // no-cors returns opaque response; if no error thrown, it succeeded
-        if (res.ok || res.type === "opaque") {
+        // Same-origin endpoint returns a real (non-opaque) response now.
+        if (res.ok) {
           closeFeedback();
           setTimeout(resetForm, 300);
           showToast("Thanks! Feedback sent.");
           return;
         }
-      } catch (err) {
-        if (attempt < MAX_RETRIES) {
-          await new Promise(r => setTimeout(r, 1000 * attempt));
-          continue;
-        }
+        // 4xx is a client-side problem — retrying won't help, so stop early.
+        if (res.status >= 400 && res.status < 500) break;
+      } catch {
+        // network error — fall through to backoff + retry
+      }
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
       }
     }
 

@@ -41,10 +41,12 @@ export default defineConfig({
     { name: "legacy-chromium", testMatch: LEGACY, use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: {
-    // `preview` = `vite build && vite preview`. Always rebuild before serving —
-    // this suite exists to test BUILT output, so reusing a stale preview server
-    // (an older dist) would give false green/red. Never reuse.
-    command: "npm run preview",
+    // `e2e:serve` = seed the local D1 feedback table (`e2e:db`, idempotent) then
+    // `vite build && vite preview`. Always rebuild before serving — this suite
+    // exists to test BUILT output, so reusing a stale preview server (an older
+    // dist) would give false green/red. Never reuse. The D1 seed lets the real
+    // Worker serve POST /api/feedback locally (#213) instead of a network stub.
+    command: "npm run e2e:serve",
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
     timeout: 120_000,
