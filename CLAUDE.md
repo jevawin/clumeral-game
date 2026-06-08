@@ -49,6 +49,7 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Pre-PR architecture review | [docs/DA-REVIEW.md](docs/DA-REVIEW.md) |
 | Pre-PR line-level review | [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md) |
 | Adding a roadmap item as a GitHub issue | [docs/ROADMAP-ISSUES.md](docs/ROADMAP-ISSUES.md) |
+| Feedback — storage (D1), reading it, triage process | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
 
 Update the respective doc if it's incorrect or your work makes it outdated.
 

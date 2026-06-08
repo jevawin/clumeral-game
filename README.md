@@ -15,6 +15,7 @@ Each puzzle gives you clues about a hidden three-digit number. Clues are based o
 - **Vite + TypeScript** — ES modules in dev, bundled for production
 - **Cloudflare Workers** — `@cloudflare/vite-plugin` runs the Worker in dev (same runtime as production)
 - **Cloudflare KV** — daily puzzles cached by date key
+- **Cloudflare D1** — player feedback storage ([docs/FEEDBACK.md](docs/FEEDBACK.md))
 - **Cloudflare Pages** — auto-deploy on merge to `main`
 
 ### Project structure
@@ -27,6 +28,7 @@ src/
     crypto.ts        AES-GCM token signing for random puzzles
     puzzles.ts       Worker-rendered /puzzles archive page
     stats.ts         Analytics Engine queries for /stats dashboard
+    feedback.ts      /feedback admin dashboard renderer (reads D1)
     date-guard.ts    Worker-side future-puzzle date guard (+1 day tolerance)
   app.ts             Client UI — fetches puzzle, renders clues, handles guesses
   route-resolver.ts  Pure route resolver (no side effects/I/O)
