@@ -16,7 +16,7 @@ Rules that keep it from rotting:
 
 ## Now — WIP 1
 
-- [#213](https://github.com/jevawin/clumeral-game/issues/213) Supabase feedback migration — now unblocked (QA suite green); the one-line feedback-intercept swap is covered by `e2e/specs/menu.spec.ts`. `when:` QA suite branch merges.
+- [#213](https://github.com/jevawin/clumeral-game/issues/213) Feedback migration → **Cloudflare D1** (not Supabase — free-tier project cap + no external dep). Same-origin `POST /api/feedback` Worker route + token-guarded admin list; client swapped off the Google Apps Script URL. Built on branch `issue/213-d1-feedback`, e2e green. `when:` PR `issue/213-d1-feedback → new-design` review passes.
 
 ## Recently shipped
 

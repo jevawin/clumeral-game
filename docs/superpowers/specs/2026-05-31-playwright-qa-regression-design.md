@@ -103,9 +103,11 @@ where copy IS the thing under test.
 
 ### External calls — stub at the network boundary
 
-- **Feedback** → `page.route('**/script.google.com/**', fulfil 200)`. Real client send
-  code runs; nothing leaves the machine. *When #213 (Supabase feedback) lands, change the
-  intercept to the new same-origin `POST /api/feedback` and drop the Google pattern.*
+- **Feedback** → as of #213, no network stub. The client POSTs same-origin to
+  `/api/feedback`, served by the real preview Worker writing to a **local** miniflare D1
+  (seeded by `npm run e2e:db`). Nothing leaves the machine and the actual route + insert
+  get exercised. (An active service worker also makes `page.route` interception unreliable
+  on WebKit, which is the other reason to hit the real local endpoint rather than stub it.)
 - **Analytics** → the local preview Worker already isolates `/api/event` writes (local
   Analytics Engine binding, not prod). No code change. Where a test asserts an event fired,
   `page.route('**/api/event')` to count/inspect the POST, then `continue` or `fulfil`.
