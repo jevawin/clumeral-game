@@ -384,7 +384,13 @@ function buildKeypad() {
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
     if (elim) btn.setAttribute("aria-pressed", "true");
     if (disabled) {
-      btn.disabled = true;
+      // Hundreds-box 0: keep focusable/tappable (not native disabled) so it can
+      // explain why the first digit can't be 0.
+      btn.setAttribute("aria-disabled", "true");
+      btn.setAttribute("aria-label", "0 unavailable — the first digit can't be 0");
+      btn.addEventListener("click", () =>
+        showTip("The number is 100–999, so the first digit can't be 0.", btn)
+      );
     } else {
       btn.addEventListener("click", () => toggleDigit(d));
     }
