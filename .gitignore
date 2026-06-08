@@ -42,3 +42,6 @@ NEW_IMAGES/
 
 # Local Worker secrets (never commit)
 .dev.vars
+
+# One-off data import — real user feedback, never commit to the repo
+migrations/0002_import_legacy_feedback.sql
