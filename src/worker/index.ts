@@ -16,8 +16,6 @@ interface Env {
   HMAC_SECRET: string;
   CF_ACCOUNT_ID: string;
   CF_API_TOKEN: string;
-  // Guards the read-only admin feedback view. Unset → admin view returns 503.
-  FEEDBACK_ADMIN_TOKEN: string;
 }
 
 interface StoredPuzzle {
@@ -215,32 +213,6 @@ async function handleFeedbackSubmit(request: Request, env: Env): Promise<Respons
   return json({ ok: true }, 200);
 }
 
-// Read-only admin view of submissions. Token-guarded like the /stats dashboard.
-async function handleFeedbackList(env: Env, url: URL): Promise<Response> {
-  if (!env.FEEDBACK_ADMIN_TOKEN) {
-    return json({ error: 'Admin token not configured' }, 503);
-  }
-  if (url.searchParams.get('token') !== env.FEEDBACK_ADMIN_TOKEN) {
-    return json({ error: 'Unauthorized' }, 401);
-  }
-  // Clamp to [1, 500]. Guard the negative case explicitly — SQLite treats a
-  // negative LIMIT as "no limit", which would defeat the cap on a large table.
-  const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 100, 500));
-  try {
-    const { results } = await env.FEEDBACK_DB.prepare(
-      `SELECT id, created_at, category, message, puzzle_number, puzzle_date,
-              device, browser, user_agent, tz_offset, local_today, screen
-         FROM feedback
-        ORDER BY id DESC
-        LIMIT ?`,
-    ).bind(limit).all();
-    return json({ count: results.length, feedback: results }, 200, { 'Cache-Control': 'no-store' });
-  } catch (err: unknown) {
-    console.error('Feedback query failed:', err instanceof Error ? err.message : String(err));
-    return json({ error: 'Could not load feedback' }, 500);
-  }
-}
-
 // ─── Main fetch handler ──────────────────────────────────────────────────────
 
 export default {
@@ -307,20 +279,11 @@ export default {
       return handleFeedbackSubmit(request, env);
     }
 
-    if (request.method === 'GET' && url.pathname === '/api/feedback') {
-      return handleFeedbackList(env, url);
-    }
-
-    // GET /feedback — admin HTML table. Same token gate as the JSON list.
+    // GET /feedback — admin HTML table. Access control is enforced at the edge by
+    // Cloudflare Access (Zero Trust app on this path), not in code — like an
+    // unlinked dashboard, but private. POST /api/feedback above stays public so
+    // players can still submit.
     if (request.method === 'GET' && url.pathname === '/feedback') {
-      if (!env.FEEDBACK_ADMIN_TOKEN) {
-        return new Response('Admin token not configured. Set FEEDBACK_ADMIN_TOKEN as a Worker secret.', {
-          status: 503, headers: { 'Content-Type': 'text/plain' },
-        });
-      }
-      if (url.searchParams.get('token') !== env.FEEDBACK_ADMIN_TOKEN) {
-        return new Response('Unauthorized', { status: 401, headers: { 'Content-Type': 'text/plain' } });
-      }
       const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 200, 500));
       try {
         const { results } = await env.FEEDBACK_DB.prepare(
