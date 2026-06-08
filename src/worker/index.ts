@@ -6,6 +6,7 @@ import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
+import { renderFeedbackTable, type FeedbackRow } from './feedback.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -308,6 +309,32 @@ export default {
 
     if (request.method === 'GET' && url.pathname === '/api/feedback') {
       return handleFeedbackList(env, url);
+    }
+
+    // GET /feedback — admin HTML table. Same token gate as the JSON list.
+    if (request.method === 'GET' && url.pathname === '/feedback') {
+      if (!env.FEEDBACK_ADMIN_TOKEN) {
+        return new Response('Admin token not configured. Set FEEDBACK_ADMIN_TOKEN as a Worker secret.', {
+          status: 503, headers: { 'Content-Type': 'text/plain' },
+        });
+      }
+      if (url.searchParams.get('token') !== env.FEEDBACK_ADMIN_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: { 'Content-Type': 'text/plain' } });
+      }
+      const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 200, 500));
+      try {
+        const { results } = await env.FEEDBACK_DB.prepare(
+          `SELECT id, created_at, category, message, puzzle_number, puzzle_date, device,
+                  browser, user_agent, history, prefs, active, tz_offset, local_today, screen
+             FROM feedback ORDER BY id DESC LIMIT ?`,
+        ).bind(limit).all<FeedbackRow>();
+        return new Response(renderFeedbackTable(results, url.hostname), {
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      } catch (err: unknown) {
+        console.error('Feedback page query failed:', err instanceof Error ? err.message : String(err));
+        return new Response('Could not load feedback', { status: 500, headers: { 'Content-Type': 'text/plain' } });
+      }
     }
 
     // ── Analytics ──

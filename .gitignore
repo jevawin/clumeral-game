@@ -39,3 +39,6 @@ npm-debug.log*
 
 # Image export scratch (Figma exports, processed then removed)
 NEW_IMAGES/
+
+# Local Worker secrets (never commit)
+.dev.vars

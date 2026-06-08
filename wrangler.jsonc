@@ -17,6 +17,7 @@
 			"/puzzles/*",
 			"/api/*",
 			"/stats",
+			"/feedback",
 			"/sw.js"
 		]
 	},
