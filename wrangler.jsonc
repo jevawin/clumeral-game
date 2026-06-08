@@ -1,39 +1,47 @@
 {
-  "name": "clumeral-game",
-  "compatibility_date": "2026-03-09",
-  "main": "./src/worker/index.ts",
-  "assets": {
-    "binding": "ASSETS",
-    "run_worker_first": [
-      "/", "/index.html",
-      "/welcome", "/play", "/solved",
-      "/archive", "/archive/*",
-      "/random",
-      "/puzzles", "/puzzles/*",
-      "/api/*", "/stats",
-      "/sw.js"
-    ]
-  },
-  "analytics_engine_datasets": [
-    {
-      "binding": "ANALYTICS",
-      "dataset": "clumeral"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "PUZZLES",
-      "id": "d07cfc9a455943e3839967475925a468"
-    }
-  ],
-  "d1_databases": [
-    {
-      "binding": "FEEDBACK_DB",
-      "database_name": "clumeral-feedback",
-      "database_id": "PLACEHOLDER_SET_AFTER_D1_CREATE"
-    }
-  ],
-  "triggers": {
-    "crons": ["0 0 * * *"]
-  }
+	"name": "clumeral-game",
+	"compatibility_date": "2026-03-09",
+	"main": "./src/worker/index.ts",
+	"assets": {
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/",
+			"/index.html",
+			"/welcome",
+			"/play",
+			"/solved",
+			"/archive",
+			"/archive/*",
+			"/random",
+			"/puzzles",
+			"/puzzles/*",
+			"/api/*",
+			"/stats",
+			"/sw.js"
+		]
+	},
+	"analytics_engine_datasets": [
+		{
+			"binding": "ANALYTICS",
+			"dataset": "clumeral"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "PUZZLES",
+			"id": "d07cfc9a455943e3839967475925a468"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "FEEDBACK_DB",
+			"database_name": "clumeral-feedback",
+			"database_id": "4ecc6c31-c26c-4652-a1ae-7d1746bd816d"
+		}
+	],
+	"triggers": {
+		"crons": [
+			"0 0 * * *"
+		]
+	}
 }
