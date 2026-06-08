@@ -368,6 +368,10 @@ function renderAllBoxes() {
 function buildKeypad() {
   if (!dom.keypad || activeBox === null) return;
   const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  // Tear down any open tip (e.g. the hundreds-box 0 explainer, which is anchored
+  // INTO the keypad grid) before wiping innerHTML — otherwise the popover element
+  // is removed mid-flight and its document listeners never run _cleanup (leak).
+  closeTagTip();
   dom.keypad.innerHTML = "";
   for (const d of digits) {
     const btn = document.createElement("button");
@@ -382,7 +386,9 @@ function buildKeypad() {
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
     btn.setAttribute("aria-label", `Toggle digit ${d}`);
-    if (elim) btn.setAttribute("aria-pressed", "true");
+    // aria-pressed marks player-eliminated digits (a toggle state). The hundreds-box
+    // 0 is not a toggle — it's an explainer — so it must not claim a pressed state.
+    if (elim && !disabled) btn.setAttribute("aria-pressed", "true");
     if (disabled) {
       // Hundreds-box 0: keep focusable/tappable (not native disabled) so it can
       // explain why the first digit can't be 0.
