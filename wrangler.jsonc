@@ -26,6 +26,13 @@
       "id": "d07cfc9a455943e3839967475925a468"
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "FEEDBACK_DB",
+      "database_name": "clumeral-feedback",
+      "database_id": "PLACEHOLDER_SET_AFTER_D1_CREATE"
+    }
+  ],
   "triggers": {
     "crons": ["0 0 * * *"]
   }

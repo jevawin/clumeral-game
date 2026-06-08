@@ -11,9 +11,12 @@ interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
   ANALYTICS: AnalyticsEngineDataset;
   PUZZLES: KVNamespace;
+  FEEDBACK_DB: D1Database;
   HMAC_SECRET: string;
   CF_ACCOUNT_ID: string;
   CF_API_TOKEN: string;
+  // Guards the read-only admin feedback view. Unset → admin view returns 503.
+  FEEDBACK_ADMIN_TOKEN: string;
 }
 
 interface StoredPuzzle {
@@ -125,6 +128,101 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
   return json({ error: 'Provide either date or token' }, 400);
 }
 
+// ─── Feedback (D1) ───────────────────────────────────────────────────────────
+
+interface FeedbackBody {
+  category?: string;
+  message?: string;
+  puzzleNumber?: string;
+  date?: string;
+  device?: string;
+  browser?: string;
+  userAgent?: string;
+  history?: string;
+  prefs?: string;
+  active?: string;
+  tzOffset?: number;
+  localToday?: string;
+  screen?: string;
+}
+
+// Coerce any client value to a trimmed, length-capped string (or null when empty).
+function str(v: unknown, max: number): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.length > max ? t.slice(0, max) : t;
+}
+
+async function handleFeedbackSubmit(request: Request, env: Env): Promise<Response> {
+  let body: FeedbackBody;
+  try {
+    body = await request.json() as FeedbackBody;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+
+  const category = str(body.category, 32) ?? 'general';
+  const message = str(body.message, 2000);
+  if (!message) return json({ error: 'Message required' }, 400);
+
+  const tzOffset = typeof body.tzOffset === 'number' && Number.isFinite(body.tzOffset)
+    ? Math.trunc(body.tzOffset)
+    : null;
+
+  try {
+    await env.FEEDBACK_DB.prepare(
+      `INSERT INTO feedback
+         (category, message, puzzle_number, puzzle_date, device, browser,
+          user_agent, history, prefs, active, tz_offset, local_today, screen)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      category,
+      message,
+      str(body.puzzleNumber, 16),
+      str(body.date, 16),
+      str(body.device, 64),
+      str(body.browser, 64),
+      str(body.userAgent, 512),
+      str(body.history, 8192),
+      str(body.prefs, 4096),
+      str(body.active, 4096),
+      tzOffset,
+      str(body.localToday, 16),
+      str(body.screen, 32),
+    ).run();
+  } catch (err: unknown) {
+    const e = err instanceof Error ? err : new Error(String(err));
+    return json({ error: `Storage failed: ${e.message}` }, 500);
+  }
+
+  return json({ ok: true }, 200);
+}
+
+// Read-only admin view of submissions. Token-guarded like the /stats dashboard.
+async function handleFeedbackList(env: Env, url: URL): Promise<Response> {
+  if (!env.FEEDBACK_ADMIN_TOKEN) {
+    return json({ error: 'Admin token not configured' }, 503);
+  }
+  if (url.searchParams.get('token') !== env.FEEDBACK_ADMIN_TOKEN) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+  const limit = Math.min(Number(url.searchParams.get('limit') || 100), 500) || 100;
+  try {
+    const { results } = await env.FEEDBACK_DB.prepare(
+      `SELECT id, created_at, category, message, puzzle_number, puzzle_date,
+              device, browser, user_agent, tz_offset, local_today, screen
+         FROM feedback
+        ORDER BY id DESC
+        LIMIT ?`,
+    ).bind(limit).all();
+    return json({ count: results.length, feedback: results }, 200, { 'Cache-Control': 'no-store' });
+  } catch (err: unknown) {
+    const e = err instanceof Error ? err : new Error(String(err));
+    return json({ error: `Query failed: ${e.message}` }, 500);
+  }
+}
+
 // ─── Main fetch handler ──────────────────────────────────────────────────────
 
 export default {
@@ -183,6 +281,16 @@ export default {
       const today = todayUTC();
       const puzzle = await getDailyPuzzle(env, today);
       return json({ answer: puzzle.answer });
+    }
+
+    // ── Feedback ──
+
+    if (request.method === 'POST' && url.pathname === '/api/feedback') {
+      return handleFeedbackSubmit(request, env);
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/feedback') {
+      return handleFeedbackList(env, url);
     }
 
     // ── Analytics ──
