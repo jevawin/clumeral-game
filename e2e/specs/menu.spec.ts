@@ -17,7 +17,7 @@ test.describe("header menu", () => {
     await expect(menu.menuBtn).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("feedback modal: open, fill, send (stubbed) succeeds and closes", async ({ page }) => {
+  test("feedback modal: open, fill, send succeeds and closes", async ({ page }) => {
     await gotoPlayableGame(page);
     const menu = new MenuPage(page);
     const fb = new FeedbackPage(page);
@@ -30,10 +30,10 @@ test.describe("header menu", () => {
     await fb.msg.fill("E2E smoke feedback — please ignore.");
     await fb.send.click();
 
-    // Success (the fixture stubs script.google.com → 200) closes the modal — a
-    // persistent signal, unlike the toast which self-removes after 3s (flaky to
-    // assert under load). If the stub ever misses, the client logs a non-allowlisted
-    // console.error and the guard fails the test — the correct signal.
+    // Success closes the modal — a persistent signal, unlike the toast which
+    // self-removes after 3s (flaky to assert under load). The send hits the real
+    // preview Worker → local D1 (seeded by e2e:db); a non-200 makes the client log
+    // a non-allowlisted console.error and the guard fails the test — the right signal.
     await expect(fb.modal).toBeHidden();
     await expect(page.locator("[data-toast] .toast-msg")).toBeVisible();
   });
