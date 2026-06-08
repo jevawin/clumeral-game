@@ -154,7 +154,20 @@ function str(v: unknown, max: number): string | null {
   return t.length > max ? t.slice(0, max) : t;
 }
 
+// Known feedback categories — anything else is bucketed as 'other' so the column
+// stays a bounded, predictable set (the client only sends these four).
+const FEEDBACK_CATEGORIES = new Set(['general', 'bug', 'praise', 'suggestion']);
+
+// Reject oversized bodies before buffering. The per-field caps below sum to ~30KB;
+// 64KB leaves headroom for JSON overhead while bounding memory per request.
+const MAX_FEEDBACK_BODY = 64 * 1024;
+
 async function handleFeedbackSubmit(request: Request, env: Env): Promise<Response> {
+  const declaredLen = Number(request.headers.get('content-length') || 0);
+  if (declaredLen > MAX_FEEDBACK_BODY) {
+    return json({ error: 'Payload too large' }, 413);
+  }
+
   let body: FeedbackBody;
   try {
     body = await request.json() as FeedbackBody;
@@ -162,7 +175,8 @@ async function handleFeedbackSubmit(request: Request, env: Env): Promise<Respons
     return json({ error: 'Invalid JSON' }, 400);
   }
 
-  const category = str(body.category, 32) ?? 'general';
+  const rawCategory = str(body.category, 32) ?? 'general';
+  const category = FEEDBACK_CATEGORIES.has(rawCategory) ? rawCategory : 'other';
   const message = str(body.message, 2000);
   if (!message) return json({ error: 'Message required' }, 400);
 
@@ -192,8 +206,9 @@ async function handleFeedbackSubmit(request: Request, env: Env): Promise<Respons
       str(body.screen, 32),
     ).run();
   } catch (err: unknown) {
-    const e = err instanceof Error ? err : new Error(String(err));
-    return json({ error: `Storage failed: ${e.message}` }, 500);
+    // Log the real cause (visible via `wrangler tail`); never leak schema/SQL to the client.
+    console.error('Feedback insert failed:', err instanceof Error ? err.message : String(err));
+    return json({ error: 'Could not save feedback' }, 500);
   }
 
   return json({ ok: true }, 200);
@@ -207,7 +222,9 @@ async function handleFeedbackList(env: Env, url: URL): Promise<Response> {
   if (url.searchParams.get('token') !== env.FEEDBACK_ADMIN_TOKEN) {
     return json({ error: 'Unauthorized' }, 401);
   }
-  const limit = Math.min(Number(url.searchParams.get('limit') || 100), 500) || 100;
+  // Clamp to [1, 500]. Guard the negative case explicitly — SQLite treats a
+  // negative LIMIT as "no limit", which would defeat the cap on a large table.
+  const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 100, 500));
   try {
     const { results } = await env.FEEDBACK_DB.prepare(
       `SELECT id, created_at, category, message, puzzle_number, puzzle_date,
@@ -218,8 +235,8 @@ async function handleFeedbackList(env: Env, url: URL): Promise<Response> {
     ).bind(limit).all();
     return json({ count: results.length, feedback: results }, 200, { 'Cache-Control': 'no-store' });
   } catch (err: unknown) {
-    const e = err instanceof Error ? err : new Error(String(err));
-    return json({ error: `Query failed: ${e.message}` }, 500);
+    console.error('Feedback query failed:', err instanceof Error ? err.message : String(err));
+    return json({ error: 'Could not load feedback' }, 500);
   }
 }
 
