@@ -20,6 +20,7 @@ Rules that keep it from rotting:
 
 ## Recently shipped
 
+- 2026-06-09 — [#219](https://github.com/jevawin/clumeral-game/issues/219) Hundreds-box 0 explainer — tapping the disabled 0 shows the (i)-style tooltip "first digit can't be 0" (`956fc99`, 260609-0tc) — _issue closes on merge to main_
 - 2026-06-08 — [#213](https://github.com/jevawin/clumeral-game/issues/213) Feedback migration → **Cloudflare D1** — `POST /api/feedback` + private `/feedback` admin dashboard, off the old Google Apps Script URL (`ebba75a`, [docs/FEEDBACK.md](FEEDBACK.md))
 - 2026-06-08 — Archive solves excluded from daily stats — replaying past puzzles no longer inflates streak/played (`0c033c0`, 260608-wyy)
 - 2026-06-08 — QA regression suite — 38 Playwright specs, full 5-engine matrix green (branch `qa/playwright-regression-suite`, [design](superpowers/specs/2026-05-31-playwright-qa-regression-design.md))
