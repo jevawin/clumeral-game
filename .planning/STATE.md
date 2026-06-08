@@ -108,6 +108,7 @@ None.
 | 260601-bva | Fix PWA stale-asset / unstyled-stacked render on iOS resume after deploy (precache bundles + catch fallback + capped reload guard) | 2026-06-01 | 9d91fd7 | [260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren](./quick/260601-bva-fix-pwa-stale-asset-unstyled-stacked-ren/) |
 | 260601-dcx | Attach browser diagnostics (localStorage dump + tzOffset + localToday + screen) to feedback POST for debugging | 2026-06-01 | fb5c13b | [260601-dcx-feedback-debug-payload](./quick/260601-dcx-feedback-debug-payload/) |
 | 260607-df0 | Fix streak/best-streak under-counting — computeStats sorts a copy of history before the walk + recency gate; recordGame sorts on write (root cause of friend's "Streak 5 / Best 16" on a 25-day run) | 2026-06-07 | c7e4f36 | [260607-df0-fix-streak-best-streak-under-counting-fr](./quick/260607-df0-fix-streak-best-streak-under-counting-fr/) |
+| 260608-wyy | Fix archived solves inflating daily stats — tag archive solves `archived: true` in dlng_history; computeStats excludes tagged entries from all four stats (Played, Avg, Streak, Best). Replay detection + archive Tries column still read raw history by date (friend's "archive affects streak") | 2026-06-08 | 0c033c0 | [260608-wyy-fix-archive-solves-affecting-daily-stats](./quick/260608-wyy-fix-archive-solves-affecting-daily-stats/) |
 
 ## Session Continuity
 
