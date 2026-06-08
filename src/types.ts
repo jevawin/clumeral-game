@@ -20,6 +20,10 @@ export interface HistoryEntry {
   date: string;
   tries: number;
   answer?: number;
+  // Tags an archived solve (a puzzle whose date != today). Backward compatible:
+  // absence means a live daily solve. Archived entries are recorded but excluded
+  // from all daily stats (see computeStats in completion.ts).
+  archived?: boolean;
 }
 
 export interface Prefs {

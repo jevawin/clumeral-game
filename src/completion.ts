@@ -44,15 +44,21 @@ interface Stats {
 }
 
 function computeStats(history: HistoryEntry[]): Stats {
-  const played = history.length;
+  // Archive solves (date != today) are tagged `archived: true` in dlng_history and MUST NOT
+  // affect any daily stat. They are recorded only so archive replay and the archive Tries
+  // column can detect a prior solve by date. Old un-tagged entries are live daily solves.
+  // filter() returns a new array — the passed-in array is never mutated.
+  const live = history.filter((h) => h.archived !== true);
+
+  const played = live.length;
   const avgTries = played > 0
-    ? (history.reduce((s, h) => s + h.tries, 0) / played).toFixed(1)
+    ? (live.reduce((s, h) => s + h.tries, 0) / played).toFixed(1)
     : '0';
 
   // Stored dlng_history may be unsorted (recordGame historically prepended in play order),
   // so a single out-of-order entry would create a false early gap and under-count the streak.
   // Sort a COPY date-descending before walking — never mutate the passed-in array.
-  const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...live].sort((a, b) => b.date.localeCompare(a.date));
 
   // Single pass for bestStreak; capture current streak (from today) at first gap
   let bestStreak = 0;

@@ -675,13 +675,16 @@ async function handleGuess() {
       // saveScore is off (WR-02). Include the answer only when saveScore is on — that way
       // the history entry exists (prevents re-solving) but the answer is omitted when the
       // player has opted out of saving stats. Random puzzles are never written to history.
+      // Tag archive solves (date != today) so computeStats can exclude them from daily
+      // stats while still recording them (archive replay + the archive Tries column read
+      // dlng_history by date). Computed BEFORE recordGame so it can be passed as the flag.
+      const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
+
       if (!gameState.isRandom && gameState.date) {
-        recordGame(gameState.date, tries, saveScore ? guess : undefined);
+        recordGame(gameState.date, tries, saveScore ? guess : undefined, isArchiveSolve);
       }
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();
-
-      const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
 
       if (isArchiveSolve) {
         // Archive solve stays on /archive/<date> the whole way — no /solved hop.

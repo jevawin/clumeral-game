@@ -32,9 +32,10 @@ export function loadHistory(): HistoryEntry[] {
   }
 }
 
-export function recordGame(dateStr: string, tries: number, answer?: number): void {
+export function recordGame(dateStr: string, tries: number, answer?: number, archived?: boolean): void {
   const history = loadHistory().filter((h) => h.date !== dateStr);
-  history.push({ date: dateStr, tries, ...(answer != null && { answer }) });
+  // Include archived only when true so entries stay lean (absence === live daily solve).
+  history.push({ date: dateStr, tries, ...(answer != null && { answer }), ...(archived && { archived: true }) });
   // Keep stored history sorted date-descending so out-of-order inserts never create a
   // false gap when computeStats walks it (push + sort makes insertion position irrelevant).
   history.sort((a, b) => b.date.localeCompare(a.date));
