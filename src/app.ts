@@ -164,10 +164,8 @@ const TAG_TIPS: Record<string, string> = {
   RANGE: "Largest digit minus the smallest",
 };
 
-function showTagTip(tag: string, anchor: HTMLElement): void {
+function showTip(message: string, anchor: HTMLElement): void {
   closeTagTip();
-  const tip = TAG_TIPS[tag];
-  if (!tip) return;
   track("tooltip_opened");
 
   const popover = document.createElement("div");
@@ -178,7 +176,7 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
     <button class="absolute top-1.5 right-1.5 p-0.5 rounded border border-border text-text hover:text-text" type="button" aria-label="Close">
       <svg width="14" height="14" class="stroke-[2]"><use href="/sprites.svg#icon-circle-x"/></svg>
     </button>
-    <p class="text-base text-text leading-snug pr-6 font-[Quicksand]">${tip}</p>
+    <p class="text-base text-text leading-snug pr-6 font-[Quicksand]">${message}</p>
   `;
 
   // Anchor to the parent flex column (tag + position indicators wrapper)
@@ -214,6 +212,12 @@ function showTagTip(tag: string, anchor: HTMLElement): void {
     document.removeEventListener("click", onOutside);
     document.removeEventListener("keydown", onEscape);
   };
+}
+
+function showTagTip(tag: string, anchor: HTMLElement): void {
+  const tip = TAG_TIPS[tag];
+  if (!tip) return;
+  showTip(tip, anchor);
 }
 
 function closeTagTip(): void {
