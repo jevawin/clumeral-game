@@ -82,8 +82,10 @@
       button:disabled { opacity: 0.5; cursor: default; }
       button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       a.link {
-        display: inline-block;
-        margin-top: 1rem;
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        margin-top: 0.5rem;
         color: var(--accent);
         font-weight: 600;
         text-decoration: none;
@@ -220,7 +222,7 @@
             });
             // Drop the payload from the URL so a refresh/back can't re-import.
             history.replaceState(null, "", location.pathname);
-            renderDone(rows.length);
+            renderDone();
           });
           app.appendChild(btn);
         }
@@ -230,7 +232,7 @@
           return el("strong", null, [location.hostname]);
         }
 
-        function renderDone(count) {
+        function renderDone() {
           clear();
           app.appendChild(el("h1", null, ["Done ✓"]));
           app.appendChild(
