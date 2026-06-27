@@ -10,6 +10,7 @@
 			"/welcome",
 			"/play",
 			"/solved",
+			"/migrate",
 			"/archive",
 			"/archive/*",
 			"/random",

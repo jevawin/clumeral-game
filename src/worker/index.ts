@@ -441,6 +441,13 @@ export default {
       return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
     }
 
+    // /migrate — standalone cross-origin localStorage hand-off page. Served from
+    // its own static file (NOT index.html) so it stays out of the SPA router,
+    // whose resolver would otherwise bounce /migrate → /welcome.
+    if (request.method === 'GET' && url.pathname === '/migrate') {
+      return env.ASSETS.fetch(new Request(new URL('/migrate.html', request.url)));
+    }
+
     // GET / and client SPA routes — serve static HTML (client router handles in-page nav).
     if (request.method === 'GET' && (
       url.pathname === '/' ||
