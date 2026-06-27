@@ -16,7 +16,7 @@ Each puzzle gives you clues about a hidden three-digit number. Clues are based o
 - **Cloudflare Workers** — `@cloudflare/vite-plugin` runs the Worker in dev (same runtime as production)
 - **Cloudflare KV** — daily puzzles cached by date key
 - **Cloudflare D1** — player feedback storage ([docs/FEEDBACK.md](docs/FEEDBACK.md))
-- **Cloudflare Pages** — auto-deploy on merge to `main`
+- **Cloudflare Workers Builds** — auto-deploy on merge to `main`; branch pushes get preview URLs
 
 ### Project structure
 
@@ -106,7 +106,7 @@ The answer is never sent to the client for today's puzzle. Full validation happe
 
 ## Deployment
 
-Push to `main` → GitHub → Cloudflare Pages builds with `npm run build` → auto-deploys from `dist/client`.
+Push to `main` → GitHub → Cloudflare Workers Builds runs `npm run build` → deploys the Worker (with its static assets). Pushing any other branch publishes a preview at `https://{branch}-clumeral-game.jevawin.workers.dev`.
 
 - **Production**: [clumeral.com](https://clumeral.com)
 - **Build command**: `npm run build`
