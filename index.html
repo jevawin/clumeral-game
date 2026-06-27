@@ -6,7 +6,7 @@
     <title>Clumeral</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300..700&family=Inconsolata:wdth,wght@75..125,300..700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Inconsolata:wght@400;700&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <meta name="theme-color" content="#f5edd8" />
     <meta name="description" content="Work out the number from 100–999. New puzzle every day." />
 
@@ -15,7 +15,7 @@
     <meta property="og:url" content="https://clumeral.com/" />
     <meta property="og:title" content="Clumeral" />
     <meta property="og:description" content="Work out the number from 100–999. New puzzle every day." />
-    <meta property="og:image" content="https://clumeral.com/og-image.png?v=2" />
+    <meta property="og:image" content="https://clumeral.com/og-image.png?v=3" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
@@ -23,12 +23,12 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Clumeral" />
     <meta name="twitter:description" content="Work out the number from 100–999. New puzzle every day." />
-    <meta name="twitter:image" content="https://clumeral.com/og-image.png" />
+    <meta name="twitter:image" content="https://clumeral.com/og-image.png?v=3" />
 
-    <link rel="icon" type="image/png" href="/icons/lime/dark/icon-192.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
+    <link rel="stylesheet" href="/src/tailwind.css" onerror="window.__clumeralReloadGuard && window.__clumeralReloadGuard()" />
     <script>
       (function () {
         var t = localStorage.getItem("dlng_theme");
@@ -36,114 +36,76 @@
         document.documentElement.classList.add(t);
       })();
     </script>
+    <script>
+      (function () {
+        var KEY = 'clumeral_asset_reload';
+        window.__clumeralReloadGuard = function () {
+          var count = parseInt(sessionStorage.getItem(KEY) || '0', 10);
+          if (count < 1) {
+            sessionStorage.setItem(KEY, String(count + 1));
+            location.reload();
+          }
+        };
+        window.addEventListener('load', function () {
+          sessionStorage.removeItem(KEY);
+        });
+      })();
+    </script>
   </head>
-  <body>
-    <a href="#puzzle" class="skip-link">Skip to puzzle</a>
-    <div class="game">
-      <canvas class="game__canvas" data-canvas aria-hidden="true"></canvas>
-      <div class="game__shape" aria-hidden="true"></div>
-      <div class="game__shape game__shape--alt" aria-hidden="true"></div>
+  <body class="min-h-dvh flex flex-col bg-bg">
+    <a href="#main" class="skip-link">Skip to puzzle</a>
 
       <!-- ── Feedback modal ── -->
       <dialog data-fb-modal aria-labelledby="cw-fb-modal-title">
-        <div class="fb-modal__box" data-fb-modal-box>
-          <button class="fb-modal__close" data-fb-modal-close aria-label="Close">✕</button>
-          <h2 id="cw-fb-modal-title">Send feedback</h2>
-          <p class="modal-sub">Let us know what you think.</p>
+        <div data-fb-modal-box
+             class="relative w-full max-w-[26rem] max-h-[90vh] overflow-y-auto rounded-md bg-surface shadow-[0_8px_40px_rgba(26,24,48,0.18)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] pt-7 px-6 pb-6">
+          <button data-fb-modal-close
+                  class="absolute top-4 right-4 min-w-[44px] min-h-[44px] flex items-center justify-center bg-transparent border-none text-text/50 hover:text-text text-xl leading-none cursor-pointer"
+                  type="button" aria-label="Close feedback modal">&#10005;</button>
+          <h2 id="cw-fb-modal-title" class="text-[26px] font-semibold leading-[1.2] text-text font-[Quicksand] m-0">Send feedback</h2>
+          <p class="text-text text-base font-[Quicksand] mt-3 mb-2">Type (optional):</p>
 
-          <div data-fb-cats role="radiogroup" aria-label="Feedback category">
-            <button class="fb-cat active" data-cat="general" role="radio" aria-checked="true">General</button>
-            <button class="fb-cat" data-cat="bug" role="radio" aria-checked="false">Bug</button>
-            <button class="fb-cat" data-cat="suggestion" role="radio" aria-checked="false">Idea</button>
-            <button class="fb-cat" data-cat="praise" role="radio" aria-checked="false">Praise</button>
+          <div data-fb-cats role="radiogroup" aria-label="Feedback category" class="flex flex-wrap gap-2 mb-3">
+            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="bug" role="radio" aria-checked="false">
+              <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-bug"/></svg>
+              Bug
+            </button>
+            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="suggestion" role="radio" aria-checked="false">
+              <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-lightbulb"/></svg>
+              Idea
+            </button>
+            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+                    data-cat="praise" role="radio" aria-checked="false">
+              <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-heart"/></svg>
+              Praise
+            </button>
           </div>
 
           <label for="cw-fb-msg" class="sr-only">Your feedback message</label>
-          <textarea id="cw-fb-msg" data-fb-msg maxlength="500" rows="4" placeholder="Your message..."></textarea>
-          <div data-fb-counter class="fb-counter"></div>
+          <textarea id="cw-fb-msg" data-fb-msg maxlength="500" rows="4"
+                    placeholder="Your message..."
+                    class="w-full min-h-[96px] max-h-[192px] resize-y border-[1.5px] border-border bg-surface text-text placeholder:text-text/60 p-3 rounded-[4px] font-[Quicksand] text-base leading-relaxed focus:border-accent focus:outline-none transition-[border-color] duration-150"></textarea>
+          <div data-fb-counter class="hidden w-full text-right font-[Inconsolata,monospace] text-base text-text mt-1"></div>
 
-          <p class="fb-meta-label">This info will be sent with your feedback:</p>
-          <div data-fb-meta class="fb-meta"></div>
+          <p class="text-text text-base font-[Quicksand] mt-3 mb-2">This info will be sent with your feedback:</p>
+          <div data-fb-meta class="font-[Inconsolata,monospace] text-base leading-[1.6] text-text bg-[rgba(10,133,10,0.08)] dark:bg-[rgba(30,173,82,0.1)] p-2 px-3 rounded-[4px]"></div>
 
-          <button class="fb-modal__send" data-fb-send>Send feedback</button>
+          <button data-fb-send class="btn btn-solid w-full mt-3 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg aria-hidden="true"><use href="/sprites.svg#icon-send"/></svg>
+            Send feedback
+          </button>
         </div>
       </dialog>
 
-      <!-- ── Guide modal ── -->
-      <dialog data-modal aria-labelledby="cw-modal-title">
-        <div class="modal__box" data-modal-box>
-          <h2 id="cw-modal-title">Guide</h2>
-          <p class="modal-sub">The clues define a single, 3-digit number from 100–999. New puzzle every day.</p>
-          <div class="modal-example">
-            <div class="modal-steps">
-              <div class="modal-section">
-                <p class="modal-step-label">1. Read the clues — tap <svg class="htp-info-icon" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
-                <div class="clue htp-clue">
-                  <div class="clue__tag-cell">
-                    <span class="clue__tag"><span>PRIME</span><svg class="clue__tag-icon" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg></span>
-                    <div class="clue__digits" aria-hidden="true">
-                      <span class="clue__digit lit"></span>
-                      <span class="clue__digit"></span>
-                      <span class="clue__digit"></span>
-                    </div>
-                  </div>
-                  <div class="clue__lines">
-                    <div class="clue__line1">The first digit</div>
-                    <div class="clue__line2">is a prime number</div>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-section">
-                <p class="modal-step-label">2. Open the digit boxes, remove ineligible digits</p>
-                <div class="htp-worked">
-                  <div class="digit-box htp-box">
-                    <div class="digit-box__grid four-col">
-                      <span class="elim">0</span>
-                      <span>1</span>
-                      <span>2</span>
-                      <span>3</span>
-                      <span>4</span>
-                      <span>5</span>
-                      <span>6</span>
-                      <span>7</span>
-                      <span>8</span>
-                      <span>9</span>
-                    </div>
-                  </div>
-                  <span class="htp-arrow" aria-hidden="true">→</span>
-                  <div class="htp-keypad-wrap">
-                    <div class="htp-keypad">
-                      <span class="htp-key elim">0</span>
-                      <span class="htp-key elim">1</span>
-                      <span class="htp-key">2</span>
-                      <span class="htp-key">3</span>
-                      <span class="htp-key elim">4</span>
-                      <span class="htp-key">5</span>
-                      <span class="htp-key elim">6</span>
-                      <span class="htp-key">7</span>
-                      <span class="htp-key elim">8</span>
-                      <span class="htp-key elim">9</span>
-                    </div>
-                    <span class="htp-keypad-hint">Tap to remove</span>
-                  </div>
-                  <span class="htp-arrow" aria-hidden="true">→</span>
-                  <div class="digit-box htp-box"><span class="digit-box__resolved">5</span></div>
-                </div>
-              </div>
-              <div class="modal-section modal-section--last">
-                <p class="modal-step-label">3. When 1 digit remains in each, submit your answer</p>
-              </div>
-            </div>
-          </div>
-          <button class="modal__gotit" data-modal-gotit>Got it</button>
-        </div>
-      </dialog>
 
-      <main class="game__inner">
-        <!-- ── Header row: octo + title ── -->
-        <header class="header">
-          <div class="octo-slot" data-octo-slot>
-          <div class="octo" data-octo-wrap title="click to replay" aria-hidden="true">
+      <!-- Octo measurement host: celebrateOcto / sadOcto query [data-octo-wrap] /
+           [data-octo-slot] for getBoundingClientRect. Kept offscreen so it doesn't
+           contribute to layout. Plain div — was a <main>; only one <main> per spec. -->
+      <div aria-hidden="true" class="absolute -left-[9999px] top-0 pointer-events-none">
+        <div data-octo-slot>
+          <div data-octo-wrap title="click to replay" aria-hidden="true">
             <svg data-octo width="53" height="52" viewBox="0 0 53 52" fill="none" xmlns="http://www.w3.org/2000/svg">
               <mask id="octo-mask" fill="white">
                 <path
@@ -152,7 +114,7 @@
               </mask>
               <path
                 d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z"
-                fill="var(--acc)"
+                fill="var(--color-accent)"
               />
               <path
                 d="M53 48H54V48H53ZM49 52V53V52ZM44 48H43V48H44ZM44 41H45V40H44V41ZM42 41V40H41V41H42ZM42 48H43V48H42ZM38 52V53V52ZM33 48H32V48H33ZM33 41H34V40H33V41ZM31 41V40H30V41H31ZM31 48H32V48H31ZM27 52V53V52ZM22 48H21V48H22ZM22 41H23V40H22V41ZM20 41V40H19V41H20ZM20 48H21V48H20ZM16 52V53V52ZM11 48H10V48H11ZM11 41H12V40H11V41ZM9 41V40H8V41H9ZM9 48H10V48H9ZM5 52V53V52ZM0 48H-1V48H0ZM0 15H-1V15H0ZM38 0V-1V-1V0ZM53 15H54V15H53ZM53 48H52C52 49.6569 50.6569 51 49 51V52V53C51.7614 53 54 50.7614 54 48H53ZM49 52V51H48V52V53H49V52ZM48 52V51C46.3431 51 45 49.6569 45 48H44H43C43 50.7614 45.2386 53 48 53V52ZM44 48H45V41H44H43V48H44ZM44 41V40H42V41V42H44V41ZM42 41H41V48H42H43V41H42ZM42 48H41C41 49.6569 39.6569 51 38 51V52V53C40.7614 53 43 50.7614 43 48H42ZM38 52V51H37V52V53H38V52ZM37 52V51C35.3431 51 34 49.6569 34 48H33H32C32 50.7614 34.2386 53 37 53V52ZM33 48H34V41H33H32V48H33ZM33 41V40H31V41V42H33V41ZM31 41H30V48H31H32V41H31ZM31 48H30C30 49.6569 28.6569 51 27 51V52V53C29.7614 53 32 50.7614 32 48H31ZM27 52V51H26V52V53H27V52ZM26 52V51C24.3431 51 23 49.6569 23 48H22H21C21 50.7614 23.2386 53 26 53V52ZM22 48H23V41H22H21V48H22ZM22 41V40H20V41V42H22V41ZM20 41H19V48H20H21V41H20ZM20 48H19C19 49.6569 17.6569 51 16 51V52V53C18.7614 53 21 50.7614 21 48H20ZM16 52V51H15V52V53H16V52ZM15 52V51C13.3431 51 12 49.6569 12 48H11H10C10 50.7614 12.2386 53 15 53V52ZM11 48H12V41H11H10V48H11ZM11 41V40H9V41V42H11V41ZM9 41H8V48H9H10V41H9ZM9 48H8C8 49.6569 6.65685 51 5 51V52V53C7.76142 53 10 50.7614 10 48H9ZM5 52V51H4V52V53H5V52ZM4 52V51C2.34315 51 1 49.6569 1 48H0H-1C-1 50.7614 1.23858 53 4 53V52ZM0 48H1V15H0H-1V48H0ZM0 15H1C1 7.26801 7.26801 1 15 1V0V-1C6.16344 -1 -1 6.16344 -1 15H0ZM15 0V1H38V0V-1H15V0ZM38 0V1C45.732 1 52 7.26801 52 15H53H54C54 6.16344 46.8366 -0.999999 38 -1V0ZM53 15H52V48H53H54V15H53Z"
@@ -188,252 +150,175 @@
               </g>
             </svg>
           </div>
-          </div>
-          <!-- ── Title ── -->
-          <h1 class="title">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 218 43" fill="currentColor" aria-label="Clumeral">
-              <!-- C -->
-              <g class="tlt">
-                <path
-                  d="M24.02 0q2.027-.001 3.654.373 1.22.271 2.243.544l.661.183.01.003.01.002q.874.292 1.564.464.732.111 1.398.112h.5V9.34H32.55l-.08-.404c-.227-1.179-.64-2.12-1.218-2.843l-.008-.01c-.597-.784-1.299-1.372-2.105-1.775l-.01-.005a8.5 8.5 0 0 0-2.607-.849l-.01-.002-.012-.003a13.3 13.3 0 0 0-2.718-.289c-2.899 0-5.4.53-7.52 1.57h-.003Q13.11 6.25 11.024 8.741l-.003.005h-.002a16.7 16.7 0 0 0-3.145 5.535q-.994 3.106-.993 6.139-.001 3.438 1.343 6.77l.172.408a19.8 19.8 0 0 0 3.512 5.443 20 20 0 0 0 5.557 4.092q3.129 1.507 6.796 1.508 1.026 0 2.438-.234h.003a10.8 10.8 0 0 0 2.794-.854A9 9 0 0 0 32 35.676l.008-.009c.774-.774 1.378-1.8 1.799-3.1l.111-.347h1.464v7.66h-.5q-.831-.001-1.8.224l.001.002-2.16.54-.001-.002a47 47 0 0 1-3.508.788v-.001q-1.911.369-4.052.369c-3.537 0-6.67-.61-9.387-1.845-2.694-1.225-4.952-2.822-6.762-4.797a19.9 19.9 0 0 1-4.06-6.645l-.002-.003Q1.801 24.77 1.8 20.96q.002-3.811 1.35-7.55a19.3 19.3 0 0 1 4.126-6.712c1.852-2.014 4.169-3.631 6.943-4.855C17.015.609 20.287 0 24.02 0"
-                />
-                <path
-                  d="m.417 40.696.058.013.036.009.032.005v.11h-.01a.14.14 0 0 0-.032-.055.2.2 0 0 0-.044-.033.254.254 0 0 0-.09-.019.3.3 0 0 0-.118.026.338.338 0 0 0-.158.17.3.3 0 0 0-.023.116q0 .052.017.106a.29.29 0 0 0 .144.164.3.3 0 0 0 .176.021.2.2 0 0 0 .046-.014.115.115 0 0 0 .06-.083h.01v.11l-.025.002-.027.008-.048.012a.395.395 0 0 1-.219-.025.34.34 0 0 1-.18-.187.36.36 0 0 1 0-.246.33.33 0 0 1 .176-.186.37.37 0 0 1 .219-.024"
-                />
-              </g>
-              <!-- l -->
-              <g class="tlt">
-                <path
-                  d="M46.724 36.8q-.002.415.108.972l.06.237q.096.339.25.648.267.426.526.739c.15.145.3.204.476.205h.5v1.6h-8.86v-1.6h.5a.65.65 0 0 0 .486-.214q.301-.3.506-.71l.011-.022.013-.02q.255-.409.355-.863.11-.557.109-.972V6.08q-.001-.944-.275-1.762c-.099-.297-.415-.58-1.345-.618l-.48-.02V2.23l7.06-2.167z"
-                />
-                <path
-                  d="M37.523 40.71a.02.02 0 0 0-.013.006l-.01.014a.1.1 0 0 0-.008.036v.6l-.101-.031v-.01q.024 0 .03-.015a.1.1 0 0 0 .005-.033v-.511q0-.009-.002-.019l-.007-.017-.01-.014a.02.02 0 0 0-.014-.006v-.01h.13z"
-                />
-              </g>
-              <!-- u -->
-              <g class="tlt">
-                <path
-                  d="M78.19 36.8q-.002.35.109.912l.128.515q.066.24.146.48.203.39.492.68a.65.65 0 0 0 .486.214h.5v1.6h-6.82v-2.404a13.5 13.5 0 0 1-1.847 1.588c-1.267.917-2.878 1.355-4.793 1.355-2.37 0-4.309-.408-5.774-1.27-1.426-.838-2.531-1.917-3.298-3.239a11.4 11.4 0 0 1-1.444-4.202v-.002a31.5 31.5 0 0 1-.305-4.207v-8.58q0-.511-.056-.958l-.003-.031v-.031c0-.283-.063-.516-.175-.712l-.014-.025-.011-.026a.87.87 0 0 0-.389-.423l-.021-.012-.02-.015c-.163-.116-.444-.207-.91-.207h-.5v-1.405l.349-.112 6.71-2.126v15.984c0 2.981.65 5.073 1.85 6.382 1.226 1.338 2.713 1.997 4.49 1.997.964 0 1.796-.203 2.511-.594q1.196-.685 1.973-1.575l.006-.006.005-.007c.567-.604.97-1.214 1.223-1.828l.005-.012.005-.01c.308-.655.432-1.136.433-1.468V20.24q0-.511-.056-.958l-.004-.031v-.031c0-.283-.063-.516-.175-.712l-.014-.025-.011-.026a.87.87 0 0 0-.389-.423l-.021-.012-.021-.015c-.162-.116-.443-.207-.91-.207h-.5v-1.405l.35-.112 6.71-2.126z"
-                />
-                <path
-                  d="M51.486 40.691q.045 0 .076.02a.2.2 0 0 1 .044.044V40.7h.096v.01a.02.02 0 0 0-.014.006l-.01.014-.004.018-.002.018v.365l-.102-.031v-.01a.04.04 0 0 0 .02-.005.02.02 0 0 0 .01-.01.03.03 0 0 0 .005-.016v-.231a.1.1 0 0 0-.007-.028.1.1 0 0 0-.023-.032.1.1 0 0 0-.035-.029.107.107 0 0 0-.127.025q-.032.037-.032.112v.255l-.102-.031v-.01a.04.04 0 0 0 .02-.005.02.02 0 0 0 .01-.01.03.03 0 0 0 .005-.016v-.161q0-.03.005-.069a.2.2 0 0 1 .024-.067.14.14 0 0 1 .051-.051.2.2 0 0 1 .092-.02"
-                />
-              </g>
-              <!-- m -->
-              <g class="tlt">
-                <path
-                  d="M91.896 16.655q.735-.629 1.698-1.22l.007-.005c1.18-.7 2.677-1.03 4.455-1.03 1.167 0 2.226.167 3.171.51q1.371.498 2.397 1.321l.266.196a8.2 8.2 0 0 1 1.586 1.593q.44.59.796 1.165.338-.552.74-1.1a9.7 9.7 0 0 1 1.635-1.822l.007-.006.006-.005a8.5 8.5 0 0 1 2.358-1.339l.006-.003c.946-.344 2.026-.51 3.231-.51 2.291 0 4.157.408 5.546 1.276 1.338.836 2.344 1.856 2.992 3.064a10.1 10.1 0 0 1 1.258 3.714q.243 1.821.244 3.126V36.8q0 .415.108.972.107.48.32.905.21.42.459.72a.65.65 0 0 0 .473.204h.5v1.6h-8.8v-1.6h.5a.66.66 0 0 0 .487-.214q.3-.3.506-.71l.01-.022.013-.02q.252-.405.353-.853.112-.564.111-.982V23.84q0-1.302-.394-2.482l-.003-.01-.003-.01c-.222-.777-.57-1.431-1.038-1.97l-.009-.012a4.95 4.95 0 0 0-1.746-1.364l-.02-.01c-.68-.357-1.458-.542-2.347-.542-.996 0-1.839.24-2.547.7l-.005.003a6.4 6.4 0 0 0-1.772 1.655l-.165.257a8 8 0 0 0-.854 1.836l-.002.007c-.232.695-.334 1.238-.334 1.642V36.8q-.001.419.11.982.105.464.307.873.269.427.527.74a.65.65 0 0 0 .476.206h.5v1.6h-8.741v-1.6h.5c.12 0 .26-.047.427-.214q.3-.3.506-.71l.011-.022.012-.02a2.7 2.7 0 0 0 .356-.863q.11-.557.108-.972V23.48q-.001-1.343-.496-2.435l-.006-.013-.005-.013c-.295-.776-.714-1.41-1.253-1.913l-.007-.006-.006-.006a5.6 5.6 0 0 0-1.82-1.213l-.01-.004a4.9 4.9 0 0 0-2.017-.437c-.975 0-1.816.187-2.536.547q-1.049.556-1.755 1.369a7 7 0 0 0-1.062 1.845A5.4 5.4 0 0 0 91.896 23v13.8q-.001.419.11.982.105.464.306.873.27.427.528.74c.15.146.3.206.475.206h.5v1.6h-8.74v-1.6h.5c.12 0 .26-.047.427-.214q.3-.3.506-.71l.01-.022.013-.02q.252-.405.353-.853.112-.564.111-.982V20.78q0-.45-.058-1.03a4.7 4.7 0 0 0-.216-1.031 1.5 1.5 0 0 0-.452-.679c-.164-.141-.417-.24-.814-.24h-.5v-1.4l.342-.114 6.599-2.2z"
-                />
-                <path
-                  d="M82.872 40.71a.02.02 0 0 0-.014.006l-.01.014-.005.017-.003.019v.23q0 .015.007.032.006.019.018.034a.1.1 0 0 0 .078.035.1.1 0 0 0 .038-.01.1.1 0 0 0 .033-.02.1.1 0 0 0 .022-.036.1.1 0 0 0 .009-.044v-.221l-.002-.019-.007-.017-.01-.014a.02.02 0 0 0-.012-.006v-.01h.129v.01a.02.02 0 0 0-.015.006l-.01.014a.1.1 0 0 0-.008.036v.22q0 .013.006.03.006.02.019.037a.1.1 0 0 0 .031.03q.02.014.047.014.024-.001.043-.011a.096.096 0 0 0 .052-.06.1.1 0 0 0 .007-.045v-.215l-.002-.019-.007-.017-.011-.014a.02.02 0 0 0-.014-.006v-.01h.13v.01a.02.02 0 0 0-.014.006l-.008.014q-.005.008-.007.017l-.002.019v.186q0 .021-.004.05a.2.2 0 0 1-.02.06.13.13 0 0 1-.046.048.17.17 0 0 1-.088.02.2.2 0 0 1-.052-.008.1.1 0 0 1-.036-.02.258.258 0 0 1-.046-.06l-.02.031a.1.1 0 0 1-.029.029.13.13 0 0 1-.088.028.14.14 0 0 1-.07-.016.2.2 0 0 1-.041-.033v.05l-.099-.031v-.01a.03.03 0 0 0 .02-.006.03.03 0 0 0 .01-.015l.003-.02.001-.017v-.266q0-.009-.002-.019l-.006-.017-.011-.014a.02.02 0 0 0-.013-.006v-.01h.13z"
-                />
-              </g>
-              <!-- e -->
-              <g class="tlt">
-                <path
-                  fill-rule="evenodd"
-                  d="M144.042 15.58c2.056 0 3.87.35 5.429 1.065 1.584.71 2.888 1.696 3.901 2.962 1.045 1.256 1.813 2.737 2.31 4.433q.741 2.539.74 5.54v.5h-20.748a14.7 14.7 0 0 0 .909 3.327l.194.44a11.4 11.4 0 0 0 1.753 2.715l.322.334a10 10 0 0 0 2.701 1.89c1.162.524 2.527.794 4.108.794q1.246 0 2.626-.342l.358-.105a11.5 11.5 0 0 0 2.289-.986 9 9 0 0 0 2.103-1.65c.629-.665 1.045-1.394 1.262-2.188l.1-.369h1.422v5.5h-.5c-.132 0-.329.045-.604.181a55 55 0 0 0-.998.588q-1.247.747-3.307 1.594l-.012.005c-1.439.55-3.307.812-5.579.812a17.5 17.5 0 0 1-5.31-.804h-.004a12.6 12.6 0 0 1-4.434-2.499c-1.3-1.132-2.341-2.574-3.127-4.311l-.004-.009c-.752-1.757-1.121-3.827-1.121-6.197q.001-2.303.743-4.65l.004-.011.214-.584a13.2 13.2 0 0 1 2.156-3.655v-.002c1.091-1.3 2.471-2.342 4.129-3.13 1.683-.799 3.68-1.188 5.975-1.188m-.24 2.98c-1.333 0-2.468.267-3.423.78a8.5 8.5 0 0 0-2.431 2.037 9.5 9.5 0 0 0-1.595 2.852q-.482 1.349-.682 2.69h15.999a10.8 10.8 0 0 0-.6-2.751l-.002-.007-.003-.008a9.2 9.2 0 0 0-1.479-2.847 6.9 6.9 0 0 0-2.408-1.958l-.007-.004-.007-.003c-.957-.515-2.073-.78-3.362-.78"
-                  clip-rule="evenodd"
-                />
-                <path
-                  fill-rule="evenodd"
-                  d="M129.363 41.693a.26.26 0 0 1 .145.04l.016.01.014.003v.075h-.009a.1.1 0 0 0-.022-.04.17.17 0 0 0-.083-.048.2.2 0 0 0-.118.008.17.17 0 0 0-.087.094.3.3 0 0 0-.018.067h.348a.3.3 0 0 1-.013.09.2.2 0 0 1-.036.072.2.2 0 0 1-.062.046.2.2 0 0 1-.087.017.2.2 0 0 1-.096-.019.2.2 0 0 1-.067-.05.2.2 0 0 1-.038-.068.3.3 0 0 1-.011-.075q0-.057.017-.1a.2.2 0 0 1 .121-.109.3.3 0 0 1 .086-.013m-.148.301a.15.15 0 0 0 .07.086q.026.014.062.014a.1.1 0 0 0 .059-.014.15.15 0 0 0 .07-.085.2.2 0 0 0 .01-.057h-.285a.2.2 0 0 0 .014.056"
-                  clip-rule="evenodd"
-                />
-              </g>
-              <!-- r -->
-              <g class="tlt">
-                <path
-                  d="M167.303 17.36q.14-.15.286-.294a7.6 7.6 0 0 1 1.396-1.202 7.1 7.1 0 0 1 1.777-.89c.67-.268 1.434-.394 2.281-.394.623 0 1.392.133 2.291.378q1.35.367 2.252.815l.444.222-2.424 4.93-.472-.787c-.458-.764-.885-1.15-1.251-1.291-.452-.174-.989-.267-1.62-.267-.363 0-.78.082-1.254.264q-.668.279-1.349.732-.696.465-1.397 1.048l-.003.003q-.546.447-.957.844v15.39q0 .416.108.91.105.472.315.953.257.408.504.712a.77.77 0 0 0 .493.165h.5v1.6h-8.8v-1.6h.5a.7.7 0 0 0 .44-.172c.193-.197.359-.425.492-.693l.005-.01.005-.008q.269-.485.369-.947.11-.493.109-.91V20.12c0-.448-.143-.915-.461-1.41-.286-.445-.693-.732-1.254-.864l-.386-.091v-1.25l.359-.105 6.702-1.99z"
-                />
-                <path
-                  d="M158.397 40.71a.02.02 0 0 0-.013.005l-.01.014-.007.018-.002.018v.26l.02.016.023.019q.013.008.025.012a.1.1 0 0 0 .024.005.1.1 0 0 0 .029-.005.06.06 0 0 0 .026-.025l.03.061a.2.2 0 0 1-.072.019.12.12 0 0 1-.064-.02.1.1 0 0 1-.021-.02l-.02-.02v.06l-.1-.03v-.008a.04.04 0 0 0 .026-.018.05.05 0 0 0 .009-.028v-.278l-.002-.018-.007-.017-.011-.015a.02.02 0 0 0-.012-.005v-.01h.129z"
-                />
-              </g>
-              <!-- a -->
-              <g class="tlt">
-                <path
-                  fill-rule="evenodd"
-                  d="M190.497 14.58c2.236 0 4.089.284 5.531.878 1.415.582 2.53 1.365 3.315 2.363a7.6 7.6 0 0 1 1.604 3.398l.087.45q.283 1.581.283 3.25V36.8q0 1.077.483 2.048l.114.195c.272.418.568.559.884.559h.5v1.6h-6.82v-2.394a11.4 11.4 0 0 1-3.082 1.93l.001.001c-1.359.595-2.991.882-4.879.882-1.436 0-2.691-.164-3.753-.504-1.05-.336-1.935-.806-2.637-1.42l-.006-.006-.007-.005a6.45 6.45 0 0 1-1.558-2.21l-.004-.011-.005-.01a7.4 7.4 0 0 1-.45-2.574c0-1.454.386-2.755 1.169-3.885l.006-.01c.811-1.109 1.95-2.073 3.396-2.9q2.159-1.23 5.196-2.201 2.92-.973 6.583-1.887c-.108-1.315-.402-2.356-.862-3.145-.53-.909-1.144-1.589-1.831-2.059l-.014-.01c-.706-.52-1.438-.847-2.197-.992l-.011-.002-.012-.003c-.816-.194-1.495-.286-2.043-.286-.986 0-1.839.151-2.567.441l-.264.117a7 7 0 0 0-1.642 1.06l-.002.002q-.789.677-1.35 1.518l-.004.006-.004.006a9.6 9.6 0 0 0-.914 1.54l-.133.29h-1.361v-5.32l.439-.055q.38-.048.714-.239a9 9 0 0 1 1.082-.51q.447-.18 1.059-.433l1.392-.583c1.133-.52 2.671-.76 4.574-.76m5.981 12.45q-1.423.356-3.5.948l.001.002a21.5 21.5 0 0 0-3.812 1.525q-1.797.93-3.056 2.188c-.793.794-1.173 1.69-1.173 2.707 0 1.122.445 2.041 1.374 2.791.93.752 2.17 1.149 3.765 1.149 1.245 0 2.316-.264 3.23-.774q1.43-.858 2.641-2.183l.53-.577z"
-                  clip-rule="evenodd"
-                />
-                <path
-                  fill-rule="evenodd"
-                  d="M178.605 40.693q.046 0 .079.014.032.015.057.04l.005.004v-.05h.098v.009q-.016 0-.025.017a.1.1 0 0 0-.008.039v.197a.3.3 0 0 1-.006.06.125.125 0 0 1-.077.09.2.2 0 0 1-.089.014.2.2 0 0 1-.074-.012l-.041-.016-.016-.01-.016-.004v-.073h.01l.016.027q.01.016.023.027.016.014.034.02a.1.1 0 0 0 .046.009.2.2 0 0 0 .036-.005.1.1 0 0 0 .04-.018.1.1 0 0 0 .033-.037.13.13 0 0 0 .016-.062 2 2 0 0 1-.115-.033.5.5 0 0 1-.085-.037.2.2 0 0 1-.055-.046.1.1 0 0 1-.017-.06q0-.022.006-.04a.1.1 0 0 1 .066-.056.2.2 0 0 1 .059-.008m.027.038a.1.1 0 0 0-.069.021.068.068 0 0 0-.003.104.2.2 0 0 0 .052.038q.031.017.066.026l.058.017.01.002v-.144l-.011-.012a.2.2 0 0 0-.046-.038.1.1 0 0 0-.057-.014"
-                  clip-rule="evenodd"
-                />
-              </g>
-              <!-- l -->
-              <g class="tlt">
-                <path
-                  d="M215.239 36.8q-.001.415.109.972l.059.237q.098.339.25.648.269.426.527.739c.149.145.3.204.475.205h.5v1.6H208.3v-1.6h.5a.65.65 0 0 0 .486-.214q.3-.3.506-.71l.011-.022.012-.02a2.7 2.7 0 0 0 .356-.863q.11-.557.108-.972V6.08q0-.944-.274-1.762c-.099-.297-.415-.58-1.346-.618l-.479-.02V2.23l7.059-2.167z"
-                />
-                <path
-                  d="M206.039 40.71a.02.02 0 0 0-.014.006l-.009.014-.006.017q-.003.01-.002.019v.6l-.102-.031v-.01q.025 0 .031-.015a.1.1 0 0 0 .004-.033v-.511q0-.009-.002-.019l-.006-.017-.01-.014a.02.02 0 0 0-.015-.006v-.01h.131z"
-                />
-              </g>
-            </svg>
-          </h1>
-        </header>
+        </div>
+      </div>
 
-        <p class="subtitle">
-          Work out the number from 100–999.
-          <br />
-          New puzzle every day.
-        </p>
+      <!-- Toast: fixed by design — must hover above the page during scroll -->
+      <div data-toast aria-live="polite" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] flex flex-col items-center gap-2 pointer-events-none"></div>
 
-        <p class="fb-header">
-          <button data-fb-header-btn class="text-link text-link--icon text-link--muted">
-            <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
-            <span>It's new! Please give feedback</span>
-          </button>
-        </p>
+      <!-- ── App header (game/completion only — JS hides it on /welcome) ── -->
+      <header data-app-header class="flex items-center justify-between h-14 px-4 bg-bg border-b border-border">
+        <button data-brand class="flex items-center gap-2 rounded -mx-1 px-1 py-1 text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" type="button" aria-label="Bounce Clumeral">
+          <svg data-brand-octo aria-hidden="true" width="24" height="24" viewBox="0 0 53 52" fill="none" class="shrink-0" style="transform-origin: center bottom">
+            <path d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z" fill="var(--color-accent)"/>
+            <circle cx="19" cy="15" r="2.5" fill="#F6F0E8"/>
+            <circle cx="33" cy="15" r="2.5" fill="#F6F0E8"/>
+            <path d="M21 26C24.3333 27.3333 27.6667 27.3333 31 26" stroke="#F6F0E8" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span data-brand-text class="text-xl font-bold text-text font-[Comfortaa]">Clumeral</span>
+        </button>
+        <span data-walkthrough-live aria-live="polite" class="sr-only"></span>
+        <button data-menu-btn class="burger-btn relative h-10 w-10 flex items-center justify-center text-text -mr-[10px]" type="button" aria-expanded="false" aria-controls="app-menu" aria-label="Open menu">
+          <span aria-hidden="true" class="burger-bar"></span>
+          <span aria-hidden="true" class="burger-bar"></span>
+        </button>
+      </header>
 
-        <!-- ── Puzzle card ── -->
-        <div id="puzzle" class="card" data-card>
-          <div class="card__label" data-plabel>Puzzle #7 · 14 March 2026</div>
+      <!-- Menu dropdown — anchored to the header right edge -->
+      <div id="app-menu" data-menu role="dialog" aria-label="App menu"
+           class="hidden absolute top-14 right-0 z-40 min-w-[200px] py-2 bg-surface border border-border rounded-lg shadow-lg">
+        <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-message-square-share"/></svg>
+          Feedback
+        </button>
+        <button data-htp-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
+          How to play
+        </button>
+        <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
+          <span data-theme-label>Dark mode</span>
+        </button>
+        <div data-swatches class="flex items-center gap-3 px-4 py-2"></div>
+      </div>
 
-          <div class="clue-list" role="list" aria-label="Puzzle clues" aria-busy="true">
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
+    <!-- ── New screen architecture (Phase 1) ── -->
+    <main id="main" data-screens class="relative flex-1 flex flex-col">
+      <!-- Cold-load overlay: hides screen-swap flicker until the router resolves
+           the initial route. JS fades opacity-100 → 0 once the first showScreen lands. -->
+      <div data-app-loading class="absolute inset-0 z-40 bg-bg opacity-100 pointer-events-none transition-opacity duration-300 ease-in-out"></div>
+      <section data-screen="welcome" class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <!-- Welcome content rendered by initWelcome — fills remaining viewport
+             (flex-1) and centres content; footer pushes it slightly above visual centre. -->
+      </section>
+      <section data-screen="game" data-game-content class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out px-4 py-5" aria-hidden="true">
+        <div class="w-full max-w-[390px] mx-auto flex flex-col">
+
+            <!-- Archive banner — shown by startReplayPuzzle when replaying a dated puzzle -->
+            <div data-archive-row class="hidden items-center justify-between gap-3 self-stretch mb-6">
+              <p data-archive-banner class="text-sm font-[Quicksand] text-text"></p>
+              <a data-archive-back href="/archive" class="btn btn-solid btn-sm shrink-0"><svg aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>Archive</a>
+            </div>
+
+            <!-- Clue list (skeletons replaced by renderClues) -->
+            <div data-clue-list role="list" aria-label="Puzzle clues" aria-busy="true"
+                 class="[display:grid] [grid-template-columns:max-content_1fr] gap-x-4 gap-y-4 items-center">
+              <div class="clue-skeleton contents" aria-hidden="true">
+                <div class="w-16 h-8 rounded bg-surface animate-pulse"></div>
+                <div class="flex flex-col gap-2">
+                  <div class="h-4 w-4/5 rounded bg-surface animate-pulse"></div>
+                  <div class="h-4 w-2/5 rounded bg-surface animate-pulse"></div>
+                </div>
+              </div>
+              <div class="clue-skeleton contents" aria-hidden="true">
+                <div class="w-16 h-8 rounded bg-surface animate-pulse"></div>
+                <div class="flex flex-col gap-2">
+                  <div class="h-4 w-4/5 rounded bg-surface animate-pulse"></div>
+                  <div class="h-4 w-2/5 rounded bg-surface animate-pulse"></div>
+                </div>
+              </div>
+              <div class="clue-skeleton contents" aria-hidden="true">
+                <div class="w-16 h-8 rounded bg-surface animate-pulse"></div>
+                <div class="flex flex-col gap-2">
+                  <div class="h-4 w-4/5 rounded bg-surface animate-pulse"></div>
+                  <div class="h-4 w-2/5 rounded bg-surface animate-pulse"></div>
+                </div>
               </div>
             </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
+
+            <!-- Digit boxes -->
+            <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Digit entry boxes">
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946] cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946] cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946] cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>
             </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
+
+            <!-- Keypad -->
+            <div data-keypad-wrap class="w-full mt-2 hidden">
+              <div data-keypad class="grid grid-cols-5 gap-2 w-full"></div>
             </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
+
+            <!-- Submit -->
+            <div data-submit-wrap class="w-full mt-4 hidden">
+              <button data-submit class="btn btn-solid w-full" type="button"><svg aria-hidden="true"><use href="/sprites.svg#icon-tick"/></svg>Submit answer</button>
             </div>
-            <div class="clue-skeleton" aria-hidden="true">
-              <div class="clue-skeleton__tag"></div>
-              <div class="clue-skeleton__lines">
-                <div class="clue-skeleton__line clue-skeleton__line--long"></div>
-                <div class="clue-skeleton__line clue-skeleton__line--short"></div>
-              </div>
+
+            <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css) -->
+            <div data-save class="items-center gap-1.5 mt-3.5 text-base text-text font-[Quicksand]">
+              <input type="checkbox" checked id="cw-ck" data-save-check />
+              <label for="cw-ck" class="flex items-center gap-1.5 cursor-pointer">
+                <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
+                <svg class="ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
+                Keep my score in a
+                <svg class="inline" width="13" height="13" aria-hidden="true"><use href="/sprites.svg#icon-cookie"/></svg>
+                cookie
+              </label>
             </div>
-          </div>
-          <!-- /.cw-clue-container -->
 
-          <!-- ── Hint ── -->
-          <div class="card__hint" data-hint aria-live="polite">Tap a box to eliminate possible numbers.</div>
+            <!-- Feedback -->
+            <p data-feedback class="text-base font-bold leading-snug mt-4 hidden font-[Quicksand]" aria-live="assertive"></p>
 
-          <!-- ── Digit boxes ── -->
-          <div class="digits" data-digits role="group" aria-label="Digit entry boxes">
-            <div class="digit-box" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit"></div>
-            <div class="digit-box" data-digit="1" role="button" tabindex="0" aria-label="Tens digit"></div>
-            <div class="digit-box" data-digit="2" role="button" tabindex="0" aria-label="Units digit"></div>
-          </div>
+            <!-- Guess history -->
+            <div data-history class="hidden mt-4">
+              <p class="font-mono text-base font-bold uppercase tracking-widest text-text mb-2">Your guesses</p>
+              <ul data-history-list class="flex flex-wrap gap-2 list-none p-0 m-0"></ul>
+            </div>
 
-          <!-- ── Keypad ── -->
-          <div class="keypad" data-keypad-wrap>
-            <div class="keypad__grid" data-keypad></div>
-          </div>
+            <!-- Stats -->
+            <div data-stats class="hidden mt-4"></div>
 
-          <!-- ── Submit ── -->
-          <div class="submit" data-submit-wrap>
-            <button class="submit__btn" data-submit>Submit</button>
-          </div>
+            <!-- Next puzzle -->
+            <p data-next class="hidden mt-4 text-base text-text font-[Quicksand]">
+              Puzzle <span data-next-number></span> is available tomorrow.
+            </p>
 
-          <!-- ── Save row ── -->
-          <div class="save" data-save>
-            <input type="checkbox" checked id="cw-ck" data-save-check />
-            <label for="cw-ck">
-              <svg class="check-icon ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
-              <svg class="check-icon ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
-              Keep my score in a
-              <svg class="icon-inline" width="13" height="13" aria-hidden="true"><use href="/sprites.svg#icon-cookie"/></svg>
-              cookie
-            </label>
-          </div>
-
-          <!-- ── Feedback ── -->
-          <p data-feedback class="feedback hidden" aria-live="assertive"></p>
-
-          <!-- ── Guess history ── -->
-          <div data-history class="history hidden">
-            <p class="history__label">Your guesses</p>
-            <ul class="history__list" data-history-list></ul>
-          </div>
-
-          <!-- ── Stats ── -->
-          <div data-stats class="stats hidden"></div>
-
-          <!-- ── Next puzzle ── -->
-          <p data-next class="next-puzzle hidden">
-            Puzzle <span data-next-number></span> is available tomorrow.
-          </p>
-
-          <!-- ── Random again ── -->
-          <p data-again class="play-again hidden">
-            <a href="/random" class="text-link">Play another random puzzle</a>
-          </p>
+            <!-- Random again -->
+            <p data-again class="hidden mt-4 text-base font-[Quicksand]">
+              <a href="/random" class="text-accent underline">Play another random puzzle</a>
+            </p>
 
         </div>
+      </section>
+      <section data-screen="completion" class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out" aria-hidden="true">
+        <div class="w-full max-w-[390px] mx-auto flex-1 flex flex-col items-center justify-center gap-6 px-6 py-8 text-center">
 
-        <footer class="footer">
-          <div class="swatch-list" data-swatches></div>
-          <div class="footer__links" data-foot-links>
-            <button data-htp-btn class="text-link text-link--icon">
-              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
-              <span>Guide</span>
+          <!-- Solved heading + subheading -->
+          <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
+          <p data-completion-subheading class="text-base text-text"></p>
+
+          <!-- Stats grid -->
+          <div data-completion-stats class="grid grid-cols-2 gap-4 w-full"></div>
+
+          <!-- Countdown -->
+          <p data-completion-countdown class="text-base text-text"></p>
+
+          <!-- Action stack: feedback (full-width, solid) above show puzzle + archive row -->
+          <div class="flex flex-col gap-2 w-full">
+            <button data-completion-feedback type="button" class="btn btn-solid w-full">
+              <svg aria-hidden="true"><use href="/sprites.svg#icon-message-square-share"/></svg>
+              Feedback
             </button>
-            <button data-fb-btn class="text-link text-link--icon">
-              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-feedback"/></svg>
-              <span>Feedback</span>
-            </button>
-            <a href="/puzzles" class="text-link text-link--icon">
-              <svg width="24" height="24" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>
-              <span>Archive</span>
-            </a>
-            <button data-theme-toggle class="text-link text-link--icon">
-              <span class="theme-icon" data-theme-icon aria-hidden="true">
-                <svg class="icon-moon" width="24" height="24"><use href="/sprites.svg#icon-moon"/></svg>
-                <svg class="icon-sun" width="24" height="24"><use href="/sprites.svg#icon-sun"/></svg>
-              </span>
-              <span data-theme-label>Dark</span>
-            </button>
+            <div data-completion-links class="flex gap-2 w-full"></div>
           </div>
-          <div class="footer__body" data-foot-body>
-            An experiment in AI-coding with Claude. It's on
-            <span class="foot-icon-link">
-              <svg width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-github"/></svg>
-              <a href="https://github.com/jevawin/clumeral-game" target="_blank" rel="noopener" class="text-link">GitHub</a>
-            </span>. Made with
-            <svg class="footer-heart icon-inline" width="18" height="18" aria-hidden="true"><use href="/sprites.svg#icon-heart"/></svg>
-            by
-            <span class="foot-icon-link">
-              <img src="/jamie.webp" alt="Jamie" class="foot-avatar" />
-              <a href="https://www.linkedin.com/in/jevawin" target="_blank" rel="noopener noreferrer" class="text-link">Jamie</a>
-            </span>
-            and Dave.
-            <br />
-            &copy; 2026 Jamie &amp; Dave
-          </div>
-          <div class="dev-links hidden" data-dev-links></div>
-        </footer>
-      </main>
 
-      <div class="toast" data-toast aria-live="polite"></div>
-    </div>
+        </div>
+      </section>
+    </main>
 
-    <script type="module" src="/src/app.ts"></script>
+    <footer class="text-center py-4 text-text text-sm font-[Quicksand]">
+      Made with <svg role="img" aria-label="love" class="inline-block w-4 h-4 align-[-0.15em] text-accent" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> by Jamie &amp; Dave. &copy; 2026.
+    </footer>
+
+    <script type="module" src="/src/app.ts" onerror="window.__clumeralReloadGuard && window.__clumeralReloadGuard()"></script>
   </body>
 </html>

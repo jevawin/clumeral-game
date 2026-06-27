@@ -3,12 +3,12 @@
 // mismatch; bubbles fit Octo's aquatic world.
 
 // Every bubble must be off the top of the screen by this time. Slightly
-// longer than Octo's ~5.75s celebrate window so the trail can linger.
-const TOTAL_MS = 6500;
+// longer than Octo's ~3.8s celebrate window so the trail can linger.
+const TOTAL_MS = 4608;
 const MIN_COUNT = 20;
 const MAX_COUNT = 30;
 
-// Fallback accent if --acc can't be parsed (matches the default green).
+// Fallback accent if --color-accent can't be parsed (matches the default green).
 const FALLBACK_ACC: [number, number, number] = [10, 133, 10];
 
 type SizeBand = "small" | "medium" | "large";
@@ -41,10 +41,10 @@ function sizePx(band: SizeBand): number {
 
 function randomDuration(): number {
   // Each bubble gets its own fixed linear speed, somewhere between
-  // 4100ms and 5000ms. Paired with TOTAL_MS = 6500 this gives a
-  // spawn-window of ~1500–2400ms, so bubbles fill ~40–45% of the
+  // 2880ms and 3744ms. Paired with TOTAL_MS = 4608 this gives a
+  // spawn-window of ~864–1728ms, so bubbles fill ~40–45% of the
   // viewport vertically at peak instead of rising as a single line.
-  return 4100 + Math.random() * 900;
+  return 2880 + Math.random() * 864;
 }
 
 function parseRgb(raw: string): [number, number, number] | null {
@@ -99,10 +99,10 @@ export function launchBubbles(): void {
   }
 
   // Octo's celebration cycles through 4 colours via the `octo-colours`
-  // CSS keyframe on its first SVG path (see style.css). Reading the
+  // CSS keyframe on its first SVG path (see tailwind.css). Reading the
   // computed `fill` of that path each frame gives us Octo's live colour,
-  // which is what we want bubbles to match. --acc is the fallback if the
-  // octo isn't on-screen yet.
+  // which is what we want bubbles to match. --color-accent is the fallback
+  // if the octo isn't on-screen yet.
   const root = document.documentElement;
   const octoPath = document.querySelector<SVGPathElement>(
     "[data-octo] > path"
@@ -118,7 +118,7 @@ export function launchBubbles(): void {
       if (parsed) return parsed;
     }
     const accParsed = parseRgb(
-      getComputedStyle(root).getPropertyValue("--acc")
+      getComputedStyle(root).getPropertyValue("--color-accent")
     );
     return accParsed ?? FALLBACK_ACC;
   }

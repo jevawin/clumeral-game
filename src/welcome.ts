@@ -1,0 +1,148 @@
+// Clumeral — welcome.ts
+// Renders the welcome screen content and wires the Play button.
+// The welcome screen shell ([data-screen="welcome"]) is managed by screens.ts.
+// This module populates its content and handles the first-visit / return-visit layout.
+
+import { navigate } from './router.ts';
+import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
+
+
+// ─── SVG ──────────────────────────────────────────────────────────────────────
+
+// Decorative octopus mascot — scaled to 96×96, no animation data attributes,
+// no click interaction. The animated octopus on the game screen uses data-octo,
+// data-eye, data-mouth; omitting those here prevents octo.ts from touching this element.
+const OCTO_SVG = `<svg aria-hidden="true" width="96" height="96" viewBox="0 0 53 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <mask id="welcome-octo-mask" fill="white">
+    <path d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z"/>
+  </mask>
+  <path
+    d="M53 48C53 50.2091 51.2091 52 49 52H48C45.7909 52 44 50.2091 44 48V41H42V48C42 50.2091 40.2091 52 38 52H37C34.7909 52 33 50.2091 33 48V41H31V48C31 50.2091 29.2091 52 27 52H26C23.7909 52 22 50.2091 22 48V41H20V48C20 50.2091 18.2091 52 16 52H15C12.7909 52 11 50.2091 11 48V41H9V48C9 50.2091 7.20914 52 5 52H4C1.79086 52 6.44266e-08 50.2091 0 48V15C1.9329e-07 6.71573 6.71573 0 15 0H38C46.2843 5.47619e-07 53 6.71573 53 15V48Z"
+    fill="var(--color-accent)"
+  />
+  <path
+    d="M53 48H54V48H53ZM49 52V53V52ZM44 48H43V48H44ZM44 41H45V40H44V41ZM42 41V40H41V41H42ZM42 48H43V48H42ZM38 52V53V52ZM33 48H32V48H33ZM33 41H34V40H33V41ZM31 41V40H30V41H31ZM31 48H32V48H31ZM27 52V53V52ZM22 48H21V48H22ZM22 41H23V40H22V41ZM20 41V40H19V41H20ZM20 48H21V48H20ZM16 52V53V52ZM11 48H10V48H11ZM11 41H12V40H11V41ZM9 41V40H8V41H9ZM9 48H10V48H9ZM5 52V53V52ZM0 48H-1V48H0ZM0 15H-1V15H0ZM38 0V-1V-1V0ZM53 15H54V15H53ZM53 48H52C52 49.6569 50.6569 51 49 51V52V53C51.7614 53 54 50.7614 54 48H53ZM49 52V51H48V52V53H49V52ZM48 52V51C46.3431 51 45 49.6569 45 48H44H43C43 50.7614 45.2386 53 48 53V52ZM44 48H45V41H44H43V48H44ZM44 41V40H42V41V42H44V41ZM42 41H41V48H42H43V41H42ZM42 48H41C41 49.6569 39.6569 51 38 51V52V53C40.7614 53 43 50.7614 43 48H42ZM38 52V51H37V52V53H38V52ZM37 52V51C35.3431 51 34 49.6569 34 48H33H32C32 50.7614 34.2386 53 37 53V52ZM33 48H34V41H33H32V48H33ZM33 41V40H31V41V42H33V41ZM31 41H30V48H31H32V41H31ZM31 48H30C30 49.6569 28.6569 51 27 51V52V53C29.7614 53 32 50.7614 32 48H31ZM27 52V51H26V52V53H27V52ZM26 52V51C24.3431 51 23 49.6569 23 48H22H21C21 50.7614 23.2386 53 26 53V52ZM22 48H23V41H22H21V48H22ZM22 41V40H20V41V42H22V41ZM20 41H19V48H20H21V41H20ZM20 48H19C19 49.6569 17.6569 51 16 51V52V53C18.7614 53 21 50.7614 21 48H20ZM16 52V51H15V52V53H16V52ZM15 52V51C13.3431 51 12 49.6569 12 48H11H10C10 50.7614 12.2386 53 15 53V52ZM11 48H12V41H11H10V48H11ZM11 41V40H9V41V42H11V41ZM9 41H8V48H9H10V41H9ZM9 48H8C8 49.6569 6.65685 51 5 51V52V53C7.76142 53 10 50.7614 10 48H9ZM5 52V51H4V52V53H5V52ZM4 52V51C2.34315 51 1 49.6569 1 48H0H-1C-1 50.7614 1.23858 53 4 53V52ZM0 48H1V15H0H-1V48H0ZM0 15H1C1 7.26801 7.26801 1 15 1V0V-1C6.16344 -1 -1 6.16344 -1 15H0ZM15 0V1H38V0V-1H15V0ZM38 0V1C45.732 1 52 7.26801 52 15H53H54C54 6.16344 46.8366 -0.999999 38 -1V0ZM53 15H52V48H53H54V15H53Z"
+    fill="#F6F0E8"
+    mask="url(#welcome-octo-mask)"
+  />
+  <!-- Round eyes (default state only — no animation variants needed) -->
+  <circle cx="19" cy="15" r="2.5" fill="#F6F0E8" />
+  <circle cx="33" cy="15" r="2.5" fill="#F6F0E8" />
+  <!-- Happy mouth -->
+  <path d="M21 26C24.3333 27.3333 27.6667 27.3333 31 26" stroke="#F6F0E8" stroke-width="1.5" stroke-linecap="round" />
+</svg>`;
+
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+
+function htpSteps(): string {
+  return `<div class="w-full space-y-5" aria-label="How to play">
+
+      <!-- Step 1: Read the clues -->
+      <div>
+        <p class="text-base text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-accent" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
+        <div class="grid [grid-template-columns:max-content_1fr] gap-x-4 items-center">
+          <div class="flex flex-col gap-2">
+            <span class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide">
+              <span>PRIME</span>
+              <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
+            </span>
+            <div class="flex justify-between gap-1" aria-hidden="true">
+              <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/50"></span>
+              <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/5"></span>
+              <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/5"></span>
+            </div>
+          </div>
+          <div class="text-lg text-text font-[Quicksand]">The <span class="font-bold">first</span> digit is <span class="font-bold text-accent whitespace-nowrap">a prime number</span></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Open the digit boxes -->
+      <div>
+        <p class="text-base text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
+        <div class="flex items-start gap-2.5">
+          <div class="digit-box flex-1 aspect-square min-w-0 shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946]">
+            <div class="digit-box__grid four-col">
+              <span class="elim">0</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+              <span>6</span>
+              <span>7</span>
+              <span>8</span>
+              <span>9</span>
+            </div>
+          </div>
+          <span class="text-xl text-text shrink-0 self-center" aria-hidden="true">→</span>
+          <div class="flex flex-col items-center justify-between flex-1 min-w-0 self-stretch">
+            <div class="grid grid-cols-5 gap-0.5 w-full">
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">0</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">1</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">2</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">3</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">4</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">5</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">6</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text">7</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">8</span>
+              <span class="font-mono text-xs font-semibold text-center flex items-center justify-center aspect-square rounded-sm bg-surface border border-border text-text opacity-20 line-through">9</span>
+            </div>
+            <span class="text-sm text-text text-center leading-tight">Tap to remove</span>
+          </div>
+          <span class="text-xl text-text shrink-0 self-center" aria-hidden="true">→</span>
+          <div class="digit-box flex-1 aspect-square min-w-0 shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946]"><span class="digit-box__resolved">5</span></div>
+        </div>
+      </div>
+
+      <!-- Step 3: Submit -->
+      <p class="text-base text-text">3. When 1 digit remains in each, submit your answer</p>
+
+    </div>`;
+}
+
+function playButton(): string {
+  return `<button type="button" data-play-btn class="btn btn-solid w-full"><svg aria-hidden="true"><use href="/sprites.svg#icon-play"/></svg>Play</button>`;
+}
+
+function renderWelcome(): void {
+  const screen = document.querySelector('[data-screen="welcome"]') as HTMLElement | null;
+  if (!screen) return;
+
+  const today = todayKey();
+  const num = puzzleNumberFor(today);
+  const formattedDate = formatDate(today);
+  const puzzleNumHtml = num > 0 ? `<p class="text-base text-text text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
+
+  // Section is `flex flex-col flex-1` (filling remaining viewport between header
+   // and footer). Set items-center + justify-center on the section so content
+  // vertically centres without relying on min-h-full inside.
+  screen.classList.add("items-center", "justify-center");
+  screen.innerHTML = `
+    <div class="w-full max-w-[390px] flex flex-col items-center gap-6 px-6 py-8">
+      <div class="flex flex-col items-center gap-1">
+        <h1 class="text-4xl font-bold font-[Comfortaa] text-text tracking-tight">Clumeral</h1>
+        <p class="text-base text-text text-center">A daily number puzzle</p>
+      </div>
+      ${OCTO_SVG}
+      ${puzzleNumHtml}
+      <p class="text-lg font-bold text-text text-center">Work out the number from 100–999</p>
+      ${playButton()}
+      ${htpSteps()}
+    </div>`;
+}
+
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+export function initWelcome(): void {
+  renderWelcome();
+
+  const playBtn = document.querySelector('[data-play-btn]') as HTMLButtonElement | null;
+  playBtn?.addEventListener("click", () => {
+    // skipResolve bypasses the RTE-03 hasData gate — the user explicitly asked to play
+    // by clicking the button, so the deep-link redirect rule doesn't apply.
+    navigate('/play', { skipResolve: true });
+  });
+}

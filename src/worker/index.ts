@@ -1,15 +1,18 @@
 // Worker entry point — serves API routes for puzzle data and guess validation.
 // The answer is never sent to the client.
 
-import { runFilterLoop, makeRng, dateSeedInt, todayLocal, puzzleNumber, puzzleDate } from './puzzle.ts';
+import { runFilterLoop, makeRng, dateSeedInt, todayUTC, puzzleNumber, puzzleDate } from './puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
+import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
-import { renderPuzzlesPage } from './puzzles.ts';
+import { renderArchivePage } from './puzzles.ts';
+import { renderFeedbackPage, type FeedbackRow } from './feedback.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
   ANALYTICS: AnalyticsEngineDataset;
   PUZZLES: KVNamespace;
+  FEEDBACK_DB: D1Database;
   HMAC_SECRET: string;
   CF_ACCOUNT_ID: string;
   CF_API_TOKEN: string;
@@ -23,14 +26,15 @@ interface StoredPuzzle {
 
 const VALID_EVENTS = new Set([
   'puzzle_start', 'puzzle_complete', 'incorrect_guess',
-  'htp_opened', 'htp_dismissed', 'feedback_submitted',
-  'theme_toggle', 'colour_change', 'tooltip_opened',
+  'htp_opened', 'feedback_submitted',
+  'theme_toggle', 'tooltip_opened',
+  'route_change',
 ]);
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
 }
 
@@ -51,14 +55,30 @@ async function getDailyPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
-async function handleGetPuzzle(env: Env): Promise<Response> {
-  const today = todayLocal();
-  const puzzle = await getDailyPuzzle(env, today);
-  return json({
-    date: today,
-    puzzleNumber: puzzle.puzzleNumber,
-    clues: puzzle.clues,
-  });
+async function handleGetPuzzle(env: Env, url: URL): Promise<Response> {
+  // The client keys the puzzle day on its LOCAL date (date.ts todayKey) and
+  // sends it as ?date=. Honour it when it's a well-formed, in-range date so the
+  // served puzzle matches the client's local day — otherwise a UTC+offset player
+  // in the window between local and UTC midnight gets the wrong day's puzzle
+  // (the divergence behind the not-completed / stats-bounce / streak bugs).
+  // isFuturePuzzleDate already rejects today+2 and malformed input (the +1-day
+  // tolerance is exactly the ahead-of-UTC local-midnight case, #205), so any
+  // rejected value falls back to the worker's UTC today (also the no-param
+  // back-compat path).
+  const requested = url.searchParams.get('date');
+  const date = requested && !isFuturePuzzleDate(requested) ? requested : todayUTC();
+  const puzzle = await getDailyPuzzle(env, date);
+  // no-store: the response now varies by ?date= and is day-sensitive — never let
+  // an intermediary pin one player's local-day (or today+1) response past rollover.
+  return json(
+    {
+      date,
+      puzzleNumber: puzzle.puzzleNumber,
+      clues: puzzle.clues,
+    },
+    200,
+    { 'Cache-Control': 'no-store' },
+  );
 }
 
 async function handleGetRandomPuzzle(env: Env): Promise<Response> {
@@ -97,7 +117,7 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
       return json({ error: 'Invalid date format' }, 400);
     }
-    if (body.date > todayLocal()) {
+    if (isFuturePuzzleDate(body.date)) {
       return json({ error: 'Cannot guess future puzzles' }, 400);
     }
     const puzzle = await getDailyPuzzle(env, body.date);
@@ -105,6 +125,97 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
   }
 
   return json({ error: 'Provide either date or token' }, 400);
+}
+
+// ─── Feedback (D1) ───────────────────────────────────────────────────────────
+
+interface FeedbackBody {
+  category?: string;
+  message?: string;
+  puzzleNumber?: string;
+  date?: string;
+  device?: string;
+  browser?: string;
+  userAgent?: string;
+  history?: string;
+  prefs?: string;
+  active?: string;
+  tzOffset?: number;
+  localToday?: string;
+  screen?: string;
+}
+
+// Coerce any client value to a trimmed, length-capped string (or null when empty).
+function str(v: unknown, max: number): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.length > max ? t.slice(0, max) : t;
+}
+
+// Known feedback categories — anything else is bucketed as 'other' so the column
+// stays a bounded, predictable set (the client only sends these four).
+const FEEDBACK_CATEGORIES = new Set(['general', 'bug', 'praise', 'suggestion']);
+
+// Reject oversized bodies before buffering. The per-field caps below sum to ~30KB;
+// 64KB leaves headroom for JSON overhead while bounding memory per request.
+const MAX_FEEDBACK_BODY = 64 * 1024;
+
+async function handleFeedbackSubmit(request: Request, env: Env): Promise<Response> {
+  const declaredLen = Number(request.headers.get('content-length') || 0);
+  if (declaredLen > MAX_FEEDBACK_BODY) {
+    return json({ error: 'Payload too large' }, 413);
+  }
+
+  let body: FeedbackBody;
+  try {
+    body = await request.json() as FeedbackBody;
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+
+  const rawCategory = str(body.category, 32) ?? 'general';
+  const category = FEEDBACK_CATEGORIES.has(rawCategory) ? rawCategory : 'other';
+  const message = str(body.message, 2000);
+  if (!message) return json({ error: 'Message required' }, 400);
+
+  const tzOffset = typeof body.tzOffset === 'number' && Number.isFinite(body.tzOffset)
+    ? Math.trunc(body.tzOffset)
+    : null;
+
+  // Server-set: which host received this submission. clumeral.com = real;
+  // preview/localhost = test. Never trust the client for this.
+  const host = new URL(request.url).hostname;
+
+  try {
+    await env.FEEDBACK_DB.prepare(
+      `INSERT INTO feedback
+         (category, message, puzzle_number, puzzle_date, device, browser,
+          user_agent, history, prefs, active, tz_offset, local_today, screen, host)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      category,
+      message,
+      str(body.puzzleNumber, 16),
+      str(body.date, 16),
+      str(body.device, 64),
+      str(body.browser, 64),
+      str(body.userAgent, 512),
+      str(body.history, 8192),
+      str(body.prefs, 4096),
+      str(body.active, 4096),
+      tzOffset,
+      str(body.localToday, 16),
+      str(body.screen, 32),
+      host,
+    ).run();
+  } catch (err: unknown) {
+    // Log the real cause (visible via `wrangler tail`); never leak schema/SQL to the client.
+    console.error('Feedback insert failed:', err instanceof Error ? err.message : String(err));
+    return json({ error: 'Could not save feedback' }, 500);
+  }
+
+  return json({ ok: true }, 200);
 }
 
 // ─── Main fetch handler ──────────────────────────────────────────────────────
@@ -116,7 +227,7 @@ export default {
     // ── API routes ──
 
     if (request.method === 'GET' && url.pathname === '/api/puzzle') {
-      return handleGetPuzzle(env);
+      return handleGetPuzzle(env, url);
     }
 
     if (request.method === 'GET' && url.pathname === '/api/puzzle/random') {
@@ -133,7 +244,7 @@ export default {
       const num = parseInt(puzzleByNum[1], 10);
       if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
       const date = puzzleDate(num);
-      if (date > todayLocal()) return json({ error: 'Puzzle not available yet' }, 400);
+      if (isFuturePuzzleDate(date)) return json({ error: 'Puzzle not available yet' }, 400);
       const puzzle = await getDailyPuzzle(env, date);
       return json({ date, puzzleNumber: num, clues: puzzle.clues });
     }
@@ -146,7 +257,7 @@ export default {
       const num = parseInt(solutionByNum[1], 10);
       if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
       const date = puzzleDate(num);
-      if (date >= todayLocal()) return json({ error: 'Solution not available' }, 403);
+      if (date >= todayUTC()) return json({ error: 'Solution not available' }, 403);
       const puzzle = await getDailyPuzzle(env, date);
       return json({ answer: puzzle.answer });
     }
@@ -162,9 +273,44 @@ export default {
         const { answer } = runFilterLoop(rng);
         return json({ answer });
       }
-      const today = todayLocal();
+      const today = todayUTC();
       const puzzle = await getDailyPuzzle(env, today);
       return json({ answer: puzzle.answer });
+    }
+
+    // ── Feedback ──
+
+    if (request.method === 'POST' && url.pathname === '/api/feedback') {
+      return handleFeedbackSubmit(request, env);
+    }
+
+    // GET /feedback — admin HTML table. Access control is enforced at the edge by
+    // Cloudflare Access (Zero Trust app on this path), not in code — like an
+    // unlinked dashboard, but private. POST /api/feedback above stays public so
+    // players can still submit.
+    if (request.method === 'GET' && url.pathname === '/feedback') {
+      const limit = Math.max(1, Math.min(Number(url.searchParams.get('limit')) || 200, 500));
+      // Default to real (clumeral.com) feedback; ?all=1 includes preview/test rows.
+      // Legacy rows were backfilled to clumeral.com, so the NULL case = real too.
+      const showAll = url.searchParams.get('all') === '1';
+      const cols = `id, created_at, category, message, puzzle_number, puzzle_date, device,
+                    browser, user_agent, history, prefs, active, tz_offset, local_today, screen, host`;
+      try {
+        const stmt = showAll
+          ? env.FEEDBACK_DB.prepare(`SELECT ${cols} FROM feedback ORDER BY id DESC LIMIT ?`).bind(limit)
+          : env.FEEDBACK_DB.prepare(
+              `SELECT ${cols} FROM feedback
+                WHERE host = 'clumeral.com' OR host IS NULL
+                ORDER BY id DESC LIMIT ?`,
+            ).bind(limit);
+        const { results } = await stmt.all<FeedbackRow>();
+        return new Response(renderFeedbackPage(results, url.hostname, showAll), {
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      } catch (err: unknown) {
+        console.error('Feedback page query failed:', err instanceof Error ? err.message : String(err));
+        return new Response('Could not load feedback', { status: 500, headers: { 'Content-Type': 'text/plain' } });
+      }
     }
 
     // ── Analytics ──
@@ -228,11 +374,11 @@ export default {
       }
     }
 
-    // ── Puzzles ──
+    // ── Archive (renamed from /puzzles) ──
 
-    // GET /puzzles — Worker-rendered puzzle history page
-    if (request.method === 'GET' && url.pathname === '/puzzles') {
-      const today = todayLocal();
+    // GET /archive — Worker-rendered archive list (renamed from /puzzles).
+    if (request.method === 'GET' && url.pathname === '/archive') {
+      const today = todayUTC();
       const todayNum = puzzleNumber(today);
       const keys = await env.PUZZLES.list();
       const puzzles = await Promise.all(
@@ -243,28 +389,67 @@ export default {
             return p ? { num: puzzleNumber(k.name), date: k.name, clues: p.clues.length } : null;
           })
       );
-      // Include today if not yet in KV
       const dates = new Set(keys.keys.map(k => k.name));
       if (!dates.has(today)) {
         const p = await getDailyPuzzle(env, today);
         puzzles.push({ num: todayNum, date: today, clues: p.clues.length });
       }
       const valid = puzzles.filter((p): p is NonNullable<typeof p> => p !== null);
-      const html = renderPuzzlesPage(valid);
-      return new Response(html, {
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      });
+      const html = renderArchivePage(valid);
+      return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
-    // GET /puzzles/:num — serve game HTML for replay
-    if (request.method === 'GET' && /^\/puzzles\/\d+$/.test(url.pathname)) {
+    // GET /archive/<segment> — SPA shell. Client router handles dated puzzle replay
+    // for valid YYYY-MM-DD; resolveRoute bounces malformed/future segments to /archive
+    // (ARC-03). Loose regex so the resolver — not the worker — owns malformed-date policy.
+    if (request.method === 'GET' && /^\/archive\/[^/]+$/.test(url.pathname)) {
       return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
+    }
+
+    // GET /puzzles — 302 to /archive (back-compat per ARC-01; 302 not 301 to avoid permanent caching).
+    if (request.method === 'GET' && url.pathname === '/puzzles') {
+      return new Response(null, { status: 302, headers: { Location: '/archive' } });
+    }
+
+    // GET /puzzles/<num> — 302 to /archive/<YYYY-MM-DD>.
+    const oldReplay = url.pathname.match(/^\/puzzles\/(\d+)$/);
+    if (request.method === 'GET' && oldReplay) {
+      const num = parseInt(oldReplay[1], 10);
+      if (num < 1) return new Response(null, { status: 302, headers: { Location: '/archive' } });
+      const date = puzzleDate(num);
+      return new Response(null, { status: 302, headers: { Location: `/archive/${date}` } });
+    }
+
+    // GET /puzzles/<YYYY-MM-DD> — old shareable URL shape, 302 to /archive/<date>.
+    if (request.method === 'GET' && /^\/puzzles\/\d{4}-\d{2}-\d{2}$/.test(url.pathname)) {
+      const date = url.pathname.slice('/puzzles/'.length);
+      return new Response(null, { status: 302, headers: { Location: `/archive/${date}` } });
+    }
+    // Anything else under /puzzles/* — fall back to archive list.
+    if (request.method === 'GET' && url.pathname.startsWith('/puzzles/')) {
+      return new Response(null, { status: 302, headers: { Location: '/archive' } });
     }
 
     // ── Static pages ──
 
-    // GET / and /random — serve static HTML (client fetches puzzle via API)
-    if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/random')) {
+    // /sw.js must never sit in any CDN or browser cache or stale deploys would
+    // keep serving the old bundle. Override the asset response's headers.
+    if (request.method === 'GET' && url.pathname === '/sw.js') {
+      const res = await env.ASSETS.fetch(request);
+      const headers = new Headers(res.headers);
+      headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+    }
+
+    // GET / and client SPA routes — serve static HTML (client router handles in-page nav).
+    if (request.method === 'GET' && (
+      url.pathname === '/' ||
+      url.pathname === '/index.html' ||
+      url.pathname === '/random' ||
+      url.pathname === '/welcome' ||
+      url.pathname === '/play' ||
+      url.pathname === '/solved'
+    )) {
       return env.ASSETS.fetch(new Request(new URL('/index.html', request.url)));
     }
 
@@ -273,7 +458,7 @@ export default {
 
   // ── Cron: pre-generate today's puzzle at midnight UTC ──
   async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
-    const today = todayLocal();
+    const today = todayUTC();
     await getDailyPuzzle(env, today);
   },
 };

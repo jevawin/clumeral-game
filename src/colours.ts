@@ -1,4 +1,6 @@
-// Colour theme system — accent colour picker, icon swapping, dev helpers.
+// Clumeral — colours.ts
+// Accent colour picker. 4 themes, persists in localStorage. The app icon is
+// fixed (green octopus on black) and does not follow the accent or theme.
 
 const STORAGE_COLOUR = 'dlng_colour';
 
@@ -9,86 +11,73 @@ interface ColourTheme {
 }
 
 const THEMES: ColourTheme[] = [
+  { name: 'Lime', light: '#0a850a', dark: '#1ead52' },
   { name: 'Berry', light: '#de1f46', dark: '#ea6c85' },
   { name: 'Blue', light: '#376ddb', dark: '#6393f2' },
-  { name: 'Lime', light: '#0a850a', dark: '#1ead52' },
   { name: 'Violet', light: '#9a44ea', dark: '#b679f0' },
 ];
 
-function getMode(): string {
-  const cl = document.documentElement.classList;
-  if (cl.contains('dark')) return 'dark';
-  if (cl.contains('light')) return 'light';
-  return window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
+const root = document.documentElement;
+let active: ColourTheme = THEMES[0];
+
+function isDark(): boolean {
+  if (root.classList.contains('dark')) return true;
+  if (root.classList.contains('light')) return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
-function swapIcons(colourName: string): void {
-  const mode = getMode();
-  const dir = `icons/${colourName.toLowerCase()}/${mode}/`;
-  const ati = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
-  if (ati) ati.href = dir + 'apple-touch-icon.png';
-  const ico = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
-  if (ico) { ico.type = 'image/png'; ico.href = dir + 'icon-192.png'; }
-}
-
-function applyTheme(theme: ColourTheme): void {
-  const r = document.documentElement.style;
-  r.setProperty('--acc', `light-dark(${theme.light},${theme.dark})`);
-  r.setProperty('--acc-btn', theme.light);
-  r.setProperty('--tag-bg', `light-dark(${theme.light}14,${theme.dark}1a)`);
-  r.setProperty('--md-lit-bg', `light-dark(${theme.light}1a,${theme.dark}1f)`);
-  r.setProperty('--dig-sh-act', `0.1875rem 0.1875rem 0 ${theme.light}4d`);
+function applyColour(theme: ColourTheme): void {
+  active = theme;
+  const colour = isDark() ? theme.dark : theme.light;
+  root.style.setProperty('--color-accent', colour);
   window._currentColour = theme.name;
-  swapIcons(theme.name);
+  refreshSwatchState();
+}
+
+function refreshSwatchState(): void {
+  const wrap = document.querySelector('[data-swatches]');
+  if (!wrap) return;
+  wrap.querySelectorAll<HTMLButtonElement>('.swatch-btn').forEach((btn) => {
+    const isActive = btn.dataset.colour === active.name;
+    btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+    btn.tabIndex = isActive ? 0 : -1;
+  });
 }
 
 function renderSwatches(): void {
   const wrap = document.querySelector('[data-swatches]');
   if (!wrap) return;
+  wrap.setAttribute('role', 'radiogroup');
+  wrap.setAttribute('aria-label', 'Accent colour');
 
   THEMES.forEach((t) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'swatch-btn';
-    btn.setAttribute('aria-label', `Set accent colour to ${t.name}`);
-    btn.innerHTML = `<span class="swatch-btn__dot" style="background:light-dark(${t.light},${t.dark})" aria-hidden="true"></span><span class="swatch-btn__label" style="color:light-dark(${t.light},${t.dark})">${t.name}</span>`;
+    btn.dataset.colour = t.name;
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-label', t.name);
+    btn.setAttribute('aria-checked', 'false');
+    btn.style.setProperty('--swatch-light', t.light);
+    btn.style.setProperty('--swatch-dark', t.dark);
     btn.addEventListener('click', () => {
-      applyTheme(t);
+      applyColour(t);
       localStorage.setItem(STORAGE_COLOUR, t.name);
     });
     wrap.appendChild(btn);
   });
-}
 
-function renderDevLinks(): void {
-  const BLOCKED_HOSTS = ['clumeral.com', 'staging-clumeral-game.jevawin.workers.dev'];
-  if (BLOCKED_HOSTS.includes(location.hostname)) return;
-
-  const dev = document.querySelector('[data-dev-links]');
-  if (!dev) return;
-  (dev as HTMLElement).classList.remove('hidden');
-
-  const addBtn = (label: string, fn: () => void): void => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'text-link text-link--muted';
-    btn.textContent = label;
-    btn.addEventListener('click', fn);
-    dev.appendChild(btn);
-  };
-
-  addBtn('Reset state', () => { localStorage.clear(); location.reload(); });
-  addBtn('Fill answer', () => { if (window._devFillAnswer) window._devFillAnswer(); });
+  refreshSwatchState();
 }
 
 export function initColours(): void {
   const saved = localStorage.getItem(STORAGE_COLOUR);
-  const active = saved ? THEMES.find((t) => t.name === saved) : THEMES.find((t) => t.name === 'Lime');
-  if (active) applyTheme(active);
+  const found = saved ? THEMES.find((t) => t.name === saved) : null;
+  active = found ?? THEMES.find((t) => t.name === 'Lime')!;
 
   renderSwatches();
-  renderDevLinks();
+  applyColour(active);
 
-  // Expose for theme.ts to call on dark/light toggle
-  window._swapIcons = swapIcons;
+  // theme.ts calls this after dark/light flip so accent picks the right variant.
+  window._refreshAccent = () => applyColour(active);
 }

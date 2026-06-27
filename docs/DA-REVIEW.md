@@ -27,7 +27,7 @@ Devil's advocate review. Fresh-context subagent. Assume code is wrong until prov
 
 ## Theming & CSS
 
-- [ ] New colours use `light-dark(lightVal, darkVal)` with both values
+- [ ] New colours use `light-dark(lightVal, darkVal)` with both values — **except** in SVG `fill`/`stroke` keyframes, where Lightning CSS rewrites `light-dark()` to two concatenated `var()`s (invalid paint → falls back to black). There, use paired custom props swapped per theme on `:root` / `html.dark`. See `@keyframes octo-colours` (#210).
 - [ ] Accent never hardcoded — uses `--acc` / `--acc-btn`
 - [ ] No fixed breakpoints — fluid via `max-width` + relative units
 - [ ] No `!important` unless overriding third-party

@@ -6,8 +6,14 @@
   "description": "Work out the number from 100-999. New puzzle every day.",
   "scripts": {
     "dev": "vite dev",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "build": "vite build",
-    "preview": "vite build && vite preview --host",
+    "preview": "vite build && vite preview --host --port 4173",
+    "e2e:db": "wrangler d1 execute clumeral-feedback --local --command=\"DROP TABLE IF EXISTS feedback;\" && wrangler d1 execute clumeral-feedback --local --file=migrations/0001_create_feedback.sql",
+    "e2e:serve": "npm run e2e:db && npm run preview",
+    "db:migrate:remote": "wrangler d1 execute clumeral-feedback --remote --file=migrations/0001_create_feedback.sql",
     "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
   },
   "repository": {
@@ -20,10 +26,19 @@
   },
   "homepage": "https://clumeral.com",
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@cloudflare/vite-plugin": "^1.31.0",
     "@cloudflare/workers-types": "^4.20260403.1",
+    "@playwright/test": "~1.60",
+    "@types/jsdom": "^28.0.1",
+    "jsdom": "^25.0.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
+    "vitest": "^2.1.9",
     "wrangler": "^4.80.0"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "tailwindcss": "^4.2.2"
   }
 }

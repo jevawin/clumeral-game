@@ -1,48 +1,39 @@
 // Clumeral — modals.ts
 // How-to-Play modal, toast notifications, and feedback modal.
 
-import { loadHistory } from './storage.ts';
+import { todayKey } from './date.ts';
 
-const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbxSnk8QFvjnh9Bmk0kv6I7xacnvDvcw_lgM_gBF6TzvPtqNvAlnxM7UJi-sjMku8bSQKw/exec";
+// Same-origin Worker route — inserts the submission into D1 (#213).
+const FEEDBACK_URL = "/api/feedback";
 
-// ─── How-to-Play modal ──────────────────────────────────────────────────────
+// ─── Debug payload ────────────────────────────────────────────────────────────
 
-export function initModal(): (() => void) | null {
-  const modalEl = document.querySelector('[data-modal]') as HTMLDialogElement | null;
-  if (!modalEl) return null;
-  const modal: HTMLDialogElement = modalEl;
-  const htpBtn = document.querySelector('[data-htp-btn]') as HTMLElement | null;
-
-  function openModal() {
-    localStorage.setItem("cw-htp-seen", "1");
-    modal.showModal();
-    requestAnimationFrame(() => modal.classList.add("open"));
+/**
+ * Reads a single localStorage key safely. Returns "" when the key is missing OR
+ * when access throws (private mode, blocked, quota) — never throws, never blocks
+ * the feedback send.
+ */
+function safeGet(key: string): string {
+  try {
+    return localStorage.getItem(key) ?? "";
+  } catch {
+    return "";
   }
-
-  function closeModal() {
-    modal.classList.remove("open");
-    modal.addEventListener("transitionend", () => {
-      modal.close();
-      if (htpBtn) htpBtn.focus();
-    }, { once: true });
-  }
-
-  const closeBtn = document.querySelector('[data-modal-close]');
-  const gotitBtn = document.querySelector('[data-modal-gotit]');
-  if (htpBtn) htpBtn.addEventListener("click", openModal);
-  if (closeBtn) closeBtn.addEventListener("click", closeModal);
-  if (gotitBtn) gotitBtn.addEventListener("click", closeModal);
-  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-  modal.addEventListener("cancel", (e) => { e.preventDefault(); closeModal(); });
-
-  return openModal;
 }
 
-export function maybeAutoShowModal(openModal: (() => void) | null): void {
-  if (localStorage.getItem("cw-htp-seen")) return;
-  if (loadHistory().length > 0) return;
-  if (!openModal) return;
-  setTimeout(openModal, 400);
+/**
+ * Collects browser diagnostic context attached to every feedback submission.
+ * Raw localStorage strings are forwarded unparsed for server-side reproduction.
+ */
+export function collectDebug() {
+  return {
+    history: safeGet("dlng_history"),
+    prefs: safeGet("dlng_prefs"),
+    active: safeGet("dlng_active"),
+    tzOffset: new Date().getTimezoneOffset(),
+    localToday: todayKey(),
+    screen: `${window.innerWidth}x${window.innerHeight}`,
+  };
 }
 
 // ─── Toast ──────────────────────────────────────────────────────────────────
@@ -51,7 +42,7 @@ export function showToast(message: string, duration: number = 3000): void {
   const container = document.querySelector('[data-toast]') as HTMLElement | null;
   if (!container) return;
   const el = document.createElement("div");
-  el.className = "toast__msg";
+  el.className = "toast-msg";
   el.textContent = message;
   container.appendChild(el);
   requestAnimationFrame(() => el.classList.add("show"));
@@ -64,7 +55,7 @@ export function showToast(message: string, duration: number = 3000): void {
 // ─── Feedback modal ─────────────────────────────────────────────────────────
 
 export function initFeedbackModal(
-  todayLocal: () => string,
+  todayUTC: () => string,
   puzzleNumber: (dateStr: string) => number,
   formatDate: (dateStr: string) => string,
 ): void {
@@ -78,7 +69,6 @@ export function initFeedbackModal(
   const counterEl = document.querySelector('[data-fb-counter]');
   const metaEl = document.querySelector('[data-fb-meta]');
   const sendBtn = document.querySelector('[data-fb-send]') as HTMLButtonElement | null;
-  const headerBtn = document.querySelector('[data-fb-header-btn]');
   const footerBtn = document.querySelector('[data-fb-btn]');
 
   let selectedCat = "general";
@@ -143,7 +133,7 @@ export function initFeedbackModal(
     else if (/Android/i.test(ua)) device = /Mobi/i.test(ua) ? "Android Phone" : "Android Tablet";
     else if (/Mobi/i.test(ua)) device = "Mobile";
 
-    const dateStr = todayLocal();
+    const dateStr = todayUTC();
     const pNum = puzzleNumber(dateStr);
 
     return {
@@ -158,7 +148,7 @@ export function initFeedbackModal(
   function renderMeta() {
     if (!metaEl) return;
     const meta = collectMetadata();
-    metaEl.textContent = `Puzzle ${meta.puzzleNumber} · ${formatDate(meta.date)} · ${meta.device} · ${meta.browser}`;
+    metaEl.textContent = `Puzzle ${meta.puzzleNumber} · ${formatDate(meta.date)} · ${meta.device} · ${meta.browser} · Game data attached to help debug.`;
   }
 
   // Category toggle
@@ -177,7 +167,6 @@ export function initFeedbackModal(
   if (msgEl) msgEl.addEventListener("input", updateCounter);
 
   // Open triggers
-  if (headerBtn) headerBtn.addEventListener("click", openFeedback);
   if (footerBtn) footerBtn.addEventListener("click", openFeedback);
 
   // Close triggers
@@ -203,6 +192,7 @@ export function initFeedbackModal(
       device: meta.device,
       browser: meta.browser,
       userAgent: meta.userAgent,
+      ...collectDebug(),
     };
 
     const MAX_RETRIES = 3;
@@ -210,26 +200,28 @@ export function initFeedbackModal(
       try {
         const res = await fetch(FEEDBACK_URL, {
           method: "POST",
-          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        // no-cors returns opaque response; if no error thrown, it succeeded
-        if (res.ok || res.type === "opaque") {
+        // Same-origin endpoint returns a real (non-opaque) response now.
+        if (res.ok) {
           closeFeedback();
           setTimeout(resetForm, 300);
           showToast("Thanks! Feedback sent.");
           return;
         }
-      } catch (err) {
-        if (attempt < MAX_RETRIES) {
-          await new Promise(r => setTimeout(r, 1000 * attempt));
-          continue;
-        }
+        // 4xx is a client-side problem — retrying won't help, so stop early.
+        if (res.status >= 400 && res.status < 500) break;
+      } catch {
+        // network error — fall through to backoff + retry
+      }
+      if (attempt < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
       }
     }
 
     // All retries exhausted
-    console.error("Feedback submission failed after retries", payload);
+    console.error("Feedback submission failed after retries");
     sending = false;
     if (sendBtn) sendBtn.disabled = false;
     showToast("Couldn't send feedback. Try again later.");

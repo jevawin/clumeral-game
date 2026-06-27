@@ -181,9 +181,13 @@ export function makeRng(seed: number) {
   };
 }
 
-export function todayLocal() {
+// Named after the puzzle's source of truth (UTC). Workers already run in UTC
+// so getFullYear/getUTCFullYear would return the same value here, but using
+// the UTC methods makes the asymmetry with the browser explicit and matches
+// the renamed client-side helper.
+export function todayUTC() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
 export function dateSeedInt(dateStr: string): number {

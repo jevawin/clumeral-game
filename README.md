@@ -15,6 +15,7 @@ Each puzzle gives you clues about a hidden three-digit number. Clues are based o
 - **Vite + TypeScript** — ES modules in dev, bundled for production
 - **Cloudflare Workers** — `@cloudflare/vite-plugin` runs the Worker in dev (same runtime as production)
 - **Cloudflare KV** — daily puzzles cached by date key
+- **Cloudflare D1** — player feedback storage ([docs/FEEDBACK.md](docs/FEEDBACK.md))
 - **Cloudflare Pages** — auto-deploy on merge to `main`
 
 ### Project structure
@@ -22,21 +23,32 @@ Each puzzle gives you clues about a hidden three-digit number. Clues are based o
 ```
 src/
   worker/
-    index.ts     Worker entry — API routes, static page handlers, cron
-    puzzle.ts    Puzzle generation (server-only)
-    crypto.ts    AES-GCM token signing for random puzzles
-    puzzles.ts   Worker-rendered /puzzles archive page
-    stats.ts     Analytics Engine queries for /stats dashboard
-  app.ts         Client UI — fetches puzzle, renders clues, handles guesses
-  style.css      All styling (light-dark themes, accent-colour system)
-  storage.ts     localStorage helpers
-  theme.ts       Light/dark toggle
-  colours.ts     Accent colour picker
-  modals.ts      How-to-play + feedback modals
-  bubbles.ts     Correct-answer effect
-  octo.ts        Mascot animations
-public/          Static assets (icons, sprites.svg, manifest.json, sw.js)
-index.html       Game shell (Vite entry)
+    index.ts        Worker entry — API routes, static page handlers, cron
+    puzzle.ts        Puzzle generation (server-only)
+    crypto.ts        AES-GCM token signing for random puzzles
+    puzzles.ts       Worker-rendered /puzzles archive page
+    stats.ts         Analytics Engine queries for /stats dashboard
+    feedback.ts      /feedback admin dashboard renderer (reads D1)
+    date-guard.ts    Worker-side future-puzzle date guard (+1 day tolerance)
+  app.ts             Client UI — fetches puzzle, renders clues, handles guesses
+  route-resolver.ts  Pure route resolver (no side effects/I/O)
+  router.ts          Client-side router — history, title, analytics, scroll restoration
+  screens.ts         Three-screen state machine (welcome/game/completion) + fade transitions
+  welcome.ts         Welcome screen content + Play button
+  completion.ts      Completion screen — stats grid, countdown, feedback button
+  date.ts            Shared client date helpers (epoch, puzzle-day keying)
+  storage.ts         localStorage helpers (history, prefs)
+  theme.ts           Light/dark toggle
+  colours.ts         Accent colour picker
+  modals.ts          How-to-play + feedback modals
+  bubbles.ts         Correct-answer effect
+  octo.ts            Mascot animations
+  walkthrough.ts     First-play octopus walkthrough (header tutorial, issue #214)
+  tailwind.css       Tailwind styles
+  types.ts           Shared client type definitions
+  global.d.ts        Global/window type declarations
+public/              Static assets (icons, sprites.svg, manifest.json, sw.js)
+index.html           Game shell (Vite entry)
 ```
 
 ### Puzzle generation
@@ -70,6 +82,15 @@ npm run dev
 ```
 
 The dev server runs the Worker in Cloudflare's local runtime, so API endpoints and KV behave the same as production.
+
+## Testing
+
+```bash
+npm test          # Unit tests (Vitest + jsdom)
+npm run test:e2e  # End-to-end browser tests (Playwright)
+```
+
+Playwright runs against the **production build** (`vite preview`), not the dev server. Some bugs only exist in built output — Tailwind v4's Lightning CSS optimize pass runs on build but not dev. The e2e suite catches those (e.g. #210, where `light-dark()` in an SVG fill keyframe broke only after the build transform). E2e specs live in `e2e/`.
 
 ## API endpoints
 

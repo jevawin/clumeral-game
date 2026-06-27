@@ -22,30 +22,9 @@ When the user wants to add a roadmap item, create a GitHub issue in `jevawin/clu
 
 ## Body template
 
-Adapt — not every section applies. Bug fix might only need What / Why / Acceptance criteria. Bigger feature wants the full set.
+The body template lives in GitHub: [`.github/ISSUE_TEMPLATE/roadmap-item.md`](../.github/ISSUE_TEMPLATE/roadmap-item.md). That file is the single source of truth — edit it there, not here. Opening an issue from the GitHub UI auto-applies the `roadmap` label + `jevawin` assignee and loads the body, which includes a **Definition of done** checklist mirroring the discuss → plan → execute → review + QA convention in [CLAUDE.md](../CLAUDE.md).
 
-```markdown
-## What
-[One or two sentences. Plain English.]
-
-## Why
-[Problem solved or player value. For bigger items, user-story framing works: "As a player, I want X so that Y."]
-
-## Must have
-- [Core requirement]
-
-## Nice to have
-- [Optional enhancement]
-
-## Details
-[Approach, constraints, options. Sub-headings OK for big items.]
-
-## Open questions
-- [Pending decision]
-
-## Acceptance criteria
-- [ ] [Specific, testable outcome]
-```
+When creating from the CLI (`gh issue create`), the template is not auto-loaded — copy the body from that file, or open the issue in the browser to use the form. Adapt the sections; not every one applies (a bug fix might need only What / Why / Acceptance criteria).
 
 ### Section notes
 

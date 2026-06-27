@@ -27,3 +27,21 @@ node_modules/
 npm-debug.log*
 .wrangler/
 .vite/
+
+# Claude Code local state
+.claude/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Image export scratch (Figma exports, processed then removed)
+NEW_IMAGES/
+
+# Local Worker secrets (never commit)
+.dev.vars
+
+# One-off data import — real user feedback, never commit to the repo
+migrations/0002_import_legacy_feedback.sql

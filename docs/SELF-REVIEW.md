@@ -13,7 +13,7 @@ Complements DA-REVIEW (architecture). This owns line-level details: stale values
 
 ## CSS accuracy
 
-- [ ] New custom props use `light-dark()` for theme-aware values
+- [ ] New custom props use `light-dark()` for theme-aware values — except SVG `fill`/`stroke` keyframes (use paired props on `:root`/`html.dark`; `light-dark()` breaks there after the Lightning CSS build pass — see #210)
 - [ ] Using existing vars (`--acc`, `--text`, `--muted` etc), not hardcoded hex
 - [ ] Works in `color-scheme: light` and `dark`
 - [ ] `font-family` uses DM Sans (body) / Inconsolata (mono)

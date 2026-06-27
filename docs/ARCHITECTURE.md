@@ -21,6 +21,7 @@ src/
     puzzle.ts    Filter/compute logic, RNG, seeding (server-only)
     puzzles.ts   /puzzles history page (SSR)
     stats.ts     /stats dashboard, Analytics Engine queries
+    feedback.ts  /feedback admin dashboard renderer (reads D1)
     crypto.ts    AES-GCM token signing for random puzzles
 public/          Static (icons, manifest, sw.js)
 index.html       Shell
@@ -34,12 +35,18 @@ index.html       Shell
 - `GET /api/puzzle/:num/solution` — answer for PAST puzzles only
 - `POST /api/guess` — server validates, returns correct/incorrect
 - `POST /api/event` — analytics
+- `POST /api/feedback` — store player feedback (public)
 - `GET /api/stats` — stats data
 - `GET /api/dev/answer` — dev only
 - `GET /stats`, `/puzzles`, `/puzzles/:num` — SSR HTML
+- `GET /feedback` — admin feedback dashboard (private, gated by Cloudflare Access)
 - `GET /`, `/index.html`, `/random` — app shell
 
 Client fetches puzzle data on load. Never has the answer.
+
+## Feedback
+
+Player feedback is stored in **Cloudflare D1** (`clumeral-feedback`, binding `FEEDBACK_DB`), written by `POST /api/feedback` and read via the private `/feedback` dashboard. Full reference — schema, access, migrations, process: [FEEDBACK.md](FEEDBACK.md).
 
 ## Puzzle algorithm (puzzle.ts)
 
@@ -54,7 +61,7 @@ Client fetches puzzle data on load. Never has the answer.
 
 ## localStorage keys
 
-- `dlng_history` — `[{date, tries}]`, max 60
+- `dlng_history` — `[{date, tries, answer?, archived?}]` (`archived: true` = a past/archive solve, excluded from daily stats)
 - `dlng_prefs` — `{saveScore}`
 - `dlng_theme` — `"light"|"dark"`
 - `dlng_colour` — accent colour id

@@ -4,7 +4,8 @@ const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/manifest.json',
-  '/sprites.svg'
+  '/sprites.svg',
+  /* __PRECACHE_ASSETS__ */
 ];
 
 self.addEventListener('install', (e) => {
@@ -61,7 +62,7 @@ self.addEventListener('fetch', (e) => {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
           return res;
-        });
+        }).catch(() => caches.match(e.request));
         return cached || fetched;
       })
     );
