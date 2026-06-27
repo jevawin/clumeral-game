@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Clumeral — Move your data</title>
+    <style>
+      :root {
+        --bg: #faf9f6;
+        --surface: #ffffff;
+        --text: #262624;
+        --muted: #6b6b66;
+        --border: #d8d6cf;
+        --accent: #0a850a;
+        --accent-text: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d0d0c;
+          --surface: #1a1a18;
+          --text: #f2f1ec;
+          --muted: #a3a39c;
+          --border: #3a3a36;
+          --accent: #34c759;
+          --accent-text: #06210b;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 26rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.75rem 1.5rem 1.5rem;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+      }
+      h1 { font-size: 1.35rem; margin: 0 0 0.5rem; }
+      p { margin: 0 0 1rem; }
+      .muted { color: var(--muted); font-size: 0.9rem; }
+      ul.items {
+        list-style: none;
+        margin: 0 0 1.25rem;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      ul.items li {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.6rem 0.85rem;
+        font-size: 0.95rem;
+      }
+      ul.items li + li { border-top: 1px solid var(--border); }
+      ul.items li span:last-child { color: var(--muted); text-align: right; }
+      button {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        font: inherit;
+        font-weight: 600;
+        color: var(--accent-text);
+        background: var(--accent);
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      button:disabled { opacity: 0.5; cursor: default; }
+      button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+      a.link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        margin-top: 0.5rem;
+        color: var(--accent);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      a.link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+      .warn {
+        margin: 0 0 1.25rem;
+        padding: 0.7rem 0.85rem;
+        border-radius: 10px;
+        background: rgba(180, 120, 0, 0.12);
+        color: var(--text);
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app" aria-live="polite">
+      <p class="muted">Loading…</p>
+    </main>
+
+    <script>
+      // Self-contained: no imports, no build deps. The page is origin-independent
+      // so the identical file works as the export side (preview) and the import
+      // side (clumeral.com). Data rides in the URL fragment, which never reaches
+      // the server, so no game data lands in Cloudflare logs.
+      (function () {
+        "use strict";
+
+        // Keys worth moving. Deliberately excludes dlng_uid (analytics id — each
+        // origin keeps its own) and dlng_last_visit_date (rollover bookkeeping).
+        var KEYS = ["dlng_history", "dlng_colour", "dlng_theme", "dlng_prefs", "dlng_active"];
+        var PROD = "https://clumeral.com";
+        var PREVIEW = "https://new-design-clumeral-game.jevawin.workers.dev";
+
+        // Export targets the "other" known origin. From the preview that's prod;
+        // from prod it's the preview (so the tool is reversible).
+        var dest = location.hostname === "clumeral.com" ? PREVIEW : PROD;
+        var destHost = dest.replace(/^https?:\/\//, "");
+
+        var app = document.getElementById("app");
+
+        function el(tag, props, children) {
+          var node = document.createElement(tag);
+          if (props) Object.keys(props).forEach(function (k) { node[k] = props[k]; });
+          (children || []).forEach(function (c) {
+            node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+          });
+          return node;
+        }
+
+        function clear() { while (app.firstChild) app.removeChild(app.firstChild); }
+
+        function readLocal() {
+          var data = {};
+          KEYS.forEach(function (k) {
+            var v = localStorage.getItem(k);
+            if (v != null) data[k] = v;
+          });
+          return data;
+        }
+
+        function solveCount(historyRaw) {
+          try {
+            var arr = JSON.parse(historyRaw);
+            return Array.isArray(arr) ? arr.length : 0;
+          } catch (e) { return 0; }
+        }
+
+        // Human summary of a data object, as [label, value] rows.
+        function summarise(data) {
+          var rows = [];
+          if (data.dlng_history != null) {
+            var n = solveCount(data.dlng_history);
+            rows.push(["Puzzle history", n + (n === 1 ? " solve" : " solves")]);
+          }
+          if (data.dlng_theme != null) rows.push(["Theme", data.dlng_theme]);
+          if (data.dlng_colour != null) rows.push(["Colour", data.dlng_colour]);
+          if (data.dlng_prefs != null) rows.push(["Preferences", "saved"]);
+          if (data.dlng_active != null) rows.push(["Game in progress", "yes"]);
+          return rows;
+        }
+
+        function itemsList(rows) {
+          return el(
+            "ul",
+            { className: "items" },
+            rows.map(function (r) {
+              return el("li", null, [el("span", null, [r[0]]), el("span", null, [r[1]])]);
+            })
+          );
+        }
+
+        function parsePayload() {
+          var m = location.hash.match(/^#d=(.+)$/);
+          if (!m) return null;
+          try {
+            var payload = JSON.parse(decodeURIComponent(m[1]));
+            if (!payload || payload.v !== 1 || typeof payload.data !== "object") return null;
+            return payload;
+          } catch (e) {
+            return null;
+          }
+        }
+
+        // ── Import side ──────────────────────────────────────────────
+        function renderImport(payload) {
+          var data = payload.data;
+          var rows = summarise(data);
+          clear();
+
+          if (rows.length === 0) {
+            app.appendChild(el("h1", null, ["Nothing to import"]));
+            app.appendChild(el("p", { className: "muted" }, ["The link did not carry any Clumeral data."]));
+            app.appendChild(el("a", { className: "link", href: "/" }, ["Go to Clumeral →"]));
+            return;
+          }
+
+          app.appendChild(el("h1", null, ["Import your data"]));
+          app.appendChild(el("p", null, ["Found this saved progress to bring to ", destLabel(), ":"]));
+          app.appendChild(itemsList(rows));
+
+          if (localStorage.getItem("dlng_history") != null) {
+            app.appendChild(
+              el("p", { className: "warn" }, [
+                "This site already has saved progress. Importing will overwrite it.",
+              ])
+            );
+          }
+
+          var btn = el("button", { type: "button" }, ["Import to this site"]);
+          btn.addEventListener("click", function () {
+            KEYS.forEach(function (k) {
+              if (typeof data[k] === "string") localStorage.setItem(k, data[k]);
+            });
+            // Drop the payload from the URL so a refresh/back can't re-import.
+            history.replaceState(null, "", location.pathname);
+            renderDone();
+          });
+          app.appendChild(btn);
+        }
+
+        function destLabel() {
+          // On the import side we are the destination — name the current site.
+          return el("strong", null, [location.hostname]);
+        }
+
+        function renderDone() {
+          clear();
+          app.appendChild(el("h1", null, ["Done ✓"]));
+          app.appendChild(
+            el("p", null, ["Your progress was imported to ", el("strong", null, [location.hostname]), "."])
+          );
+          app.appendChild(el("a", { className: "link", href: "/" }, ["Play Clumeral →"]));
+        }
+
+        // ── Export side ──────────────────────────────────────────────
+        function renderExport() {
+          var data = readLocal();
+          var rows = summarise(data);
+          clear();
+
+          if (rows.length === 0) {
+            app.appendChild(el("h1", null, ["No data on this site"]));
+            app.appendChild(
+              el("p", { className: "muted" }, [
+                "There is no Clumeral progress saved in this browser on " + location.hostname + ".",
+              ])
+            );
+            app.appendChild(el("a", { className: "link", href: "/" }, ["Go to Clumeral →"]));
+            return;
+          }
+
+          app.appendChild(el("h1", null, ["Move your data"]));
+          app.appendChild(
+            el("p", null, ["Send this saved progress to ", el("strong", null, [destHost]), ":"])
+          );
+          app.appendChild(itemsList(rows));
+
+          var payload = { v: 1, ts: new Date().toISOString(), data: data };
+          var hash = "#d=" + encodeURIComponent(JSON.stringify(payload));
+
+          var btn = el("button", { type: "button" }, ["Send to " + destHost]);
+          if (hash.length > 60000) {
+            app.appendChild(
+              el("p", { className: "warn" }, [
+                "Heads up: your data is large, so this link may be too long for some browsers. If the next page looks empty, tell Jamie.",
+              ])
+            );
+          }
+          btn.addEventListener("click", function () {
+            location.href = dest + "/migrate" + hash;
+          });
+          app.appendChild(btn);
+          app.appendChild(
+            el("p", { className: "muted" }, ["You will land on ", destHost, ", where you tap Import."])
+          );
+        }
+
+        // ── Boot ─────────────────────────────────────────────────────
+        try {
+          var payload = parsePayload();
+          if (payload) renderImport(payload);
+          else renderExport();
+        } catch (e) {
+          clear();
+          app.appendChild(el("h1", null, ["Something went wrong"]));
+          app.appendChild(el("p", { className: "muted" }, [String(e && e.message ? e.message : e)]));
+          app.appendChild(el("a", { className: "link", href: "/" }, ["Go to Clumeral →"]));
+        }
+      })();
+    </script>
+  </body>
+</html>
