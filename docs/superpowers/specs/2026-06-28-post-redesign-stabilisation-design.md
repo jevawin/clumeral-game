@@ -46,6 +46,14 @@ a gate would have caught.
   (`cw-*` localStorage keys, now `dlng_*`), `PROGRESS.md` (frozen on an April session),
   `ROADMAP.md` ("shipped" list omits the redesign #226 and /migrate #231; no bugs tracked).
 
+- **Feedback is already clean — nothing to import.** The Google Sheet CSV (pre-migration
+  snapshot) holds exactly the 11 genuine rows already loaded by
+  `migrations/0002_import_legacy_feedback.sql`; the rest are test/garbage (E2E smoke,
+  keyboard-mashes, "testing"). Live remote D1 confirms: 11 `host = clumeral.com` rows
+  (newest the 1 June "Streak bug."), no production feedback since the migration — new
+  feedback now lands directly in D1 via `/api/feedback`. One stray preview-host test row
+  (`*.workers.dev`) sits in prod D1; the dashboard already filters it out by default.
+
 ---
 
 ## Design decision: /random is a testing page
@@ -111,6 +119,19 @@ ordering. Decide during planning.
   low-priority bug; confirm the shadows item is the already-tracked one.
 - Fix docs: `DESIGN-SYSTEM.md` (Quicksand fonts, 4 accent colours), `ARCHITECTURE.md` /
   `URL-ARCHITECTURE.md` (`cw-*` → `dlng_*` keys), minor `README.md` naming.
+- Document the feedback → triage dev process in [FEEDBACK.md](../../FEEDBACK.md), replacing
+  the "no triage state yet" placeholder section:
+  1. **Review feedback** → create GitHub issues as needed → mark the feedback row complete
+     (once it's captured in GitHub).
+  2. **Review new GitHub issues** → prioritise → update local `ROADMAP.md`.
+  3. **Work from the roadmap.**
+  Note the dependency: step 1's "mark complete" needs the open/resolved state from
+  [#225](https://github.com/jevawin/clumeral-game/issues/225), still open. Until #225 ships,
+  capture-to-GitHub happens but rows can't be marked done — call that out in the doc.
+- Feedback data: no import needed (already clean — see Findings). Optional: delete the single
+  stray preview-host test row from prod D1
+  (`DELETE FROM feedback WHERE host LIKE '%workers.dev%';`) — low value since it's filtered
+  from the dashboard; do only if tidying the table is wanted.
 
 (The dead-markup removal lives in PR 1, not here, since it's coupled to the /random fix.)
 
