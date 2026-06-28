@@ -25,8 +25,11 @@ test.describe("mid-game restore", () => {
     }
 
     const spans = page.locator('[data-digit="1"] .digit-box__grid span');
-    // Eliminated digits carry the `elim` class; survivors don't.
+    // Eliminated digits carry the `elim` class; survivors don't. Assert the full
+    // before-state so it matches the post-reload check exactly.
+    await expect(spans.nth(2)).toHaveClass(/elim/);
     await expect(spans.nth(3)).toHaveClass(/elim/);
+    await expect(spans.nth(4)).toHaveClass(/elim/);
     await expect(spans.nth(5)).not.toHaveClass(/elim/);
 
     // The actual refresh.
