@@ -15,7 +15,7 @@ src/
   bubbles.ts     Rising bubbles on correct answer (owns canvas)
   types.ts       Shared types (GameState, ClueData, HistoryEntry, Prefs)
   global.d.ts    Ambient types
-  style.css      All styling
+  tailwind.css   All styling (Tailwind v4 @theme tokens + component CSS)
   worker/
     index.ts     Entry — API routes + HTML serving
     puzzle.ts    Filter/compute logic, RNG, seeding (server-only)
@@ -63,9 +63,10 @@ Player feedback is stored in **Cloudflare D1** (`clumeral-feedback`, binding `FE
 
 - `dlng_history` — `[{date, tries, answer?, archived?}]` (`archived: true` = a past/archive solve, excluded from daily stats)
 - `dlng_prefs` — `{saveScore}`
+- `dlng_active` — in-progress puzzle state (mid-game restore; validated on load)
 - `dlng_theme` — `"light"|"dark"`
-- `dlng_colour` — accent colour id
+- `dlng_colour` — accent colour name (e.g. `"Lime"`)
 - `dlng_uid` — anonymous analytics id
-- `cw-htp-seen` — `"1"` once How-to-Play shown
+- `dlng_last_visit_date` — last-seen local date key, drives the midnight rollover
 
 `dlng_` prefix = legacy name. **Never rename** — persisted in user browsers.
