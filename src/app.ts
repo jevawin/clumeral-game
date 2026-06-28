@@ -348,13 +348,12 @@ function renderBox(i: number): void {
 
   // Active state: accent border + accent shadow
   el.classList.toggle("border-accent", i === activeBox);
-  el.classList.toggle("shadow-[3px_3px_0_rgba(10,133,10,0.3)]", i === activeBox);
-  // Restore default border+shadow when not active. Dark uses a solid grey
-  // (#494946 = the border colour composited over the surface) so the offset
-  // shadow stays visible against the black page background.
+  el.classList.toggle("shadow-box-active", i === activeBox);
+  // Restore default border+shadow when not active. shadow-box derives from
+  // --color-text via color-mix, so it stays visible against the dark page
+  // background without a separate dark variant.
   el.classList.toggle("border-border", i !== activeBox);
-  el.classList.toggle("shadow-[3px_3px_0_rgba(38,38,36,0.12)]", i !== activeBox);
-  el.classList.toggle("dark:shadow-[3px_3px_0_#494946]", i !== activeBox);
+  el.classList.toggle("shadow-box", i !== activeBox);
 
   el.setAttribute("aria-expanded", i === activeBox ? "true" : "false");
 }
@@ -381,7 +380,7 @@ function buildKeypad() {
     btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
         ? 'bg-surface text-text/25 border-border shadow-none'
-        : 'bg-surface text-text border-border shadow-[2px_2px_0_rgba(38,38,36,0.12)] dark:shadow-[2px_2px_0_#494946]'
+        : 'bg-surface text-text border-border shadow-key'
     }`;
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
@@ -707,12 +706,19 @@ async function handleGuess() {
         // /solved is reserved for today's puzzle (overall stats live there).
         // Render the minimal solved-replay view inline.
         showCompletedState(tries, gameState.date);
+      } else if (gameState.isRandom) {
+        // /random boots without initRouter (app.ts boot shows the game screen
+        // directly), so the router has no deps and replaceRoute('/solved') would
+        // throw `router not initialized`. Random has no /solved URL anyway — show
+        // the completion screen directly.
+        renderCompletion(gameState.puzzleNum ?? 0, tries, true);
+        showScreen('completion');
       } else {
         // Today's solve: paint the completion screen and replace history (no /play
         // entry to back into; back from /solved goes to /welcome, which itself
         // redirects to /solved post-solve so the back lands on the same screen
         // — effectively making /solved the post-solve home).
-        renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
+        renderCompletion(gameState.puzzleNum ?? 0, tries, false);
         // Fire sync — never inside celebrateOcto's callback. If celebration is
         // interrupted (page hidden, rAF paused) the user could otherwise be
         // stranded on /play with the puzzle solved (#solve-stranding).
