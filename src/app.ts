@@ -773,9 +773,17 @@ if ('serviceWorker' in navigator) {
   // updateViaCache: 'none' makes the browser bypass the HTTP cache when checking
   // /sw.js for updates, so a new deploy is picked up on the next navigation
   // instead of waiting up to 24h for the cached SW script to expire.
+  // Was this page already controlled by an SW when it loaded? On a first-ever
+  // visit it is not. The SW posts SW_UPDATED from its activate handler on *every*
+  // first activation (install → skipWaiting → claim → notify), so without this
+  // guard the first-ever load reloads itself the moment the SW claims it — a
+  // spurious reload for real users, and one that races axe/navigation in e2e
+  // (the freshly-claimed page navigates mid-test → "execution context destroyed").
+  // Only a genuine update — a page that already had a controller — should reload.
+  const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
   navigator.serviceWorker.addEventListener('message', (e) => {
-    if (e.data?.type === 'SW_UPDATED') window.location.reload();
+    if (e.data?.type === 'SW_UPDATED' && hadController) window.location.reload();
   });
   // Force an update check whenever the page regains focus — covers PWAs and
   // long-lived tabs where navigation alone wouldn't trigger one.
