@@ -20,6 +20,12 @@ const ALLOW: RegExp[] = [
   /downloadable font: download failed/i,
   /ServiceWorker passed a promise to FetchEvent\.respondWith\(\) that resolved with non-Response/i,
   /An attempt was made to use an object that is not, or is no longer, usable/i,
+  // WebKit intermittently reports the same-origin /api/dev/answer fetch (the
+  // test-only solve helper) as blocked "due to access control checks" under
+  // parallel-matrix load / page teardown. The app already catches the rejection
+  // (app.ts _devFillAnswer try/catch); this is WebKit's separate page-level error
+  // event. Scoped to the dev endpoint so it can't mask a genuine same-origin error.
+  /\/api\/dev\/answer.*access control checks/i,
 ];
 
 export interface ConsoleGuard {
