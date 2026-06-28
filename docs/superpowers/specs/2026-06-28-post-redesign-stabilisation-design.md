@@ -123,8 +123,11 @@ ordering. Decide during planning.
   (pre-redesign docs branch; its April /random fix `a8d0be8` is superseded). Confirm each is
   merged before deletion.
 - Retire or refresh `PROGRESS.md` (stale April session; ROADMAP already covers working state).
-- Update `ROADMAP.md`: add redesign #226 + /migrate #231 to "shipped"; add /random as a
-  low-priority bug; confirm the shadows item is the already-tracked one.
+- Update `ROADMAP.md` "Recently shipped": add the redesign (#226) and /migrate (#231) — the two
+  biggest recent items, currently missing — **and** the PR 1 (#233) bug fixes now that they've
+  shipped: the /random correct-answer crash + restored entry link, and theme-aware shadows.
+  Record /random as a fixed regression (shipped), not an open bug. The shadows item was the one
+  already tracked as a known bug — move it from open to shipped too.
 - Fix docs: `DESIGN-SYSTEM.md` (Quicksand fonts, 4 accent colours), `ARCHITECTURE.md` /
   `URL-ARCHITECTURE.md` (`cw-*` → `dlng_*` keys), minor `README.md` naming.
 - Document the feedback → triage dev process in [FEEDBACK.md](../../FEEDBACK.md), replacing
