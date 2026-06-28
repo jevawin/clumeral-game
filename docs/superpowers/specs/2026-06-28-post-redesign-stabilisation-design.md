@@ -2,7 +2,16 @@
 
 **Date:** 2026-06-28
 **Branch base:** `staging`
-**Status:** approved (sequencing per PR 1 → 3 → 2 → 4)
+**Status:** in progress (sequencing per PR 1 → 3 → 2 → 4)
+
+### Progress
+- **PR 1 — bug fixes:** ✅ done. PR [#233](https://github.com/jevawin/clumeral-game/pull/233)
+  → `staging` (branch `dev/post-redesign-stabilisation`). /random crash fix + restored entry
+  link + theme-aware shadows. Full suite green (unit 120, e2e 208). Plan:
+  [docs/superpowers/plans/2026-06-28-pr1-random-and-shadow-fixes.md](../plans/2026-06-28-pr1-random-and-shadow-fixes.md).
+- **PR 3 — CI smoke gate:** ⬜ next.
+- **PR 2 — QA coverage map → spec:** ⬜ pending.
+- **PR 4 — cleanup + doc refresh:** ⬜ pending.
 
 The three-screen redesign (`cd206f9`, #226) and the `/migrate` hand-off (#231) shipped
 to production with a small set of regressions and left several docs stale. This program
