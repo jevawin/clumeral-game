@@ -58,6 +58,10 @@ unit `sw-precache`), routing scrollRestoration + popstate (`routing`, unit `rout
   e2e assertions (`puzzle_start`, `htp_opened`, …) are low value and flaky against the local
   Analytics Engine binding.
 - [ ] **Dark-mode a11y (axe)** — axe runs light theme only; dark-theme contrast pass.
+  The a11y spec now pins `colorScheme: 'light'` so the gate is deterministic regardless
+  of the runner's OS preference (GitHub CI defaults to dark). Running it against dark mode
+  surfaced a real white-on-accent solid-button contrast failure (~2.9:1), tracked in
+  [#243](https://github.com/jevawin/clumeral-game/issues/243) — the dark-theme pass lives there.
 - [ ] **iOS reload / storage eviction** — platform behaviour, not reproducible in Playwright.
   Tracked as [#237](https://github.com/jevawin/clumeral-game/issues/237).
 
