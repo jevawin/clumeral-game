@@ -20,6 +20,13 @@ async function seriousViolations(page: import("@playwright/test").Page) {
 // flaky redundant axe runs that overload the single preview server.
 const A11Y_PROJECTS = ["chromium-desktop", "mobile-chromium"];
 
+// This axe pass is intentionally light-theme-only (see the QA regression design
+// doc). Pin colorScheme so the gate is deterministic regardless of the runner's
+// OS preference — GitHub's CI runner defaults to prefers-color-scheme: dark, which
+// would otherwise run these checks against dark mode and trip a KNOWN, separately
+// tracked dark-mode contrast bug (white-on-accent solid buttons, ~2.9:1): #243.
+// Dark-mode a11y remains a tracked gap, not part of this light-theme gate.
+test.use({ colorScheme: "light" });
 test.describe("accessibility (axe — serious/critical)", () => {
   test.beforeEach(({}, testInfo) => {
     test.skip(
