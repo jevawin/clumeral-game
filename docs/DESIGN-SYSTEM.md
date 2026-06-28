@@ -4,7 +4,7 @@
 
 - Tailwind v4 utility-first with `@theme` tokens in `src/tailwind.css`.
 - Dark mode uses `@custom-variant dark (&:where(.dark, .dark *))` pattern. JS sets `html.dark` / `html.light`.
-- Green accent only -- no colour picker, no multiple themes.
+- Accent colour is user-selectable via a 4-theme picker — **Lime** (default), **Berry**, **Blue**, **Violet** — each with a light and dark value, persisted in `dlng_colour`. The active colour is written to the live `--color-accent` custom property per swatch ([src/colours.ts](../src/colours.ts)); `color-mix()`-based tokens re-resolve automatically, so no `dark:` variant is needed for accent-derived colours.
 - `light-dark()` is used only inside `@keyframes octo-colours` mid-frames for animation colours. All other styling uses Tailwind dark: variants or explicit `html.dark` overrides.
 - Use `--color-*` token variables -- never hardcode hex values for theme colours.
 
@@ -24,8 +24,7 @@ Tailwind generates utility classes from these: `bg-bg`, `text-text`, `bg-accent`
 
 ## Typography
 
-- Body: DM Sans 400/600 (Google Fonts), fallback `system-ui`
-- Headings: DM Sans 700 (Phase 1 locked exception -- loaded via Google Fonts `wght@400;600` but 700 used for bold headings)
+- Body / headings: **Quicksand** 400/600/700 (Google Fonts), fallback `system-ui` — `--font-sans`
 - Mono (labels/digits): Inconsolata 400/700 (Google Fonts)
 
 ## Layout
