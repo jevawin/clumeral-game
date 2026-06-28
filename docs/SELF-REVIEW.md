@@ -14,9 +14,9 @@ Complements DA-REVIEW (architecture). This owns line-level details: stale values
 ## CSS accuracy
 
 - [ ] New custom props use `light-dark()` for theme-aware values — except SVG `fill`/`stroke` keyframes (use paired props on `:root`/`html.dark`; `light-dark()` breaks there after the Lightning CSS build pass — see #210)
-- [ ] Using existing vars (`--acc`, `--text`, `--muted` etc), not hardcoded hex
+- [ ] Using existing vars (`--color-accent`, `--color-text`, `--color-surface` etc), not hardcoded hex
 - [ ] Works in `color-scheme: light` and `dark`
-- [ ] `font-family` uses DM Sans (body) / Inconsolata (mono)
+- [ ] `font-family` uses Quicksand (body) / Inconsolata (mono)
 - [ ] No orphaned rules targeting removed/renamed elements
 
 ## HTML accuracy
@@ -34,14 +34,14 @@ Complements DA-REVIEW (architecture). This owns line-level details: stale values
 
 ## localStorage
 
-- [ ] Keys use `dlng_` prefix (or existing `cw-htp-seen`)
+- [ ] Keys use `dlng_` prefix
 - [ ] JSON shape matches existing readers — no breaking schema changes
 - [ ] `max 60` history limit still enforced
 
 ## Consistency
 
 - [ ] No duplicated constants across files — single source of truth
-- [ ] Same fix applied everywhere it's needed (app.ts AND style.css etc)
+- [ ] Same fix applied everywhere it's needed (app.ts AND tailwind.css etc)
 - [ ] No unused imports
 
 ## Worker / SW
