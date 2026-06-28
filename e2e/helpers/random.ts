@@ -15,17 +15,43 @@ import { expect } from "../fixtures.ts";
  * `startRandomPuzzle()`, after the token is set) removes `aria-busy` from
  * `[data-clue-list]`. Once that attribute is gone the token is guaranteed set.
  */
-export async function solveRandom(page: Page): Promise<void> {
-  await page.goto("/random");
+// /random fetches a fresh puzzle on every load; under full-matrix parallel load
+// the resource-constrained webkit projects can be slow to initialise, so the
+// readiness waits use a generous timeout (a real break still fails after it).
+const READY_TIMEOUT = 15_000;
+
+async function solveLoadedRandom(page: Page): Promise<void> {
   // Game is ready once clues have rendered (token is set by then).
   await expect(page.locator("[data-clue-list]")).not.toHaveAttribute(
     "aria-busy",
     "true",
+    { timeout: READY_TIMEOUT },
   );
-  await page.waitForFunction(() => typeof window._devFillAnswer === "function");
+  await page.waitForFunction(() => typeof window._devFillAnswer === "function", null, {
+    timeout: READY_TIMEOUT,
+  });
   await page.evaluate(() => window._devFillAnswer());
   // Wait for VISIBLE (not just enabled) — checkSubmit() unhides the wrap only
   // when all three boxes are size 1.
-  await expect(page.locator("[data-submit]")).toBeVisible();
+  await expect(page.locator("[data-submit]")).toBeVisible({ timeout: READY_TIMEOUT });
   await page.locator("[data-submit]").click();
+}
+
+export async function solveRandom(page: Page): Promise<void> {
+  await page.goto("/random");
+  await solveLoadedRandom(page);
+}
+
+/**
+ * From the random completion screen, click the sole `/random` entry link, then
+ * solve the freshly loaded puzzle. The link is a real `<a href="/random">` and
+ * /random boots without the router, so this is a full page navigation — wait for
+ * the URL before driving the new game.
+ */
+export async function playAnotherRandom(page: Page): Promise<void> {
+  await page
+    .locator("[data-completion-links] [data-completion-random-again]")
+    .click();
+  await page.waitForURL(/\/random$/);
+  await solveLoadedRandom(page);
 }

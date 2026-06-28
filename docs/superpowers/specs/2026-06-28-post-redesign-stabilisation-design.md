@@ -9,9 +9,18 @@
   → `staging` (branch `dev/post-redesign-stabilisation`). /random crash fix + restored entry
   link + theme-aware shadows. Full suite green (unit 120, e2e 208). Plan:
   [docs/superpowers/plans/2026-06-28-pr1-random-and-shadow-fixes.md](../plans/2026-06-28-pr1-random-and-shadow-fixes.md).
-- **PR 3 — CI smoke gate:** ⬜ next.
-- **PR 2 — QA coverage map → spec:** ⬜ pending.
-- **PR 4 — cleanup + doc refresh:** ⬜ pending.
+- **PR 3 — CI smoke gate:** ✅ done. PR [#234](https://github.com/jevawin/clumeral-game/pull/234)
+  → `staging` (branch `dev/ci-smoke-gate`). `.github/workflows/ci-smoke.yml` blocks merge to
+  `main` on a critical-path Playwright subset against the branch preview.
+- **PR 2 — QA coverage map → spec:** ✅ done (branch `dev/qa-coverage-map`). Built the
+  screen × flow coverage matrix (below), then filled the genuine gaps: random play-again
+  click→solve, dark-mode active shadow, completion-screen popstate, how-to-play menu link,
+  and a mid-game reload-restore probe. The reload probe passes (same-day restore works), so
+  the "phone refresh restarts the puzzle" report is captured as a platform-behaviour issue
+  ([#237](https://github.com/jevawin/clumeral-game/issues/237)), not a code bug. Coverage
+  matrix + remaining-gap checklist added to
+  [the QA regression design spec](2026-05-31-playwright-qa-regression-design.md).
+- **PR 4 — cleanup + doc refresh:** ⬜ next.
 
 The three-screen redesign (`cd206f9`, #226) and the `/migrate` hand-off (#231) shipped
 to production with a small set of regressions and left several docs stale. This program
