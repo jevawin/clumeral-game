@@ -20,6 +20,9 @@ Rules that keep it from rotting:
 
 ## Recently shipped
 
+- 2026-06-28 — [#233](https://github.com/jevawin/clumeral-game/pull/233) Post-redesign bug fixes — `/random` correct-answer crash fixed (cold-boot solve no longer hits the uninitialised-router throw) + restored the "Play another random puzzle" entry link on the random completion screen, and theme-aware shadow tokens (`--shadow-*`) so shadows render correctly in dark mode
+- 2026-06-27 — [#231](https://github.com/jevawin/clumeral-game/pull/231) `/migrate` cross-origin localStorage hand-off — one-time migration page that carries `dlng_*` history across the domain move
+- 2026-06-27 — [#226](https://github.com/jevawin/clumeral-game/pull/226) Three-screen redesign — welcome / game / completion rebuilt in Tailwind with the minimal palette and accent picker (`cd206f9`)
 - 2026-06-09 — [#219](https://github.com/jevawin/clumeral-game/issues/219) Hundreds-box 0 explainer — tapping the disabled 0 shows the (i)-style tooltip "first digit can't be 0" (`956fc99`, 260609-0tc) — _issue closes on merge to main_
 - 2026-06-08 — [#213](https://github.com/jevawin/clumeral-game/issues/213) Feedback migration → **Cloudflare D1** — `POST /api/feedback` + private `/feedback` admin dashboard, off the old Google Apps Script URL (`ebba75a`, [docs/FEEDBACK.md](FEEDBACK.md))
 - 2026-06-08 — Archive solves excluded from daily stats — replaying past puzzles no longer inflates streak/played (`0c033c0`, 260608-wyy)

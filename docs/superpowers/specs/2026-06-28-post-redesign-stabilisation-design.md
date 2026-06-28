@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-28
 **Branch base:** `staging`
-**Status:** in progress (sequencing per PR 1 → 3 → 2 → 4)
+**Status:** complete — all four PRs shipped/open (sequencing per PR 1 → 3 → 2 → 4; PR 4 open as #239)
 
 ### Progress
 - **PR 1 — bug fixes:** ✅ done. PR [#233](https://github.com/jevawin/clumeral-game/pull/233)
@@ -20,7 +20,12 @@
   ([#237](https://github.com/jevawin/clumeral-game/issues/237)), not a code bug. Coverage
   matrix + remaining-gap checklist added to
   [the QA regression design spec](2026-05-31-playwright-qa-regression-design.md).
-- **PR 4 — cleanup + doc refresh:** ⬜ next.
+- **PR 4 — cleanup + doc refresh:** ✅ done. PR [#239](https://github.com/jevawin/clumeral-game/pull/239)
+  → `staging` (branch `dev/pr4-cleanup-doc-refresh`). Removed orphaned old-completion markup +
+  dead `app.ts` code; refreshed ROADMAP/DESIGN-SYSTEM/ARCHITECTURE/URL-ARCHITECTURE/FEEDBACK;
+  retired `PROGRESS.md`; pruned `new-design` + remote `chore/roadmap-217` (kept `staging`).
+  Smoke 46/46, unit 120/120 green. Plan:
+  [docs/superpowers/plans/2026-06-28-pr4-cleanup-and-doc-refresh.md](../plans/2026-06-28-pr4-cleanup-and-doc-refresh.md).
 
 The three-screen redesign (`cd206f9`, #226) and the `/migrate` hand-off (#231) shipped
 to production with a small set of regressions and left several docs stale. This program
