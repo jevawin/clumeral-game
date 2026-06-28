@@ -76,10 +76,18 @@ One PR, a regression test per bug.
 3. In [completion.ts](../../../src/completion.ts), when `isRandom`, render a "Play another
    random puzzle" link → `/random` in the `data-completion-links` area. This is the sole
    `/random` entry point.
-4. Remove the orphaned legacy markup ([index.html:281-288](../../../index.html#L281-L288),
-   `data-next` / `data-again`).
-5. e2e: drive `/random` end-to-end — load → solve → completion shows and the "play another"
-   link points to `/random`.
+4. e2e: drive `/random` end-to-end — load → solve → completion shows without the
+   "Something went wrong" error, and the "play another" link points to `/random`.
+
+   Root cause (confirmed in planning): `/random` boots without `initRouter`
+   ([app.ts:972](../../../src/app.ts#L972)), so the solve path's `replaceRoute('/solved')`
+   hits `ctx()`'s `router not initialized` throw ([router.ts:67](../../../src/router.ts#L67)).
+   Fix shows the completion screen directly for random solves.
+
+   Note: the orphaned `data-next` / `data-again` markup ([index.html:281-288](../../../index.html#L281-L288))
+   is **moved to PR 4** — it is still poked by a dead old-completion code path in app.ts
+   (lines 472-474, 501, 525, 552, 636 + dom cache 69-71), so removing it cleanly is cleanup,
+   not a ship-fast bug fix.
 
 **Shadows**
 6. Define `--shadow-*` tokens in [tailwind.css](../../../src/tailwind.css) `@theme`
@@ -133,7 +141,12 @@ ordering. Decide during planning.
   (`DELETE FROM feedback WHERE host LIKE '%workers.dev%';`) — low value since it's filtered
   from the dashboard; do only if tidying the table is wanted.
 
-(The dead-markup removal lives in PR 1, not here, since it's coupled to the /random fix.)
+- Remove the orphaned `data-next` / `data-again` markup ([index.html:281-288](../../../index.html#L281-L288))
+  **and** the dead old-completion code path that pokes it in app.ts (lines 472-474, 501, 525, 552,
+  636 + the `next` / `nextNumber` / `again` dom cache at 69-71). Moved here from PR 1: the markup
+  is entangled with live (no-op) code, so untangling it is cleanup, not a bug fix. Verify the new
+  completion screen ([completion.ts](../../../src/completion.ts)) fully covers what the old path did
+  (countdown / next-puzzle text) before deleting.
 
 ---
 
