@@ -22,4 +22,20 @@ test.describe("/random", () => {
     await expectActiveScreen(page, "completion");
     await expect(page.locator("[data-completion-heading]")).toHaveText(/solved/i);
   });
+
+  test("random completion shows the 'play another random puzzle' entry link", async ({ page }) => {
+    const tokenResp = page.waitForResponse((r) => r.url().includes("/api/puzzle/random"));
+    await page.goto("/random");
+    await tokenResp;
+    await page.waitForFunction(() => typeof window._devFillAnswer === "function");
+    await page.evaluate(() => window._devFillAnswer());
+    await expect(page.locator("[data-submit]")).toBeEnabled();
+    await page.locator("[data-submit]").click();
+
+    await expectActiveScreen(page, "completion");
+    // The only entry link to /random lives here on the random completion screen.
+    const again = page.locator("[data-completion-links] [data-completion-random-again]");
+    await expect(again).toBeVisible();
+    await expect(again).toHaveAttribute("href", "/random");
+  });
 });
