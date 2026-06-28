@@ -707,12 +707,19 @@ async function handleGuess() {
         // /solved is reserved for today's puzzle (overall stats live there).
         // Render the minimal solved-replay view inline.
         showCompletedState(tries, gameState.date);
+      } else if (gameState.isRandom) {
+        // /random boots without initRouter (app.ts boot shows the game screen
+        // directly), so the router has no deps and replaceRoute('/solved') would
+        // throw `router not initialized`. Random has no /solved URL anyway — show
+        // the completion screen directly.
+        renderCompletion(gameState.puzzleNum ?? 0, tries, true);
+        showScreen('completion');
       } else {
         // Today's solve: paint the completion screen and replace history (no /play
         // entry to back into; back from /solved goes to /welcome, which itself
         // redirects to /solved post-solve so the back lands on the same screen
         // — effectively making /solved the post-solve home).
-        renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
+        renderCompletion(gameState.puzzleNum ?? 0, tries, false);
         // Fire sync — never inside celebrateOcto's callback. If celebration is
         // interrupted (page hidden, rAF paused) the user could otherwise be
         // stranded on /play with the puzzle solved (#solve-stranding).
