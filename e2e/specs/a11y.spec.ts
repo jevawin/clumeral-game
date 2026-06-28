@@ -9,9 +9,14 @@ import { waitForScreenSettled } from "../helpers/screens.ts";
 // (moderate/minor) findings are surfaced by a full `axe` run but don't gate here.
 async function seriousViolations(page: import("@playwright/test").Page) {
   const results = await new AxeBuilder({ page }).analyze();
-  return results.violations
-    .filter((v) => v.impact === "serious" || v.impact === "critical")
-    .map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
+  const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+  for (const v of serious) {
+    for (const n of v.nodes) {
+      // eslint-disable-next-line no-console
+      console.log("AXE_DEBUG", v.id, JSON.stringify(n.target), "|", n.failureSummary?.replace(/\s+/g, " "), "| html:", n.html?.slice(0, 160));
+    }
+  }
+  return serious.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
 }
 
 // axe rules check the DOM/ARIA/contrast, which don't vary by rendering engine, so
