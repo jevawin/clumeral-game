@@ -66,9 +66,6 @@ const dom = {
   save: $('[data-save]') as HTMLElement | null,
   saveCheck: $('[data-save-check]') as HTMLInputElement | null,
   stats: $('[data-stats]') as HTMLElement | null,
-  next: $('[data-next]') as HTMLElement | null,
-  nextNumber: $('[data-next-number]') as HTMLElement | null,
-  again: $('[data-again]') as HTMLElement | null,
   archiveBanner: $('[data-archive-banner]') as HTMLElement | null,
   archiveBack: $('[data-archive-back]') as HTMLElement | null,
   archiveRow: $('[data-archive-row]') as HTMLElement | null,
@@ -467,13 +464,6 @@ function checkSubmit() {
 
 // ─── Game ─────────────────────────────────────────────────────────────────────
 
-function showNextPuzzle() {
-  if (dom.next && dom.nextNumber) {
-    dom.nextNumber.textContent = String((gameState.puzzleNum ?? 0) + 1);
-    dom.next.classList.remove("hidden");
-  }
-}
-
 function showCompletedState(tries: number, replayDate?: string): void {
   // /play in solved-replay mode is the same minimal view for today and archive:
   // clues + revealed digits + "Solved in N tries!" + a context-specific link.
@@ -497,7 +487,6 @@ function showCompletedState(tries: number, replayDate?: string): void {
     }
   }
   dom.submitWrap?.classList.add("hidden");
-  dom.next?.classList.add("hidden");
   dom.history?.classList.add("hidden");
 
   // Archive row visibility tied to replayDate so a daily /play view never inherits archive chrome.
@@ -521,7 +510,6 @@ function resetPuzzleUI() {
   renderFeedback(null);
   renderHistory([]);
   dom.stats?.classList.add("hidden");
-  dom.next?.classList.add("hidden");
   // Hide archive row by default; startReplayPuzzle re-enables it for dated replays.
   if (dom.archiveRow) {
     dom.archiveRow.classList.add("hidden");
@@ -547,8 +535,6 @@ function startRandomPuzzle(clues: ClueData[], token: string): void {
   gameState = { answer: null, guesses: [], solved: false, isRandom: true, token };
   resetPuzzleUI();
   track("puzzle_start");
-
-  dom.again?.classList.add("hidden");
 }
 
 function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
@@ -632,7 +618,6 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
   if (dom.saveCheck) dom.saveCheck.checked = saveScore;
-  dom.again?.classList.add("hidden");
 }
 
 async function handleGuess() {
