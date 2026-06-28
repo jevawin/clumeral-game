@@ -1,0 +1,59 @@
+# Critical-path smoke gate. Runs the structured e2e suite (e2e/specs/**) on a
+# single engine against the production build, and blocks merge on red.
+#
+# Scope is deliberate (see docs/superpowers/specs/2026-06-28-post-redesign-stabilisation-design.md,
+# PR 3): chromium only, all specs. "Fast" comes from dropping 4 of 5 engines —
+# the full browser matrix stays manual and proportional per CLAUDE.md's QA rule.
+#
+# No Cloudflare deploy: Playwright's webServer runs `npm run e2e:serve`
+# (vite build + preview + local D1 seed) and the Cloudflare Vite plugin serves
+# the Worker API in-process, so the gate is self-contained and needs no secrets.
+name: CI smoke gate
+
+on:
+  pull_request:
+    branches: [main]
+
+# A new push to the same PR cancels the in-flight run — no point finishing a
+# gate against superseded code.
+concurrency:
+  group: ci-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-smoke:
+    name: e2e smoke (chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Only the engine the gate runs. --with-deps pulls the OS libraries the
+      # browser needs on the runner.
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      # Playwright's webServer builds, seeds local D1, and serves the preview
+      # itself (playwright.config.ts). process.env.CI is set by Actions, which
+      # turns on retries:1, the github + html reporters, and forbidOnly.
+      - name: Run smoke suite
+        run: npm run test:e2e:smoke
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() && failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
