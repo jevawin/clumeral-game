@@ -87,17 +87,12 @@ Caveat: `db:migrate:remote` currently runs **only** `0001`. For a new migration,
 
 `collectDebug()` ([src/modals.ts](../src/modals.ts)) attaches the player's context so bugs can be reproduced from their exact state. The `history` field is the most useful — it's their full `dlng_history` (solve dates, tries, answers, and `archived` tags). That's how the streak bugs were diagnosed: replay the stored history through the stats logic.
 
-## Process — status: read-only, no triage state yet
+## Process — feedback → triage → roadmap
 
-Today feedback is **read-only**. There's no way to mark an item open or resolved, so the same submissions get re-read and re-triaged each visit. We read the dashboard and act ad hoc.
+The loop from raw feedback to shipped work:
 
-Tracked: [#225 — Feedback: add open / resolved state for triage](https://github.com/jevawin/clumeral-game/issues/225). **P2, scheduled for when we start actively tackling feedback.**
+1. **Review feedback.** Read the [`/feedback` dashboard](https://clumeral.com/feedback) (or query D1 directly). For anything actionable, create a GitHub issue — bug, suggestion, or roadmap candidate — then **mark the feedback row complete** once it's captured in GitHub, so it isn't re-triaged next visit.
+2. **Review new GitHub issues.** Prioritise the open issues (including the ones just filed), then reflect the order in [ROADMAP.md](ROADMAP.md) — issue number + one-line title + trigger condition, newest priorities first.
+3. **Work from the roadmap.** Pull the top _Now_ item and build it. Detail stays in the GitHub issue, not the roadmap.
 
-When we build that (issue #225), flesh out the real process **here**:
-
-- The state model (open / resolved / others) and how a row moves between states.
-- Who triages and how often.
-- How a feedback item becomes a roadmap issue (link back to [ROADMAP-ISSUES.md](ROADMAP-ISSUES.md)).
-- Any new columns / migrations added for status.
-
-This section is the placeholder for that process — update it then.
+**Dependency — marking rows complete needs #225.** Step 1's "mark the feedback row complete" is blocked until [#225 — Feedback: add open / resolved state for triage](https://github.com/jevawin/clumeral-game/issues/225) ships (still **open**, P2). Until then: capture-to-GitHub happens, but feedback rows can't be marked done — so a row may be re-read across visits. Track which rows are already captured by their linked issue number. When #225 lands, document the state model (open / resolved), who triages and how often, and any new columns/migrations **here**.
