@@ -4,7 +4,7 @@
 
 | Branch | Purpose | Commits |
 |---|---|---|
-| `main` | Production | PRs from `staging` only. User merges on GitHub. |
+| `main` | Production | PRs from `staging` only, merged with a **merge commit** (not squash). User merges on GitHub. |
 | `staging` | Pre-prod review | Merges from approved work branches only. **Protected. Never commit directly.** |
 | `dev/name` | Work without a GitHub issue | Direct commits OK. Off `staging`. |
 | `issue/NUM` | Work linked to GitHub issue | Direct commits OK. Off `staging`. |
@@ -17,10 +17,10 @@ Harness auto-assigns `claude/*` — ignore it.
 1. Create `issue/NUM` or `dev/name` off `staging`, commit, push
 2. Share preview: `https://{branch}-clumeral-game.jevawin.workers.dev`
 3. Review gates for non-trivial changes: DA review (fresh subagent) → self-review
-4. On user approval: `gh pr merge --squash` into `staging`
+4. On user approval: `gh pr merge --squash` into `staging` (work branches are short-lived → squash)
 5. Repeat for other work branches
 6. When staging ready: open PR `staging → main`, share staging URL + PR link
-7. User merges on GitHub
+7. User merges on GitHub with a **merge commit** ("Create a merge commit" — NOT squash; see Post-merge sync for why)
 8. Run post-merge sync + cleanup (below)
 
 ## Preview URLs
@@ -31,18 +31,20 @@ Harness auto-assigns `claude/*` — ignore it.
 
 ## Post-merge sync
 
-`main` uses squash merges → new commit hash not in `staging`. Without sync, branches drift and next release PR conflicts.
+The `staging → main` PR is merged with a **merge commit**, not squash. That keeps `staging` an ancestor of `main`, so realigning staging is a plain fast-forward — no force-push, no history rewrite.
 
-After user confirms main merge:
+(Why not squash here: squashing `staging → main` creates a new commit on `main` that `staging` lacks, so the two permanent branches diverge and the only way back is `reset --hard` + force-push. Squash is right for short-lived work branches into `staging`, not between two long-lived branches.)
+
+After the user confirms the main merge:
 
 ```bash
 git checkout staging
-git fetch origin main
-git reset --hard origin/main
-git push --force-with-lease origin staging
+git fetch origin
+git merge --ff-only origin/main   # fast-forwards staging up to main; fails loudly if it can't
+git push origin staging
 ```
 
-Requires force-push allowed on `staging`. If blocked, use recovery path below.
+No `--force` needed. If `--ff-only` refuses, `staging` and `main` have diverged (e.g. the release got squash-merged by mistake) — use the recovery path below.
 
 ## Post-merge cleanup
 
@@ -60,6 +62,13 @@ If sync was skipped and `staging → main` PR conflicts:
 3. Commit as single "release" commit explaining what's bundled
 4. Push, open PR `release/sync-* → main` — conflict-free (descends from main)
 5. Close the stuck `staging → main` PR
-6. After merge, run post-merge sync to bring staging back in line
+6. After merge, staging is still diverged, so realign it once with a hard reset (the fast-forward sync can't bridge a divergence):
+   ```bash
+   git checkout staging
+   git fetch origin
+   git reset --hard origin/main
+   git push --force-with-lease origin staging
+   ```
+   From the next release on, merge-commit + fast-forward keeps them aligned.
 
-Workaround, not regular pattern. Fix is to never skip post-merge sync.
+Workaround, not regular pattern. Fix is to merge releases with a merge commit (not squash) and run the fast-forward sync each time.
