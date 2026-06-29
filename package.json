@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:smoke": "playwright test --project=chromium-desktop",
     "build": "vite build",
     "preview": "vite build && vite preview --host --port 4173",
     "e2e:db": "wrangler d1 execute clumeral-feedback --local --command=\"DROP TABLE IF EXISTS feedback;\" && wrangler d1 execute clumeral-feedback --local --file=migrations/0001_create_feedback.sql",

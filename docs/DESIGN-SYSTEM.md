@@ -4,7 +4,7 @@
 
 - Tailwind v4 utility-first with `@theme` tokens in `src/tailwind.css`.
 - Dark mode uses `@custom-variant dark (&:where(.dark, .dark *))` pattern. JS sets `html.dark` / `html.light`.
-- Green accent only -- no colour picker, no multiple themes.
+- Accent colour is user-selectable via a 4-theme picker — **Lime** (default), **Berry**, **Blue**, **Violet** — each with a light and dark value, persisted in `dlng_colour`. The active colour is written to the live `--color-accent` custom property per swatch ([src/colours.ts](../src/colours.ts)); `color-mix()`-based tokens re-resolve automatically, so no `dark:` variant is needed for accent-derived colours.
 - `light-dark()` is used only inside `@keyframes octo-colours` mid-frames for animation colours. All other styling uses Tailwind dark: variants or explicit `html.dark` overrides.
 - Use `--color-*` token variables -- never hardcode hex values for theme colours.
 
@@ -22,10 +22,13 @@ Five tokens defined in `@theme` block. Dark mode overrides in `@layer theme` und
 
 Tailwind generates utility classes from these: `bg-bg`, `text-text`, `bg-accent`, `bg-surface`, `border-border`. The legacy `muted` token was removed in v1.1 (CLR-01) — secondary copy now uses `text-text`. Use `text-text/60` only for non-essential placeholder/decorative variants where pure text is unreadable.
 
+### Derived: `accent-strong` (AA-safe accent text)
+
+`--color-accent-strong` = `color-mix(in srgb, var(--color-accent) 82%, var(--color-text))`. The raw accent on light backgrounds sits at ~4.3:1 on the clue-tag tint (`bg-accent/5`) and ~4.6:1 on the page bg — at or below WCAG AA 4.5:1. Mixing 18% toward `text` darkens it in light mode and lightens it in dark mode, lifting all four accent themes to ~5.3:1+ (light) / ~7.5:1 (dark). Both source vars are live, so it re-resolves per accent and per theme — no `dark:` variant needed. Use `text-accent-strong` for accent-coloured **text**; keep raw `--color-accent` (`text-accent`, `border-accent`, `bg-accent`) for icons, borders, and fills.
+
 ## Typography
 
-- Body: DM Sans 400/600 (Google Fonts), fallback `system-ui`
-- Headings: DM Sans 700 (Phase 1 locked exception -- loaded via Google Fonts `wght@400;600` but 700 used for bold headings)
+- Body / headings: **Quicksand** 400/600/700 (Google Fonts), fallback `system-ui` — `--font-sans`
 - Mono (labels/digits): Inconsolata 400/700 (Google Fonts)
 
 ## Layout

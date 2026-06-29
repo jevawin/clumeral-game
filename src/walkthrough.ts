@@ -40,7 +40,7 @@ export const START_DELAY_MS = 5000;
 // While talking, the brand text drops to clue size (16px), bold, left-aligned, in
 // the clue font (Quicksand) and theme accent colour — not the Comfortaa wordmark.
 // The action lead (boldPrefix) is rendered bold + italic to stand apart.
-const WALKTHROUGH_CLASS = 'text-base font-bold text-accent font-[Quicksand] text-left leading-tight';
+const WALKTHROUGH_CLASS = 'text-base font-bold text-accent-strong font-[Quicksand] text-left leading-tight';
 
 // True iff `event` is the gate this step is waiting on.
 export function gateMatches(step: Step, event: GateEvent): boolean {

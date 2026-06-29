@@ -39,6 +39,23 @@
   --color-surface: #FFFFFF;
   --color-border:  rgba(38, 38, 36, 0.12);
 
+  /* AA-safe accent for small text. The raw accent on light backgrounds sits at
+     ~4.3:1 on the clue-tag tint and ~4.6:1 on the page bg — at or below the 4.5:1
+     WCAG AA bar. Mixing 18% toward --color-text darkens it in light mode and
+     lightens it in dark mode, lifting all four themes to ~5.3:1+ while staying
+     visibly the accent. Both source vars are live, so it re-resolves per accent
+     and per theme — no dark: override needed. Use for accent-coloured TEXT;
+     keep raw --color-accent for icons, borders, and fills. */
+  --color-accent-strong: color-mix(in srgb, var(--color-accent) 82%, var(--color-text));
+
+  /* Offset shadows derive from theme tokens so they follow dark mode and the
+     selected accent. --color-text / --color-accent are live custom properties
+     (accent is set per-swatch in colours.ts), so color-mix re-resolves on theme
+     and accent changes — no dark: variant needed. */
+  --shadow-box:        3px 3px 0 color-mix(in srgb, var(--color-text) 12%, transparent);
+  --shadow-box-active: 3px 3px 0 color-mix(in srgb, var(--color-accent) 30%, transparent);
+  --shadow-key:        2px 2px 0 color-mix(in srgb, var(--color-text) 12%, transparent);
+
   --font-sans: "Quicksand", system-ui, sans-serif;
   --font-mono: "Inconsolata", ui-monospace, monospace;
 }
@@ -119,7 +136,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     cursor: pointer;
     will-change: transform;
     transform-origin: center bottom;
-    filter: drop-shadow(0.125rem 0.1875rem 0 rgba(38, 38, 36, 0.25));
+    filter: drop-shadow(0.125rem 0.1875rem 0 color-mix(in srgb, var(--color-text) 25%, transparent));
     opacity: 0;
     margin-block-end: 0.15rem;
   }

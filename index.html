@@ -238,9 +238,9 @@
 
             <!-- Digit boxes -->
             <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Digit entry boxes">
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946] cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946] cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-[3px_3px_0_rgba(38,38,36,0.12)] dark:shadow-[3px_3px_0_#494946] cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>
             </div>
 
             <!-- Keypad -->
@@ -276,16 +276,6 @@
 
             <!-- Stats -->
             <div data-stats class="hidden mt-4"></div>
-
-            <!-- Next puzzle -->
-            <p data-next class="hidden mt-4 text-base text-text font-[Quicksand]">
-              Puzzle <span data-next-number></span> is available tomorrow.
-            </p>
-
-            <!-- Random again -->
-            <p data-again class="hidden mt-4 text-base font-[Quicksand]">
-              <a href="/random" class="text-accent underline">Play another random puzzle</a>
-            </p>
 
         </div>
       </section>

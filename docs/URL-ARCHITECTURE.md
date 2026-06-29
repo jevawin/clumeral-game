@@ -68,10 +68,10 @@ the Show-puzzle link (target route is intentional).
 When the puzzle day rolls over (user left a tab open overnight, refreshes in
 the morning), the prior `/play` or `/solved` reflects yesterday's state.
 
-`initRouter` reads `cw-last-visit-date` from localStorage on cold load. If it
+`initRouter` reads `dlng_last_visit_date` from localStorage on cold load. If it
 exists, is `< todayLocal`, and the requested path is **not** `/welcome` and
 **not** an `/archive/...` deep-link, the router replaces history to `/welcome`
-before the first paint. `cw-last-visit-date` is then updated to today.
+before the first paint. `dlng_last_visit_date` is then updated to today.
 
 Archive deep-links (`/archive`, `/archive/<date>`) are excluded — they're
 date-anchored on purpose; rolling them to `/welcome` would break shareable
@@ -94,7 +94,7 @@ links.
 | solved today              | `/play`                    | `/solved` (post-solve home)     |
 | solved today              | `/solved`                  | `/solved`                       |
 | solved past date          | `/archive/<that-date>`     | game screen, solved-replay UI   |
-| `cw-last-visit-date < today` | `/play` or `/solved`    | `/welcome` (rollover)           |
+| `dlng_last_visit_date < today` | `/play` or `/solved`    | `/welcome` (rollover)           |
 
 ---
 

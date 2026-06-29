@@ -2,6 +2,8 @@ import { test, expect } from "../fixtures.ts";
 import { MenuPage } from "../pages/menu.page.ts";
 import { FeedbackPage } from "../pages/feedback.page.ts";
 import { gotoPlayableGame } from "../helpers/game-setup.ts";
+import { expectActiveScreen } from "../helpers/screens.ts";
+import { solvePuzzle } from "../helpers/solve.ts";
 
 test.describe("header menu", () => {
   test("burger toggles the menu and flips aria-expanded; Esc closes it", async ({ page }) => {
@@ -14,6 +16,26 @@ test.describe("header menu", () => {
     await expect(menu.menu).toBeVisible();
 
     await page.keyboard.press("Escape");
+    await expect(menu.menuBtn).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("how-to-play menu link reaches the help (welcome) screen even after solving", async ({ page }) => {
+    // Solve today first so a todayEntry exists — now /welcome resolves to /solved
+    // (route-resolver RTE-03). HTP navigates with skipResolve, which is the ONLY
+    // thing that lets a solved-today player still reach the welcome/help screen
+    // instead of being bounced back to completion. Solving first is what actually
+    // exercises that bypass.
+    await gotoPlayableGame(page);
+    await solvePuzzle(page);
+    await expectActiveScreen(page, "completion");
+
+    const menu = new MenuPage(page);
+    await menu.open();
+    await expect(menu.htpBtn).toBeVisible();
+    await menu.htpBtn.click();
+
+    // skipResolve bypassed the /welcome → /solved redirect; the burger closed.
+    await expectActiveScreen(page, "welcome");
     await expect(menu.menuBtn).toHaveAttribute("aria-expanded", "false");
   });
 

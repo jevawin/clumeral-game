@@ -66,9 +66,6 @@ const dom = {
   save: $('[data-save]') as HTMLElement | null,
   saveCheck: $('[data-save-check]') as HTMLInputElement | null,
   stats: $('[data-stats]') as HTMLElement | null,
-  next: $('[data-next]') as HTMLElement | null,
-  nextNumber: $('[data-next-number]') as HTMLElement | null,
-  again: $('[data-again]') as HTMLElement | null,
   archiveBanner: $('[data-archive-banner]') as HTMLElement | null,
   archiveBack: $('[data-archive-back]') as HTMLElement | null,
   archiveRow: $('[data-archive-row]') as HTMLElement | null,
@@ -261,7 +258,7 @@ function renderClues(clues: ClueData[]): void {
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="flex flex-col gap-2">
-        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
+        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent-strong font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
           <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
@@ -275,7 +272,7 @@ function renderClues(clues: ClueData[]): void {
 
     const l1El = clueEl.querySelector("[data-clue-line1]");
     const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold">$1</span>');
-    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent whitespace-nowrap">${emphHtml}</span>`;
+    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent-strong whitespace-nowrap">${emphHtml}</span>`;
     dom.clueList.appendChild(clueEl);
   }
 }
@@ -348,13 +345,12 @@ function renderBox(i: number): void {
 
   // Active state: accent border + accent shadow
   el.classList.toggle("border-accent", i === activeBox);
-  el.classList.toggle("shadow-[3px_3px_0_rgba(10,133,10,0.3)]", i === activeBox);
-  // Restore default border+shadow when not active. Dark uses a solid grey
-  // (#494946 = the border colour composited over the surface) so the offset
-  // shadow stays visible against the black page background.
+  el.classList.toggle("shadow-box-active", i === activeBox);
+  // Restore default border+shadow when not active. shadow-box derives from
+  // --color-text via color-mix, so it stays visible against the dark page
+  // background without a separate dark variant.
   el.classList.toggle("border-border", i !== activeBox);
-  el.classList.toggle("shadow-[3px_3px_0_rgba(38,38,36,0.12)]", i !== activeBox);
-  el.classList.toggle("dark:shadow-[3px_3px_0_#494946]", i !== activeBox);
+  el.classList.toggle("shadow-box", i !== activeBox);
 
   el.setAttribute("aria-expanded", i === activeBox ? "true" : "false");
 }
@@ -381,7 +377,7 @@ function buildKeypad() {
     btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
         ? 'bg-surface text-text/25 border-border shadow-none'
-        : 'bg-surface text-text border-border shadow-[2px_2px_0_rgba(38,38,36,0.12)] dark:shadow-[2px_2px_0_#494946]'
+        : 'bg-surface text-text border-border shadow-key'
     }`;
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
@@ -468,13 +464,6 @@ function checkSubmit() {
 
 // ─── Game ─────────────────────────────────────────────────────────────────────
 
-function showNextPuzzle() {
-  if (dom.next && dom.nextNumber) {
-    dom.nextNumber.textContent = String((gameState.puzzleNum ?? 0) + 1);
-    dom.next.classList.remove("hidden");
-  }
-}
-
 function showCompletedState(tries: number, replayDate?: string): void {
   // /play in solved-replay mode is the same minimal view for today and archive:
   // clues + revealed digits + "Solved in N tries!" + a context-specific link.
@@ -498,7 +487,6 @@ function showCompletedState(tries: number, replayDate?: string): void {
     }
   }
   dom.submitWrap?.classList.add("hidden");
-  dom.next?.classList.add("hidden");
   dom.history?.classList.add("hidden");
 
   // Archive row visibility tied to replayDate so a daily /play view never inherits archive chrome.
@@ -522,7 +510,6 @@ function resetPuzzleUI() {
   renderFeedback(null);
   renderHistory([]);
   dom.stats?.classList.add("hidden");
-  dom.next?.classList.add("hidden");
   // Hide archive row by default; startReplayPuzzle re-enables it for dated replays.
   if (dom.archiveRow) {
     dom.archiveRow.classList.add("hidden");
@@ -548,8 +535,6 @@ function startRandomPuzzle(clues: ClueData[], token: string): void {
   gameState = { answer: null, guesses: [], solved: false, isRandom: true, token };
   resetPuzzleUI();
   track("puzzle_start");
-
-  dom.again?.classList.add("hidden");
 }
 
 function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
@@ -633,7 +618,6 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
   if (dom.saveCheck) dom.saveCheck.checked = saveScore;
-  dom.again?.classList.add("hidden");
 }
 
 async function handleGuess() {
@@ -707,12 +691,19 @@ async function handleGuess() {
         // /solved is reserved for today's puzzle (overall stats live there).
         // Render the minimal solved-replay view inline.
         showCompletedState(tries, gameState.date);
+      } else if (gameState.isRandom) {
+        // /random boots without initRouter (app.ts boot shows the game screen
+        // directly), so the router has no deps and replaceRoute('/solved') would
+        // throw `router not initialized`. Random has no /solved URL anyway — show
+        // the completion screen directly.
+        renderCompletion(gameState.puzzleNum ?? 0, tries, true);
+        showScreen('completion');
       } else {
         // Today's solve: paint the completion screen and replace history (no /play
         // entry to back into; back from /solved goes to /welcome, which itself
         // redirects to /solved post-solve so the back lands on the same screen
         // — effectively making /solved the post-solve home).
-        renderCompletion(gameState.puzzleNum ?? 0, tries, !!gameState.isRandom);
+        renderCompletion(gameState.puzzleNum ?? 0, tries, false);
         // Fire sync — never inside celebrateOcto's callback. If celebration is
         // interrupted (page hidden, rAF paused) the user could otherwise be
         // stranded on /play with the puzzle solved (#solve-stranding).
@@ -782,9 +773,17 @@ if ('serviceWorker' in navigator) {
   // updateViaCache: 'none' makes the browser bypass the HTTP cache when checking
   // /sw.js for updates, so a new deploy is picked up on the next navigation
   // instead of waiting up to 24h for the cached SW script to expire.
+  // Was this page already controlled by an SW when it loaded? On a first-ever
+  // visit it is not. The SW posts SW_UPDATED from its activate handler on *every*
+  // first activation (install → skipWaiting → claim → notify), so without this
+  // guard the first-ever load reloads itself the moment the SW claims it — a
+  // spurious reload for real users, and one that races axe/navigation in e2e
+  // (the freshly-claimed page navigates mid-test → "execution context destroyed").
+  // Only a genuine update — a page that already had a controller — should reload.
+  const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
   navigator.serviceWorker.addEventListener('message', (e) => {
-    if (e.data?.type === 'SW_UPDATED') window.location.reload();
+    if (e.data?.type === 'SW_UPDATED' && hadController) window.location.reload();
   });
   // Force an update check whenever the page regains focus — covers PWAs and
   // long-lived tabs where navigation alone wouldn't trigger one.

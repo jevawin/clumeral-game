@@ -198,6 +198,18 @@ export function renderCompletion(
       dom.links.appendChild(a);
     }
 
+    // Random is a testing page; its only entry link lives here — replay another
+    // random puzzle. A plain anchor does a full navigation to /random, which
+    // re-runs the cold-boot path (the SPA router is never initialised on /random).
+    if (isRandom) {
+      const again = document.createElement('a');
+      again.href = '/random';
+      again.className = 'btn btn-hollow flex-1';
+      again.dataset.completionRandomAgain = '';
+      again.innerHTML = '<svg aria-hidden="true"><use href="/sprites.svg#icon-puzzle"/></svg>Play another random puzzle';
+      dom.links.appendChild(again);
+    }
+
     // Archive link: always present. Renamed from /puzzles to /archive (ARC-01).
     const archive = document.createElement('a');
     archive.href = '/archive';

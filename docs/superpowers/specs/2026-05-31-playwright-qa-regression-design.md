@@ -21,6 +21,58 @@ Deviations from the design, all deliberate:
   later pass.
 - **Console guard** allowlists external Google-Fonts/SW noise (offline hosts).
 
+## Coverage review — 2026-06-28 (PR 2)
+
+Post-redesign coverage map: every screen × flow against the real specs in `e2e/` and
+`tests/` (not the intended inventory below). Built during PR 2 of the post-redesign
+stabilisation program ([design](2026-06-28-post-redesign-stabilisation-design.md)).
+
+**Well covered** (screen × flow → spec): daily solve (`game-solve`), wrong guess + retry
+(`game-fail`), random load + solve (`random`, `ssr-pages`), archive replay + back
+(`archive`), midnight/local-date rollover (`midnight-rollover`, `welcome`, unit `date`),
+first-play walkthrough (`octopus-walkthrough`), menu burger/feedback/theme/swatch (`menu`),
+completion stats/countdown/links (`completion`, unit `completion-stats`/`completion-links`/
+`archive-stats`), a11y axe + skip-link (`a11y`), PWA single-screen + precache (`pwa-render`,
+unit `sw-precache`), routing scrollRestoration + popstate (`routing`, unit `router`).
+
+**Gaps filled in PR 2:**
+- **Random play-again** — clicking the `/random` entry link → load + solve a second puzzle.
+  Was only `href`-checked, never followed (`random.spec`, `helpers/random.ts`).
+- **Dark-mode active shadow** — PR 1 shipped dark `--shadow-*` overrides with no test; added
+  a dark-mode mirror of the light shadow assertion (`shadow-theme.spec`).
+- **Completion popstate** — back/forward after solving stays on completion, the terminal
+  post-solve state (`routing.spec`).
+- **How-to-play menu link** — closes the menu and shows the help (welcome) screen via
+  `skipResolve` (`menu.spec`).
+- **Mid-game reload restore** — reloading keeps eliminations; the probe for the "phone
+  refresh restarts the puzzle" report (`restore.spec`). Passes → same-day restore works.
+
+**Tracked remaining gaps** (documented, not yet specced — low value / fragile / platform):
+- [ ] **Random completion links e2e** — assert random completion shows only Archive (no
+  "Show puzzle"). Already unit-covered (`completion-links`); e2e is low marginal value.
+- [ ] **Day-rollover mid-interaction (live gameplay e2e)** — unit-covered (`router`); the
+  visibility/focus variant was deferred here as fragile.
+- [ ] **/archive SSR-handoff analytics beacon e2e** — unit-covered (`router`); deferred as
+  fragile (document-unload beacon timing across the matrix).
+- [ ] **Analytics events fire** — `route_change` + archive beacon are unit-tested; per-event
+  e2e assertions (`puzzle_start`, `htp_opened`, …) are low value and flaky against the local
+  Analytics Engine binding.
+- [ ] **Dark-mode a11y (axe)** — axe runs light theme only; dark-theme contrast pass.
+  The a11y spec now pins `colorScheme: 'light'` so the gate is deterministic regardless
+  of the runner's OS preference (GitHub CI defaults to dark). Running it against dark mode
+  surfaced a real white-on-accent solid-button contrast failure (~2.9:1), tracked in
+  [#243](https://github.com/jevawin/clumeral-game/issues/243) — the dark-theme pass lives there.
+- [ ] **iOS reload / storage eviction** — platform behaviour, not reproducible in Playwright.
+  Tracked as [#237](https://github.com/jevawin/clumeral-game/issues/237).
+
+**Stability note:** `random.spec` runs `mode: "serial"` and its readiness waits use a
+load-tolerant timeout; the WebKit-only `/api/dev/answer … access control checks` pageerror is
+allowlisted in `helpers/console.ts` (test-only endpoint, app already catches it). The full
+matrix is green in CI mode (retries:1); WebKit random tests can flake once under max local
+single-process concurrency and recover on retry, per the WebKit-flake policy below.
+
+---
+
 ## Goal
 
 A full automated Playwright regression suite covering every user-reachable flow in
