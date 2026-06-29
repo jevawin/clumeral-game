@@ -18,6 +18,10 @@ Rules that keep it from rotting:
 
 - _Nothing in progress._
 
+## Next
+
+- [#249](https://github.com/jevawin/clumeral-game/issues/249) Tidy the accent colour palette after the AA fix — `accent-strong` text reads lighter than the raw-accent borders/tints/fills and looks mismatched; harmonise into one ramp and fold in [#243](https://github.com/jevawin/clumeral-game/issues/243) (dark-mode white-on-accent buttons) — when: next UI/colour pass
+
 ## Recently shipped
 
 - 2026-06-28 — [#233](https://github.com/jevawin/clumeral-game/pull/233) Post-redesign bug fixes — `/random` correct-answer crash fixed (cold-boot solve no longer hits the uninitialised-router throw) + restored the "Play another random puzzle" entry link on the random completion screen, and theme-aware shadow tokens (`--shadow-*`) so shadows render correctly in dark mode
