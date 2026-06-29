@@ -22,6 +22,10 @@ Five tokens defined in `@theme` block. Dark mode overrides in `@layer theme` und
 
 Tailwind generates utility classes from these: `bg-bg`, `text-text`, `bg-accent`, `bg-surface`, `border-border`. The legacy `muted` token was removed in v1.1 (CLR-01) — secondary copy now uses `text-text`. Use `text-text/60` only for non-essential placeholder/decorative variants where pure text is unreadable.
 
+### Derived: `accent-strong` (AA-safe accent text)
+
+`--color-accent-strong` = `color-mix(in srgb, var(--color-accent) 82%, var(--color-text))`. The raw accent on light backgrounds sits at ~4.3:1 on the clue-tag tint (`bg-accent/5`) and ~4.6:1 on the page bg — at or below WCAG AA 4.5:1. Mixing 18% toward `text` darkens it in light mode and lightens it in dark mode, lifting all four accent themes to ~5.3:1+ (light) / ~7.5:1 (dark). Both source vars are live, so it re-resolves per accent and per theme — no `dark:` variant needed. Use `text-accent-strong` for accent-coloured **text**; keep raw `--color-accent` (`text-accent`, `border-accent`, `bg-accent`) for icons, borders, and fills.
+
 ## Typography
 
 - Body / headings: **Quicksand** 400/600/700 (Google Fonts), fallback `system-ui` — `--font-sans`
