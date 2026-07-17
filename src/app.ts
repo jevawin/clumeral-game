@@ -154,11 +154,11 @@ const TAG_TIPS: Record<string, string> = {
   SQUARE: "Square root is an integer",
   CUBE: "Cube root is an integer",
   TRIAN: "Sum of consecutive numbers from 0",
-  SUM: "Digits added together",
-  DIFF: "Smaller of the digits subtracted from larger",
-  PROD: "Digits multiplied together",
-  MEAN: "Sum of digits divided by how many digits",
-  RANGE: "Largest digit minus the smallest",
+  SUM: "Numbers added together",
+  DIFF: "Smaller of the numbers subtracted from larger",
+  PROD: "Numbers multiplied together",
+  MEAN: "Sum of numbers divided by how many numbers",
+  RANGE: "Largest number minus the smallest",
 };
 
 function showTip(message: string, anchor: HTMLElement): void {
@@ -235,7 +235,8 @@ function renderClues(clues: ClueData[]): void {
     // is not a prime number → remove primes from the first box"), so display
     // "box"/"boxes" in the clue text. Labels are frozen per puzzle in KV, so we
     // transform at render time to cover old and new puzzles uniformly. The (i)
-    // tag definitions (TAG_TIPS) deliberately keep "digits".
+    // tag definitions (TAG_TIPS) use "numbers" — an abstract definition of the
+    // maths, not tied to boxes. "digit" is now fully gone from player copy.
     const boxLabel = label.replace(/\bdigits\b/g, "boxes").replace(/\bdigit\b/g, "box");
     const lit = digitPositions(propKey);
     const miniDigitsHtml = lit.map((on) =>
