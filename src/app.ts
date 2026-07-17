@@ -468,6 +468,8 @@ function showCompletedState(tries: number, replayDate?: string): void {
   // /play in solved-replay mode is the same minimal view for today and archive:
   // clues + revealed digits + "Solved in N tries!" + a context-specific link.
   // Stats panel never appears here — it lives on /solved.
+  // Finalised: the keypad is no longer usable, so hide it (issue #194).
+  closeKeypad();
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
     dom.feedback.innerHTML = `${ICON_CHECK} Solved in ${t}!`;
@@ -889,6 +891,9 @@ function initMenu(): void {
   });
 
   document.querySelector('[data-menu-close]')?.addEventListener('click', closeMenu);
+
+  // Archive is an anchor (client-routed); close the menu when it's chosen.
+  menu.querySelector('[data-menu-archive]')?.addEventListener('click', closeMenu);
 
   document.addEventListener('click', (e) => {
     if (!menu!.contains(e.target as Node) && e.target !== menuBtn && !menu!.classList.contains('hidden')) {
