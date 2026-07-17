@@ -57,9 +57,9 @@ function htpSteps(): string {
         </div>
       </div>
 
-      <!-- Step 2: Open the digit boxes -->
+      <!-- Step 2: Open the number boxes -->
       <div>
-        <p class="text-base text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
+        <p class="text-base text-text mb-2">2. Open the boxes, remove ineligible numbers</p>
         <div class="flex items-start gap-2.5">
           <div class="digit-box flex-1 aspect-square min-w-0 shadow-box">
             <div class="digit-box__grid four-col">
@@ -97,7 +97,7 @@ function htpSteps(): string {
       </div>
 
       <!-- Step 3: Submit -->
-      <p class="text-base text-text">3. When 1 digit remains in each, submit your answer</p>
+      <p class="text-base text-text">3. When 1 number remains in each, submit your answer</p>
 
     </div>`;
 }

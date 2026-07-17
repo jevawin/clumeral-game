@@ -381,7 +381,7 @@ function buildKeypad() {
     }`;
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
-    btn.setAttribute("aria-label", `Toggle digit ${d}`);
+    btn.setAttribute("aria-label", `Toggle number ${d}`);
     // aria-pressed marks player-eliminated digits (a toggle state). The hundreds-box
     // 0 is not a toggle — it's an explainer — so it must not claim a pressed state.
     if (elim && !disabled) btn.setAttribute("aria-pressed", "true");
@@ -389,9 +389,9 @@ function buildKeypad() {
       // Hundreds-box 0: keep focusable/tappable (not native disabled) so it can
       // explain why the first digit can't be 0.
       btn.setAttribute("aria-disabled", "true");
-      btn.setAttribute("aria-label", "0 unavailable — the first digit can't be 0");
+      btn.setAttribute("aria-label", "0 unavailable — the first box can't be 0");
       btn.addEventListener("click", () =>
-        showTip("The number is 100–999, so the first digit can't be 0.", btn)
+        showTip("The number is 100–999, so the first box can't be 0.", btn)
       );
     } else {
       btn.addEventListener("click", () => toggleDigit(d));
