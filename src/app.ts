@@ -231,6 +231,12 @@ function renderClues(clues: ClueData[]): void {
   dom.clueList.innerHTML = "";
   for (const { propKey, label, operator, value } of clues) {
     const tag = getClueTag(propKey);
+    // #228: players read a clue as being about each box's value ("the first box
+    // is not a prime number → remove primes from the first box"), so display
+    // "box"/"boxes" in the clue text. Labels are frozen per puzzle in KV, so we
+    // transform at render time to cover old and new puzzles uniformly. The (i)
+    // tag definitions (TAG_TIPS) deliberately keep "digits".
+    const boxLabel = label.replace(/\bdigits\b/g, "boxes").replace(/\bdigit\b/g, "box");
     const lit = digitPositions(propKey);
     const miniDigitsHtml = lit.map((on) =>
       `<span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border ${on ? 'border-accent bg-accent/50' : 'border-accent bg-accent/5'}"></span>`
@@ -240,13 +246,13 @@ function renderClues(clues: ClueData[]): void {
     let emphHtml: string;
     if (typeof value === "boolean") {
       const isAffirmative = operator === "=" ? value : !value;
-      const idx = label.indexOf(" is ");
-      const subject = label.slice(0, idx);
-      const predicate = label.slice(idx + 4);
+      const idx = boxLabel.indexOf(" is ");
+      const subject = boxLabel.slice(0, idx);
+      const predicate = boxLabel.slice(idx + 4);
       leadText = subject + " is";
       emphHtml = (isAffirmative ? "" : "not ") + predicate;
     } else {
-      leadText = operator === "=" ? label.replace(/\s+is$/, "") : label;
+      leadText = operator === "=" ? boxLabel.replace(/\s+is$/, "") : boxLabel;
       const formatted = formatClueValue(value);
       const opSymbol = OPERATOR_SYMBOLS[operator] ?? operator;
       const valuePart = formatted.html ?? formatted.text;
