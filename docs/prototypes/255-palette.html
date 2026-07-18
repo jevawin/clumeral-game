@@ -7,14 +7,14 @@
 <style>
   /* Derivation. Only these values are declared; everything else computes. */
   .proto-scope {
-    --base-light: #F3F1ED;
+    --base-light: #FAFAFA;
     --base-dark:  #121213;
     --accent-h: 145;
     --accent-l: 0.50;
     --accent-c: 0.14;
     --semantic-l: calc(var(--accent-l) - 0.10);
     --bg: var(--base-light);
-    --surface: #FAF8F4;
+    --surface: #FFFFFF;
     --text: #262624;
     --accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
     --success: oklch(var(--semantic-l) 0.11 150);
@@ -31,19 +31,33 @@
     --surface: #2A2A2B;
     --text: #FAF8F4;
   }
-  /* Toggle: white background instead of cream. Light mode only — without the
+  /* Toggle: cream background instead of white. Light mode only — without the
      mode qualifier this ties with the dark rule on specificity, wins on source
-     order, and paints dark-mode cards white. */
-  .proto-scope[data-mode="light"][data-cream="off"] { --base-light: #FAFAFA; --surface: #FFFFFF; }
-  /* Toggle: per-theme chroma at each hue's sRGB ceiling. */
-  .proto-scope[data-chroma="per-theme"][data-theme="Lime"]   { --accent-c: 0.157; }
-  .proto-scope[data-chroma="per-theme"][data-theme="Berry"]  { --accent-c: 0.201; }
-  .proto-scope[data-chroma="per-theme"][data-theme="Blue"]   { --accent-c: 0.232; }
-  .proto-scope[data-chroma="per-theme"][data-theme="Violet"] { --accent-c: 0.260; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.245; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.136; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }
+     order, and repaints dark-mode cards. */
+  .proto-scope[data-mode="light"][data-cream="on"] { --base-light: #F3F1ED; --surface: #FAF8F4; }
+  /* Toggle: per-theme chroma, capped at today's saturation.
+     min(today's chroma, the hue's sRGB ceiling at the AA lightness). Five of the
+     eight are ceiling-limited and sit below today; three (Blue light, Violet
+     light, Lime dark) are pulled down off the ceiling to match today instead. */
+  .proto-scope[data-chroma="per-theme"][data-theme="Lime"]   { --accent-c: 0.157; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-theme="Berry"]  { --accent-c: 0.201; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-theme="Blue"]   { --accent-c: 0.178; }  /* today */
+  .proto-scope[data-chroma="per-theme"][data-theme="Violet"] { --accent-c: 0.237; }  /* today */
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.174; }  /* today */
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.136; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }  /* ceiling */
+
+  /* Toggle: the same per-theme idea but uncapped, every hue at its ceiling.
+     Kept only so the capped values can be compared against it. */
+  .proto-scope[data-chroma="per-theme-max"][data-theme="Lime"]   { --accent-c: 0.157; }
+  .proto-scope[data-chroma="per-theme-max"][data-theme="Berry"]  { --accent-c: 0.201; }
+  .proto-scope[data-chroma="per-theme-max"][data-theme="Blue"]   { --accent-c: 0.232; }
+  .proto-scope[data-chroma="per-theme-max"][data-theme="Violet"] { --accent-c: 0.260; }
+  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.245; }
+  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.136; }
+  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }
+  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }
   /* Hue angles per theme. */
   .proto-scope[data-theme="Lime"]   { --accent-h: 145; }
   .proto-scope[data-theme="Berry"]  { --accent-h: 5; }
@@ -102,10 +116,14 @@
       <select id="screen"><option>welcome</option><option>game</option><option>completion</option></select>
     </label>
     <label>chroma
-      <select id="chroma"><option value="shared">shared</option><option value="per-theme">per-theme</option></select>
+      <select id="chroma">
+        <option value="per-theme" selected>per-theme (capped at today)</option>
+        <option value="per-theme-max">per-theme (at ceiling)</option>
+        <option value="shared">shared</option>
+      </select>
     </label>
-    <label>cream bg
-      <select id="cream"><option value="on">cream</option><option value="off">white</option></select>
+    <label>light bg
+      <select id="cream"><option value="off" selected>white</option><option value="on">cream</option></select>
     </label>
   </div>
   <div class="proto-grid">
