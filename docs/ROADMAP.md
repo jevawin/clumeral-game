@@ -16,11 +16,11 @@ Rules that keep it from rotting:
 
 ## Now — WIP 1
 
-- _Nothing in progress._
+- **Colour + Fibonacci cluster** on `feat/now-cluster-2026-07-17` — [#249](https://github.com/jevawin/clumeral-game/issues/249) accent palette tidy (folding in [#243](https://github.com/jevawin/clumeral-game/issues/243)), [#202](https://github.com/jevawin/clumeral-game/issues/202) semantic success/error tokens, and [#81](https://github.com/jevawin/clumeral-game/issues/81) Fibonacci special. In review — PR to staging.
 
 ## Next
 
-- [#249](https://github.com/jevawin/clumeral-game/issues/249) Tidy the accent colour palette after the AA fix — `accent-strong` text reads lighter than the raw-accent borders/tints/fills and looks mismatched; harmonise into one ramp and fold in [#243](https://github.com/jevawin/clumeral-game/issues/243) (dark-mode white-on-accent buttons) — when: next UI/colour pass
+- _Nothing queued._
 
 ## Recently shipped
 

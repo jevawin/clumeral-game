@@ -10,7 +10,7 @@
 
 ## Semantic colour tokens
 
-Five tokens defined in `@theme` block. Dark mode overrides in `@layer theme` under `html.dark` (same cascade layer, higher specificity than `:root`).
+Nine tokens defined in `@theme` block (budget is 15, per CLAUDE.md). Dark mode overrides in `@layer theme` under `html.dark` (same cascade layer, higher specificity than `:root`).
 
 | Token | CSS variable | Light | Dark | Usage |
 |-------|-------------|-------|------|-------|
@@ -19,12 +19,30 @@ Five tokens defined in `@theme` block. Dark mode overrides in `@layer theme` und
 | accent | `--color-accent` | `#0A850A` | `#1EAD52` | Accent colour, buttons, links |
 | surface | `--color-surface` | `#FFFFFF` | `#363634` | Input/card backgrounds |
 | border | `--color-border` | `rgba(38, 38, 36, 0.12)` | `rgba(246, 240, 232, 0.1)` | Borders, dividers |
+| accent-strong | `--color-accent-strong` | derived | derived | AA-safe accent for text + paired borders — see below |
+| on-accent | `--color-on-accent` | `#FFFFFF` | `var(--color-bg)` | Text/icons sitting **on** an accent fill — see below |
+| success | `--color-success` | `#1a7a3a` | `#4cc990` | Correct feedback text, correct-box highlight |
+| error | `--color-error` | `#c03030` | `#f07070` | Wrong-guess and error feedback text |
 
-Tailwind generates utility classes from these: `bg-bg`, `text-text`, `bg-accent`, `bg-surface`, `border-border`. The legacy `muted` token was removed in v1.1 (CLR-01) — secondary copy now uses `text-text`. Use `text-text/60` only for non-essential placeholder/decorative variants where pure text is unreadable.
+Tailwind generates utility classes from these: `bg-bg`, `text-text`, `bg-accent`, `bg-surface`, `border-border`, `text-success`, `text-error`, `bg-success/12`. The legacy `muted` token was removed in v1.1 (CLR-01) — secondary copy now uses `text-text`. Use `text-text/60` only for non-essential placeholder/decorative variants where pure text is unreadable.
+
+`success` / `error` are deliberately **not** accent-derived — they must stay green and red whichever accent theme the player picks. Both clear AA on `--color-bg` in their own mode. Note `error` dark on `--color-surface` is 4.18:1, so keep error text on the page background.
 
 ### Derived: `accent-strong` (AA-safe accent text)
 
-`--color-accent-strong` = `color-mix(in srgb, var(--color-accent) 82%, var(--color-text))`. The raw accent on light backgrounds sits at ~4.3:1 on the clue-tag tint (`bg-accent/5`) and ~4.6:1 on the page bg — at or below WCAG AA 4.5:1. Mixing 18% toward `text` darkens it in light mode and lightens it in dark mode, lifting all four accent themes to ~5.3:1+ (light) / ~7.5:1 (dark). Both source vars are live, so it re-resolves per accent and per theme — no `dark:` variant needed. Use `text-accent-strong` for accent-coloured **text**; keep raw `--color-accent` (`text-accent`, `border-accent`, `bg-accent`) for icons, borders, and fills.
+`--color-accent-strong` = `color-mix(in srgb, var(--color-accent) 82%, var(--color-text))`. The raw accent on light backgrounds sits at ~4.3:1 on the clue-tag tint (`bg-accent/5`) and ~4.6:1 on the page bg — at or below WCAG AA 4.5:1. Mixing 18% toward `text` darkens it in light mode and lightens it in dark mode, lifting all four accent themes to ~5.3:1+ (light) / ~7.5:1 (dark). Both source vars are live, so it re-resolves per accent and per theme — no `dark:` variant needed.
+
+Use `text-accent-strong` for accent-coloured **text**, and for any **border sitting directly alongside that text** — clue tags, the `.link` underline, `.btn-hollow`. Per #249, a strong-shade text inside a raw-accent border is what read as mismatched; matching them makes the pairing look deliberate. Keep raw `--color-accent` for icons, standalone fills (`bg-accent`), and low-opacity tints (`bg-accent/5`), where the shade difference is imperceptible and the fuller colour reads better.
+
+### `on-accent` (text on an accent fill)
+
+`--color-on-accent` is the foreground for anything sitting on a solid accent background — `.btn-solid`, `.skip-link`, the selected feedback category pill. White clears AA on the light accents (4.78–4.80:1) but only manages 2.94–3.01:1 on the lighter dark accents, which was #243. Flipping to the page background in dark mode gives 6.22–6.38:1 across all four themes.
+
+It is set per mode rather than via `color-mix()` because the correct answer **flips between the two ends of the scale** rather than sliding along it.
+
+### SSR pages duplicate these tokens
+
+`/archive` is Worker-rendered ([src/worker/puzzles.ts](../src/worker/puzzles.ts)) with its own inline `<style>` block that mirrors the token set and the `.btn` system. It does not load `tailwind.css`. **A colour change in `tailwind.css` does not reach it** — update both, or the SSR page silently keeps the old value. This is exactly how #243 survived the first fix.
 
 ## Typography
 
