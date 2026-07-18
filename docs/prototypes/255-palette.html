@@ -31,8 +31,10 @@
     --surface: #2A2A2B;
     --text: #FAF8F4;
   }
-  /* Toggle: white background instead of cream. */
-  .proto-scope[data-cream="off"] { --base-light: #FAFAFA; --surface: #FFFFFF; }
+  /* Toggle: white background instead of cream. Light mode only — without the
+     mode qualifier this ties with the dark rule on specificity, wins on source
+     order, and paints dark-mode cards white. */
+  .proto-scope[data-mode="light"][data-cream="off"] { --base-light: #FAFAFA; --surface: #FFFFFF; }
   /* Toggle: per-theme chroma at each hue's sRGB ceiling. */
   .proto-scope[data-chroma="per-theme"][data-theme="Lime"]   { --accent-c: 0.157; }
   .proto-scope[data-chroma="per-theme"][data-theme="Berry"]  { --accent-c: 0.201; }
