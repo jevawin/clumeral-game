@@ -395,7 +395,7 @@ to check, and it must be checked before the token work depends on it.
 **Files:**
 - Modify (temporarily): `src/tailwind.css`
 
-- [ ] **Step 1: Patch a probe into `@theme`**
+- [x] **Step 1: Patch a probe into `@theme`**
 
 Add to the `@theme` block in `src/tailwind.css`, immediately after
 `--color-bg`:
@@ -415,7 +415,7 @@ And add to the `@layer utilities` block:
 The `.probe-calc` rule is required — Step 3 of the earlier build probe showed
 unused `@theme` tokens are tree-shaken out of the bundle entirely.
 
-- [ ] **Step 2: Build and inspect**
+- [x] **Step 2: Build and inspect**
 
 ```bash
 npm run build
@@ -427,21 +427,37 @@ Expected PASS: `probe-sem:oklch(var(--probe-sl) .11 150)` — emitted with the
 Expected FAIL: the declaration is absent, or `calc()` has been flattened to a
 literal number.
 
-- [ ] **Step 3: Revert the probe**
+- [x] **Step 3: Revert the probe**
 
 ```bash
 git checkout src/tailwind.css
 git status --porcelain   # must be empty
 ```
 
-- [ ] **Step 4: Record the outcome**
+- [x] **Step 4: Record the outcome**
 
-If it PASSED, `--semantic-l` stays one declared value — proceed as planned.
+**PASSED** — 2026-07-18. Emitted bundle:
 
-If it FAILED, `--semantic-l` becomes two literals instead of a derived one:
-`0.40` in the light block and `0.68` in the dark block. Declared values go from
-10 to 11. Nothing else in the plan changes. Note the outcome in the PR body
-either way.
+```
+--probe-al:.5
+--probe-sl:calc(var(--probe-al) - .1)
+--probe-sem:oklch(var(--probe-sl) .11 150)
+.probe-calc{color:var(--probe-sem)}
+```
+
+Lightning CSS normalises the number formatting but does not flatten the `calc()`
+or resolve the `var()`. The prototype separately confirms it resolves at runtime:
+under Lime light, `--success` computes to `oklch(0.4 0.11 150)`.
+
+So `--semantic-l` stays one declared value. Probe reverted, tree clean.
+
+Had it failed, `--semantic-l` would have become two literals — `0.40` light and
+`0.68` dark — for one extra declared value and no other change.
+
+**Noted while in the file:** light `--color-bg` is already `#FAFAFA` and
+`--color-surface` already `#FFFFFF`. The white-not-cream decision therefore
+leaves both light neutrals exactly as they are today. The only neutral that moves
+is the dark surface, `#363634` → `#2A2A2B`.
 
 ---
 
