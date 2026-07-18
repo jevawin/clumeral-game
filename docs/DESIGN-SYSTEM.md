@@ -32,6 +32,8 @@ Tailwind generates utility classes from these: `bg-bg`, `text-text`, `bg-accent`
 
 `--color-accent-strong` = `color-mix(in srgb, var(--color-accent) 82%, var(--color-text))`. The raw accent on light backgrounds sits at ~4.3:1 on the clue-tag tint (`bg-accent/5`) and ~4.6:1 on the page bg — at or below WCAG AA 4.5:1. Mixing 18% toward `text` darkens it in light mode and lightens it in dark mode, lifting all four accent themes to ~5.3:1+ (light) / ~7.5:1 (dark). Both source vars are live, so it re-resolves per accent and per theme — no `dark:` variant needed.
 
+Those figures are against `--color-bg`. On `--color-surface` (menu panel, feedback modal) accent-strong is 4.85–4.96:1 in dark — still AA, but with little headroom. Raw accent on the dark surface is only **4.03–4.13:1 and fails**, so accent text on a surface must use `accent-strong`, not `accent`.
+
 Use `text-accent-strong` for accent-coloured **text**, and for any **border sitting directly alongside that text** — clue tags, the `.link` underline, `.btn-hollow`. Per #249, a strong-shade text inside a raw-accent border is what read as mismatched; matching them makes the pairing look deliberate. Keep raw `--color-accent` for icons, standalone fills (`bg-accent`), and low-opacity tints (`bg-accent/5`), where the shade difference is imperceptible and the fuller colour reads better.
 
 ### `on-accent` (text on an accent fill)

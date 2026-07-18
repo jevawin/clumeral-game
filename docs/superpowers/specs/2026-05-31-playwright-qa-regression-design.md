@@ -62,9 +62,15 @@ unit `sw-precache`), routing scrollRestoration + popstate (`routing`, unit `rout
   regardless of the runner's OS preference (GitHub CI defaults to dark). The light-only pin
   existed because dark tripped a real white-on-accent solid-button failure (~2.9:1), #243;
   that is fixed by the `--color-on-accent` token (#249), so dark is now a real gate rather
-  than a known-red one. 18 axe tests pass across chromium-desktop and mobile-chromium.
-  Remaining narrower gap: axe exercises the **default Lime accent only** — Berry/Blue/Violet
-  are verified by computing contrast directly, not by the gate.
+  than a known-red one. 26 axe tests pass across chromium-desktop and mobile-chromium.
+  The scan also opens the burger menu and the feedback modal before analysing: both ship
+  hidden (`hidden` class / closed `<dialog>`), so axe skipped those subtrees entirely on the
+  screen-level scans, and two real dark-mode failures hid in that blind spot — accent text on
+  `--color-surface` is 4.03–4.13:1. Verified the new cases fail without the fix.
+  Remaining narrower gaps: axe exercises the **default Lime accent only** (Berry/Blue/Violet
+  are verified by computing contrast directly, not by the gate), and axe does not evaluate
+  `:hover` / `:focus-visible` styles at all, so accent-on-surface focus states are reasoned
+  about rather than gated.
 - [ ] **iOS reload / storage eviction** — platform behaviour, not reproducible in Playwright.
   Tracked as [#237](https://github.com/jevawin/clumeral-game/issues/237).
 

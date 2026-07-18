@@ -61,10 +61,15 @@
   --color-on-accent: #FFFFFF;
 
   /* Success / error feedback. Not derived from the accent — they must stay green
-     and red whichever accent theme is picked. Values are the ones previously
-     inlined in app.ts, unchanged, so tokenising them is visually a no-op.
-     Both clear AA on --color-bg in their own mode. Note error-dark on
-     --color-surface is 4.18:1, so keep error text on the page bg. */
+     and red whichever accent theme is picked. Both clear AA on --color-bg in
+     their own mode. Note error-dark on --color-surface is 4.18:1, so keep error
+     text on the page bg.
+
+     The values match the ones previously inlined in app.ts, so the feedback TEXT
+     is unchanged. The correct-box highlight is not: it was sea-green (#2e8b57),
+     picked independently of the success text beside it, and now derives from
+     this token. It also gains a dark variant it never had, since the inline
+     utilities carried no dark: override. */
   --color-success: #1a7a3a;
   --color-error:   #c03030;
 
@@ -221,15 +226,17 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   /* Derived from --color-success so the highlight and the "Correct!" feedback
      text are one colour family (#202). --color-success already flips per mode,
-     so no dark override is needed for the hue — only the alphas differ, since
-     the dark tint needs slightly more fill and less border to read the same. */
+     so no dark override is needed — the token carries the mode difference.
+
+     The alphas MUST stay in sync with the bg-success/12 + border-success/40
+     utilities that app.ts applies to the same boxes (see applyCorrectState and
+     showCompletedState). Two paths reach this state: octo.ts adds .digit-correct
+     after the celebration, app.ts adds the utilities on completion/restore. The
+     utilities sit in the utilities layer and therefore win wherever both apply,
+     so a value that disagrees here is silently dead. */
   [data-digits].digit-correct > div {
     background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
     border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
-  }
-  html.dark [data-digits].digit-correct > div {
-    background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
-    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
   }
 
   /* ─── Octo slot layout spacer ─── */

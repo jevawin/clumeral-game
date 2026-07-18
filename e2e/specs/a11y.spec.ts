@@ -4,6 +4,8 @@ import { gotoPlayableGame } from "../helpers/game-setup.ts";
 import { seedHistory, seedLastVisit } from "../helpers/storage.ts";
 import { freezeDate } from "../helpers/clock.ts";
 import { waitForScreenSettled } from "../helpers/screens.ts";
+import { MenuPage } from "../pages/menu.page.ts";
+import { FeedbackPage } from "../pages/feedback.page.ts";
 
 // Fail only on serious/critical violations — the launch-blocking bar. Lesser
 // (moderate/minor) findings are surfaced by a full `axe` run but don't gate here.
@@ -64,6 +66,32 @@ for (const scheme of ["light", "dark"] as const) {
     test("archive page has no serious/critical violations", async ({ page }) => {
       await page.goto("/archive");
       await expect(page.locator("h1")).toBeVisible();
+      expect(await seriousViolations(page)).toEqual([]);
+    });
+
+    // The burger menu ships `hidden` and the feedback modal is a closed <dialog>,
+    // so axe skips both subtrees on every route above — they are invisible to the
+    // screen-level scans. Two real dark-mode contrast failures hid there behind
+    // exactly that blind spot (accent text on bg-surface is 4.03–4.13:1, below
+    // AA), so open them and scan explicitly.
+    test("open burger menu has no serious/critical violations", async ({ page }) => {
+      await gotoPlayableGame(page);
+      await waitForScreenSettled(page, "game");
+      const menu = new MenuPage(page);
+      await menu.open();
+      await expect(menu.menu).toBeVisible();
+      expect(await seriousViolations(page)).toEqual([]);
+    });
+
+    test("open feedback modal has no serious/critical violations", async ({ page }) => {
+      await gotoPlayableGame(page);
+      await waitForScreenSettled(page, "game");
+      const menu = new MenuPage(page);
+      await menu.open();
+      await menu.fbBtn.click();
+      const feedback = new FeedbackPage(page);
+      await expect(feedback.modal).toBeVisible();
+      await expect(feedback.cats).toBeVisible();
       expect(await seriousViolations(page)).toEqual([]);
     });
   });
