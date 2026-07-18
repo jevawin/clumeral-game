@@ -41,7 +41,7 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Working on | Read |
 |------------|------|
 | Starting any task — current priorities, what's next | [docs/ROADMAP.md](docs/ROADMAP.md) |
-| Puzzle logic, seeding, storage | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Puzzle logic, seeding, KV storage, **archive integrity** (puzzles are KV write-once — generator changes don't rewrite history) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Routing, URL rules, screen transitions | [docs/URL-ARCHITECTURE.md](docs/URL-ARCHITECTURE.md) |
 | CSS, theming, clue display | [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |
 | Code patterns, accessibility, DOM | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
