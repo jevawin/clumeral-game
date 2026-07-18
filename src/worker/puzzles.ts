@@ -42,41 +42,59 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     var t = localStorage.getItem("dlng_theme");
     if (!t) t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     document.documentElement.classList.add(t);
-    var THEMES = {
-      Lime:   { light: "#0a850a", dark: "#1ead52" },
-      Berry:  { light: "#de1f46", dark: "#ea6c85" },
-      Blue:   { light: "#376ddb", dark: "#6393f2" },
-      Violet: { light: "#9a44ea", dark: "#b679f0" }
-    };
+    // Mirrors applyColour() in src/colours.ts: set the attribute and let the
+    // :root[data-theme] rules below resolve hue and chroma. Setting
+    // --color-accent inline here instead would win over the stylesheet and
+    // pin /archive to a hardcoded value (#255).
     var saved = localStorage.getItem("dlng_colour");
-    var theme = THEMES[saved] || THEMES.Lime;
-    var accent = t === "dark" ? theme.dark : theme.light;
-    document.documentElement.style.setProperty("--color-accent", accent);
+    var THEMES = ["Lime", "Berry", "Blue", "Violet"];
+    document.documentElement.dataset.theme =
+      THEMES.indexOf(saved) !== -1 ? saved : "Lime";
   })();
 </script>
 <style>
   :root {
     color-scheme: light dark;
+    /* Mirrors the @theme block in src/tailwind.css. /archive does not load
+       tailwind.css, so these must be kept in step by hand — tests/token-parity.spec.ts
+       fails if they drift. Goes away with #200.
+
+       /archive has no swatch UI but does honour the saved accent, so the
+       per-theme rules are mirrored too — see below the base blocks. */
+    --accent-l: 0.50;
+    --semantic-l: calc(var(--accent-l) - 0.10);
+    --accent-h: 145;
+    --accent-c: 0.157;
     --color-bg:      #FAFAFA;
-    --color-text:    #262624;
     --color-surface: #FFFFFF;
-    --color-border:  rgba(38, 38, 36, 0.12);
-    --color-accent:  #0a850a;
-    /* Mirrors src/tailwind.css — see the token comments there. accent-strong is
-       the AA-safe accent for text; on-accent is the text colour that sits ON an
-       accent fill, and must flip to the page bg in dark (#243/#249). */
-    --color-accent-strong: color-mix(in srgb, var(--color-accent) 82%, var(--color-text));
-    --color-on-accent: #FFFFFF;
+    --color-text:    #262624;
+    --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+    --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
+    --color-success: oklch(var(--semantic-l) 0.11 150);
+    --color-error:   oklch(var(--semantic-l) 0.14 27);
   }
   :root.dark {
     color-scheme: dark;
+    --accent-l: 0.78;
+    --accent-c: 0.174;
     --color-bg:      #121213;
+    --color-surface: #2A2A2B;
     --color-text:    #FAF8F4;
-    --color-surface: #363634;
-    --color-border:  rgba(246, 240, 232, 0.1);
-    --color-on-accent: var(--color-bg);
   }
   :root.light { color-scheme: light; }
+
+  /* Per-theme hue and chroma — mirrors the html[data-theme] rules in
+     src/tailwind.css. The inline script above sets the attribute from the saved
+     accent. Chroma is truncated to 3dp, never rounded: Berry dark's sRGB ceiling
+     is 0.135523, so 0.136 would clip and shift lightness. */
+  :root[data-theme="Lime"]   { --accent-h: 145; --accent-c: 0.157; }
+  :root[data-theme="Berry"]  { --accent-h: 5;   --accent-c: 0.201; }
+  :root[data-theme="Blue"]   { --accent-h: 262; --accent-c: 0.178; }
+  :root[data-theme="Violet"] { --accent-h: 305; --accent-c: 0.237; }
+  :root.dark[data-theme="Lime"]   { --accent-c: 0.174; }
+  :root.dark[data-theme="Berry"]  { --accent-c: 0.135; }
+  :root.dark[data-theme="Blue"]   { --accent-c: 0.111; }
+  :root.dark[data-theme="Violet"] { --accent-c: 0.140; }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: "Quicksand", system-ui, sans-serif; }
@@ -89,7 +107,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     flex-direction: column;
   }
 
-  a { color: var(--color-accent-strong); text-decoration: none; }
+  a { color: var(--color-accent); text-decoration: none; }
 
   /* ─── Header strip (matches SPA app header) ─── */
   header.app-header {
@@ -165,9 +183,9 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     cursor: pointer;
     transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
   }
-  .btn-solid { background: var(--color-accent); color: var(--color-on-accent); border: 1.5px solid var(--color-accent); }
+  .btn-solid { background: var(--color-accent); color: var(--color-bg); border: 1.5px solid var(--color-accent); }
   .btn-solid:hover { filter: brightness(1.08); }
-  .btn-hollow { background: transparent; color: var(--color-accent-strong); border: 1.5px solid var(--color-accent-strong); }
+  .btn-hollow { background: transparent; color: var(--color-accent); border: 1.5px solid var(--color-accent); }
   .btn-hollow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
   .btn-sm { min-height: 2rem; padding: 0.375rem 0.75rem; font-size: 0.875rem; gap: 0.375rem; }
   .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
@@ -229,7 +247,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     font-weight: 700;
     width: 3rem;
   }
-  td:first-child a { color: var(--color-accent-strong); text-decoration: underline; }
+  td:first-child a { color: var(--color-accent); text-decoration: underline; }
   .num-col { font-family: "Inconsolata", ui-monospace, monospace; font-weight: 600; text-align: right; }
   th.num-header { text-align: right; }
   td.action-col { text-align: right; }
