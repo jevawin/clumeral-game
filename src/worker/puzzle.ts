@@ -8,7 +8,7 @@ const TRIANGULARS = new Set([0, 1, 3, 6]);
 // Single-digit Fibonacci numbers. 0 and 1 are included, so this overlaps heavily
 // with SQUARES/CUBES/TRIANGULARS at the low end — that is fine, the filter engine
 // picks clues by how much they narrow the candidate set, not by independence.
-export const FIBONACCIS  = new Set([0, 1, 2, 3, 5, 8]);
+export const FIBONACCIS = new Set([0, 1, 2, 3, 5, 8]);
 
 function getDigits(n: number): [number, number, number] {
   return [Math.floor(n / 100), Math.floor((n % 100) / 10), n % 10];
