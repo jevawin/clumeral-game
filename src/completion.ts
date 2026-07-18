@@ -206,7 +206,16 @@ export function renderCompletion(
       again.href = '/random';
       again.className = 'btn btn-hollow flex-1';
       again.dataset.completionRandomAgain = '';
-      again.innerHTML = '<svg aria-hidden="true"><use href="/sprites.svg#icon-puzzle"/></svg>Play another random puzzle';
+      // One word, matching the "Archive" sibling. This button is flex-1 beside
+      // Archive so it only gets half the row, and "Play another random puzzle"
+      // wrapped to three lines (75px against the 48px single-line height).
+      // Measured in this container: at 320px the button is 132px wide and even
+      // "Play again" takes two lines; "Another" holds one line at every width.
+      // The aria-label restores the context the short label drops, and starts
+      // with the visible word so it satisfies WCAG 2.5.3 Label in Name — a
+      // voice-control user saying "another" still matches the accessible name.
+      again.setAttribute('aria-label', 'Another random puzzle');
+      again.innerHTML = '<svg aria-hidden="true"><use href="/sprites.svg#icon-puzzle"/></svg>Another';
       dom.links.appendChild(again);
     }
 
