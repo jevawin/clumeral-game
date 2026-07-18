@@ -4,7 +4,7 @@
 
 **Goal:** Replace 31 hand-picked colour literals with a palette derived from two base neutrals, one lightness per mode, and one hue angle per theme — making the WCAG AA failure of #254 structurally unrepresentable.
 
-**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely. `colours.ts` sets one hue number instead of two hexes. Semantic success/error sit one lightness step deeper than the accents so they stay distinguishable at any hue.
+**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely per theme. `colours.ts` sets a `data-theme` attribute instead of two hexes, and CSS resolves hue and chroma from it. Semantic success/error sit one lightness step deeper than the accents so they stay distinguishable at any hue.
 
 **Tech Stack:** Tailwind CSS v4 (`@theme`), Vite 8, Lightning CSS, Cloudflare Workers (SSR), Vitest, Playwright.
 
@@ -17,44 +17,54 @@
 ## Target palette
 
 Every value below is computed, not picked. All pairings verified — worst accent
-ratio 5.00, worst overall 4.70.
+ratio 5.36, worst overall 4.70.
 
-### Declared values (10)
+**Revised after Task 1 sign-off (2026-07-18):** per-theme chroma, white base.
+See [Settled by the prototype](../specs/2026-07-18-oklch-derived-palette-design.md#settled-by-the-prototype).
+
+### Declared values (18)
 
 ```
 --base-dark    #121213      --accent-l   light 0.50  dark 0.78
---base-light   #F3F1ED      --accent-c   light 0.14  dark 0.11
-                            --semantic-l = accent-l − 0.10
+--base-light   #FAFAFA      --semantic-l = accent-l − 0.10
 hue angles     Lime 145 · Berry 5 · Blue 262 · Violet 305
 semantic hues  success 150 · error 27
+accent chroma  light  Lime 0.157 · Berry 0.201 · Blue 0.178 · Violet 0.237
+               dark   Lime 0.174 · Berry 0.136 · Blue 0.111 · Violet 0.140
 ```
 
-### Resolved — light (`bg #F3F1ED`, `surface #FAF8F4`, `text #262624`)
+Chroma is `min(today's chroma, the hue's sRGB ceiling at that lightness)`. Five
+of the eight are ceiling-limited; three (Blue light, Violet light, Lime dark) sit
+at today's value with headroom to spare.
+
+### Resolved — light (`bg #FAFAFA`, `surface #FFFFFF`, `text #262624`)
 
 | token | hex | vs bg | vs surface |
 |---|---|---|---|
-| Lime | `#1E7729` | 5.00 | 5.31 |
-| Berry | `#A13958` | 5.74 | 6.11 |
-| Blue | `#345FB2` | 5.43 | 5.78 |
-| Violet | `#764AA2` | 5.69 | 6.05 |
-| text | `#262624` | 13.44 | 14.29 |
-| success | `#005724` | 7.79 | 8.29 |
-| error | `#831A18` | 8.76 | 9.31 |
+| Lime | `#00791E` | 5.36 | 5.59 |
+| Berry | `#B60054` | 6.45 | 6.74 |
+| Blue | `#245BC7` | 5.92 | 6.18 |
+| Violet | `#8420CB` | 6.60 | 6.89 |
+| text | `#262624` | 14.53 | 15.16 |
+| success | `#005725` | 8.42 | 8.79 |
+| error | `#831A18` | 9.46 | 9.88 |
 
 ### Resolved — dark (`bg #121213`, `surface #2A2A2B`, `text #FAF8F4`)
 
 | token | hex | vs bg | vs surface |
 |---|---|---|---|
-| Lime | `#8ACA8B` | 9.72 | 7.44 |
-| Berry | `#F399AE` | 8.90 | 6.81 |
-| Blue | `#91B7FE` | 9.28 | 7.11 |
-| Violet | `#C8A5F0` | 9.00 | 6.89 |
+| Lime | `#65D46D` | 9.98 | 7.64 |
+| Berry | `#FF91AC` | 8.82 | 6.76 |
+| Blue | `#90B7FF` | 9.27 | 7.10 |
+| Violet | `#CC9FFF` | 8.89 | 6.81 |
 | text | `#FAF8F4` | 17.65 | 13.52 |
-| success | `#4EB068` | 6.90 | 5.28 |
+| success | `#63AB74` | 6.78 | 5.19 |
 | error | `#E27368` | 6.14 | 4.70 |
 
-Dark chroma is 0.11 because Blue's sRGB gamut ceiling at L=0.78 is 0.111. If the
-prototype selects per-theme chroma, each theme uses its own ceiling instead.
+Every dark chroma except Lime's is at its sRGB ceiling — L=0.78 is what AA on
+`surface` requires, and it leaves little room for saturation. Lime is the one
+theme that could go brighter (ceiling 0.245) and is held at today's 0.174
+instead.
 
 ---
 
@@ -67,7 +77,8 @@ prototype selects per-theme chroma, each theme uses its own ceiling instead.
 | `tests/palette-contrast.spec.ts` | Asserts every accent × mode × surface pairing clears 4.5:1, computed. The CI enforcement of the guarantee. | create |
 | `tests/token-parity.spec.ts` | Parses token blocks from `tailwind.css` and the Worker `<style>` string; fails on divergence. | create |
 | `src/tailwind.css` | Token derivation. Remove `--color-on-accent`, `--color-accent-strong`. | modify |
-| `src/colours.ts` | `THEMES` becomes hue angles. Sets `--accent-h`, not `--color-accent`. | modify |
+| `src/colours.ts` | `THEMES` becomes hue + chroma per mode. Sets `data-theme` on `<html>`, not `--color-accent`. | modify |
+| `src/palette.ts` | Declared values, single source of truth for CSS, the Worker mirror and the tests. | create |
 | `src/worker/puzzles.ts` | Mirror of the token block for SSR `/archive`. | modify |
 | `index.html`, `src/app.ts`, `src/welcome.ts`, `src/walkthrough.ts` | `text-accent-strong` → `text-accent` sweep. | modify |
 | `docs/DESIGN-SYSTEM.md` | Rewritten around derivation rules. | modify |
@@ -87,7 +98,7 @@ candidates. Use only `proto-`-prefixed class names and hand-written CSS in a
 `<style>` block. Do not use a single Tailwind utility class name in this file, or
 it will add dead rules to the shipped stylesheet.
 
-- [ ] **Step 1: Create the prototype shell with the toggle controls**
+- [x] **Step 1: Create the prototype shell with the toggle controls**
 
 Create `docs/prototypes/255-palette.html`. Self-contained, no build step, opens
 via `file://`.
@@ -232,7 +243,7 @@ via `file://`.
 </html>
 ```
 
-- [ ] **Step 2: Add the three screen compositions**
+- [x] **Step 2: Add the three screen compositions**
 
 Replace `const SCREENS = {};` with the block below. These are representative
 compositions, not pixel copies of the app — they exercise every surface a colour
@@ -318,7 +329,7 @@ borders, and the two semantic states.
 Then add `__sync()` as the last line of the module script so the page renders on
 load.
 
-- [ ] **Step 3: Open it and check the semantic collision cases**
+- [x] **Step 3: Open it and check the semantic collision cases**
 
 Run: `open docs/prototypes/255-palette.html`
 
@@ -331,7 +342,7 @@ Verify by eye, and specifically check the two collision cases the spec calls out
 - **theme Berry + screen completion** — "Wrong" must not read as ordinary accent
   text. Same 0.10 step; error (H 27) and Berry (H 5) are 22° apart.
 
-- [ ] **Step 4: Commit the prototype**
+- [x] **Step 4: Commit the prototype**
 
 ```bash
 git add docs/prototypes/255-palette.html
@@ -343,17 +354,35 @@ content scan cannot pick up utility candidates from it.
 Toggles: theme, mode, screen, shared-vs-per-theme chroma, cream-vs-white bg."
 ```
 
-- [ ] **Step 5: STOP — get user sign-off**
+- [x] **Step 5: STOP — get user sign-off** — DONE 2026-07-18
 
-Present the page. Collect decisions on the three open questions:
+Decisions collected:
 
-1. Accent chroma — does Lime at L=0.50 still read as Clumeral?
-2. Cream `#F3F1ED` vs white `#FAFAFA`?
-3. Shared chroma per mode, or per-theme?
+1. **Accent chroma — per-theme, capped at today's saturation.** Shared read as
+   too muted. Eight values, listed under Target palette above.
+2. **White `#FAFAFA`, not cream.** Surface stays `#FFFFFF`.
+3. **Per-theme, not shared.** Follows from (1).
 
-**Do not start Task 2 until these are answered.** The answers set
-`--accent-c` and `--base-light` for every task that follows. If per-theme chroma
-wins, Task 4 gains four `--accent-c` overrides keyed on the theme attribute.
+Consequences for the tasks below, all folded in already:
+
+- Declared values go from 10 to 18. The acceptance criterion moved from ≤10 to
+  ≤20 in the spec.
+- `src/palette.ts` (Task 4) — `accentC` is a per-theme map per mode, not a scalar.
+- `src/tailwind.css` (Task 5) — 8 chroma overrides keyed on the theme attribute.
+- `src/colours.ts` (Task 6) — chroma varies by mode as well as theme, so the
+  theme→chroma mapping lives in CSS keyed on a `data-theme` attribute rather than
+  in `applyColour`. See Task 6 Step 1.
+- Contrast tables recomputed against white; worst accent 5.00 → 5.36.
+
+Two errors found while recomputing, corrected in both docs: the success-dark hex
+was listed at C 0.15 (spec) and C 0.14 (plan) when the declared token is C 0.11,
+and the error-dark hex was listed at C 0.15 in the spec when the token is C 0.14.
+Contrast passed in every case, so nothing structural — but the hexes were wrong.
+
+Prototype bug fixed during sign-off: the white/cream toggle tied with the
+dark-mode rule on specificity and painted dark-mode cards white. The plan's Step
+1 CSS above carries the same bug if copied verbatim; the committed prototype has
+the `[data-mode="light"]` qualifier that fixes it.
 
 ---
 
@@ -569,22 +598,28 @@ import { PALETTE } from '../src/palette';
 Then append the new suite below the existing `describe` block:
 
 ```ts
+type ThemeName = keyof typeof PALETTE.hues;
+const themes = Object.keys(PALETTE.hues) as ThemeName[];
+
 describe('palette AA guarantee', () => {
   const modes = ['light', 'dark'] as const;
 
   it.each(modes)('every %s accent clears AA on bg and surface', (mode) => {
     const { accentL, accentC, bg, surface } = PALETTE[mode];
-    for (const [name, hue] of Object.entries(PALETTE.hues)) {
-      const hex = oklchToHex(accentL, accentC, hue);
+    for (const name of themes) {
+      const hex = oklchToHex(accentL, accentC[name], PALETTE.hues[name]);
       expect(contrastRatio(hex, bg), `${name} on bg`).toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio(hex, surface), `${name} on surface`).toBeGreaterThanOrEqual(4.5);
     }
   });
 
+  // Chroma is per-theme and five of the eight values sit on the sRGB ceiling, so
+  // this is the check that stops a hand-tweak drifting out of gamut. Clipping
+  // shifts lightness, which is the one thing the AA guarantee rests on.
   it.each(modes)('every %s accent fits inside sRGB', (mode) => {
     const { accentL, accentC } = PALETTE[mode];
-    for (const [name, hue] of Object.entries(PALETTE.hues)) {
-      expect(inSrgbGamut(accentL, accentC, hue), `${name} out of gamut`).toBe(true);
+    for (const name of themes) {
+      expect(inSrgbGamut(accentL, accentC[name], PALETTE.hues[name]), `${name} out of gamut`).toBe(true);
     }
   });
 
@@ -640,11 +675,13 @@ export const PALETTE = {
   },
 
   light: {
-    bg: '#F3F1ED',
-    surface: '#FAF8F4',
+    bg: '#FAFAFA',
+    surface: '#FFFFFF',
     text: '#262624',
     accentL: 0.5,
-    accentC: 0.14,
+    // min(today's chroma, the hue's sRGB ceiling at accentL). Lime and Berry are
+    // ceiling-capped; Blue and Violet sit at today's value with room to spare.
+    accentC: { Lime: 0.157, Berry: 0.201, Blue: 0.178, Violet: 0.237 },
     semanticL: 0.4,
   },
 
@@ -653,17 +690,19 @@ export const PALETTE = {
     surface: '#2A2A2B',
     text: '#FAF8F4',
     accentL: 0.78,
-    // Blue's sRGB gamut ceiling at L=0.78 is 0.111, and it is the lowest of the
-    // four. A shared chroma has to sit under it.
-    accentC: 0.11,
+    // All but Lime are at their sRGB ceiling. L=0.78 is what AA on surface
+    // requires, and a lighter colour has less room for chroma — so these are
+    // gamut limits, not choices. Lime could reach 0.245 and is held at today's
+    // value instead.
+    accentC: { Lime: 0.174, Berry: 0.136, Blue: 0.111, Violet: 0.140 },
     semanticL: 0.68,
   },
 } as const;
 ```
 
-If Task 1 sign-off chose **per-theme chroma**, replace the flat `accentC` with a
-per-theme map and update the two `it.each` loops in Step 1 to read
-`PALETTE[mode].accentC[name]`.
+Adding a fifth theme now means adding a hue angle **and** a chroma value per
+mode — three numbers, not one. The gamut test in Step 1 will catch a chroma set
+above the new hue's ceiling.
 
 - [ ] **Step 4: Run it to verify it passes**
 
@@ -712,12 +751,16 @@ with:
      Adding a theme = adding one hue angle. No new contrast pairings to verify. */
 
   --accent-l: 0.50;
-  --accent-c: 0.14;
-  --accent-h: 145;                                  /* set per theme by colours.ts */
   --semantic-l: calc(var(--accent-l) - 0.10);
 
-  --color-bg:      #F3F1ED;
-  --color-surface: #FAF8F4;
+  /* Hue and chroma per theme. colours.ts sets data-theme on <html>; these rules
+     resolve both from it, so the mode half of the mapping stays in CSS and
+     applyColour needs no light/dark branch. Defaults are Lime's. */
+  --accent-h: 145;
+  --accent-c: 0.157;
+
+  --color-bg:      #FAFAFA;
+  --color-surface: #FFFFFF;
   --color-text:    #262624;
   --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
   --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
@@ -735,15 +778,35 @@ with:
 Delete the `--color-accent-strong` and `--color-on-accent` declarations along
 with their comment blocks.
 
+Then add the per-theme hue and chroma rules **outside** `@theme` (they are plain
+rules, not tokens):
+
+```css
+html[data-theme="Lime"]   { --accent-h: 145; --accent-c: 0.157; }
+html[data-theme="Berry"]  { --accent-h: 5;   --accent-c: 0.201; }
+html[data-theme="Blue"]   { --accent-h: 262; --accent-c: 0.178; }
+html[data-theme="Violet"] { --accent-h: 305; --accent-c: 0.237; }
+
+/* Dark chroma is lower for every theme but Lime: L=0.78 leaves less sRGB room
+   for saturation. Hue does not vary by mode, so it is not repeated. */
+html.dark[data-theme="Lime"]   { --accent-c: 0.174; }
+html.dark[data-theme="Berry"]  { --accent-c: 0.136; }
+html.dark[data-theme="Blue"]   { --accent-c: 0.111; }
+html.dark[data-theme="Violet"] { --accent-c: 0.140; }
+```
+
 - [ ] **Step 2: Replace the `html.dark` override**
 
 Replace the colour lines inside `html.dark` (keeping `--octo-c1/2/3`):
 
 ```css
     --accent-l: 0.78;
-    /* Blue's sRGB ceiling at this lightness is 0.111 and it is the lowest of
-       the four, so the shared chroma sits under it. */
-    --accent-c: 0.11;
+    /* Lime's dark chroma, as the default. Every theme's own rule outranks this
+       on specificity, so it only shows before colours.ts sets data-theme — and
+       it is what /archive renders with, since the Worker mirror has no
+       per-theme rules. Keep it equal to the Worker's :root.dark value or
+       tests/token-parity.spec.ts fails. */
+    --accent-c: 0.174;
 
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
@@ -803,27 +866,37 @@ In `src/colours.ts`, replace the `ColourTheme` interface and `THEMES` with:
 ```ts
 import { PALETTE } from './palette';
 
+type ThemeName = keyof typeof PALETTE.hues;
+
 interface ColourTheme {
-  name: string;
+  name: ThemeName;
   hue: number;
+  chromaLight: number;
+  chromaDark: number;
 }
 
-// One number per theme. Lightness and chroma are shared and live in
-// tailwind.css, which is what makes every theme AA-safe by construction (#255).
-const THEMES: ColourTheme[] = Object.entries(PALETTE.hues).map(
-  ([name, hue]) => ({ name, hue })
-);
+// Hue plus a chroma per mode. Lightness is shared and lives in tailwind.css,
+// which is what makes every theme AA-safe by construction — chroma is
+// contrast-inert and free to vary per theme (#255).
+const THEMES: ColourTheme[] = (Object.keys(PALETTE.hues) as ThemeName[]).map((name) => ({
+  name,
+  hue: PALETTE.hues[name],
+  chromaLight: PALETTE.light.accentC[name],
+  chromaDark: PALETTE.dark.accentC[name],
+}));
 ```
 
 - [ ] **Step 2: Simplify `applyColour`**
 
-Hue is mode-independent — `--accent-l` and `--accent-c` carry the light/dark
-difference — so the `isDark()` branch disappears entirely.
+Chroma varies by theme *and* mode, so pushing it from JS would need the
+`isDark()` branch back. Instead set a `data-theme` attribute and let the CSS
+rules from Task 5 Step 1 resolve hue and both chroma values — the mode half stays
+in the cascade next to `html.dark`, where it already lives.
 
 ```ts
 function applyColour(theme: ColourTheme): void {
   active = theme;
-  root.style.setProperty('--accent-h', String(theme.hue));
+  root.dataset.theme = theme.name;
   window._currentColour = theme.name;
   refreshSwatchState();
 }
@@ -831,33 +904,42 @@ function applyColour(theme: ColourTheme): void {
 
 Delete the now-unused `isDark()` function.
 
-- [ ] **Step 3: Simplify the swatch variables**
+**Check first:** confirm nothing else reads or writes `data-theme` on `<html>`.
+`theme.ts` uses the `.dark` class, so it should be free, but verify before
+relying on it:
 
-In `renderSwatches()`, replace the two `setProperty` calls with one:
+```bash
+grep -rn "data-theme\|dataset.theme" src/ index.html e2e/
+```
+
+- [ ] **Step 3: Set the swatch variables**
+
+Each swatch dot needs its own hue and both chromas, since a dot's colour cannot
+come from `--accent-c` (that is whichever theme is *active*, not the one the dot
+represents). In `renderSwatches()`:
 
 ```ts
     btn.style.setProperty('--swatch-h', String(t.hue));
+    btn.style.setProperty('--swatch-cl', String(t.chromaLight));
+    btn.style.setProperty('--swatch-cd', String(t.chromaDark));
 ```
 
 - [ ] **Step 4: Update the swatch CSS**
 
-In `src/tailwind.css`, replace the `.swatch-btn` background rules. The separate
-`html.dark .swatch-btn` rule is no longer needed — `--accent-l` already flips.
-
 ```css
   .swatch-btn {
     /* ... existing width/height/border-radius/etc unchanged ... */
-    background: oklch(var(--accent-l) var(--accent-c) var(--swatch-h));
+    background: oklch(var(--accent-l) var(--swatch-cl) var(--swatch-h));
   }
-```
 
-Delete:
-
-```css
+  /* Kept, unlike the rest of the dark colour rules: --accent-l flips on its own
+     but swatch chroma cannot, because each dot carries its own pair. */
   html.dark .swatch-btn {
-    background: var(--swatch-dark);
+    background: oklch(var(--accent-l) var(--swatch-cd) var(--swatch-h));
   }
 ```
+
+The old `--swatch-dark` hex variable goes away; the dark rule stays.
 
 - [ ] **Step 5: Leave `_refreshAccent` in place**
 
@@ -955,6 +1037,12 @@ import { resolve } from 'node:path';
 //
 // #200 migrates /archive to a SPA route, at which point the duplication and this
 // test both go away.
+//
+// Scope: the base blocks only. The per-theme html[data-theme=...] rules are not
+// compared, because /archive has no theme switcher and the Worker carries no
+// per-theme rules to compare against. What that means in practice is that
+// /archive always renders Lime — the --accent-h and --accent-c defaults in the
+// base blocks — which is the behaviour today too.
 
 const TOKENS = [
   '--accent-l',
@@ -1019,11 +1107,11 @@ declarations with values that match `tailwind.css` exactly:
        tailwind.css, so these must be kept in step by hand — tests/token-parity.spec.ts
        fails if they drift. Goes away with #200. */
     --accent-l: 0.50;
-    --accent-c: 0.14;
-    --accent-h: 145;
     --semantic-l: calc(var(--accent-l) - 0.10);
-    --color-bg:      #F3F1ED;
-    --color-surface: #FAF8F4;
+    --accent-h: 145;
+    --accent-c: 0.157;
+    --color-bg:      #FAFAFA;
+    --color-surface: #FFFFFF;
     --color-text:    #262624;
     --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
     --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
@@ -1033,7 +1121,7 @@ declarations with values that match `tailwind.css` exactly:
   :root.dark {
     color-scheme: dark;
     --accent-l: 0.78;
-    --accent-c: 0.11;
+    --accent-c: 0.174;
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
     --color-text:    #FAF8F4;
@@ -1096,13 +1184,17 @@ cat docs/DESIGN-SYSTEM.md
 
 Replace the hand-picked palette listing with the derivation. Cover:
 
-- **The declared values** — the 10 from `src/palette.ts`, and that it is the
+- **The declared values** — the 18 from `src/palette.ts`, and that it is the
   single source of truth.
 - **The rule that matters** — contrast rides on `--accent-l` alone, shared
   across themes. Chroma and hue are contrast-inert, so they are free aesthetic
-  dials.
-- **How to add a theme** — add one hue angle to `PALETTE.hues`. That is the whole
-  procedure. The contrast test covers it automatically.
+  dials — which is exactly why chroma could be set per theme without reopening
+  the AA question.
+- **How to add a theme** — add a hue angle to `PALETTE.hues` and a chroma to
+  `light.accentC` / `dark.accentC`. Three numbers. The contrast test covers AA
+  automatically; the gamut test catches a chroma set above the hue's ceiling.
+  Note that dark chroma is usually gamut-limited, so pick it by finding the
+  ceiling at L=0.78 rather than by eye.
 - **Why `--color-accent-strong` and `--color-on-accent` are gone** — one accent
   now clears AA on both `bg` and `surface`; on-accent is `bg`, which makes the
   two directions the same ratio by symmetry.
@@ -1200,8 +1292,10 @@ Confirm the headline claim before writing it in the PR body.
 grep -rEoh '#[0-9A-Fa-f]{6}' src/ index.html --include=*.ts --include=*.css --include=*.html | sort -u
 ```
 
-Expected: roughly 8–10 unique values — the two bases, the two text colours, and
-the six `--octo-c*` decorative stops.
+Expected: roughly 12 unique values — the two bases, the two surfaces, the two
+text colours, and the six `--octo-c*` decorative stops. The hue and chroma
+numbers are not hex literals, so this grep does not see them; the honest headline
+is 31 literals → ~18 declared values, not → 12.
 
 - [ ] **Step 3: DA review**
 
@@ -1228,8 +1322,13 @@ PR body must record:
 - The three sign-off decisions from Task 1.
 - That `--color-accent-strong` and `--color-on-accent` are removed, partly
   undoing #254 by design.
-- The worst-case contrast ratios: 5.00 accent (Lime light), 4.70 overall (error
+- The worst-case contrast ratios: 5.36 accent (Lime light), 4.70 overall (error
   dark on surface).
+- That per-theme chroma raised the declared-value count from 10 to 18, and why
+  it was worth it — shared chroma read as visibly muted at sign-off.
+- That five of the eight dark chroma values are sRGB gamut limits rather than
+  choices, so dark accents are less saturated than today and cannot be restored
+  without dropping below AA.
 
 **Never merge this yourself.** The user merges on GitHub.
 

@@ -3,7 +3,8 @@
 **Issue:** [#255](https://github.com/jevawin/clumeral-game/issues/255)
 **Branch:** `issue/255`
 **Date:** 2026-07-18
-**Status:** agreed in discuss, pending prototype sign-off
+**Status:** prototype signed off 2026-07-18 — decisions recorded under
+[Settled by the prototype](#settled-by-the-prototype)
 
 Replaces the hand-picked colour set with a derived system: two base neutrals, a
 fixed lightness per mode, and one hue angle per theme. Everything else computes.
@@ -54,12 +55,12 @@ across hues from a single shared parameter.
 ## The system
 
 ```
-2 bases        D #121213   ·   L #F3F1ED
+2 bases        D #121213   ·   L #FAFAFA
 2 lightness    accent-L    light 0.50 · dark 0.78      ← the AA guarantee
 1 delta        semantic-L = accent-L − 0.10
-chroma         per mode, or per theme — prototype toggle
+8 chroma       per theme per mode, capped at today's saturation
 4 hue angles   Lime · Berry · Blue · Violet
-2 semantic H   success ~150 · error ~27
+2 semantic H   success 150 · error 27
 3 rules        surface   = one step from bg toward L  (cards lift in both modes)
                border    = mix(fg, bg, 12%)
                on-accent = bg
@@ -75,15 +76,17 @@ Only `--accent-h` changes per theme. `colours.ts` sets one number instead of two
 hexes.
 
 All contrast figures below are computed against the **derived** surfaces —
-`#FAF8F4` light and `#2A2A2B` dark — not today's `#FFFFFF` / `#363634`. The
+`#FFFFFF` light and `#2A2A2B` dark — not today's `#FFFFFF` / `#363634`. The
 surface rule steps toward the light base in *both* modes, so cards lift off the
-page either way: barely in light, clearly in dark.
+page either way: barely in light, clearly in dark. Light surface lands back on
+white because sign-off chose the white base; only the dark surface moves.
 
 ### Chroma is contrast-inert
 
 This is the finding that shapes the rest. Holding `L` fixed and pushing chroma
 from 0.14 to the maximum in-gamut value moves contrast by at most ~0.5, and
-nothing drops below AA:
+nothing drops below AA (figures against the cream base that was on the table at
+the time; the argument is unchanged under white, which only raises them):
 
 | theme (light) | at C=0.14 | at max chroma |
 |---|---|---|
@@ -94,15 +97,17 @@ nothing drops below AA:
 
 So the AA guarantee rides on `L` alone. Chroma and hue move freely underneath and
 **cannot** reintroduce the #254 bug class. That makes chroma a free aesthetic
-dial, which is why it becomes a prototype toggle rather than a fixed decision.
+dial, which is why the prototype settled it rather than the maths.
 
 Two constraints follow:
 
-- **Lime light is the tight one.** 5.00 at C=0.14, falling to 4.96 at max chroma
-  — green's gamut ceiling at L=0.50 is 0.157, the lowest of the four. Headroom
-  over AA is ~0.5, so the light background value cannot drift far.
-- **Blue dark caps at C=0.111**, so a shared dark chroma of 0.14 is out of gamut.
-  Either share the minimum, Blue-limited, or go per-theme.
+- **Lime light is the tight one.** Green's gamut ceiling at L=0.50 is 0.157, the
+  lowest of the four, and Lime carries the worst ratio in the system at every
+  chroma. The light background value cannot drift downward without re-checking.
+- **Chroma is gamut-limited, not taste-limited, in five of eight cases.** Blue
+  dark caps at 0.111 and Berry/Violet dark at 0.136/0.140, all below today. A
+  shared dark chroma would have to sit under Blue's 0.111 and drag the other
+  three down with it — which is why sign-off went per-theme.
 
 ### Two tokens disappear
 
@@ -140,15 +145,22 @@ Deeper rather than lighter, in both modes, because pushing the dark semantics
 *up* collapses red's gamut ceiling to C 0.076 — a pale `#FFBFB6` pink. Going down
 keeps error a proper red near today's value:
 
+Computed at the declared token chroma — success 0.11, error 0.14 — against the
+signed-off bases:
+
 | | L | hex | vs bg | vs surface |
 |---|---|---|---|---|
-| success light | 0.40 | `#005724` | 7.79 | 8.29 |
-| error light | 0.40 | `#831A18` | 8.76 | 9.31 |
-| success dark | 0.68 | `#45B164` | 6.89 | 5.28 |
-| error dark | 0.68 | `#E66F64` | 6.08 | 4.66 |
+| success light | 0.40 | `#005725` | 8.42 | 8.79 |
+| error light | 0.40 | `#831A18` | 9.46 | 9.88 |
+| success dark | 0.68 | `#63AB74` | 6.78 | 5.19 |
+| error dark | 0.68 | `#E27368` | 6.14 | 4.70 |
 
-Error-dark on surface is the tightest at 4.66 — thin, but it passes, which
+Error-dark on surface is the tightest at 4.70 — thin, but it passes, which
 today's 4.18 does not.
+
+An earlier draft of this table listed success dark as `#45B164` and error dark as
+`#E66F64`. Both were computed at C 0.15, which is neither token's declared
+chroma; the values above are what the tokens actually resolve to.
 
 Separation holds at any hue, so a future fifth theme cannot collide with the
 semantics. Since semantics do not vary per theme, their contrast is verified once
@@ -233,23 +245,45 @@ to a SPA route) deletes the duplication anyway. No point solving it twice.
 6. **QA** at the agreed level.
 7. **DA review → self-review → PR to `staging`.**
 
-### Open questions the prototype settles
+### Settled by the prototype
 
-These are perceptual, not computable. The contrast maths already says the system
-works; what is unproven is whether muted accents and cream cards still feel like
-Clumeral.
+Three perceptual questions the contrast maths could not answer. Decided
+2026-07-18 against `docs/prototypes/255-palette.html`.
 
-- **Is Lime brand-locked?** Largely dissolved during discuss. The issue framed
-  this as lightness muting the accent, but the measured change is L 0.536 → 0.50
-  (−0.036, small) against C 0.178 → 0.14 (−21%, the actual muting). Since chroma
-  is contrast-inert, Lime can stay vivid at a higher chroma while `L` holds at
-  0.50. What cannot be kept is the exact hex `#0A850A` — its `L` is the thing
-  that has to move.
-- **Cream background?** Light bg becomes warm `#F3F1ED` with cream cards rather
-  than white.
-- **Shared or per-theme chroma?** Shared keeps declared values at ~10 but drags
-  every dark accent to Blue's ceiling of C 0.111. Per-theme costs 8 more values,
-  all contrast-inert.
+**1. Accent chroma — per-theme, capped at today's saturation.**
+
+Shared chroma read as visibly muted, which is what the prototype was built to
+test. The muting was never the lightness fix: L moves 0.536 → 0.50 in light,
+which is imperceptible. It was one shared chroma having to fit under the lowest
+ceiling across four hues, taking Violet from 0.237 → 0.14 and Berry from 0.219 →
+0.14.
+
+The rule is `min(today's chroma, the hue's sRGB ceiling at the AA lightness)`:
+
+| | light | vs today | dark | vs today |
+|---|---|---|---|---|
+| Lime | 0.157 | ceiling-capped from 0.178 | 0.174 | matches today |
+| Berry | 0.201 | ceiling-capped from 0.219 | 0.136 | ceiling-capped from 0.157 |
+| Blue | 0.178 | matches today | 0.111 | ceiling-capped from 0.151 |
+| Violet | 0.237 | matches today | 0.140 | ceiling-capped from 0.177 |
+
+Five of the eight are gamut-limited rather than chosen. That residual muting is
+the genuine cost of the AA fix in dark mode: clearing 4.5:1 on `surface` needs
+L 0.78, and a lighter colour has less sRGB room for chroma. It cannot be
+recovered without leaving sRGB.
+
+**2. Light base — white `#FAFAFA`, not cream `#F3F1ED`.**
+
+Cream was tried and rejected. White also raises the worst accent ratio from 5.00
+to 5.36, so the "Lime light has ~0.5 headroom" constraint above loosens slightly.
+
+**3. Per-theme, not shared.** Follows from (1). Costs 8 declared values instead
+of 2 — see the revised count in the acceptance criteria.
+
+One side effect worth recording: the Lime-dark/success collision was the weakest
+pairing in the system under shared chroma, because C 0.111 flattened Lime toward
+the success green. At the per-theme value of 0.174 the two separate clearly. The
+decision that fixed the muting also fixed the tightest collision.
 
 ---
 
@@ -270,9 +304,13 @@ Agreed up front, matched to a change where every colour on screen moves:
 
 ## Acceptance criteria
 
-- [ ] Prototype comparison page built and signed off before any app code changes
+- [x] Prototype comparison page built and signed off before any app code changes
 - [ ] `oklch()` verified through the build in both `tailwind.css` and the SSR block
-- [ ] Palette derives from ≤10 declared values; 31 literals reduced
+- [ ] Palette derives from ≤20 declared values; 31 literals reduced
+
+      Revised from ≤10 at sign-off. Per-theme chroma costs 8 values instead of
+      2, so the realistic target is ~18. The reduction is real but smaller than
+      first scoped, and it buys back the accent vividness the shared value cost.
 - [ ] `--color-on-accent` and `--color-accent-strong` removed
 - [ ] All accent text ≥4.5:1 on **both** `--color-bg` and `--color-surface`,
       4 themes × 2 modes, asserted by test
