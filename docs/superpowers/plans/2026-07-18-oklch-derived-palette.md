@@ -1,0 +1,1245 @@
+# OKLCH-Derived Palette Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Replace 31 hand-picked colour literals with a palette derived from two base neutrals, one lightness per mode, and one hue angle per theme — making the WCAG AA failure of #254 structurally unrepresentable.
+
+**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely. `colours.ts` sets one hue number instead of two hexes. Semantic success/error sit one lightness step deeper than the accents so they stay distinguishable at any hue.
+
+**Tech Stack:** Tailwind CSS v4 (`@theme`), Vite 8, Lightning CSS, Cloudflare Workers (SSR), Vitest, Playwright.
+
+**Spec:** [2026-07-18-oklch-derived-palette-design.md](../specs/2026-07-18-oklch-derived-palette-design.md)
+**Issue:** [#255](https://github.com/jevawin/clumeral-game/issues/255)
+**Branch:** `issue/255` (already created, tracking origin)
+
+---
+
+## Target palette
+
+Every value below is computed, not picked. All pairings verified — worst accent
+ratio 5.00, worst overall 4.70.
+
+### Declared values (10)
+
+```
+--base-dark    #121213      --accent-l   light 0.50  dark 0.78
+--base-light   #F3F1ED      --accent-c   light 0.14  dark 0.11
+                            --semantic-l = accent-l − 0.10
+hue angles     Lime 145 · Berry 5 · Blue 262 · Violet 305
+semantic hues  success 150 · error 27
+```
+
+### Resolved — light (`bg #F3F1ED`, `surface #FAF8F4`, `text #262624`)
+
+| token | hex | vs bg | vs surface |
+|---|---|---|---|
+| Lime | `#1E7729` | 5.00 | 5.31 |
+| Berry | `#A13958` | 5.74 | 6.11 |
+| Blue | `#345FB2` | 5.43 | 5.78 |
+| Violet | `#764AA2` | 5.69 | 6.05 |
+| text | `#262624` | 13.44 | 14.29 |
+| success | `#005724` | 7.79 | 8.29 |
+| error | `#831A18` | 8.76 | 9.31 |
+
+### Resolved — dark (`bg #121213`, `surface #2A2A2B`, `text #FAF8F4`)
+
+| token | hex | vs bg | vs surface |
+|---|---|---|---|
+| Lime | `#8ACA8B` | 9.72 | 7.44 |
+| Berry | `#F399AE` | 8.90 | 6.81 |
+| Blue | `#91B7FE` | 9.28 | 7.11 |
+| Violet | `#C8A5F0` | 9.00 | 6.89 |
+| text | `#FAF8F4` | 17.65 | 13.52 |
+| success | `#4EB068` | 6.90 | 5.28 |
+| error | `#E27368` | 6.14 | 4.70 |
+
+Dark chroma is 0.11 because Blue's sRGB gamut ceiling at L=0.78 is 0.111. If the
+prototype selects per-theme chroma, each theme uses its own ceiling instead.
+
+---
+
+## File structure
+
+| file | responsibility | change |
+|---|---|---|
+| `docs/prototypes/255-palette.html` | Sign-off artifact. Self-contained, hand-written CSS, `proto-` class prefix so it cannot collide with Tailwind utility scanning. | create (throwaway) |
+| `tests/helpers/colour.ts` | OKLCH → sRGB conversion + WCAG contrast ratio. Pure functions, no DOM. | create |
+| `tests/palette-contrast.spec.ts` | Asserts every accent × mode × surface pairing clears 4.5:1, computed. The CI enforcement of the guarantee. | create |
+| `tests/token-parity.spec.ts` | Parses token blocks from `tailwind.css` and the Worker `<style>` string; fails on divergence. | create |
+| `src/tailwind.css` | Token derivation. Remove `--color-on-accent`, `--color-accent-strong`. | modify |
+| `src/colours.ts` | `THEMES` becomes hue angles. Sets `--accent-h`, not `--color-accent`. | modify |
+| `src/worker/puzzles.ts` | Mirror of the token block for SSR `/archive`. | modify |
+| `index.html`, `src/app.ts`, `src/welcome.ts`, `src/walkthrough.ts` | `text-accent-strong` → `text-accent` sweep. | modify |
+| `docs/DESIGN-SYSTEM.md` | Rewritten around derivation rules. | modify |
+
+---
+
+## Task 1: Prototype comparison page (SIGN-OFF GATE)
+
+**No app code changes until the user signs this off.** This is acceptance
+criterion #1 on the issue.
+
+**Files:**
+- Create: `docs/prototypes/255-palette.html`
+
+**Critical constraint:** Tailwind v4 auto-scans project sources for class
+candidates. Use only `proto-`-prefixed class names and hand-written CSS in a
+`<style>` block. Do not use a single Tailwind utility class name in this file, or
+it will add dead rules to the shipped stylesheet.
+
+- [ ] **Step 1: Create the prototype shell with the toggle controls**
+
+Create `docs/prototypes/255-palette.html`. Self-contained, no build step, opens
+via `file://`.
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#255 — palette comparison</title>
+<style>
+  /* Derivation. Only these values are declared; everything else computes. */
+  .proto-scope {
+    --base-light: #F3F1ED;
+    --base-dark:  #121213;
+    --accent-h: 145;
+    --accent-l: 0.50;
+    --accent-c: 0.14;
+    --semantic-l: calc(var(--accent-l) - 0.10);
+    --bg: var(--base-light);
+    --surface: #FAF8F4;
+    --text: #262624;
+    --accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+    --success: oklch(var(--semantic-l) 0.11 150);
+    --error:   oklch(var(--semantic-l) 0.14 27);
+    --border:  color-mix(in srgb, var(--text) 12%, transparent);
+    --on-accent: var(--bg);
+    background: var(--bg);
+    color: var(--text);
+  }
+  .proto-scope[data-mode="dark"] {
+    --accent-l: 0.78;
+    --accent-c: 0.11;
+    --bg: var(--base-dark);
+    --surface: #2A2A2B;
+    --text: #FAF8F4;
+  }
+  /* Toggle: white background instead of cream. */
+  .proto-scope[data-cream="off"] { --base-light: #FAFAFA; --surface: #FFFFFF; }
+  /* Toggle: per-theme chroma at each hue's sRGB ceiling. */
+  .proto-scope[data-chroma="per-theme"][data-theme="Lime"]   { --accent-c: 0.157; }
+  .proto-scope[data-chroma="per-theme"][data-theme="Berry"]  { --accent-c: 0.201; }
+  .proto-scope[data-chroma="per-theme"][data-theme="Blue"]   { --accent-c: 0.232; }
+  .proto-scope[data-chroma="per-theme"][data-theme="Violet"] { --accent-c: 0.260; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.245; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.136; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }
+  /* Hue angles per theme. */
+  .proto-scope[data-theme="Lime"]   { --accent-h: 145; }
+  .proto-scope[data-theme="Berry"]  { --accent-h: 5; }
+  .proto-scope[data-theme="Blue"]   { --accent-h: 262; }
+  .proto-scope[data-theme="Violet"] { --accent-h: 305; }
+
+  /* CURRENT palette, for the side-by-side. Hardcoded, as it is today. */
+  .proto-scope[data-palette="current"] {
+    --bg: #FAFAFA; --surface: #FFFFFF; --text: #262624;
+    --border: rgba(38,38,36,0.12);
+    --success: #1a7a3a; --error: #c03030; --on-accent: #FFFFFF;
+    --accent-strong: color-mix(in srgb, var(--accent) 82%, var(--text));
+  }
+  .proto-scope[data-palette="current"][data-mode="dark"] {
+    --bg: #121213; --surface: #363634; --text: #FAF8F4;
+    --border: rgba(246,240,232,0.1);
+    --success: #4cc990; --error: #f07070; --on-accent: #121213;
+  }
+  .proto-scope[data-palette="current"][data-theme="Lime"]   { --accent: #0a850a; }
+  .proto-scope[data-palette="current"][data-theme="Berry"]  { --accent: #de1f46; }
+  .proto-scope[data-palette="current"][data-theme="Blue"]   { --accent: #376ddb; }
+  .proto-scope[data-palette="current"][data-theme="Violet"] { --accent: #9a44ea; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Lime"]   { --accent: #1ead52; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Berry"]  { --accent: #ea6c85; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Blue"]   { --accent: #6393f2; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Violet"] { --accent: #b679f0; }
+  /* Under the current palette, accent text uses accent-strong; under the
+     proposed palette there is only one accent, so it falls back to it. */
+  .proto-scope { --accent-text: var(--accent); }
+  .proto-scope[data-palette="current"] { --accent-text: var(--accent-strong); }
+
+  body { margin: 0; font-family: Quicksand, system-ui, sans-serif; }
+  .proto-controls {
+    position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap;
+    gap: 1rem; padding: 0.75rem 1rem; background: #222; color: #fff;
+    font: 500 0.85rem/1 system-ui;
+  }
+  .proto-controls label { display: flex; gap: 0.35rem; align-items: center; }
+  .proto-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .proto-scope { padding: 1.25rem; min-height: 100vh; }
+  .proto-label {
+    font: 700 0.7rem/1 system-ui; letter-spacing: 0.08em;
+    text-transform: uppercase; opacity: 0.5; margin-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+  <div class="proto-controls">
+    <label>theme
+      <select id="theme"><option>Lime</option><option>Berry</option><option>Blue</option><option>Violet</option></select>
+    </label>
+    <label>mode
+      <select id="mode"><option value="light">light</option><option value="dark">dark</option></select>
+    </label>
+    <label>screen
+      <select id="screen"><option>welcome</option><option>game</option><option>completion</option></select>
+    </label>
+    <label>chroma
+      <select id="chroma"><option value="shared">shared</option><option value="per-theme">per-theme</option></select>
+    </label>
+    <label>cream bg
+      <select id="cream"><option value="on">cream</option><option value="off">white</option></select>
+    </label>
+  </div>
+  <div class="proto-grid">
+    <div class="proto-scope" id="paneCurrent" data-palette="current">
+      <div class="proto-label">current</div>
+      <div data-slot></div>
+    </div>
+    <div class="proto-scope" id="paneProposed" data-palette="proposed">
+      <div class="proto-label">proposed</div>
+      <div data-slot></div>
+    </div>
+  </div>
+<script type="module">
+  const panes = [document.getElementById('paneCurrent'), document.getElementById('paneProposed')];
+  const ctl = id => document.getElementById(id);
+  function sync() {
+    for (const p of panes) {
+      p.dataset.theme  = ctl('theme').value;
+      p.dataset.mode   = ctl('mode').value;
+      p.dataset.chroma = ctl('chroma').value;
+      p.dataset.cream  = ctl('cream').value;
+      p.querySelector('[data-slot]').innerHTML = SCREENS[ctl('screen').value];
+    }
+  }
+  for (const id of ['theme','mode','screen','chroma','cream']) ctl(id).addEventListener('change', sync);
+  const SCREENS = {};   // populated in Step 2
+  window.SCREENS = SCREENS;
+  window.__sync = sync;
+</script>
+</body>
+</html>
+```
+
+- [ ] **Step 2: Add the three screen compositions**
+
+Replace `const SCREENS = {};` with the block below. These are representative
+compositions, not pixel copies of the app — they exercise every surface a colour
+lands on: page bg, card surface, accent text, accent fill, hollow button,
+borders, and the two semantic states.
+
+```js
+  const CSS = `
+    <style>
+      .p-card { background: var(--surface); border: 1.5px solid var(--border);
+                border-radius: 0.5rem; padding: 1rem; margin-bottom: 0.75rem; }
+      .p-tag  { color: var(--accent-text); font: 700 0.85rem/1 Inconsolata, monospace;
+                text-transform: uppercase; letter-spacing: 0.06em; }
+      .p-clue { margin: 0.4rem 0 0; font-weight: 400; }
+      .p-emph { color: var(--accent-text); white-space: nowrap; }
+      .p-btn  { display: inline-flex; align-items: center; justify-content: center;
+                min-height: 3rem; padding: 0.75rem 1rem; border-radius: 0.375rem;
+                font: 600 1rem/1 inherit; cursor: pointer; margin-right: 0.5rem; }
+      .p-solid  { background: var(--accent); color: var(--on-accent);
+                  border: 1.5px solid var(--accent); }
+      .p-hollow { background: transparent; color: var(--accent-text);
+                  border: 1.5px solid var(--accent-text); }
+      .p-boxes { display: flex; gap: 0.5rem; margin: 0.75rem 0; }
+      .p-box  { flex: 1; aspect-ratio: 3/4; background: var(--surface);
+                border: 1.5px solid var(--border); border-radius: 0.25rem;
+                display: grid; place-items: center;
+                font: 600 2rem/1 Inconsolata, monospace; color: var(--text); }
+      .p-box.ok { background: color-mix(in srgb, var(--success) 12%, transparent);
+                  border-color: color-mix(in srgb, var(--success) 40%, transparent); }
+      .p-ok   { color: var(--success); font-weight: 700; }
+      .p-err  { color: var(--error);   font-weight: 700; }
+      .p-link { color: var(--accent-text); border-bottom: 1px solid var(--accent-text);
+                text-decoration: none; }
+      .p-sep  { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
+    </style>`;
+
+  SCREENS.welcome = CSS + `
+    <div class="p-card">
+      <div class="p-tag">Clumeral</div>
+      <p class="p-clue">Work out the number from <span class="p-emph">100&ndash;999</span>.
+        A new puzzle every day.</p>
+    </div>
+    <div class="p-card">
+      <div class="p-tag">How to play</div>
+      <p class="p-clue">Each clue rules out digits. Eliminate until
+        <span class="p-emph">one number</span> is left.</p>
+      <div class="p-boxes"><div class="p-box">1</div><div class="p-box">2</div><div class="p-box">3</div></div>
+    </div>
+    <button class="p-btn p-solid">Play today</button>
+    <button class="p-btn p-hollow">Archive</button>
+    <hr class="p-sep">
+    <p>Read the <a class="p-link" href="#">rules</a>.</p>`;
+
+  SCREENS.game = CSS + `
+    <div class="p-boxes"><div class="p-box">4</div><div class="p-box">7</div><div class="p-box">?</div></div>
+    <div class="p-card">
+      <div class="p-tag">Prime</div>
+      <p class="p-clue">The number is <span class="p-emph">a prime number</span>.</p>
+    </div>
+    <div class="p-card">
+      <div class="p-tag">Sum</div>
+      <p class="p-clue">Its digits add up to <span class="p-emph">less than 15</span>.</p>
+    </div>
+    <div class="p-card">
+      <div class="p-tag">Recurring</div>
+      <p class="p-clue">Divided by 3 it gives a <span class="p-emph">recurring decimal</span>.</p>
+    </div>
+    <button class="p-btn p-solid">Submit guess</button>
+    <button class="p-btn p-hollow">Reset</button>`;
+
+  SCREENS.completion = CSS + `
+    <div class="p-boxes"><div class="p-box ok">4</div><div class="p-box ok">7</div><div class="p-box ok">3</div></div>
+    <p class="p-ok">Correct! You got it in 4 guesses.</p>
+    <p class="p-err">Wrong &mdash; that breaks the prime clue.</p>
+    <div class="p-card">
+      <div class="p-tag">Your streak</div>
+      <p class="p-clue"><span class="p-emph">12 days</span> in a row.</p>
+    </div>
+    <button class="p-btn p-solid">Share result</button>
+    <button class="p-btn p-hollow">Play a random puzzle</button>`;
+```
+
+Then add `__sync()` as the last line of the module script so the page renders on
+load.
+
+- [ ] **Step 3: Open it and check the semantic collision cases**
+
+Run: `open docs/prototypes/255-palette.html`
+
+Verify by eye, and specifically check the two collision cases the spec calls out
+— these are the ones most likely to fail sign-off:
+
+- **theme Lime + screen completion** — "Correct!" must not read as ordinary
+  accent text. Separation here is the 0.10 lightness step, since success (H 150)
+  and Lime (H 145) are only 5° apart.
+- **theme Berry + screen completion** — "Wrong" must not read as ordinary accent
+  text. Same 0.10 step; error (H 27) and Berry (H 5) are 22° apart.
+
+- [ ] **Step 4: Commit the prototype**
+
+```bash
+git add docs/prototypes/255-palette.html
+git commit -m "prototype: palette comparison page for #255 sign-off
+
+Throwaway. Hand-written CSS with proto- prefixed classes so Tailwind's
+content scan cannot pick up utility candidates from it.
+
+Toggles: theme, mode, screen, shared-vs-per-theme chroma, cream-vs-white bg."
+```
+
+- [ ] **Step 5: STOP — get user sign-off**
+
+Present the page. Collect decisions on the three open questions:
+
+1. Accent chroma — does Lime at L=0.50 still read as Clumeral?
+2. Cream `#F3F1ED` vs white `#FAFAFA`?
+3. Shared chroma per mode, or per-theme?
+
+**Do not start Task 2 until these are answered.** The answers set
+`--accent-c` and `--base-light` for every task that follows. If per-theme chroma
+wins, Task 4 gains four `--accent-c` overrides keyed on the theme attribute.
+
+---
+
+## Task 2: Probe `calc()` inside `oklch()`
+
+`--semantic-l: calc(var(--accent-l) - 0.10)` is the one declared value doing
+double duty. `oklch(var())` is already proven; `calc()` inside it is not. Cheap
+to check, and it must be checked before the token work depends on it.
+
+**Files:**
+- Modify (temporarily): `src/tailwind.css`
+
+- [ ] **Step 1: Patch a probe into `@theme`**
+
+Add to the `@theme` block in `src/tailwind.css`, immediately after
+`--color-bg`:
+
+```css
+  --probe-al: 0.50;
+  --probe-sl: calc(var(--probe-al) - 0.10);
+  --probe-sem: oklch(var(--probe-sl) 0.11 150);
+```
+
+And add to the `@layer utilities` block:
+
+```css
+  .probe-calc { color: var(--probe-sem); }
+```
+
+The `.probe-calc` rule is required — Step 3 of the earlier build probe showed
+unused `@theme` tokens are tree-shaken out of the bundle entirely.
+
+- [ ] **Step 2: Build and inspect**
+
+```bash
+npm run build
+grep -o "probe-sem:[^;]*" "$(ls -t dist/client/assets/*.css | head -1)"
+```
+
+Expected PASS: `probe-sem:oklch(var(--probe-sl) .11 150)` — emitted with the
+`var()` intact.
+Expected FAIL: the declaration is absent, or `calc()` has been flattened to a
+literal number.
+
+- [ ] **Step 3: Revert the probe**
+
+```bash
+git checkout src/tailwind.css
+git status --porcelain   # must be empty
+```
+
+- [ ] **Step 4: Record the outcome**
+
+If it PASSED, `--semantic-l` stays one declared value — proceed as planned.
+
+If it FAILED, `--semantic-l` becomes two literals instead of a derived one:
+`0.40` in the light block and `0.68` in the dark block. Declared values go from
+10 to 11. Nothing else in the plan changes. Note the outcome in the PR body
+either way.
+
+---
+
+## Task 3: Colour maths test helper
+
+Written before the token change so the contrast guarantee exists as an
+executable check first. Pure functions, no DOM, no imports from `src/`.
+
+**Files:**
+- Create: `tests/helpers/colour.ts`
+- Test: `tests/palette-contrast.spec.ts` (Task 4)
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/palette-contrast.spec.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { oklchToHex, contrastRatio } from './helpers/colour';
+
+describe('colour maths helpers', () => {
+  it('converts a known OKLCH triple to sRGB hex', () => {
+    // Lime accent, light mode: oklch(0.50 0.14 145)
+    expect(oklchToHex(0.5, 0.14, 145)).toBe('#1E7729');
+  });
+
+  it('computes WCAG contrast symmetrically', () => {
+    expect(contrastRatio('#000000', '#FFFFFF')).toBeCloseTo(21, 1);
+    expect(contrastRatio('#FFFFFF', '#000000')).toBeCloseTo(21, 1);
+  });
+
+  it('matches a known real-world ratio', () => {
+    // Lime light accent on the derived cream page background.
+    expect(contrastRatio('#1E7729', '#F3F1ED')).toBeCloseTo(5.0, 1);
+  });
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+```bash
+npx vitest run tests/palette-contrast.spec.ts
+```
+
+Expected: FAIL — `Failed to resolve import "./helpers/colour"`.
+
+- [ ] **Step 3: Write the helper**
+
+Create `tests/helpers/colour.ts`:
+
+```ts
+// OKLCH → sRGB and WCAG 2.1 contrast. Used to assert the palette's AA guarantee
+// in CI rather than auditing pairings by hand — the failure mode that shipped
+// the #254 AA bug. Matrices are Björn Ottosson's Oklab reference values.
+
+function linearToSrgb(c: number): number {
+  return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+}
+
+function srgbToLinear(c: number): number {
+  const n = c / 255;
+  return n <= 0.04045 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4);
+}
+
+/** Linear-light sRGB triple for an OKLCH colour. Values may fall outside 0..1
+ *  when the colour is out of gamut — callers clamp. */
+function oklchToLinearRgb(L: number, C: number, H: number): [number, number, number] {
+  const h = (H * Math.PI) / 180;
+  const a = C * Math.cos(h);
+  const b = C * Math.sin(h);
+
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+
+  const l = l_ ** 3;
+  const m = m_ ** 3;
+  const s = s_ ** 3;
+
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+}
+
+export function oklchToHex(L: number, C: number, H: number): string {
+  const channel = (v: number): string => {
+    const clamped = Math.max(0, Math.min(1, v));
+    const byte = Math.round(linearToSrgb(clamped) * 255);
+    return Math.max(0, Math.min(255, byte)).toString(16).toUpperCase().padStart(2, '0');
+  };
+  const [r, g, b] = oklchToLinearRgb(L, C, H);
+  return `#${channel(r)}${channel(g)}${channel(b)}`;
+}
+
+/** True when the OKLCH colour fits inside sRGB without clipping. Clipping shifts
+ *  lightness, which would silently break the contrast guarantee. */
+export function inSrgbGamut(L: number, C: number, H: number): boolean {
+  const eps = 1e-4;
+  return oklchToLinearRgb(L, C, H).every((v) => v >= -eps && v <= 1 + eps);
+}
+
+function relativeLuminance(hex: string): number {
+  const h = hex.replace('#', '');
+  const [r, g, b] = [0, 2, 4].map((i) => srgbToLinear(parseInt(h.slice(i, i + 2), 16)));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+export function contrastRatio(a: string, b: string): number {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+```
+
+- [ ] **Step 4: Run it to verify it passes**
+
+```bash
+npx vitest run tests/palette-contrast.spec.ts
+```
+
+Expected: PASS, 3 tests.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add tests/helpers/colour.ts tests/palette-contrast.spec.ts
+git commit -m "test: OKLCH and WCAG contrast helpers for the palette guarantee (#255)"
+```
+
+---
+
+## Task 4: Contrast guarantee test
+
+This is the direct answer to how #254 shipped an AA failure. It asserts the
+guarantee by computing it, so a future fifth theme cannot be added without the
+check running.
+
+**Files:**
+- Modify: `tests/palette-contrast.spec.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+First **replace** the existing import line at the top of
+`tests/palette-contrast.spec.ts` — do not add a second one, or the duplicate
+identifiers will fail the build:
+
+```ts
+import { oklchToHex, contrastRatio, inSrgbGamut } from './helpers/colour';
+import { PALETTE } from '../src/palette';
+```
+
+Then append the new suite below the existing `describe` block:
+
+```ts
+describe('palette AA guarantee', () => {
+  const modes = ['light', 'dark'] as const;
+
+  it.each(modes)('every %s accent clears AA on bg and surface', (mode) => {
+    const { accentL, accentC, bg, surface } = PALETTE[mode];
+    for (const [name, hue] of Object.entries(PALETTE.hues)) {
+      const hex = oklchToHex(accentL, accentC, hue);
+      expect(contrastRatio(hex, bg), `${name} on bg`).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(hex, surface), `${name} on surface`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(modes)('every %s accent fits inside sRGB', (mode) => {
+    const { accentL, accentC } = PALETTE[mode];
+    for (const [name, hue] of Object.entries(PALETTE.hues)) {
+      expect(inSrgbGamut(accentL, accentC, hue), `${name} out of gamut`).toBe(true);
+    }
+  });
+
+  it.each(modes)('%s semantics clear AA and stay clear of the accent band', (mode) => {
+    const { accentL, semanticL, bg, surface } = PALETTE[mode];
+    for (const [name, { hue, chroma }] of Object.entries(PALETTE.semantics)) {
+      const hex = oklchToHex(semanticL, chroma, hue);
+      expect(contrastRatio(hex, bg), `${name} on bg`).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(hex, surface), `${name} on surface`).toBeGreaterThanOrEqual(4.5);
+    }
+    // The lightness gap is what keeps success readable under Lime and error
+    // readable under Berry, where hue separation alone is 5 deg and 22 deg.
+    expect(Math.abs(accentL - semanticL)).toBeGreaterThanOrEqual(0.09);
+  });
+
+  it('bg text clears AA on both bg and surface in both modes', () => {
+    for (const mode of modes) {
+      const { text, bg, surface } = PALETTE[mode];
+      expect(contrastRatio(text, bg)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+```bash
+npx vitest run tests/palette-contrast.spec.ts
+```
+
+Expected: FAIL — `Failed to resolve import "../src/palette"`.
+
+- [ ] **Step 3: Create the palette source of truth**
+
+Create `src/palette.ts`. This is the single declaration the CSS, the Worker
+mirror, and the tests all agree on.
+
+```ts
+// Clumeral — palette.ts
+// The derived palette's declared values. Everything else in the colour system
+// computes from these. Contrast is carried by accentL alone, shared across all
+// four themes, so a theme cannot fail WCAG AA — see tests/palette-contrast.spec.ts.
+//
+// Adding a fifth theme means adding one hue angle here. Nothing else.
+
+export const PALETTE = {
+  hues: { Lime: 145, Berry: 5, Blue: 262, Violet: 305 },
+
+  semantics: {
+    success: { hue: 150, chroma: 0.11 },
+    error:   { hue: 27,  chroma: 0.14 },
+  },
+
+  light: {
+    bg: '#F3F1ED',
+    surface: '#FAF8F4',
+    text: '#262624',
+    accentL: 0.5,
+    accentC: 0.14,
+    semanticL: 0.4,
+  },
+
+  dark: {
+    bg: '#121213',
+    surface: '#2A2A2B',
+    text: '#FAF8F4',
+    accentL: 0.78,
+    // Blue's sRGB gamut ceiling at L=0.78 is 0.111, and it is the lowest of the
+    // four. A shared chroma has to sit under it.
+    accentC: 0.11,
+    semanticL: 0.68,
+  },
+} as const;
+```
+
+If Task 1 sign-off chose **per-theme chroma**, replace the flat `accentC` with a
+per-theme map and update the two `it.each` loops in Step 1 to read
+`PALETTE[mode].accentC[name]`.
+
+- [ ] **Step 4: Run it to verify it passes**
+
+```bash
+npx vitest run tests/palette-contrast.spec.ts
+```
+
+Expected: PASS. Worst accent ratio is Lime light at 5.00; worst overall is error
+dark on surface at 4.70.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/palette.ts tests/palette-contrast.spec.ts
+git commit -m "feat: palette source of truth + AA guarantee test (#255)
+
+Contrast is asserted by computation across every accent x mode x surface
+pairing, so the per-pairing audit that let #254 ship an AA failure is no
+longer the mechanism protecting us."
+```
+
+---
+
+## Task 5: Rewrite the tokens in `tailwind.css`
+
+**Files:**
+- Modify: `src/tailwind.css:35-117` (the `@theme` block and the `html.dark` override)
+
+- [ ] **Step 1: Replace the `@theme` colour tokens**
+
+In `src/tailwind.css`, replace the token declarations from `--color-bg` through
+`--color-error` (keeping the `--shadow-*` and `--font-*` lines below untouched)
+with:
+
+```css
+  /* ── Derived palette (#255) ────────────────────────────────────────────────
+     Declared values live in src/palette.ts and are mirrored here and in the
+     Worker's inline <style> (src/worker/puzzles.ts). tests/token-parity.spec.ts
+     fails the build if those two drift apart.
+
+     Contrast rides on --accent-l alone, shared by all four themes, so a theme
+     cannot fail AA. Chroma and hue are contrast-inert: pushing chroma to the
+     sRGB ceiling moves the ratio by at most ~0.5. This is what makes the #254
+     bug class unrepresentable rather than merely fixed.
+
+     Adding a theme = adding one hue angle. No new contrast pairings to verify. */
+
+  --accent-l: 0.50;
+  --accent-c: 0.14;
+  --accent-h: 145;                                  /* set per theme by colours.ts */
+  --semantic-l: calc(var(--accent-l) - 0.10);
+
+  --color-bg:      #F3F1ED;
+  --color-surface: #FAF8F4;
+  --color-text:    #262624;
+  --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
+
+  /* Success / error must stay green and red whichever accent is active. At a
+     fixed accent lightness, hue is the only differentiator left — and success
+     (H 150) sits 5 deg from Lime, error (H 27) sits 22 deg from Berry. The
+     lightness step is what keeps them readable as feedback rather than as
+     ordinary accent text. Deeper rather than lighter in both modes: pushing the
+     dark semantics up collapses red's gamut ceiling to a pale pink. */
+  --color-success: oklch(var(--semantic-l) 0.11 150);
+  --color-error:   oklch(var(--semantic-l) 0.14 27);
+```
+
+Delete the `--color-accent-strong` and `--color-on-accent` declarations along
+with their comment blocks.
+
+- [ ] **Step 2: Replace the `html.dark` override**
+
+Replace the colour lines inside `html.dark` (keeping `--octo-c1/2/3`):
+
+```css
+    --accent-l: 0.78;
+    /* Blue's sRGB ceiling at this lightness is 0.111 and it is the lowest of
+       the four, so the shared chroma sits under it. */
+    --accent-c: 0.11;
+
+    --color-bg:      #121213;
+    --color-surface: #2A2A2B;
+    --color-text:    #FAF8F4;
+```
+
+`--color-accent`, `--color-border`, `--color-success` and `--color-error` are not
+repeated — they are `var()`-based and re-resolve automatically. Delete the
+`--color-on-accent: var(--color-bg);` line and its comment.
+
+- [ ] **Step 3: Sweep the CSS consumers**
+
+In the same file, replace every `var(--color-accent-strong)` with
+`var(--color-accent)` and every `var(--color-on-accent)` with `var(--color-bg)`.
+There are 8 and 3 occurrences respectively.
+
+```bash
+grep -c "accent-strong\|on-accent" src/tailwind.css   # expect 0 when done
+```
+
+- [ ] **Step 4: Build and verify the tokens survive**
+
+```bash
+npm run build
+CSS="$(ls -t dist/client/assets/*.css | head -1)"
+grep -o "\-\-color-accent:[^;]*" "$CSS"
+grep -o "\-\-color-success:[^;]*" "$CSS"
+```
+
+Expected: both emitted with `var()` intact, e.g.
+`--color-accent:oklch(var(--accent-l) var(--accent-c) var(--accent-h))`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/tailwind.css
+git commit -m "refactor: derive the palette from lightness + hue in tailwind.css (#255)
+
+Removes --color-accent-strong and --color-on-accent. One accent per mode now
+clears AA on both bg and surface, so the strong/raw split is unnecessary, and
+on-accent collapses into bg -- which makes accent-on-bg and bg-on-accent the
+same ratio by symmetry."
+```
+
+---
+
+## Task 6: Switch `colours.ts` to hue angles
+
+**Files:**
+- Modify: `src/colours.ts:13-18` (`THEMES`), `:31-38` (`applyColour`), `:60-62` (swatch vars)
+- Modify: `src/tailwind.css` (`.swatch-btn` rules)
+
+- [ ] **Step 1: Replace `THEMES` and the interface**
+
+In `src/colours.ts`, replace the `ColourTheme` interface and `THEMES` with:
+
+```ts
+import { PALETTE } from './palette';
+
+interface ColourTheme {
+  name: string;
+  hue: number;
+}
+
+// One number per theme. Lightness and chroma are shared and live in
+// tailwind.css, which is what makes every theme AA-safe by construction (#255).
+const THEMES: ColourTheme[] = Object.entries(PALETTE.hues).map(
+  ([name, hue]) => ({ name, hue })
+);
+```
+
+- [ ] **Step 2: Simplify `applyColour`**
+
+Hue is mode-independent — `--accent-l` and `--accent-c` carry the light/dark
+difference — so the `isDark()` branch disappears entirely.
+
+```ts
+function applyColour(theme: ColourTheme): void {
+  active = theme;
+  root.style.setProperty('--accent-h', String(theme.hue));
+  window._currentColour = theme.name;
+  refreshSwatchState();
+}
+```
+
+Delete the now-unused `isDark()` function.
+
+- [ ] **Step 3: Simplify the swatch variables**
+
+In `renderSwatches()`, replace the two `setProperty` calls with one:
+
+```ts
+    btn.style.setProperty('--swatch-h', String(t.hue));
+```
+
+- [ ] **Step 4: Update the swatch CSS**
+
+In `src/tailwind.css`, replace the `.swatch-btn` background rules. The separate
+`html.dark .swatch-btn` rule is no longer needed — `--accent-l` already flips.
+
+```css
+  .swatch-btn {
+    /* ... existing width/height/border-radius/etc unchanged ... */
+    background: oklch(var(--accent-l) var(--accent-c) var(--swatch-h));
+  }
+```
+
+Delete:
+
+```css
+  html.dark .swatch-btn {
+    background: var(--swatch-dark);
+  }
+```
+
+- [ ] **Step 5: Leave `_refreshAccent` in place**
+
+`theme.ts:15` calls `window._refreshAccent?.()` after a dark/light flip. It is
+now a no-op for colour purposes, but it still refreshes swatch state and the
+`_currentColour` global that e2e specs read. Removing it is out of scope for
+#255 — leave it.
+
+- [ ] **Step 6: Verify in the browser**
+
+```bash
+npm run dev
+```
+
+Open the app, cycle all four swatches in both light and dark. Confirm the accent
+changes, the swatch dots show four distinct colours, and the active swatch ring
+still renders.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/colours.ts src/tailwind.css
+git commit -m "refactor: colours.ts sets one hue angle per theme (#255)
+
+Accent lightness and chroma are shared, so the theme definition is now a single
+number and the isDark() branch in applyColour is gone -- hue does not vary by
+mode. Swatch dots derive from the same tokens instead of carrying their own
+light/dark hex pair."
+```
+
+---
+
+## Task 7: Sweep the `text-accent-strong` utility usages
+
+`text-accent-strong` was a Tailwind utility generated from the deleted token. Any
+left behind will silently render as inherited colour.
+
+**Files:**
+- Modify: `index.html`, `src/app.ts`, `src/welcome.ts`, `src/walkthrough.ts`
+
+- [ ] **Step 1: Find every occurrence**
+
+```bash
+grep -rn "accent-strong" index.html src/ --include=*.ts --include=*.html
+```
+
+Expected: 7 in `index.html`, 2 in `src/app.ts`, 2 in `src/welcome.ts`, 1 in
+`src/walkthrough.ts`.
+
+- [ ] **Step 2: Replace them**
+
+```bash
+sed -i '' 's/text-accent-strong/text-accent/g' index.html src/app.ts src/welcome.ts src/walkthrough.ts
+grep -rn "accent-strong" index.html src/ --include=*.ts --include=*.html   # expect no output
+```
+
+- [ ] **Step 3: Run the unit suite**
+
+```bash
+npm test
+```
+
+Expected: PASS.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add index.html src/app.ts src/welcome.ts src/walkthrough.ts
+git commit -m "refactor: text-accent-strong -> text-accent across the app (#255)"
+```
+
+---
+
+## Task 8: Mirror the tokens into the Worker + parity test
+
+`/archive` is Worker-rendered, ships its own inline `<style>`, and does not load
+`tailwind.css`. This duplication is what let #243 survive its first fix.
+
+**Files:**
+- Create: `tests/token-parity.spec.ts`
+- Modify: `src/worker/puzzles.ts:57-79` (the `<style>` token block)
+
+- [ ] **Step 1: Write the failing test**
+
+Create `tests/token-parity.spec.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// /archive is Worker-rendered and ships its own copy of the tokens, because it
+// never loads tailwind.css. #243 shipped a fix to the SPA that missed this copy
+// and survived review as a result. This test is the guard.
+//
+// #200 migrates /archive to a SPA route, at which point the duplication and this
+// test both go away.
+
+const TOKENS = [
+  '--accent-l',
+  '--accent-c',
+  '--semantic-l',
+  '--color-bg',
+  '--color-surface',
+  '--color-text',
+  '--color-accent',
+  '--color-border',
+  '--color-success',
+  '--color-error',
+];
+
+function declarations(css: string, scope: string): Record<string, string> {
+  // Grab the body of the given selector block, then pull the token declarations.
+  const block = new RegExp(`${scope}\\s*\\{([^}]*)\\}`).exec(css);
+  if (!block) throw new Error(`no "${scope}" block found`);
+  const out: Record<string, string> = {};
+  for (const token of TOKENS) {
+    const m = new RegExp(`${token}\\s*:\\s*([^;]+);`).exec(block[1]);
+    if (m) out[token] = m[1].trim().replace(/\s+/g, ' ');
+  }
+  return out;
+}
+
+const root = resolve(__dirname, '..');
+const tailwind = readFileSync(resolve(root, 'src/tailwind.css'), 'utf-8');
+const worker = readFileSync(resolve(root, 'src/worker/puzzles.ts'), 'utf-8');
+
+describe('token parity: tailwind.css vs the Worker inline style', () => {
+  it('light-mode tokens agree', () => {
+    expect(declarations(worker, ':root')).toEqual(declarations(tailwind, '@theme'));
+  });
+
+  it('dark-mode tokens agree', () => {
+    expect(declarations(worker, ':root\\.dark')).toEqual(
+      declarations(tailwind, 'html\\.dark')
+    );
+  });
+});
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+```bash
+npx vitest run tests/token-parity.spec.ts
+```
+
+Expected: FAIL — the Worker still carries the old hex tokens plus
+`--color-accent-strong` / `--color-on-accent`, so the objects differ.
+
+- [ ] **Step 3: Update the Worker's token block**
+
+In `src/worker/puzzles.ts`, replace the `:root` and `:root.dark` colour
+declarations with values that match `tailwind.css` exactly:
+
+```css
+  :root {
+    color-scheme: light dark;
+    /* Mirrors the @theme block in src/tailwind.css. /archive does not load
+       tailwind.css, so these must be kept in step by hand — tests/token-parity.spec.ts
+       fails if they drift. Goes away with #200. */
+    --accent-l: 0.50;
+    --accent-c: 0.14;
+    --accent-h: 145;
+    --semantic-l: calc(var(--accent-l) - 0.10);
+    --color-bg:      #F3F1ED;
+    --color-surface: #FAF8F4;
+    --color-text:    #262624;
+    --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+    --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
+    --color-success: oklch(var(--semantic-l) 0.11 150);
+    --color-error:   oklch(var(--semantic-l) 0.14 27);
+  }
+  :root.dark {
+    color-scheme: dark;
+    --accent-l: 0.78;
+    --accent-c: 0.11;
+    --color-bg:      #121213;
+    --color-surface: #2A2A2B;
+    --color-text:    #FAF8F4;
+  }
+  :root.light { color-scheme: light; }
+```
+
+Then sweep the consumers in the same file: replace every
+`var(--color-accent-strong)` with `var(--color-accent)` and every
+`var(--color-on-accent)` with `var(--color-bg)`.
+
+```bash
+grep -c "accent-strong\|on-accent" src/worker/puzzles.ts   # expect 0
+```
+
+- [ ] **Step 4: Run it to verify it passes**
+
+```bash
+npx vitest run tests/token-parity.spec.ts
+```
+
+Expected: PASS, 2 tests.
+
+- [ ] **Step 5: Verify `/archive` renders**
+
+```bash
+npm run preview
+```
+
+Open `http://localhost:4173/archive` in both light and dark. Confirm the page
+background, link colour, and table rows all pick up the new palette — the SSR
+block takes `oklch()` verbatim because it is a JS template literal and never
+reaches Lightning CSS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/worker/puzzles.ts tests/token-parity.spec.ts
+git commit -m "feat: mirror derived tokens into the Worker + parity test (#255)
+
+/archive ships its own token copy because it never loads tailwind.css. #243
+shipped a fix that missed this copy. The parity test makes that class of miss
+fail in CI instead of in review."
+```
+
+---
+
+## Task 9: Rewrite `DESIGN-SYSTEM.md`
+
+**Files:**
+- Modify: `docs/DESIGN-SYSTEM.md`
+
+- [ ] **Step 1: Read the current doc**
+
+```bash
+cat docs/DESIGN-SYSTEM.md
+```
+
+- [ ] **Step 2: Rewrite the colour section**
+
+Replace the hand-picked palette listing with the derivation. Cover:
+
+- **The declared values** — the 10 from `src/palette.ts`, and that it is the
+  single source of truth.
+- **The rule that matters** — contrast rides on `--accent-l` alone, shared
+  across themes. Chroma and hue are contrast-inert, so they are free aesthetic
+  dials.
+- **How to add a theme** — add one hue angle to `PALETTE.hues`. That is the whole
+  procedure. The contrast test covers it automatically.
+- **Why `--color-accent-strong` and `--color-on-accent` are gone** — one accent
+  now clears AA on both `bg` and `surface`; on-accent is `bg`, which makes the
+  two directions the same ratio by symmetry.
+- **The semantic lightness band** — why success/error sit `accent-l − 0.10`, and
+  the Lime/Berry collisions that make it necessary.
+- **The two known exceptions** — `--octo-c1/2/3` stay hardcoded hex (#210,
+  cannot use `var()` in SVG `fill` keyframes, decorative, no contrast
+  requirement); and the Worker token mirror in `src/worker/puzzles.ts`, guarded
+  by `tests/token-parity.spec.ts` until #200 lands.
+- **Build constraints** — unused `@theme` tokens are tree-shaken, so a token only
+  JS reads must be referenced in CSS somewhere.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add docs/DESIGN-SYSTEM.md
+git commit -m "docs: rewrite DESIGN-SYSTEM.md around the derivation rules (#255)"
+```
+
+---
+
+## Task 10: QA
+
+The level agreed during discuss, matched to a change where every colour on screen
+moves.
+
+**Files:**
+- Modify (if selectors changed): `e2e/specs/*`
+
+- [ ] **Step 1: Unit suite**
+
+```bash
+npm test
+```
+
+Expected: PASS, including the contrast and parity specs.
+
+- [ ] **Step 2: axe, both schemes**
+
+```bash
+npx playwright test --grep axe
+```
+
+Expected: 26 axe tests green, both colour schemes, including the open-menu and
+open-modal cases added in #254.
+
+- [ ] **Step 3: Full regression, 5-engine matrix**
+
+```bash
+npm run test:e2e
+```
+
+Expected: full suite green. Any failure asserting a literal colour value is a
+**test that needs updating**, not necessarily a regression — but confirm each one
+by eye before changing an assertion.
+
+- [ ] **Step 4: Manual visual pass**
+
+```bash
+npm run preview
+```
+
+Walk welcome → game → completion in all four themes × both modes. Confirm against
+the prototype signed off in Task 1. Check `/archive` separately, since it renders
+through the Worker path.
+
+- [ ] **Step 5: Commit any test updates**
+
+```bash
+git add e2e/
+git commit -m "test: update colour assertions for the derived palette (#255)"
+```
+
+---
+
+## Task 11: Remove the prototype and open the PR
+
+- [ ] **Step 1: Delete the prototype**
+
+It served its purpose at sign-off and should not ship. It stays in git history if
+anyone wants it back.
+
+```bash
+git rm docs/prototypes/255-palette.html
+git commit -m "chore: remove the #255 prototype comparison page
+
+Signed off in Task 1. Kept in history at the commit that added it."
+```
+
+- [ ] **Step 2: Count the literals**
+
+Confirm the headline claim before writing it in the PR body.
+
+```bash
+grep -rEoh '#[0-9A-Fa-f]{6}' src/ index.html --include=*.ts --include=*.css --include=*.html | sort -u
+```
+
+Expected: roughly 8–10 unique values — the two bases, the two text colours, and
+the six `--octo-c*` decorative stops.
+
+- [ ] **Step 3: DA review**
+
+Dispatch a **fresh-context subagent** per [docs/DA-REVIEW.md](../../DA-REVIEW.md).
+Give it the issue, the spec, and the diff. Do not summarise your own work for it
+— the point is a reviewer without your assumptions.
+
+- [ ] **Step 4: Self-review**
+
+Follow [docs/SELF-REVIEW.md](../../SELF-REVIEW.md) line by line over the full
+diff.
+
+- [ ] **Step 5: Push and open the PR against `staging`**
+
+```bash
+git push -u origin issue/255
+gh pr create --base staging --title "Derive the whole palette from 2 base colours + hue angles (OKLCH) (#255)" --body "..."
+```
+
+PR body must record:
+
+- The literal count, before and after.
+- The `calc()` probe outcome from Task 2.
+- The three sign-off decisions from Task 1.
+- That `--color-accent-strong` and `--color-on-accent` are removed, partly
+  undoing #254 by design.
+- The worst-case contrast ratios: 5.00 accent (Lime light), 4.70 overall (error
+  dark on surface).
+
+**Never merge this yourself.** The user merges on GitHub.
+
+- [ ] **Step 6: Post-merge (user does the merge first)**
+
+```bash
+git remote prune origin
+git branch -d issue/255
+```
+
+Then update `docs/ROADMAP.md`: move #255 out of _Now_ into _Recently shipped_,
+and promote the next _Next_ item. Note that #256 (exclude `.planning/` from the
+Tailwind content scan) was gated on #255 landing.

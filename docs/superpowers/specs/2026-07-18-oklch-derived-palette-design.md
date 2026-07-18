@@ -60,7 +60,7 @@ across hues from a single shared parameter.
 chroma         per mode, or per theme — prototype toggle
 4 hue angles   Lime · Berry · Blue · Violet
 2 semantic H   success ~150 · error ~27
-3 rules        surface   = one step from bg toward the opposite base
+3 rules        surface   = one step from bg toward L  (cards lift in both modes)
                border    = mix(fg, bg, 12%)
                on-accent = bg
 ```
@@ -76,7 +76,8 @@ hexes.
 
 All contrast figures below are computed against the **derived** surfaces —
 `#FAF8F4` light and `#2A2A2B` dark — not today's `#FFFFFF` / `#363634`. The
-surface rule moves both.
+surface rule steps toward the light base in *both* modes, so cards lift off the
+page either way: barely in light, clearly in dark.
 
 ### Chroma is contrast-inert
 
