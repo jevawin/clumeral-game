@@ -265,7 +265,7 @@ function renderClues(clues: ClueData[]): void {
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="flex flex-col gap-2">
-        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent-strong font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
+        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent-strong bg-accent/5 text-accent-strong font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
           <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
@@ -294,17 +294,17 @@ function renderFeedback(type: string | null, answer?: number): void {
   if (type === "correct") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CHECK} Correct! That's puzzle #${gameState.puzzleNum ?? ''}.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-success font-[Quicksand]";
     }
   } else if (type === "incorrect") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Not quite — try again.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[Quicksand]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-error font-[Quicksand]";
     }
   } else if (type === "error") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Something went wrong — please try again.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[Quicksand]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-error font-[Quicksand]";
     }
   } else {
     if (dom.feedback) {
@@ -480,7 +480,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
     dom.feedback.innerHTML = `${ICON_CHECK} Solved in ${t}!`;
-    dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
+    dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-success font-[Quicksand]";
     dom.feedback.classList.remove("hidden");
   }
   // Show the answer digits in the boxes
@@ -492,7 +492,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
   for (let i = 0; i < 3; i++) {
     const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
     if (el) {
-      el.classList.add("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+      el.classList.add("bg-success/12", "border-success/40", "pointer-events-none");
     }
   }
   dom.submitWrap?.classList.add("hidden");
@@ -529,7 +529,7 @@ function resetPuzzleUI() {
   for (let i = 0; i < 3; i++) {
     const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
     if (el) {
-      el.classList.remove("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+      el.classList.remove("bg-success/12", "border-success/40", "pointer-events-none");
     }
   }
   possibles = initPossibles();
@@ -675,7 +675,7 @@ async function handleGuess() {
       // Apply correct state to all digit boxes
       for (let i = 0; i < 3; i++) {
         const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
-        if (el) el.classList.add("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+        if (el) el.classList.add("bg-success/12", "border-success/40", "pointer-events-none");
       }
       dom.submitWrap?.classList.add("hidden");
 
