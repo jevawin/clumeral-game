@@ -267,7 +267,7 @@ function renderClues(clues: ClueData[]): void {
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="flex flex-col gap-2">
-        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent-strong bg-accent/5 text-accent-strong font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
+        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
           <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
@@ -281,7 +281,7 @@ function renderClues(clues: ClueData[]): void {
 
     const l1El = clueEl.querySelector("[data-clue-line1]");
     const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold">$1</span>');
-    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent-strong whitespace-nowrap">${emphHtml}</span>`;
+    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent whitespace-nowrap">${emphHtml}</span>`;
     dom.clueList.appendChild(clueEl);
   }
 }
