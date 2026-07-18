@@ -62,6 +62,11 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     --color-surface: #FFFFFF;
     --color-border:  rgba(38, 38, 36, 0.12);
     --color-accent:  #0a850a;
+    /* Mirrors src/tailwind.css — see the token comments there. accent-strong is
+       the AA-safe accent for text; on-accent is the text colour that sits ON an
+       accent fill, and must flip to the page bg in dark (#243/#249). */
+    --color-accent-strong: color-mix(in srgb, var(--color-accent) 82%, var(--color-text));
+    --color-on-accent: #FFFFFF;
   }
   :root.dark {
     color-scheme: dark;
@@ -69,6 +74,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     --color-text:    #FAF8F4;
     --color-surface: #363634;
     --color-border:  rgba(246, 240, 232, 0.1);
+    --color-on-accent: var(--color-bg);
   }
   :root.light { color-scheme: light; }
 
@@ -83,7 +89,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     flex-direction: column;
   }
 
-  a { color: var(--color-accent); text-decoration: none; }
+  a { color: var(--color-accent-strong); text-decoration: none; }
 
   /* ─── Header strip (matches SPA app header) ─── */
   header.app-header {
@@ -159,9 +165,9 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     cursor: pointer;
     transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
   }
-  .btn-solid { background: var(--color-accent); color: #FFFFFF; border: 1.5px solid var(--color-accent); }
+  .btn-solid { background: var(--color-accent); color: var(--color-on-accent); border: 1.5px solid var(--color-accent); }
   .btn-solid:hover { filter: brightness(1.08); }
-  .btn-hollow { background: transparent; color: var(--color-accent); border: 1.5px solid var(--color-accent); }
+  .btn-hollow { background: transparent; color: var(--color-accent-strong); border: 1.5px solid var(--color-accent-strong); }
   .btn-hollow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
   .btn-sm { min-height: 2rem; padding: 0.375rem 0.75rem; font-size: 0.875rem; gap: 0.375rem; }
   .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
@@ -223,7 +229,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     font-weight: 700;
     width: 3rem;
   }
-  td:first-child a { color: var(--color-accent); text-decoration: underline; }
+  td:first-child a { color: var(--color-accent-strong); text-decoration: underline; }
   .num-col { font-family: "Inconsolata", ui-monospace, monospace; font-weight: 600; text-align: right; }
   th.num-header { text-align: right; }
   td.action-col { text-align: right; }

@@ -57,11 +57,20 @@ unit `sw-precache`), routing scrollRestoration + popstate (`routing`, unit `rout
 - [ ] **Analytics events fire** — `route_change` + archive beacon are unit-tested; per-event
   e2e assertions (`puzzle_start`, `htp_opened`, …) are low value and flaky against the local
   Analytics Engine binding.
-- [ ] **Dark-mode a11y (axe)** — axe runs light theme only; dark-theme contrast pass.
-  The a11y spec now pins `colorScheme: 'light'` so the gate is deterministic regardless
-  of the runner's OS preference (GitHub CI defaults to dark). Running it against dark mode
-  surfaced a real white-on-accent solid-button contrast failure (~2.9:1), tracked in
-  [#243](https://github.com/jevawin/clumeral-game/issues/243) — the dark-theme pass lives there.
+- [x] **Dark-mode a11y (axe)** — **closed.** axe now runs both colour schemes: the spec loops
+  `['light', 'dark']`, pinning `colorScheme` per describe so each run is deterministic
+  regardless of the runner's OS preference (GitHub CI defaults to dark). The light-only pin
+  existed because dark tripped a real white-on-accent solid-button failure (~2.9:1), #243;
+  that is fixed by the `--color-on-accent` token (#249), so dark is now a real gate rather
+  than a known-red one. 26 axe tests pass across chromium-desktop and mobile-chromium.
+  The scan also opens the burger menu and the feedback modal before analysing: both ship
+  hidden (`hidden` class / closed `<dialog>`), so axe skipped those subtrees entirely on the
+  screen-level scans, and two real dark-mode failures hid in that blind spot — accent text on
+  `--color-surface` is 4.03–4.13:1. Verified the new cases fail without the fix.
+  Remaining narrower gaps: axe exercises the **default Lime accent only** (Berry/Blue/Violet
+  are verified by computing contrast directly, not by the gate), and axe does not evaluate
+  `:hover` / `:focus-visible` styles at all, so accent-on-surface focus states are reasoned
+  about rather than gated.
 - [ ] **iOS reload / storage eviction** — platform behaviour, not reproducible in Playwright.
   Tracked as [#237](https://github.com/jevawin/clumeral-game/issues/237).
 

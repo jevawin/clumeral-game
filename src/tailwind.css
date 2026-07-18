@@ -44,9 +44,34 @@
      WCAG AA bar. Mixing 18% toward --color-text darkens it in light mode and
      lightens it in dark mode, lifting all four themes to ~5.3:1+ while staying
      visibly the accent. Both source vars are live, so it re-resolves per accent
-     and per theme — no dark: override needed. Use for accent-coloured TEXT;
-     keep raw --color-accent for icons, borders, and fills. */
+     and per theme — no dark: override needed.
+
+     Use for accent-coloured TEXT, and for any border sitting directly alongside
+     that text (clue tags, .link underline, .btn-hollow) — per #249, a strong-text
+     / raw-border pairing is what read as mismatched. Keep raw --color-accent for
+     icons, standalone fills, and low-opacity tints, where the shade difference is
+     imperceptible and the fuller colour reads better. */
   --color-accent-strong: color-mix(in srgb, var(--color-accent) 82%, var(--color-text));
+
+  /* Text/icon colour for solid accent fills (.btn-solid). White clears AA on the
+     light accents (4.78–4.80:1) but only manages 2.94–3.01:1 on the lighter dark
+     accents — the #243 failure. Flipping to the page bg in dark mode gives
+     6.22–6.38:1 across all four themes. Set per mode, not via color-mix, because
+     the right answer flips between the two ends of the scale rather than sliding. */
+  --color-on-accent: #FFFFFF;
+
+  /* Success / error feedback. Not derived from the accent — they must stay green
+     and red whichever accent theme is picked. Both clear AA on --color-bg in
+     their own mode. Note error-dark on --color-surface is 4.18:1, so keep error
+     text on the page bg.
+
+     The values match the ones previously inlined in app.ts, so the feedback TEXT
+     is unchanged. The correct-box highlight is not: it was sea-green (#2e8b57),
+     picked independently of the success text beside it, and now derives from
+     this token. It also gains a dark variant it never had, since the inline
+     utilities carried no dark: override. */
+  --color-success: #1a7a3a;
+  --color-error:   #c03030;
 
   /* Offset shadows derive from theme tokens so they follow dark mode and the
      selected accent. --color-text / --color-accent are live custom properties
@@ -71,6 +96,12 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     --color-accent:  #1EAD52;
     --color-surface: #363634;
     --color-border:  rgba(246, 240, 232, 0.1);
+
+    /* See @theme above — white-on-accent fails AA here, page bg passes. */
+    --color-on-accent: var(--color-bg);
+
+    --color-success: #4cc990;
+    --color-error:   #f07070;
 
     /* Octo colour-cycle dark stops — plain custom properties so Lightning CSS
        cannot mangle them. light-dark() cannot be used in SVG fill keyframes
@@ -193,13 +224,19 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   [data-digits].digit-correct {
     pointer-events: none;
   }
+  /* Derived from --color-success so the highlight and the "Correct!" feedback
+     text are one colour family (#202). --color-success already flips per mode,
+     so no dark override is needed — the token carries the mode difference.
+
+     The alphas MUST stay in sync with the bg-success/12 + border-success/40
+     utilities that app.ts applies to the same boxes (see applyCorrectState and
+     showCompletedState). Two paths reach this state: octo.ts adds .digit-correct
+     after the celebration, app.ts adds the utilities on completion/restore. The
+     utilities sit in the utilities layer and therefore win wherever both apply,
+     so a value that disagrees here is silently dead. */
   [data-digits].digit-correct > div {
-    background-color: rgba(46, 139, 87, 0.12);
-    border-color: rgba(46, 139, 87, 0.4);
-  }
-  html.dark [data-digits].digit-correct > div {
-    background-color: rgba(76, 195, 140, 0.14);
-    border-color: rgba(76, 195, 140, 0.35);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
   }
 
   /* ─── Octo slot layout spacer ─── */
@@ -217,7 +254,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     z-index: 999;
     padding: 0.5rem 1rem;
     background-color: var(--color-accent);
-    color: #fff;
+    color: var(--color-on-accent);
     font-weight: 600;
     border-radius: 0.25rem;
   }
@@ -260,7 +297,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   [data-menu] .menu-item:hover,
   [data-menu] .menu-item:focus-visible {
     background-color: transparent;
-    color: var(--color-accent);
+    color: var(--color-accent-strong);
   }
   [data-menu] .menu-item svg {
     color: inherit;
@@ -367,28 +404,28 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 
 @layer utilities {
   /* Counter warn colour — toggled by modals.ts counterEl.classList.add("warn") */
-  .warn { color: var(--color-accent); }
+  .warn { color: var(--color-accent-strong); }
 
   /* ─── Standard inline link style (LNK-01) ─── */
   /* Accent green text, 1px solid accent bottom border, 2px bottom padding,
      no text-decoration. Applied via class="link" on <a> elements. */
   .link {
-    color: var(--color-accent);
-    border-block-end: 1px solid var(--color-accent);
+    color: var(--color-accent-strong);
+    border-block-end: 1px solid var(--color-accent-strong);
     padding-block-end: 2px;
     text-decoration: none;
   }
   .link:hover,
   .link:focus-visible {
-    color: var(--color-accent);
-    border-block-end-color: var(--color-accent);
+    color: var(--color-accent-strong);
+    border-block-end-color: var(--color-accent-strong);
   }
 
   /* Category pill selected state — JS toggles aria-checked; CSS styles it */
   .fb-cat[aria-checked="true"] {
     background-color: var(--color-accent);
     border-color: var(--color-accent);
-    color: #fff;
+    color: var(--color-on-accent);
   }
 
   /* Toast element — replaces legacy toast__msg; show class toggled by modals.ts */
@@ -430,14 +467,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   .btn-solid {
     background: var(--color-accent);
-    color: #FFFFFF;
+    color: var(--color-on-accent);
     border: 1.5px solid var(--color-accent);
   }
   .btn-solid:hover { filter: brightness(1.08); }
   .btn-hollow {
     background: transparent;
-    color: var(--color-accent);
-    border: 1.5px solid var(--color-accent);
+    color: var(--color-accent-strong);
+    border: 1.5px solid var(--color-accent-strong);
   }
   .btn-hollow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
   .btn-sm {

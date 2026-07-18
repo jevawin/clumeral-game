@@ -16,11 +16,13 @@ Rules that keep it from rotting:
 
 ## Now — WIP 1
 
-- _Nothing in progress._
+- **Colour + Fibonacci cluster** on `feat/now-cluster-2026-07-17` — [#249](https://github.com/jevawin/clumeral-game/issues/249) accent palette tidy (folding in [#243](https://github.com/jevawin/clumeral-game/issues/243)), [#202](https://github.com/jevawin/clumeral-game/issues/202) semantic success/error tokens, and [#81](https://github.com/jevawin/clumeral-game/issues/81) Fibonacci special. In review — PR to staging.
 
 ## Next
 
-- [#249](https://github.com/jevawin/clumeral-game/issues/249) Tidy the accent colour palette after the AA fix — `accent-strong` text reads lighter than the raw-accent borders/tints/fills and looks mismatched; harmonise into one ramp and fold in [#243](https://github.com/jevawin/clumeral-game/issues/243) (dark-mode white-on-accent buttons) — when: next UI/colour pass
+1. [#255](https://github.com/jevawin/clumeral-game/issues/255) Derive the whole palette from 2 base colours + hue angles (OKLCH) — 31 unique colour literals down to ~8 declared values; `on-accent` becomes `bg` and `accent-strong` disappears entirely. Verified AA-clean across 4 themes × 2 modes at `oklch(0.50 0.14 h)` light / `oklch(0.78 0.13 h)` dark. **A redesign, not a refactor** — every colour on screen moves, so it starts with a throwaway comparison page for sign-off before any app code changes — when: straight after #254 merges
+2. [#257](https://github.com/jevawin/clumeral-game/issues/257) Cron should pre-generate tomorrow so puzzle writes are cron-owned — `getDailyPuzzle` is read-through and KV is shared across deployments, so any build (preview included) can permanently freeze tomorrow's production puzzle via the deliberate today+1 tolerance. Rejecting future dates does **not** fix it: the guard already exists and the +1 window is the #205 fix for ahead-of-UTC players — small, but the failure mode is permanent, so worth pulling forward if #255 runs long
+3. [#256](https://github.com/jevawin/clumeral-game/issues/256) Exclude `.planning/` from the Tailwind content scan — class names quoted in old design docs generate real CSS in the bundle; small, likely one line plus a before/after class diff — when: after #255, so the two don't both churn the generated stylesheet
 
 ## Recently shipped
 

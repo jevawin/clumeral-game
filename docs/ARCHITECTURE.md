@@ -51,7 +51,7 @@ Player feedback is stored in **Cloudflare D1** (`clumeral-feedback`, binding `FE
 ## Puzzle algorithm (puzzle.ts)
 
 - Candidates = `[100..999]`, filtered live via `compute(n)` — no prebuilt data
-- 28 properties across 6 groups: 12 boolean specials (3 digits × prime/square/cube/triangular) + 16 numeric (4 sums, 3 diffs, 4 products, 4 means, 1 range)
+- 31 properties across 6 groups: 15 boolean specials (3 digits × prime/square/cube/triangular/Fibonacci) + 16 numeric (4 sums, 3 diffs, 4 products, 4 means, 1 range)
 - Main loop: one filter per group per iteration
 - Tiebreaker: `=` sweep on remaining candidate until length 1
 - Seed = YYYYMMDD local, RNG = mulberry32 (`makeRng`)
