@@ -336,12 +336,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     border: none;
     padding: 0;
     cursor: pointer;
-    background: var(--swatch-light);
+    background: oklch(var(--accent-l) var(--swatch-cl) var(--swatch-h));
     box-shadow: 0 0 0 2px transparent;
     transition: box-shadow 150ms ease;
   }
+  /* Kept, unlike the rest of the dark colour rules: --accent-l flips on its own
+     but swatch chroma cannot, because each dot carries its own pair (#255). */
   html.dark .swatch-btn {
-    background: var(--swatch-dark);
+    background: oklch(var(--accent-l) var(--swatch-cd) var(--swatch-h));
   }
   .swatch-btn[aria-checked="true"] {
     box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text);

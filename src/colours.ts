@@ -2,34 +2,39 @@
 // Accent colour picker. 4 themes, persists in localStorage. The app icon is
 // fixed (green octopus on black) and does not follow the accent or theme.
 
+import { PALETTE } from './palette';
+
 const STORAGE_COLOUR = 'dlng_colour';
 
+type ThemeName = keyof typeof PALETTE.hues;
+
 interface ColourTheme {
-  name: string;
-  light: string;
-  dark: string;
+  name: ThemeName;
+  hue: number;
+  chromaLight: number;
+  chromaDark: number;
 }
 
-const THEMES: ColourTheme[] = [
-  { name: 'Lime', light: '#0a850a', dark: '#1ead52' },
-  { name: 'Berry', light: '#de1f46', dark: '#ea6c85' },
-  { name: 'Blue', light: '#376ddb', dark: '#6393f2' },
-  { name: 'Violet', light: '#9a44ea', dark: '#b679f0' },
-];
+// Hue plus a chroma per mode. Lightness is shared and lives in tailwind.css,
+// which is what makes every theme AA-safe by construction — chroma is
+// contrast-inert and free to vary per theme (#255).
+const THEMES: ColourTheme[] = (Object.keys(PALETTE.hues) as ThemeName[]).map((name) => ({
+  name,
+  hue: PALETTE.hues[name],
+  chromaLight: PALETTE.light.accentC[name],
+  chromaDark: PALETTE.dark.accentC[name],
+}));
 
 const root = document.documentElement;
 let active: ColourTheme = THEMES[0];
 
-function isDark(): boolean {
-  if (root.classList.contains('dark')) return true;
-  if (root.classList.contains('light')) return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
+// Chroma varies by theme and by mode, so pushing it from here would need a
+// light/dark branch. Setting an attribute instead lets the tailwind.css rules
+// resolve hue and both chromas, keeping the mode half of the mapping in the
+// cascade next to html.dark.
 function applyColour(theme: ColourTheme): void {
   active = theme;
-  const colour = isDark() ? theme.dark : theme.light;
-  root.style.setProperty('--color-accent', colour);
+  root.dataset.theme = theme.name;
   window._currentColour = theme.name;
   refreshSwatchState();
 }
@@ -58,8 +63,11 @@ function renderSwatches(): void {
     btn.setAttribute('role', 'radio');
     btn.setAttribute('aria-label', t.name);
     btn.setAttribute('aria-checked', 'false');
-    btn.style.setProperty('--swatch-light', t.light);
-    btn.style.setProperty('--swatch-dark', t.dark);
+    // A dot cannot use --accent-c: that is whichever theme is active, not the
+    // one this dot represents. So each carries its own hue and both chromas.
+    btn.style.setProperty('--swatch-h', String(t.hue));
+    btn.style.setProperty('--swatch-cl', String(t.chromaLight));
+    btn.style.setProperty('--swatch-cd', String(t.chromaDark));
     btn.addEventListener('click', () => {
       applyColour(t);
       localStorage.setItem(STORAGE_COLOUR, t.name);
@@ -78,6 +86,9 @@ export function initColours(): void {
   renderSwatches();
   applyColour(active);
 
-  // theme.ts calls this after dark/light flip so accent picks the right variant.
+  // theme.ts calls this after a dark/light flip. The accent now re-resolves on
+  // its own — --accent-l and the per-theme chroma rules both key off html.dark —
+  // so this is a no-op for colour. Kept because it still refreshes swatch state
+  // and the _currentColour global that the e2e specs read (#255).
   window._refreshAccent = () => applyColour(active);
 }
