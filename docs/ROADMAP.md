@@ -20,7 +20,8 @@ Rules that keep it from rotting:
 
 ## Next
 
-- _Nothing queued._
+1. [#255](https://github.com/jevawin/clumeral-game/issues/255) Derive the whole palette from 2 base colours + hue angles (OKLCH) — 31 unique colour literals down to ~8 declared values; `on-accent` becomes `bg` and `accent-strong` disappears entirely. Verified AA-clean across 4 themes × 2 modes at `oklch(0.50 0.14 h)` light / `oklch(0.78 0.13 h)` dark. **A redesign, not a refactor** — every colour on screen moves, so it starts with a throwaway comparison page for sign-off before any app code changes — when: straight after #254 merges
+2. [#256](https://github.com/jevawin/clumeral-game/issues/256) Exclude `.planning/` from the Tailwind content scan — class names quoted in old design docs generate real CSS in the bundle; small, likely one line plus a before/after class diff — when: after #255, so the two don't both churn the generated stylesheet
 
 ## Recently shipped
 
