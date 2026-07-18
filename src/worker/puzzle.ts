@@ -5,6 +5,10 @@ const PRIMES      = new Set([2, 3, 5, 7]);
 const SQUARES     = new Set([0, 1, 4, 9]);
 const CUBES       = new Set([0, 1, 8]);
 const TRIANGULARS = new Set([0, 1, 3, 6]);
+// Single-digit Fibonacci numbers. 0 and 1 are included, so this overlaps heavily
+// with SQUARES/CUBES/TRIANGULARS at the low end — that is fine, the filter engine
+// picks clues by how much they narrow the candidate set, not by independence.
+export const FIBONACCIS  = new Set([0, 1, 2, 3, 5, 8]);
 
 function getDigits(n: number): [number, number, number] {
   return [Math.floor(n / 100), Math.floor((n % 100) / 10), n % 10];
@@ -20,20 +24,23 @@ interface PropertyDef {
   compute: (n: number) => number | boolean;
 }
 
-const PROPERTIES: Record<string, PropertyDef> = {
-  // Specials: 3 digits × 4 traits = 12 boolean properties
+export const PROPERTIES: Record<string, PropertyDef> = {
+  // Specials: 3 digits × 5 traits = 15 boolean properties
   firstIsPrime:       { label: 'The first digit is a prime number',       type: 'text',    compute: (n: number) => PRIMES.has(getDigits(n)[0]) },
   firstIsSquare:      { label: 'The first digit is a square number',      type: 'text',    compute: (n: number) => SQUARES.has(getDigits(n)[0]) },
   firstIsCube:        { label: 'The first digit is a cube number',        type: 'text',    compute: (n: number) => CUBES.has(getDigits(n)[0]) },
   firstIsTriangular:  { label: 'The first digit is a triangular number',  type: 'text',    compute: (n: number) => TRIANGULARS.has(getDigits(n)[0]) },
+  firstIsFib:         { label: 'The first digit is a Fibonacci number',   type: 'text',    compute: (n: number) => FIBONACCIS.has(getDigits(n)[0]) },
   secondIsPrime:      { label: 'The second digit is a prime number',      type: 'text',    compute: (n: number) => PRIMES.has(getDigits(n)[1]) },
   secondIsSquare:     { label: 'The second digit is a square number',     type: 'text',    compute: (n: number) => SQUARES.has(getDigits(n)[1]) },
   secondIsCube:       { label: 'The second digit is a cube number',       type: 'text',    compute: (n: number) => CUBES.has(getDigits(n)[1]) },
   secondIsTriangular: { label: 'The second digit is a triangular number', type: 'text',    compute: (n: number) => TRIANGULARS.has(getDigits(n)[1]) },
+  secondIsFib:        { label: 'The second digit is a Fibonacci number',  type: 'text',    compute: (n: number) => FIBONACCIS.has(getDigits(n)[1]) },
   thirdIsPrime:       { label: 'The third digit is a prime number',       type: 'text',    compute: (n: number) => PRIMES.has(getDigits(n)[2]) },
   thirdIsSquare:      { label: 'The third digit is a square number',      type: 'text',    compute: (n: number) => SQUARES.has(getDigits(n)[2]) },
   thirdIsCube:        { label: 'The third digit is a cube number',        type: 'text',    compute: (n: number) => CUBES.has(getDigits(n)[2]) },
   thirdIsTriangular:  { label: 'The third digit is a triangular number',  type: 'text',    compute: (n: number) => TRIANGULARS.has(getDigits(n)[2]) },
+  thirdIsFib:         { label: 'The third digit is a Fibonacci number',   type: 'text',    compute: (n: number) => FIBONACCIS.has(getDigits(n)[2]) },
 
   // Sums: 4 numeric properties
   sumFS:   { label: 'The sum of the first and second digits is',  type: 'numeric', compute: (n: number) => { const [a, b]    = getDigits(n); return a + b; } },
@@ -63,10 +70,10 @@ const PROPERTIES: Record<string, PropertyDef> = {
 };
 
 // 6 groups — one filter drawn per group per main loop iteration
-const PROPERTY_GROUPS: Record<string, string[]> = {
-  Specials:    ['firstIsPrime', 'firstIsSquare', 'firstIsCube', 'firstIsTriangular',
-                'secondIsPrime', 'secondIsSquare', 'secondIsCube', 'secondIsTriangular',
-                'thirdIsPrime', 'thirdIsSquare', 'thirdIsCube', 'thirdIsTriangular'],
+export const PROPERTY_GROUPS: Record<string, string[]> = {
+  Specials:    ['firstIsPrime', 'firstIsSquare', 'firstIsCube', 'firstIsTriangular', 'firstIsFib',
+                'secondIsPrime', 'secondIsSquare', 'secondIsCube', 'secondIsTriangular', 'secondIsFib',
+                'thirdIsPrime', 'thirdIsSquare', 'thirdIsCube', 'thirdIsTriangular', 'thirdIsFib'],
   Sums:        ['sumFS', 'sumFT', 'sumST', 'sumAll'],
   Differences: ['diffFS', 'diffFT', 'diffST'],
   Products:    ['prodFS', 'prodFT', 'prodST', 'prodAll'],

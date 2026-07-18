@@ -130,6 +130,7 @@ function getClueTag(propKey: string): string {
   if (propKey.includes("IsSquare"))     return "SQUARE";
   if (propKey.includes("IsCube"))       return "CUBE";
   if (propKey.includes("IsTriangular")) return "TRIAN";
+  if (propKey.includes("IsFib"))        return "FIB";
   if (propKey.startsWith("sum"))        return "SUM";
   if (propKey.startsWith("diff"))       return "DIFF";
   if (propKey.startsWith("prod"))       return "PROD";
@@ -154,6 +155,7 @@ const TAG_TIPS: Record<string, string> = {
   SQUARE: "Square root is an integer",
   CUBE: "Cube root is an integer",
   TRIAN: "Sum of consecutive numbers from 0",
+  FIB: "Each number is the two before it added together",
   SUM: "Numbers added together",
   DIFF: "Smaller of the numbers subtracted from larger",
   PROD: "Numbers multiplied together",
