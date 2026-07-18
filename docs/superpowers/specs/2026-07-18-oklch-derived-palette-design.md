@@ -105,7 +105,7 @@ Two constraints follow:
   lowest of the four, and Lime carries the worst ratio in the system at every
   chroma. The light background value cannot drift downward without re-checking.
 - **Chroma is gamut-limited, not taste-limited, in five of eight cases.** Blue
-  dark caps at 0.111 and Berry/Violet dark at 0.136/0.140, all below today. A
+  dark caps at 0.111 and Berry/Violet dark at 0.135/0.140, all below today. A
   shared dark chroma would have to sit under Blue's 0.111 and drag the other
   three down with it — which is why sign-off went per-theme.
 
@@ -263,7 +263,7 @@ The rule is `min(today's chroma, the hue's sRGB ceiling at the AA lightness)`:
 | | light | vs today | dark | vs today |
 |---|---|---|---|---|
 | Lime | 0.157 | ceiling-capped from 0.178 | 0.174 | matches today |
-| Berry | 0.201 | ceiling-capped from 0.219 | 0.136 | ceiling-capped from 0.157 |
+| Berry | 0.201 | ceiling-capped from 0.219 | 0.135 | ceiling-capped from 0.157 |
 | Blue | 0.178 | matches today | 0.111 | ceiling-capped from 0.151 |
 | Violet | 0.237 | matches today | 0.140 | ceiling-capped from 0.177 |
 

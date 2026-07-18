@@ -30,7 +30,7 @@ See [Settled by the prototype](../specs/2026-07-18-oklch-derived-palette-design.
 hue angles     Lime 145 · Berry 5 · Blue 262 · Violet 305
 semantic hues  success 150 · error 27
 accent chroma  light  Lime 0.157 · Berry 0.201 · Blue 0.178 · Violet 0.237
-               dark   Lime 0.174 · Berry 0.136 · Blue 0.111 · Violet 0.140
+               dark   Lime 0.174 · Berry 0.135 · Blue 0.111 · Violet 0.140
 ```
 
 Chroma is `min(today's chroma, the hue's sRGB ceiling at that lightness)`. Five
@@ -145,7 +145,7 @@ via `file://`.
   .proto-scope[data-chroma="per-theme"][data-theme="Blue"]   { --accent-c: 0.232; }
   .proto-scope[data-chroma="per-theme"][data-theme="Violet"] { --accent-c: 0.260; }
   .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.245; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.136; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.135; }
   .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }
   .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }
   /* Hue angles per theme. */
@@ -710,7 +710,7 @@ export const PALETTE = {
     // requires, and a lighter colour has less room for chroma — so these are
     // gamut limits, not choices. Lime could reach 0.245 and is held at today's
     // value instead.
-    accentC: { Lime: 0.174, Berry: 0.136, Blue: 0.111, Violet: 0.140 },
+    accentC: { Lime: 0.174, Berry: 0.135, Blue: 0.111, Violet: 0.140 },
     semanticL: 0.68,
   },
 } as const;
@@ -806,7 +806,7 @@ html[data-theme="Violet"] { --accent-h: 305; --accent-c: 0.237; }
 /* Dark chroma is lower for every theme but Lime: L=0.78 leaves less sRGB room
    for saturation. Hue does not vary by mode, so it is not repeated. */
 html.dark[data-theme="Lime"]   { --accent-c: 0.174; }
-html.dark[data-theme="Berry"]  { --accent-c: 0.136; }
+html.dark[data-theme="Berry"]  { --accent-c: 0.135; }
 html.dark[data-theme="Blue"]   { --accent-c: 0.111; }
 html.dark[data-theme="Violet"] { --accent-c: 0.140; }
 ```
