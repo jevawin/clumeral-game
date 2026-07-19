@@ -341,8 +341,8 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     /* radiogroup wrapper */
   }
   .swatch-btn {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 9999px;
     border: none;
     padding: 0;
@@ -365,8 +365,11 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 
   /* Unselected: line art in the theme colour, filled with its own 50% tint. */
   .swatch-btn svg {
-    width: 24px;
-    height: 24px;
+    /* 20px matches the menu-item icons. Same 24-unit viewBox and the same
+       stroke-width: 2 on the symbol, so matching the box size matches the
+       rendered stroke too — 2 x 20/24 = 1.67px in both places. */
+    width: 20px;
+    height: 20px;
     color: var(--swatch-colour);
     --icon-fill: var(--swatch-tint);
     pointer-events: none;
