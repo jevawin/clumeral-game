@@ -1204,13 +1204,13 @@ fail in CI instead of in review."
 **Files:**
 - Modify: `docs/DESIGN-SYSTEM.md`
 
-- [ ] **Step 1: Read the current doc**
+- [x] **Step 1: Read the current doc**
 
 ```bash
 cat docs/DESIGN-SYSTEM.md
 ```
 
-- [ ] **Step 2: Rewrite the colour section**
+- [x] **Step 2: Rewrite the colour section**
 
 Replace the hand-picked palette listing with the derivation. Cover:
 
@@ -1237,12 +1237,37 @@ Replace the hand-picked palette listing with the derivation. Cover:
 - **Build constraints** — unused `@theme` tokens are tree-shaken, so a token only
   JS reads must be referenced in CSS somewhere.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/DESIGN-SYSTEM.md
 git commit -m "docs: rewrite DESIGN-SYSTEM.md around the derivation rules (#255)"
 ```
+
+---
+
+## Work on this branch beyond the plan
+
+Added during execution, in response to review while testing. None of it is in the
+task list above, and **Task 11's PR body must cover it** — the diff spans more
+than the palette.
+
+| commits | what | notes |
+|---|---|---|
+| `84fa7ea`, `5c41080` | Strike through eliminated digits in the boxes and number pad | Unrelated to the palette. Kept on this branch by explicit decision — it is a colour-adjacent visual change and the user was happy to ship it together. Boxes moved from `opacity` to alpha-on-colour so the strike could carry its own alpha; both now sit at the same value, 18% boxes / 25% pad. |
+| `96e83d4` | `/archive` → Show puzzle now lands on `/play` in every case | **Pre-existing bug, not introduced by #255.** The Worker-rendered link is a full page load and cannot pass `skipResolve`, so RTE-03 bounced it to `/solved` or `/welcome`. Fixed with a `?from=archive` marker. Five router tests; two fail without the fix. |
+| `c2489dc`, `72169b9`, `c7c2a98`, `13ac398` | Fruit icons in the accent swatches, selected-state arrow, own menu section | Icon colour needed no new contrast check: it is the `on-accent = bg` rule, so it inherits the accent-on-bg ratio by symmetry. |
+| `065ce5e` | Themes renamed to fruit — Cherry, Blueberry, Grape | **Carries a storage migration.** `dlng_colour` stores the theme name, so without it every player not on Lime would silently reset. Migration lives in `initColours` *and* the Worker's inline script; 6 tests cover it. |
+
+### Still unverified
+
+- **The e2e suite has not been run since any of this.** `menu.spec.ts` and
+  `shadow-theme.spec.ts` were both edited for the rename and are unverified.
+- `shadow-theme.spec.ts` was rewritten to read the expected accent back from the
+  live page. It had been pinning the pre-#255 hexes, so it was already stale
+  before the rename — Task 10 would have hit it regardless.
+- Task 10 should expect other specs asserting literal colours to fail. Per the
+  plan below, confirm each by eye before changing an assertion.
 
 ---
 
