@@ -385,7 +385,9 @@ function buildKeypad() {
     const elim = disabled || !possibles[activeBox].has(d);
     btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
-        ? 'bg-surface text-text/25 border-border shadow-none'
+        ? // Struck through as well as faded, matching the digit boxes. The rule
+          // sits at double the digit's alpha so it stays legible at this size.
+          'bg-surface text-text/25 border-border shadow-none line-through decoration-text/50'
         : 'bg-surface text-text border-border shadow-key'
     }`;
     btn.textContent = String(d);

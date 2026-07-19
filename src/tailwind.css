@@ -418,8 +418,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     justify-content: center;
     color: var(--color-text);
   }
+  /* Eliminated digits are struck through as well as faded — the fade alone was
+     easy to miss on a phone. Alpha on the colour rather than opacity on the
+     span, so the strike can carry its own alpha: at 12% the rule was as faint
+     as the digit it crosses, so it sits at double that. */
   .digit-box__grid span.elim {
-    opacity: 0.12;
+    color: color-mix(in srgb, var(--color-text) 12%, transparent);
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in srgb, var(--color-text) 24%, transparent);
   }
 }
 
