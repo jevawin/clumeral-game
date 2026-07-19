@@ -130,6 +130,7 @@ function getClueTag(propKey: string): string {
   if (propKey.includes("IsSquare"))     return "SQUARE";
   if (propKey.includes("IsCube"))       return "CUBE";
   if (propKey.includes("IsTriangular")) return "TRIAN";
+  if (propKey.includes("IsFib"))        return "FIB";
   if (propKey.startsWith("sum"))        return "SUM";
   if (propKey.startsWith("diff"))       return "DIFF";
   if (propKey.startsWith("prod"))       return "PROD";
@@ -151,14 +152,15 @@ function digitPositions(propKey: string): boolean[] {
 
 const TAG_TIPS: Record<string, string> = {
   PRIME: "Only divisible by 1 and itself",
-  SQUARE: "Square root is an integer",
-  CUBE: "Cube root is an integer",
+  SQUARE: "Result of a number multiplied by itself",
+  CUBE: "Result of a number multiplied by itself, twice",
   TRIAN: "Sum of consecutive numbers from 0",
-  SUM: "Digits added together",
-  DIFF: "Smaller of the digits subtracted from larger",
-  PROD: "Digits multiplied together",
-  MEAN: "Sum of digits divided by how many digits",
-  RANGE: "Largest digit minus the smallest",
+  FIB: "Each number is the two before it added together, starting with 0 and 1",
+  SUM: "Numbers added together",
+  DIFF: "Smaller of the numbers subtracted from larger",
+  PROD: "Numbers multiplied together",
+  MEAN: "Sum of numbers divided by how many numbers",
+  RANGE: "Largest number minus the smallest",
 };
 
 function showTip(message: string, anchor: HTMLElement): void {
@@ -231,6 +233,13 @@ function renderClues(clues: ClueData[]): void {
   dom.clueList.innerHTML = "";
   for (const { propKey, label, operator, value } of clues) {
     const tag = getClueTag(propKey);
+    // #228: players read a clue as being about each box's value ("the first box
+    // is not a prime number → remove primes from the first box"), so display
+    // "box"/"boxes" in the clue text. Labels are frozen per puzzle in KV, so we
+    // transform at render time to cover old and new puzzles uniformly. The (i)
+    // tag definitions (TAG_TIPS) use "numbers" — an abstract definition of the
+    // maths, not tied to boxes. "digit" is now fully gone from player copy.
+    const boxLabel = label.replace(/\bdigits\b/g, "boxes").replace(/\bdigit\b/g, "box");
     const lit = digitPositions(propKey);
     const miniDigitsHtml = lit.map((on) =>
       `<span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border ${on ? 'border-accent bg-accent/50' : 'border-accent bg-accent/5'}"></span>`
@@ -240,13 +249,13 @@ function renderClues(clues: ClueData[]): void {
     let emphHtml: string;
     if (typeof value === "boolean") {
       const isAffirmative = operator === "=" ? value : !value;
-      const idx = label.indexOf(" is ");
-      const subject = label.slice(0, idx);
-      const predicate = label.slice(idx + 4);
+      const idx = boxLabel.indexOf(" is ");
+      const subject = boxLabel.slice(0, idx);
+      const predicate = boxLabel.slice(idx + 4);
       leadText = subject + " is";
       emphHtml = (isAffirmative ? "" : "not ") + predicate;
     } else {
-      leadText = operator === "=" ? label.replace(/\s+is$/, "") : label;
+      leadText = operator === "=" ? boxLabel.replace(/\s+is$/, "") : boxLabel;
       const formatted = formatClueValue(value);
       const opSymbol = OPERATOR_SYMBOLS[operator] ?? operator;
       const valuePart = formatted.html ?? formatted.text;
@@ -258,7 +267,7 @@ function renderClues(clues: ClueData[]): void {
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="flex flex-col gap-2">
-        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent-strong font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
+        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
           <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
@@ -272,7 +281,7 @@ function renderClues(clues: ClueData[]): void {
 
     const l1El = clueEl.querySelector("[data-clue-line1]");
     const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold">$1</span>');
-    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent-strong whitespace-nowrap">${emphHtml}</span>`;
+    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent whitespace-nowrap">${emphHtml}</span>`;
     dom.clueList.appendChild(clueEl);
   }
 }
@@ -287,17 +296,17 @@ function renderFeedback(type: string | null, answer?: number): void {
   if (type === "correct") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CHECK} Correct! That's puzzle #${gameState.puzzleNum ?? ''}.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-success font-[Quicksand]";
     }
   } else if (type === "incorrect") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Not quite — try again.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[Quicksand]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-error font-[Quicksand]";
     }
   } else if (type === "error") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CROSS} Something went wrong — please try again.`;
-      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#c03030] dark:text-[#f07070] font-[Quicksand]";
+      dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-error font-[Quicksand]";
     }
   } else {
     if (dom.feedback) {
@@ -376,12 +385,15 @@ function buildKeypad() {
     const elim = disabled || !possibles[activeBox].has(d);
     btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
-        ? 'bg-surface text-text/25 border-border shadow-none'
+        ? // Struck through as well as faded, matching the digit boxes. No
+          // decoration colour: the rule inherits currentColor, so it lands at
+          // the same alpha as the digit it crosses.
+          'bg-surface text-text/25 border-border shadow-none line-through'
         : 'bg-surface text-text border-border shadow-key'
     }`;
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
-    btn.setAttribute("aria-label", `Toggle digit ${d}`);
+    btn.setAttribute("aria-label", `Toggle number ${d}`);
     // aria-pressed marks player-eliminated digits (a toggle state). The hundreds-box
     // 0 is not a toggle — it's an explainer — so it must not claim a pressed state.
     if (elim && !disabled) btn.setAttribute("aria-pressed", "true");
@@ -389,9 +401,9 @@ function buildKeypad() {
       // Hundreds-box 0: keep focusable/tappable (not native disabled) so it can
       // explain why the first digit can't be 0.
       btn.setAttribute("aria-disabled", "true");
-      btn.setAttribute("aria-label", "0 unavailable — the first digit can't be 0");
+      btn.setAttribute("aria-label", "0 unavailable — the first box can't be 0");
       btn.addEventListener("click", () =>
-        showTip("The number is 100–999, so the first digit can't be 0.", btn)
+        showTip("The number is 100–999, so the first box can't be 0.", btn)
       );
     } else {
       btn.addEventListener("click", () => toggleDigit(d));
@@ -468,10 +480,12 @@ function showCompletedState(tries: number, replayDate?: string): void {
   // /play in solved-replay mode is the same minimal view for today and archive:
   // clues + revealed digits + "Solved in N tries!" + a context-specific link.
   // Stats panel never appears here — it lives on /solved.
+  // Finalised: the keypad is no longer usable, so hide it (issue #194).
+  closeKeypad();
   const t = tries === 1 ? "1 try" : `${tries} tries`;
   if (dom.feedback) {
     dom.feedback.innerHTML = `${ICON_CHECK} Solved in ${t}!`;
-    dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-[#1a7a3a] dark:text-[#4cc990] font-[Quicksand]";
+    dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-success font-[Quicksand]";
     dom.feedback.classList.remove("hidden");
   }
   // Show the answer digits in the boxes
@@ -483,7 +497,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
   for (let i = 0; i < 3; i++) {
     const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
     if (el) {
-      el.classList.add("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+      el.classList.add("bg-success/12", "border-success/40", "pointer-events-none");
     }
   }
   dom.submitWrap?.classList.add("hidden");
@@ -520,7 +534,7 @@ function resetPuzzleUI() {
   for (let i = 0; i < 3; i++) {
     const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
     if (el) {
-      el.classList.remove("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+      el.classList.remove("bg-success/12", "border-success/40", "pointer-events-none");
     }
   }
   possibles = initPossibles();
@@ -666,7 +680,7 @@ async function handleGuess() {
       // Apply correct state to all digit boxes
       for (let i = 0; i < 3; i++) {
         const el = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
-        if (el) el.classList.add("bg-[rgba(46,139,87,0.12)]", "border-[rgba(46,139,87,0.4)]", "pointer-events-none");
+        if (el) el.classList.add("bg-success/12", "border-success/40", "pointer-events-none");
       }
       dom.submitWrap?.classList.add("hidden");
 
@@ -889,6 +903,11 @@ function initMenu(): void {
   });
 
   document.querySelector('[data-menu-close]')?.addEventListener('click', closeMenu);
+
+  // Archive is a plain anchor — a full document load, not a client-side route.
+  // Closing the menu is belt-and-braces for the back-navigation case; the
+  // current document is about to be replaced either way.
+  menu.querySelector('[data-menu-archive]')?.addEventListener('click', closeMenu);
 
   document.addEventListener('click', (e) => {
     if (!menu!.contains(e.target as Node) && e.target !== menuBtn && !menu!.classList.contains('hidden')) {

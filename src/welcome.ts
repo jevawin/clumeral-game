@@ -43,7 +43,7 @@ function htpSteps(): string {
         <p class="text-base text-text mb-2">1. Read the clues — tap <svg class="inline align-[-2px] text-accent" width="14" height="14" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg> for an explanation</p>
         <div class="grid [grid-template-columns:max-content_1fr] gap-x-4 items-center">
           <div class="flex flex-col gap-2">
-            <span class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent-strong font-mono text-base font-bold uppercase tracking-wide">
+            <span class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide">
               <span>PRIME</span>
               <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
             </span>
@@ -53,13 +53,13 @@ function htpSteps(): string {
               <span class="w-[1.375rem] h-[1.375rem] rounded-[1px] border border-accent bg-accent/5"></span>
             </div>
           </div>
-          <div class="text-lg text-text font-[Quicksand]">The <span class="font-bold">first</span> digit is <span class="font-bold text-accent-strong whitespace-nowrap">a prime number</span></div>
+          <div class="text-lg text-text font-[Quicksand]">The <span class="font-bold">first</span> box is <span class="font-bold text-accent whitespace-nowrap">a prime number</span></div>
         </div>
       </div>
 
-      <!-- Step 2: Open the digit boxes -->
+      <!-- Step 2: Open the number boxes -->
       <div>
-        <p class="text-base text-text mb-2">2. Open the digit boxes, remove ineligible digits</p>
+        <p class="text-base text-text mb-2">2. Open the boxes, remove ineligible numbers</p>
         <div class="flex items-start gap-2.5">
           <div class="digit-box flex-1 aspect-square min-w-0 shadow-box">
             <div class="digit-box__grid four-col">
@@ -97,7 +97,7 @@ function htpSteps(): string {
       </div>
 
       <!-- Step 3: Submit -->
-      <p class="text-base text-text">3. When 1 digit remains in each, submit your answer</p>
+      <p class="text-base text-text">3. When 1 number remains in each, submit your answer</p>
 
     </div>`;
 }

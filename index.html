@@ -185,11 +185,19 @@
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
           How to play
         </button>
+        <a data-menu-archive href="/archive" class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]">
+          <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>
+          Archive
+        </a>
         <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
           <span data-theme-label>Dark mode</span>
         </button>
-        <div data-swatches class="flex items-center gap-3 px-4 py-2"></div>
+        <hr class="menu-sep" />
+        <p class="px-4 pt-1 pb-1 text-base text-text font-[Quicksand]">
+          Theme: <span data-theme-name class="font-bold text-accent"></span>
+        </p>
+        <div data-swatches class="flex items-center gap-3 px-4 pt-1 pb-5"></div>
       </div>
 
     <!-- ── New screen architecture (Phase 1) ── -->
@@ -236,11 +244,11 @@
               </div>
             </div>
 
-            <!-- Digit boxes -->
-            <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Digit entry boxes">
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds digit" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens digit" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units digit" aria-expanded="false"></div>
+            <!-- Number boxes -->
+            <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Number boxes">
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds box" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens box" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units box" aria-expanded="false"></div>
             </div>
 
             <!-- Keypad -->
