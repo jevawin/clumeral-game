@@ -16,27 +16,25 @@ Rules that keep it from rotting:
 
 ## Now — WIP 1
 
-- [#255](https://github.com/jevawin/clumeral-game/issues/255) Derive the palette from 2 base colours + hue angles (OKLCH) — branch `issue/255`, not started — **redesign, not refactor**: starts with a throwaway comparison page for sign-off
+- [#257](https://github.com/jevawin/clumeral-game/issues/257) Cron should pre-generate tomorrow so puzzle writes are cron-owned — promoted from _Next_ on 2026-07-19 when #255 shipped; failure mode is permanent, so it led the queue
 
 ## Next
 
 **Puzzle integrity** (quick, unblocked — user-prioritised)
-
-1. [#257](https://github.com/jevawin/clumeral-game/issues/257) Cron should pre-generate tomorrow so puzzle writes are cron-owned — if: #255 runs long, pull forward (failure mode is permanent)
-2. [#235](https://github.com/jevawin/clumeral-game/issues/235) Audit + document the early archive — audit, not fix: originals are in KV and served from KV (spot-check green)
-3. [#193](https://github.com/jevawin/clumeral-game/issues/193) Add the redundant-clue removal pass to the generator — safe: cleans future puzzles only; optional KV backfill is answer-safe
+1. [#235](https://github.com/jevawin/clumeral-game/issues/235) Audit + document the early archive — audit, not fix: originals are in KV and served from KV (spot-check green)
+2. [#193](https://github.com/jevawin/clumeral-game/issues/193) Add the redundant-clue removal pass to the generator — safe: cleans future puzzles only; optional KV backfill is answer-safe
 
 **Usability core** (teach how to play + in-puzzle features)
 
-4. [#251](https://github.com/jevawin/clumeral-game/issues/251) Undo + Reset controls above the digit boxes — lead; strongest user demand (feedback D1 row #12)
-5. [#78](https://github.com/jevawin/clumeral-game/issues/78) Tap a box → surface only the clues relevant to it — when: after #251
-6. [#196](https://github.com/jevawin/clumeral-game/issues/196) Highlight the violated clues after a wrong guess — when: after #78
-7. [#227](https://github.com/jevawin/clumeral-game/issues/227) Full interactive guided tutorial with Clue — replaces the #214 MVP
-8. [#189](https://github.com/jevawin/clumeral-game/issues/189) Feedback-sent toast + (i) info-icon explanations — small; toast system already built
+3. [#251](https://github.com/jevawin/clumeral-game/issues/251) Undo + Reset controls above the digit boxes — lead; strongest user demand (feedback D1 row #12)
+4. [#78](https://github.com/jevawin/clumeral-game/issues/78) Tap a box → surface only the clues relevant to it — when: after #251
+5. [#196](https://github.com/jevawin/clumeral-game/issues/196) Highlight the violated clues after a wrong guess — when: after #78
+6. [#227](https://github.com/jevawin/clumeral-game/issues/227) Full interactive guided tutorial with Clue — replaces the #214 MVP
+7. [#189](https://github.com/jevawin/clumeral-game/issues/189) Feedback-sent toast + (i) info-icon explanations — small; toast system already built
 
 **Hygiene**
 
-9. [#256](https://github.com/jevawin/clumeral-game/issues/256) Exclude `.planning/` from the Tailwind content scan — when: after #255, so both don't churn the generated stylesheet
+8. [#256](https://github.com/jevawin/clumeral-game/issues/256) Exclude `.planning/` from the Tailwind content scan — **unblocked**: #255 shipped 2026-07-19, so the stylesheet has settled
 
 ## Future — playability, stats, then depth
 
@@ -63,6 +61,7 @@ Cleared the board from 53 → 33 open. Closed as **already built** (verified in 
 
 ## Recently shipped
 
+- 2026-07-19 — [#255](https://github.com/jevawin/clumeral-game/pull/258) OKLCH-derived palette — 31 colour literals → **20 declared values** in `src/palette.ts`. Contrast rides on a shared `--accent-l`, so a theme cannot fail AA by construction; worst pairing is now 5.36 (Lime light on bg). Removed `--color-accent-strong` and `--color-on-accent`, partly undoing #254 by design. Also on the branch: eliminated-digit strike-through, fruit swatch icons, themes renamed to fruit (with a `dlng_colour` migration), and a pre-existing `/archive` → `/play` routing bug fixed. DA review caught two HIGH issues before merge — `palette.ts` was not an enforced source of truth (parity is now three-way), and the archive marker was still bounced by the rollover redirect. QA: 182 unit · 36 axe (all four themes) · 272 e2e
 - 2026-07-18 — [#254](https://github.com/jevawin/clumeral-game/pull/254) Quick-win cluster — [#249](https://github.com/jevawin/clumeral-game/issues/249) accent palette tidy, [#243](https://github.com/jevawin/clumeral-game/issues/243) dark-mode white-on-accent fixed via `--color-on-accent`, [#202](https://github.com/jevawin/clumeral-game/issues/202) semantic `--color-success` / `--color-error`, [#81](https://github.com/jevawin/clumeral-game/issues/81) Fibonacci special (Specials 12 → 15), [#228](https://github.com/jevawin/clumeral-game/issues/228) "boxes" not "digits" in player copy, [#194](https://github.com/jevawin/clumeral-game/issues/194) keypad hidden on finalise, [#199](https://github.com/jevawin/clumeral-game/issues/199) Archive back in the corner menu. Also unpinned the axe gate from light-only and added open-menu / open-modal scans — 26 axe tests, both schemes (`42adf9b`)
 - 2026-06-28 — [#233](https://github.com/jevawin/clumeral-game/pull/233) Post-redesign bug fixes — `/random` correct-answer crash fixed (cold-boot solve no longer hits the uninitialised-router throw) + restored the "Play another random puzzle" entry link on the random completion screen, and theme-aware shadow tokens (`--shadow-*`) so shadows render correctly in dark mode
 - 2026-06-27 — [#231](https://github.com/jevawin/clumeral-game/pull/231) `/migrate` cross-origin localStorage hand-off — one-time migration page that carries `dlng_*` history across the domain move
