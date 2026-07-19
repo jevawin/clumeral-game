@@ -152,10 +152,10 @@ function digitPositions(propKey: string): boolean[] {
 
 const TAG_TIPS: Record<string, string> = {
   PRIME: "Only divisible by 1 and itself",
-  SQUARE: "Square root is an integer",
-  CUBE: "Cube root is an integer",
+  SQUARE: "Result of a number multiplied by itself",
+  CUBE: "Result of a number multiplied by itself, twice",
   TRIAN: "Sum of consecutive numbers from 0",
-  FIB: "Each number is the two before it added together",
+  FIB: "Each number is the two before it added together, starting with 0 and 1",
   SUM: "Numbers added together",
   DIFF: "Smaller of the numbers subtracted from larger",
   PROD: "Numbers multiplied together",
