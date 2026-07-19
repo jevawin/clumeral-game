@@ -33,45 +33,52 @@
 /* Light mode token defaults — Tailwind generates bg-bg, text-text, etc. */
 /* Per D-01: 6 semantic tokens. Per D-02: bg locked to #FAFAFA / #121213 */
 @theme {
+  /* ── Derived palette (#255) ────────────────────────────────────────────────
+     Declared values live in src/palette.ts and are mirrored here and in the
+     Worker's inline <style> (src/worker/puzzles.ts). tests/token-parity.spec.ts
+     fails the build if those two drift apart.
+
+     Contrast rides on --accent-l alone, shared by all four themes, so a theme
+     cannot fail AA. Chroma and hue are contrast-inert: pushing chroma to the
+     sRGB ceiling moves the ratio by at most ~0.5. This is what makes the #254
+     bug class unrepresentable rather than merely fixed.
+
+     Adding a theme = one hue angle plus a chroma per mode. No new contrast
+     pairings to verify — tests/palette-contrast.spec.ts covers it. */
+
+  --accent-l: 0.50;
+
+  /* One chroma per hue per mode. Declared here and re-declared in html.dark;
+     everything downstream references these rather than repeating the numbers,
+     so each value exists once per mode. */
+  --chroma-lime:   0.157;
+  --chroma-cherry:  0.201;
+  --chroma-blueberry:   0.178;
+  --chroma-grape: 0.237;
+
+  /* Hue and chroma of the active theme. colours.ts sets data-theme on <html>;
+     the rules below @theme resolve both from it, so the mode half of the
+     mapping stays in CSS and applyColour needs no light/dark branch. Defaults
+     are Lime's. */
+  --accent-h: 145;
+  --accent-c: var(--chroma-lime);
+
   --color-bg:      #FAFAFA;
-  --color-text:    #262624;
-  --color-accent:  #0A850A;
   --color-surface: #FFFFFF;
-  --color-border:  rgba(38, 38, 36, 0.12);
+  --color-text:    #262624;
+  --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
 
-  /* AA-safe accent for small text. The raw accent on light backgrounds sits at
-     ~4.3:1 on the clue-tag tint and ~4.6:1 on the page bg — at or below the 4.5:1
-     WCAG AA bar. Mixing 18% toward --color-text darkens it in light mode and
-     lightens it in dark mode, lifting all four themes to ~5.3:1+ while staying
-     visibly the accent. Both source vars are live, so it re-resolves per accent
-     and per theme — no dark: override needed.
+  /* Success and error are the Lime and Cherry themes reused, not colours of their
+     own — same lightness, same chroma, same hue. Meaning is carried by the tick
+     and cross icons beside the text, so these do not have to stay distinguishable
+     from the active accent, and colour is never the only signal (WCAG 1.4.1).
 
-     Use for accent-coloured TEXT, and for any border sitting directly alongside
-     that text (clue tags, .link underline, .btn-hollow) — per #249, a strong-text
-     / raw-border pairing is what read as mismatched. Keep raw --color-accent for
-     icons, standalone fills, and low-opacity tints, where the shade difference is
-     imperceptible and the fuller colour reads better. */
-  --color-accent-strong: color-mix(in srgb, var(--color-accent) 82%, var(--color-text));
-
-  /* Text/icon colour for solid accent fills (.btn-solid). White clears AA on the
-     light accents (4.78–4.80:1) but only manages 2.94–3.01:1 on the lighter dark
-     accents — the #243 failure. Flipping to the page bg in dark mode gives
-     6.22–6.38:1 across all four themes. Set per mode, not via color-mix, because
-     the right answer flips between the two ends of the scale rather than sliding. */
-  --color-on-accent: #FFFFFF;
-
-  /* Success / error feedback. Not derived from the accent — they must stay green
-     and red whichever accent theme is picked. Both clear AA on --color-bg in
-     their own mode. Note error-dark on --color-surface is 4.18:1, so keep error
-     text on the page bg.
-
-     The values match the ones previously inlined in app.ts, so the feedback TEXT
-     is unchanged. The correct-box highlight is not: it was sea-green (#2e8b57),
-     picked independently of the success text beside it, and now derives from
-     this token. It also gains a dark variant it never had, since the inline
-     utilities carried no dark: override. */
-  --color-success: #1a7a3a;
-  --color-error:   #c03030;
+     That removes the semantic lightness band, both semantic hues, and both
+     semantic chromas. It also removes the tightest pairing in the system: error
+     dark on surface was 4.70, and the worst semantic ratio is now 5.36. */
+  --color-success: oklch(var(--accent-l) var(--chroma-lime) 145);
+  --color-error:   oklch(var(--accent-l) var(--chroma-cherry) 5);
 
   /* Offset shadows derive from theme tokens so they follow dark mode and the
      selected accent. --color-text / --color-accent are live custom properties
@@ -85,28 +92,57 @@
   --font-mono: "Inconsolata", ui-monospace, monospace;
 }
 
+/* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
+   sets data-theme on <html> and these resolve both values from it.
+
+   No dark counterparts: --chroma-* already flips in html.dark, and var() here
+   resolves against the same element, so these four rules cover both modes.
+
+   The chroma values themselves are min(today's chroma, the hue's sRGB ceiling
+   at --accent-l), truncated to 3dp. Rounding to nearest pushes Cherry dark past
+   its 0.135523 limit and out of gamut, which clips and shifts lightness — the
+   one thing the AA guarantee rests on. tests/palette-contrast.spec.ts checks
+   the gamut, not just the ratio. */
+html[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); }
+html[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); }
+html[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); }
+html[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); }
+
 /* Default body font — Quicksand 300 to match the clue lead style. Buttons / headings / tag pills override via font-bold etc. */
 html, body { font-family: var(--font-sans); font-weight: 400; }
 
 /* Dark mode overrides — in theme layer so they beat @theme's :root tokens via specificity */
 @layer theme {
   html.dark {
+    --accent-l: 0.78;
+    /* Lime's dark chroma, as the default. Every theme's own rule outranks this
+       on specificity, so it only shows before colours.ts sets data-theme. The
+       Worker mirror carries the same per-theme rules, so /archive honours the
+       saved theme rather than falling back to this. Keep all four equal to the
+       Worker's :root.dark values or tests/token-parity.spec.ts fails. */
+    --chroma-lime:   0.174;
+    --chroma-cherry:  0.135;
+    --chroma-blueberry:   0.111;
+    --chroma-grape: 0.140;
+    --accent-c: var(--chroma-lime);
+
     --color-bg:      #121213;
+    --color-surface: #2A2A2B;
     --color-text:    #FAF8F4;
-    --color-accent:  #1EAD52;
-    --color-surface: #363634;
-    --color-border:  rgba(246, 240, 232, 0.1);
 
-    /* See @theme above — white-on-accent fails AA here, page bg passes. */
-    --color-on-accent: var(--color-bg);
-
-    --color-success: #4cc990;
-    --color-error:   #f07070;
+    /* --color-accent, --color-border, --color-success and --color-error are not
+       repeated: they are var()-based and re-resolve from the values above. */
 
     /* Octo colour-cycle dark stops — plain custom properties so Lightning CSS
        cannot mangle them. light-dark() cannot be used in SVG fill keyframes
        because Lightning CSS rewrites it to two concatenated var() expressions,
-       which is an invalid SVG <paint> value and falls back to black. */
+       which is an invalid SVG <paint> value and falls back to black.
+
+       Frozen legacy values: these are the pre-#255 hand-picked Cherry, Blueberry
+       and Grape accents. They no longer match any theme — the derived palette
+       moved. Decorative only, on an animated mascot, so no contrast requirement.
+       Keep them or repick them deliberately; do not assume they track the
+       themes. */
     --octo-c1: #ea6c85;
     --octo-c2: #6393f2;
     --octo-c3: #b679f0;
@@ -116,7 +152,8 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 @layer base {
   /* Octo colour-cycle light stops — defined here (not in @theme) so they are
      plain custom properties that Lightning CSS leaves alone. See dark overrides
-     in @layer theme above for why light-dark() is avoided. */
+     in @layer theme above for why light-dark() is avoided, and for why these six
+     are frozen legacy values rather than theme colours. */
   :root {
     --octo-c1: #de1f46;
     --octo-c2: #376ddb;
@@ -254,7 +291,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     z-index: 999;
     padding: 0.5rem 1rem;
     background-color: var(--color-accent);
-    color: var(--color-on-accent);
+    color: var(--color-bg);
     font-weight: 600;
     border-radius: 0.25rem;
   }
@@ -297,7 +334,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   [data-menu] .menu-item:hover,
   [data-menu] .menu-item:focus-visible {
     background-color: transparent;
-    color: var(--color-accent-strong);
+    color: var(--color-accent);
   }
   [data-menu] .menu-item svg {
     color: inherit;
@@ -307,32 +344,72 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
 
   /* ─── Accent colour swatches (menu) ─── */
-  [data-swatches] {
-    /* radiogroup wrapper */
-  }
   .swatch-btn {
-    width: 24px;
-    height: 24px;
+    position: relative;
+    width: 32px;
+    height: 32px;
     border-radius: 9999px;
     border: none;
     padding: 0;
     cursor: pointer;
-    background: var(--swatch-light);
-    box-shadow: 0 0 0 2px transparent;
-    transition: box-shadow 150ms ease;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    --swatch-colour: oklch(var(--accent-l) var(--swatch-cl) var(--swatch-h));
+    /* The tint the lit mini digit box beside each clue uses (app.ts:
+       border-accent bg-accent/50). */
+    --swatch-tint: color-mix(in srgb, var(--swatch-colour) 50%, transparent);
   }
+  /* Kept, unlike the rest of the dark colour rules: --accent-l flips on its own
+     but swatch chroma cannot, because each dot carries its own pair (#255). */
   html.dark .swatch-btn {
-    background: var(--swatch-dark);
+    --swatch-colour: oklch(var(--accent-l) var(--swatch-cd) var(--swatch-h));
   }
-  .swatch-btn[aria-checked="true"] {
-    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text);
+
+  /* Every swatch renders the same: line art in its theme colour, filled with
+     that colour at 50%. Selection is marked by the arrow below, not by changing
+     the fruit — so the four stay directly comparable. */
+  .swatch-fruit {
+    width: 24px;
+    height: 24px;
+    color: var(--swatch-colour);
+    --icon-fill: var(--swatch-tint);
+    pointer-events: none;
   }
+
+  /* Sits outside the button box so the button stays square and its focus ring
+     stays circular. [data-swatches] carries the bottom padding that makes room.
+     Text colour, not the theme colour: it is a pointer, not another swatch. */
+  .swatch-arrow {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 1px;
+    width: 14px;
+    height: 14px;
+    color: var(--color-text);
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .swatch-btn[aria-checked="true"] .swatch-arrow {
+    visibility: visible;
+  }
+
+  /* outline rather than a box-shadow ring: the menu panel is --color-surface,
+     not --color-bg, so a shadow gap would have to guess the backdrop colour.
+     outline-offset leaves a real transparent gap instead. */
   .swatch-btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text);
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .swatch-btn { transition: none; }
+
+  /* Menu section rule. Inset to the menu items' own horizontal padding rather
+     than spanning the panel, and the same 1px --color-border as the header. */
+  .menu-sep {
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    margin: 0.5rem 1rem;
   }
 
   /* ─── Save score row — hidden by default, shown when submit sibling is visible ─── */
@@ -397,35 +474,42 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     justify-content: center;
     color: var(--color-text);
   }
+  /* Eliminated digits are struck through as well as faded — the fade alone was
+     easy to miss on a phone. Digit and rule sit at the same 18%: the digit up
+     from 12% so the strike has something to cross, the strike down from double
+     so it reads as struck rather than scored out. Because both want the same
+     alpha, plain opacity does it — it multiplies the strike along with the
+     digit, which is exactly what is wanted here. */
   .digit-box__grid span.elim {
-    opacity: 0.12;
+    opacity: 0.18;
+    text-decoration: line-through;
   }
 }
 
 @layer utilities {
   /* Counter warn colour — toggled by modals.ts counterEl.classList.add("warn") */
-  .warn { color: var(--color-accent-strong); }
+  .warn { color: var(--color-accent); }
 
   /* ─── Standard inline link style (LNK-01) ─── */
   /* Accent green text, 1px solid accent bottom border, 2px bottom padding,
      no text-decoration. Applied via class="link" on <a> elements. */
   .link {
-    color: var(--color-accent-strong);
-    border-block-end: 1px solid var(--color-accent-strong);
+    color: var(--color-accent);
+    border-block-end: 1px solid var(--color-accent);
     padding-block-end: 2px;
     text-decoration: none;
   }
   .link:hover,
   .link:focus-visible {
-    color: var(--color-accent-strong);
-    border-block-end-color: var(--color-accent-strong);
+    color: var(--color-accent);
+    border-block-end-color: var(--color-accent);
   }
 
   /* Category pill selected state — JS toggles aria-checked; CSS styles it */
   .fb-cat[aria-checked="true"] {
     background-color: var(--color-accent);
     border-color: var(--color-accent);
-    color: var(--color-on-accent);
+    color: var(--color-bg);
   }
 
   /* Toast element — replaces legacy toast__msg; show class toggled by modals.ts */
@@ -467,14 +551,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   .btn-solid {
     background: var(--color-accent);
-    color: var(--color-on-accent);
+    color: var(--color-bg);
     border: 1.5px solid var(--color-accent);
   }
   .btn-solid:hover { filter: brightness(1.08); }
   .btn-hollow {
     background: transparent;
-    color: var(--color-accent-strong);
-    border: 1.5px solid var(--color-accent-strong);
+    color: var(--color-accent);
+    border: 1.5px solid var(--color-accent);
   }
   .btn-hollow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
   .btn-sm {

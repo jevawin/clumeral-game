@@ -84,10 +84,10 @@ test.describe("header menu", () => {
     const menu = new MenuPage(page);
 
     await menu.open();
-    await menu.swatch("Berry").click();
-    expect(await page.evaluate(() => localStorage.getItem("dlng_colour"))).toBe("Berry");
+    await menu.swatch("Cherry").click();
+    expect(await page.evaluate(() => localStorage.getItem("dlng_colour"))).toBe("Cherry");
 
     await page.reload();
-    expect(await page.evaluate(() => localStorage.getItem("dlng_colour"))).toBe("Berry");
+    expect(await page.evaluate(() => localStorage.getItem("dlng_colour"))).toBe("Cherry");
   });
 });

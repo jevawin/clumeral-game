@@ -1,7 +1,7 @@
 import { test, expect } from "../fixtures.ts";
 import AxeBuilder from "@axe-core/playwright";
 import { gotoPlayableGame } from "../helpers/game-setup.ts";
-import { seedHistory, seedLastVisit } from "../helpers/storage.ts";
+import { seedHistory, seedLastVisit, seedTheme } from "../helpers/storage.ts";
 import { freezeDate } from "../helpers/clock.ts";
 import { waitForScreenSettled } from "../helpers/screens.ts";
 import { MenuPage } from "../pages/menu.page.ts";
@@ -23,9 +23,12 @@ async function seriousViolations(page: import("@playwright/test").Page) {
 const A11Y_PROJECTS = ["chromium-desktop", "mobile-chromium"];
 
 // This axe pass runs BOTH colour schemes. It was light-only while #243 was open
-// (white-on-accent solid buttons, ~2.9:1 in dark) — that bug is now fixed by the
-// --color-on-accent token, so dark mode is a real gate rather than a known-red
-// one. colorScheme is pinned per describe so each run is deterministic regardless
+// (white-on-accent solid buttons, ~2.9:1 in dark) — solid-fill text is now the
+// page bg (#255 removed the --color-on-accent token that first fixed it), so
+// dark mode is a real gate rather than a known-red one. #255 also fixed the
+// accent-on-surface failure #254 shipped: contrast now rides on a shared
+// --accent-l, so every theme clears AA by construction.
+// colorScheme is pinned per describe so each run is deterministic regardless
 // of the runner's OS preference; GitHub's CI runner defaults to dark, which is
 // how #243 surfaced in the first place.
 for (const scheme of ["light", "dark"] as const) {
@@ -95,6 +98,49 @@ for (const scheme of ["light", "dark"] as const) {
       expect(await seriousViolations(page)).toEqual([]);
     });
   });
+}
+
+// Every scan above runs on the default accent, Lime. The other three themes
+// change --accent-h and --accent-c, and while the AA guarantee is structural —
+// contrast rides on the shared --accent-l, asserted over the shipping numbers in
+// tests/palette-contrast.spec.ts — that maths models flat accent-on-background.
+// It does not model focus rings, tinted fills, or a border and its text in
+// combination. So scan each theme for real (#255 DA review).
+//
+// The open menu is the surface worth spending the runs on: it is where accent
+// text sits on --color-surface rather than --color-bg, which is the pairing #254
+// shipped below AA, and it is the only screen showing all four swatches at once.
+// Seeded via localStorage so the theme is applied at boot rather than by clicking.
+for (const scheme of ["light", "dark"] as const) {
+  for (const colour of ["Cherry", "Blueberry", "Grape"] as const) {
+    test.describe(`accessibility — ${colour} ${scheme} (axe — serious/critical)`, () => {
+      test.use({ colorScheme: scheme });
+
+      test.beforeEach(({}, testInfo) => {
+        test.skip(
+          !A11Y_PROJECTS.includes(testInfo.project.name),
+          "axe DOM/contrast checks are engine-independent — run on Chromium desktop + mobile",
+        );
+        test.slow();
+      });
+
+      test("game screen and open menu have no serious/critical violations", async ({ page }) => {
+        await seedTheme(page, { colour });
+        await gotoPlayableGame(page);
+        await waitForScreenSettled(page, "game");
+
+        // Confirm the seed actually took before trusting a green scan — a typo in
+        // the theme name would silently fall back to Lime and scan it three times.
+        await expect(page.locator("html")).toHaveAttribute("data-theme", colour);
+        expect(await seriousViolations(page)).toEqual([]);
+
+        const menu = new MenuPage(page);
+        await menu.open();
+        await expect(menu.menu).toBeVisible();
+        expect(await seriousViolations(page)).toEqual([]);
+      });
+    });
+  }
 }
 
 // Scheme-independent — focus order doesn't vary by colour, so run it once.

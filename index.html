@@ -66,17 +66,17 @@
           <p class="text-text text-base font-[Quicksand] mt-3 mb-2">Type (optional):</p>
 
           <div data-fb-cats role="radiogroup" aria-label="Feedback category" class="flex flex-wrap gap-2 mb-3">
-            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent-strong text-accent-strong bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
                     data-cat="bug" role="radio" aria-checked="false">
               <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-bug"/></svg>
               Bug
             </button>
-            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent-strong text-accent-strong bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
                     data-cat="suggestion" role="radio" aria-checked="false">
               <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-lightbulb"/></svg>
               Idea
             </button>
-            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent-strong text-accent-strong bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
+            <button class="fb-cat flex flex-1 items-center justify-center gap-2 px-4 py-2 rounded-md text-base font-[Quicksand] border-[1.5px] border-accent text-accent bg-transparent cursor-pointer transition-[background-color,color,border-color] duration-150"
                     data-cat="praise" role="radio" aria-checked="false">
               <svg width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-heart"/></svg>
               Praise
@@ -177,23 +177,27 @@
       <!-- Menu dropdown — anchored to the header right edge -->
       <div id="app-menu" data-menu role="dialog" aria-label="App menu"
            class="hidden absolute top-14 right-0 z-40 min-w-[200px] py-2 bg-surface border border-border rounded-lg shadow-lg">
-        <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent-strong focus-visible:text-accent-strong font-[Quicksand]" type="button">
+        <button data-fb-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-message-square-share"/></svg>
           Feedback
         </button>
-        <button data-htp-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent-strong focus-visible:text-accent-strong font-[Quicksand]" type="button">
+        <button data-htp-btn class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-help"/></svg>
           How to play
         </button>
-        <a data-menu-archive href="/archive" class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent-strong focus-visible:text-accent-strong font-[Quicksand]">
+        <a data-menu-archive href="/archive" class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]">
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-archive"/></svg>
           Archive
         </a>
-        <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent-strong focus-visible:text-accent-strong font-[Quicksand]" type="button">
+        <button data-theme-toggle class="menu-item flex items-center gap-3 px-4 py-3 w-full text-left text-base text-text hover:text-accent focus-visible:text-accent font-[Quicksand]" type="button">
           <svg width="20" height="20" aria-hidden="true"><use href="/sprites.svg#icon-moon"/></svg>
           <span data-theme-label>Dark mode</span>
         </button>
-        <div data-swatches class="flex items-center gap-3 px-4 py-2"></div>
+        <hr class="menu-sep" />
+        <p class="px-4 pt-1 pb-1 text-base text-text font-[Quicksand]">
+          Theme: <span data-theme-name class="font-bold text-accent"></span>
+        </p>
+        <div data-swatches class="flex items-center gap-3 px-4 pt-1 pb-5"></div>
       </div>
 
     <!-- ── New screen architecture (Phase 1) ── -->

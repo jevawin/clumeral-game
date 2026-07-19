@@ -267,7 +267,7 @@ function renderClues(clues: ClueData[]): void {
     clueEl.setAttribute("role", "listitem");
     clueEl.innerHTML = `
       <div class="flex flex-col gap-2">
-        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent-strong bg-accent/5 text-accent-strong font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
+        <button class="flex items-center justify-between gap-1 px-1 h-[1.375rem] rounded border border-accent bg-accent/5 text-accent font-mono text-base font-bold uppercase tracking-wide" type="button" data-clue-tag aria-label="${tag} — tap for definition">
           <span>${tag}</span>
           <svg width="14" height="14" class="stroke-[2.5]" aria-hidden="true"><use href="/sprites.svg#icon-info"/></svg>
         </button>
@@ -281,7 +281,7 @@ function renderClues(clues: ClueData[]): void {
 
     const l1El = clueEl.querySelector("[data-clue-line1]");
     const leadHtml = leadText.replace(/\b(all three|mean|sum|range|product|difference|first|second|third)\b/gi, '<span class="font-bold">$1</span>');
-    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent-strong whitespace-nowrap">${emphHtml}</span>`;
+    if (l1El) l1El.innerHTML = `${leadHtml} <span class="font-bold text-accent whitespace-nowrap">${emphHtml}</span>`;
     dom.clueList.appendChild(clueEl);
   }
 }
@@ -385,7 +385,10 @@ function buildKeypad() {
     const elim = disabled || !possibles[activeBox].has(d);
     btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
       elim
-        ? 'bg-surface text-text/25 border-border shadow-none'
+        ? // Struck through as well as faded, matching the digit boxes. No
+          // decoration colour: the rule inherits currentColor, so it lands at
+          // the same alpha as the digit it crosses.
+          'bg-surface text-text/25 border-border shadow-none line-through'
         : 'bg-surface text-text border-border shadow-key'
     }`;
     btn.textContent = String(d);
@@ -901,7 +904,9 @@ function initMenu(): void {
 
   document.querySelector('[data-menu-close]')?.addEventListener('click', closeMenu);
 
-  // Archive is an anchor (client-routed); close the menu when it's chosen.
+  // Archive is a plain anchor — a full document load, not a client-side route.
+  // Closing the menu is belt-and-braces for the back-navigation case; the
+  // current document is about to be replaced either way.
   menu.querySelector('[data-menu-archive]')?.addEventListener('click', closeMenu);
 
   document.addEventListener('click', (e) => {
