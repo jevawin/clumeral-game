@@ -167,12 +167,25 @@ export function initRouter(d: RouterDeps): void {
   // never sees a stale /play or /solved screen briefly. Only triggers if the
   // user has a stored prior-visit date and it's older than today; first-time
   // visitors fall through to whatever route they requested.
+  // Read the archive marker BEFORE the rollover redirect runs. That redirect
+  // rewrites location.pathname via replaceState, so reading it afterwards would
+  // see /welcome and lose the marker — for exactly the returning player the
+  // marker exists to serve, since browsing /archive on a later day is the
+  // normal case (#255 DA review).
+  const fromArchive =
+    location.pathname === '/play' &&
+    new URLSearchParams(location.search).get('from') === 'archive';
+
   let coldRedirect: string | null = null;
   try {
     const prior = localStorage.getItem(LAST_VISIT_KEY);
     // /archive/* is a deliberate date-anchored deep-link — never rollover-redirect.
     const isArchive = location.pathname === '/archive' || location.pathname.startsWith('/archive/');
-    if (prior && prior < today && location.pathname !== '/welcome' && !isArchive) {
+    // Same exemption for the archive's Show-puzzle link. Rollover means a prior
+    // /play view is stale, but this is not a stale view — it is a fresh request
+    // for today's puzzle, which after rollover is the new day's puzzle. That is
+    // what /play renders anyway.
+    if (prior && prior < today && location.pathname !== '/welcome' && !isArchive && !fromArchive) {
       coldRedirect = '/welcome';
     }
     localStorage.setItem(LAST_VISIT_KEY, today);
@@ -210,11 +223,8 @@ export function initRouter(d: RouterDeps): void {
   // document boundary so the link lands where it says it will.
   //
   // Deliberately narrow: only /play, only this marker. A bare /play deep-link
-  // still redirects exactly as before.
-  const fromArchive =
-    location.pathname === '/play' &&
-    new URLSearchParams(location.search).get('from') === 'archive';
-
+  // still redirects exactly as before. fromArchive is computed at the top of
+  // this function, before the rollover redirect can rewrite the pathname.
   if (fromArchive) {
     // Drop the marker before the first navigate. It is a one-shot instruction,
     // not something that should sit in history, get shared, or survive a reload.

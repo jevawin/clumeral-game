@@ -904,7 +904,9 @@ function initMenu(): void {
 
   document.querySelector('[data-menu-close]')?.addEventListener('click', closeMenu);
 
-  // Archive is an anchor (client-routed); close the menu when it's chosen.
+  // Archive is a plain anchor — a full document load, not a client-side route.
+  // Closing the menu is belt-and-braces for the back-navigation case; the
+  // current document is about to be replaced either way.
   menu.querySelector('[data-menu-archive]')?.addEventListener('click', closeMenu);
 
   document.addEventListener('click', (e) => {

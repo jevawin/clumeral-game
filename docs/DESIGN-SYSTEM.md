@@ -14,6 +14,14 @@ Every colour computes from a small set of declared values in
 [src/palette.ts](../src/palette.ts), which is the single source of truth for the
 CSS, the Worker mirror and the tests.
 
+The CSS cannot import it, so that claim is enforced rather than assumed:
+[tests/token-parity.spec.ts](../tests/token-parity.spec.ts) compares `palette.ts`
+against **both** stylesheets, three-way. Two-way parity between the stylesheets
+alone would let them drift together away from `palette.ts` — and since
+[tests/palette-contrast.spec.ts](../tests/palette-contrast.spec.ts) asserts AA
+from `palette.ts`, that drift would ship a sub-4.5:1 palette with a green suite.
+Change a declared value in one place only and the parity test names the other two.
+
 ```
 bases          dark #121213 · light #FAFAFA
 surfaces       dark #2A2A2B · light #FFFFFF
@@ -111,6 +119,15 @@ it follows the mode without an override.
 - **`--octo-c1/2/3` stay hardcoded hex.** They cannot use `var()` inside SVG
   `fill` keyframes — Lightning CSS rewrites it to an invalid `<paint>` value that
   falls back to black (#210). Six values, decorative, no contrast requirement.
+  They are **frozen legacy values** — the pre-#255 hand-picked Cherry, Blueberry
+  and Grape accents. They no longer match any theme and do not track the palette.
+- **`--color-border` has a light-only build fallback.** Lightning CSS emits
+  `--color-border:#2626241f` ahead of the live `color-mix`, and that literal is
+  light-mode text at 12% with no dark counterpart. Every browser that supports
+  `color-mix` (Baseline since 2023) takes the live value and is correct in both
+  modes; a browser older than that gets near-invisible borders in dark mode.
+  Accepted: adding a hardcoded dark literal to fix a pre-2023 path would
+  reintroduce the per-mode hand-maintained value this system exists to remove.
 - **The Worker mirrors the tokens.** See below.
 
 ### Build constraints

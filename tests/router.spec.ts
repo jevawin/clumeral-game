@@ -66,6 +66,37 @@ describe('archive Show-puzzle deep link (#255)', () => {
     expect(location.search).toBe('');
   });
 
+  // The normal case for someone browsing /archive: they last opened the SPA on
+  // an earlier day. The cold-load rollover redirect fires first and rewrites the
+  // pathname to /welcome via replaceState, so a marker read after that point is
+  // already gone. This is the case the other four tests here missed — they all
+  // leave dlng_last_visit_date unset, which skips the rollover branch entirely.
+  it('honours /play?from=archive when the last visit was a previous day', () => {
+    localStorage.setItem('dlng_last_visit_date', '2026-05-02');
+    setPath('/play?from=archive');
+    initRouter({
+      hasData: () => true,
+      todayLocal: () => '2026-05-03',
+      todayEntry: () => null,
+      midInteraction: () => false,
+    });
+    expect(showScreen).toHaveBeenCalledWith('game');
+    expect(location.pathname).toBe('/play');
+  });
+
+  // The exemption must not leak: a bare /play on a new day is still stale.
+  it('still rollover-redirects a bare /play when the last visit was a previous day', () => {
+    localStorage.setItem('dlng_last_visit_date', '2026-05-02');
+    setPath('/play');
+    initRouter({
+      hasData: () => true,
+      todayLocal: () => '2026-05-03',
+      todayEntry: () => null,
+      midInteraction: () => false,
+    });
+    expect(location.pathname).toBe('/welcome');
+  });
+
   it('still redirects a bare /play deep link when today is solved', () => {
     setPath('/play');
     initRouter({

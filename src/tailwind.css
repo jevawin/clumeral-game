@@ -136,7 +136,13 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     /* Octo colour-cycle dark stops — plain custom properties so Lightning CSS
        cannot mangle them. light-dark() cannot be used in SVG fill keyframes
        because Lightning CSS rewrites it to two concatenated var() expressions,
-       which is an invalid SVG <paint> value and falls back to black. */
+       which is an invalid SVG <paint> value and falls back to black.
+
+       Frozen legacy values: these are the pre-#255 hand-picked Cherry, Blueberry
+       and Grape accents. They no longer match any theme — the derived palette
+       moved. Decorative only, on an animated mascot, so no contrast requirement.
+       Keep them or repick them deliberately; do not assume they track the
+       themes. */
     --octo-c1: #ea6c85;
     --octo-c2: #6393f2;
     --octo-c3: #b679f0;
@@ -146,7 +152,8 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 @layer base {
   /* Octo colour-cycle light stops — defined here (not in @theme) so they are
      plain custom properties that Lightning CSS leaves alone. See dark overrides
-     in @layer theme above for why light-dark() is avoided. */
+     in @layer theme above for why light-dark() is avoided, and for why these six
+     are frozen legacy values rather than theme colours. */
   :root {
     --octo-c1: #de1f46;
     --octo-c2: #376ddb;
@@ -337,9 +344,6 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
 
   /* ─── Accent colour swatches (menu) ─── */
-  [data-swatches] {
-    /* radiogroup wrapper */
-  }
   .swatch-btn {
     position: relative;
     width: 32px;

@@ -113,7 +113,10 @@ function renderSwatches(): void {
 
 export function initColours(): void {
   const saved = localStorage.getItem(STORAGE_COLOUR);
-  const migrated = saved ? (LEGACY_NAMES[saved] ?? saved) : null;
+  // hasOwn, not a plain lookup: a stored '__proto__' or 'constructor' would
+  // otherwise resolve to an inherited member of the object literal, take the
+  // migrated branch, and clobber the stored value.
+  const migrated = saved ? (Object.hasOwn(LEGACY_NAMES, saved) ? LEGACY_NAMES[saved] : saved) : null;
   const found = migrated ? THEMES.find((t) => t.name === migrated) : null;
   active = found ?? THEMES.find((t) => t.name === 'Lime')!;
 
