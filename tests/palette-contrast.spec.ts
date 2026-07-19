@@ -46,23 +46,33 @@ describe('palette AA guarantee', () => {
     }
   });
 
-  it.each(modes)('%s semantics clear AA and stay clear of the accent band', (mode) => {
-    const { accentL, semanticL, bg, surface } = PALETTE[mode];
-    for (const [name, { hue, chroma }] of Object.entries(PALETTE.semantics)) {
-      const hex = oklchToHex(semanticL, chroma, hue);
+  // Semantics alias two of the themes rather than carrying their own hue,
+  // chroma and lightness, so there is no separate band to police — they inherit
+  // the accent guarantee. What is worth asserting is that the aliasing actually
+  // holds, since a hand-edited literal here would silently reintroduce a colour
+  // that has never been contrast-checked.
+  it.each(modes)('%s semantics alias a real theme and clear AA', (mode) => {
+    const { accentL, accentC, bg, surface } = PALETTE[mode];
+    for (const [name, theme] of Object.entries(PALETTE.semantics)) {
+      expect(themes, `${name} aliases an unknown theme`).toContain(theme);
+      const hex = oklchToHex(accentL, accentC[theme], PALETTE.hues[theme]);
       expect(contrastRatio(hex, bg), `${name} on bg`).toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio(hex, surface), `${name} on surface`).toBeGreaterThanOrEqual(4.5);
     }
-    // The lightness gap is what keeps success readable under Lime and error
-    // readable under Berry, where hue separation alone is 5 deg and 22 deg.
-    //
-    // Light runs a narrower band (0.06) than dark (0.10). Green's sRGB ceiling
-    // at L=0.40 is 0.110 — exactly the declared chroma — so the light success
-    // green is already as vivid as the gamut allows and can only be lifted by
-    // raising L, which spends the band. Dark has headroom to 0.187 and needs no
-    // such trade. Anything below 0.06 was visibly too close to Lime.
-    const floor = mode === 'light' ? 0.06 : 0.09;
-    expect(Math.abs(accentL - semanticL)).toBeGreaterThanOrEqual(floor);
+  });
+
+  // Colour is not the only signal for success/error — the tick and cross icons
+  // carry the meaning (WCAG 1.4.1), which is what lets the semantics sit at the
+  // same lightness as the accent. If those icons are ever removed, this aliasing
+  // has to be revisited.
+  it('success and error are distinct from each other', () => {
+    for (const mode of modes) {
+      const { accentL, accentC } = PALETTE[mode];
+      const { success, error } = PALETTE.semantics;
+      expect(oklchToHex(accentL, accentC[success], PALETTE.hues[success])).not.toBe(
+        oklchToHex(accentL, accentC[error], PALETTE.hues[error])
+      );
+    }
   });
 
   it('bg text clears AA on both bg and surface in both modes', () => {

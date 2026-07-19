@@ -47,17 +47,21 @@
      pairings to verify — tests/palette-contrast.spec.ts covers it. */
 
   --accent-l: 0.50;
-  /* Declared per mode rather than derived from --accent-l. The band is 0.06 in
-     light and 0.10 in dark: green is gamut-crushed at the bottom of the scale,
-     so the light success green can only be made more vivid by lifting L, while
-     dark has chroma headroom and keeps the wider gap from the accent. */
-  --semantic-l: 0.44;
 
-  /* Hue and chroma per theme. colours.ts sets data-theme on <html>; the rules
-     below @theme resolve both from it, so the mode half of the mapping stays in
-     CSS and applyColour needs no light/dark branch. Defaults are Lime's. */
+  /* One chroma per hue per mode. Declared here and re-declared in html.dark;
+     everything downstream references these rather than repeating the numbers,
+     so each value exists once per mode. */
+  --chroma-lime:   0.157;
+  --chroma-berry:  0.201;
+  --chroma-blue:   0.178;
+  --chroma-violet: 0.237;
+
+  /* Hue and chroma of the active theme. colours.ts sets data-theme on <html>;
+     the rules below @theme resolve both from it, so the mode half of the
+     mapping stays in CSS and applyColour needs no light/dark branch. Defaults
+     are Lime's. */
   --accent-h: 145;
-  --accent-c: 0.157;
+  --accent-c: var(--chroma-lime);
 
   --color-bg:      #FAFAFA;
   --color-surface: #FFFFFF;
@@ -65,14 +69,16 @@
   --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
   --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
 
-  /* Success / error must stay green and red whichever accent is active. At a
-     fixed accent lightness, hue is the only differentiator left — and success
-     (H 150) sits 5 deg from Lime, error (H 27) sits 22 deg from Berry. The
-     lightness step is what keeps them readable as feedback rather than as
-     ordinary accent text. Deeper rather than lighter in both modes: pushing the
-     dark semantics up collapses red's gamut ceiling to a pale pink. */
-  --color-success: oklch(var(--semantic-l) 0.11 150);
-  --color-error:   oklch(var(--semantic-l) 0.14 27);
+  /* Success and error are the Lime and Berry themes reused, not colours of their
+     own — same lightness, same chroma, same hue. Meaning is carried by the tick
+     and cross icons beside the text, so these do not have to stay distinguishable
+     from the active accent, and colour is never the only signal (WCAG 1.4.1).
+
+     That removes the semantic lightness band, both semantic hues, and both
+     semantic chromas. It also removes the tightest pairing in the system: error
+     dark on surface was 4.70, and the worst semantic ratio is now 5.36. */
+  --color-success: oklch(var(--accent-l) var(--chroma-lime) 145);
+  --color-error:   oklch(var(--accent-l) var(--chroma-berry) 5);
 
   /* Offset shadows derive from theme tokens so they follow dark mode and the
      selected accent. --color-text / --color-accent are live custom properties
@@ -89,21 +95,18 @@
 /* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
    sets data-theme on <html> and these resolve both values from it.
 
-   Chroma is min(today's chroma, the hue's sRGB ceiling at --accent-l), truncated
-   to 3dp. Rounding to nearest pushes Berry dark past its 0.135523 limit and out
-   of gamut, which clips and shifts lightness — the one thing the AA guarantee
-   rests on. tests/palette-contrast.spec.ts checks the gamut, not just the ratio. */
-html[data-theme="Lime"]   { --accent-h: 145; --accent-c: 0.157; }
-html[data-theme="Berry"]  { --accent-h: 5;   --accent-c: 0.201; }
-html[data-theme="Blue"]   { --accent-h: 262; --accent-c: 0.178; }
-html[data-theme="Violet"] { --accent-h: 305; --accent-c: 0.237; }
+   No dark counterparts: --chroma-* already flips in html.dark, and var() here
+   resolves against the same element, so these four rules cover both modes.
 
-/* Dark chroma is lower for every theme but Lime: L=0.78 leaves less sRGB room
-   for saturation. Hue does not vary by mode, so it is not repeated. */
-html.dark[data-theme="Lime"]   { --accent-c: 0.174; }
-html.dark[data-theme="Berry"]  { --accent-c: 0.135; }
-html.dark[data-theme="Blue"]   { --accent-c: 0.111; }
-html.dark[data-theme="Violet"] { --accent-c: 0.140; }
+   The chroma values themselves are min(today's chroma, the hue's sRGB ceiling
+   at --accent-l), truncated to 3dp. Rounding to nearest pushes Berry dark past
+   its 0.135523 limit and out of gamut, which clips and shifts lightness — the
+   one thing the AA guarantee rests on. tests/palette-contrast.spec.ts checks
+   the gamut, not just the ratio. */
+html[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); }
+html[data-theme="Berry"]  { --accent-h: 5;   --accent-c: var(--chroma-berry); }
+html[data-theme="Blue"]   { --accent-h: 262; --accent-c: var(--chroma-blue); }
+html[data-theme="Violet"] { --accent-h: 305; --accent-c: var(--chroma-violet); }
 
 /* Default body font — Quicksand 300 to match the clue lead style. Buttons / headings / tag pills override via font-bold etc. */
 html, body { font-family: var(--font-sans); font-weight: 400; }
@@ -117,8 +120,11 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
        it is what /archive renders with, since the Worker mirror carries no
        per-theme rules. Keep equal to the Worker's :root.dark value or
        tests/token-parity.spec.ts fails. */
-    --accent-c: 0.174;
-    --semantic-l: 0.68;
+    --chroma-lime:   0.174;
+    --chroma-berry:  0.135;
+    --chroma-blue:   0.111;
+    --chroma-violet: 0.140;
+    --accent-c: var(--chroma-lime);
 
     --color-bg:      #121213;
     --color-surface: #2A2A2B;

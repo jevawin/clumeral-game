@@ -12,10 +12,16 @@
 export const PALETTE = {
   hues: { Lime: 145, Berry: 5, Blue: 262, Violet: 305 },
 
-  semantics: {
-    success: { hue: 150, chroma: 0.11 },
-    error: { hue: 27, chroma: 0.14 },
-  },
+  // success and error are not colours of their own: they alias two of the themes
+  // and resolve at the accent lightness and that theme's chroma. Meaning is
+  // carried by the tick and cross icons beside the text, so they do not need to
+  // stay distinguishable from the active accent, and colour is never the only
+  // signal (WCAG 1.4.1).
+  //
+  // This removes the semantic lightness band, both semantic hues and both
+  // semantic chromas, and with them the tightest pairing in the system — error
+  // dark on surface was 4.70; the worst semantic ratio is now 5.36.
+  semantics: { success: 'Lime', error: 'Berry' },
 
   light: {
     bg: '#FAFAFA',
@@ -25,13 +31,6 @@ export const PALETTE = {
     // min(today's chroma, the hue's sRGB ceiling at accentL). Lime and Berry are
     // ceiling-capped; Blue and Violet sit at today's value with room to spare.
     accentC: { Lime: 0.157, Berry: 0.201, Blue: 0.178, Violet: 0.237 },
-    // 0.06 below the accent, not the 0.10 dark uses. Green is gamut-crushed at
-    // the bottom of the scale — at L=0.40 the ceiling for H 150 is 0.110, which
-    // is already the declared chroma, so the green cannot be made more vivid
-    // except by lifting L. Dark has headroom (ceiling 0.187 at L=0.68) and so
-    // keeps the wider band. The cost is a narrower gap from the Lime accent;
-    // checked by eye on the completed game screen, where the two sit together.
-    semanticL: 0.44,
   },
 
   dark: {
@@ -45,6 +44,5 @@ export const PALETTE = {
     // chroma, so these are gamut limits rather than choices. Lime could reach
     // 0.245 and is held at today's value instead.
     accentC: { Lime: 0.174, Berry: 0.135, Blue: 0.111, Violet: 0.14 },
-    semanticL: 0.68,
   },
 } as const;

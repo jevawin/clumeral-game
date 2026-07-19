@@ -62,22 +62,28 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
        /archive has no swatch UI but does honour the saved accent, so the
        per-theme rules are mirrored too — see below the base blocks. */
     --accent-l: 0.50;
-    --semantic-l: 0.44;
+    --chroma-lime:   0.157;
+    --chroma-berry:  0.201;
+    --chroma-blue:   0.178;
+    --chroma-violet: 0.237;
     --accent-h: 145;
-    --accent-c: 0.157;
+    --accent-c: var(--chroma-lime);
     --color-bg:      #FAFAFA;
     --color-surface: #FFFFFF;
     --color-text:    #262624;
     --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
     --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
-    --color-success: oklch(var(--semantic-l) 0.11 150);
-    --color-error:   oklch(var(--semantic-l) 0.14 27);
+    --color-success: oklch(var(--accent-l) var(--chroma-lime) 145);
+    --color-error:   oklch(var(--accent-l) var(--chroma-berry) 5);
   }
   :root.dark {
     color-scheme: dark;
     --accent-l: 0.78;
-    --accent-c: 0.174;
-    --semantic-l: 0.68;
+    --chroma-lime:   0.174;
+    --chroma-berry:  0.135;
+    --chroma-blue:   0.111;
+    --chroma-violet: 0.140;
+    --accent-c: var(--chroma-lime);
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
     --color-text:    #FAF8F4;
@@ -88,14 +94,10 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
      src/tailwind.css. The inline script above sets the attribute from the saved
      accent. Chroma is truncated to 3dp, never rounded: Berry dark's sRGB ceiling
      is 0.135523, so 0.136 would clip and shift lightness. */
-  :root[data-theme="Lime"]   { --accent-h: 145; --accent-c: 0.157; }
-  :root[data-theme="Berry"]  { --accent-h: 5;   --accent-c: 0.201; }
-  :root[data-theme="Blue"]   { --accent-h: 262; --accent-c: 0.178; }
-  :root[data-theme="Violet"] { --accent-h: 305; --accent-c: 0.237; }
-  :root.dark[data-theme="Lime"]   { --accent-c: 0.174; }
-  :root.dark[data-theme="Berry"]  { --accent-c: 0.135; }
-  :root.dark[data-theme="Blue"]   { --accent-c: 0.111; }
-  :root.dark[data-theme="Violet"] { --accent-c: 0.140; }
+  :root[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); }
+  :root[data-theme="Berry"]  { --accent-h: 5;   --accent-c: var(--chroma-berry); }
+  :root[data-theme="Blue"]   { --accent-h: 262; --accent-c: var(--chroma-blue); }
+  :root[data-theme="Violet"] { --accent-h: 305; --accent-c: var(--chroma-violet); }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: "Quicksand", system-ui, sans-serif; }

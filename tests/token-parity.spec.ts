@@ -16,7 +16,10 @@ const TOKENS = [
   '--accent-l',
   '--accent-c',
   '--accent-h',
-  '--semantic-l',
+  '--chroma-lime',
+  '--chroma-berry',
+  '--chroma-blue',
+  '--chroma-violet',
   '--color-bg',
   '--color-surface',
   '--color-text',
@@ -51,13 +54,33 @@ describe('token parity: tailwind.css vs the Worker inline style', () => {
     expect(declarations(worker, ':root\\.dark')).toEqual(declarations(tailwind, 'html\\.dark'));
   });
 
-  it.each(['Lime', 'Berry', 'Blue', 'Violet'])('%s hue and chroma agree in both modes', (theme) => {
+  // One rule per theme, covering both modes: --accent-c points at --chroma-*,
+  // which is re-declared in the dark base block. The dark-mode test above
+  // compares those, so there are no dark per-theme rules to check here.
+  it.each(['Lime', 'Berry', 'Blue', 'Violet'])('%s hue and chroma agree', (theme) => {
     expect(declarations(worker, `:root\\[data-theme="${theme}"\\]`)).toEqual(
       declarations(tailwind, `html\\[data-theme="${theme}"\\]`)
     );
-    expect(declarations(worker, `:root\\.dark\\[data-theme="${theme}"\\]`)).toEqual(
-      declarations(tailwind, `html\\.dark\\[data-theme="${theme}"\\]`)
-    );
+  });
+
+  // success and error alias the Lime and Berry themes (#255). Asserted against
+  // the stylesheet text rather than the computed values, because the failure
+  // mode is someone hand-editing a literal back in — which would ship a colour
+  // that has never been contrast-checked, while every computed test still
+  // passed.
+  it.each([
+    ['--color-success', '--chroma-lime', '145'],
+    ['--color-error', '--chroma-berry', '5'],
+  ])('%s is the accent lightness at the aliased theme hue', (token, chroma, hue) => {
+    const expected = `oklch(var(--accent-l) var(${chroma}) ${hue})`;
+    for (const [label, css] of [
+      ['tailwind.css', tailwind],
+      ['worker', worker],
+    ] as const) {
+      const m = new RegExp(`${token}\\s*:\\s*([^;]+);`).exec(css);
+      expect(m, `${token} not found in ${label}`).not.toBeNull();
+      expect(m![1].trim().replace(/\s+/g, ' '), `${token} in ${label}`).toBe(expected);
+    }
   });
 
   // The Worker's inline <script> runs before the stylesheet applies and writes

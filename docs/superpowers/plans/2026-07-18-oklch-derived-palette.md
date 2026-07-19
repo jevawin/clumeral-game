@@ -4,7 +4,7 @@
 
 **Goal:** Replace 31 hand-picked colour literals with a palette derived from two base neutrals, one lightness per mode, and one hue angle per theme — making the WCAG AA failure of #254 structurally unrepresentable.
 
-**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely per theme. `colours.ts` sets a `data-theme` attribute instead of two hexes, and CSS resolves hue and chroma from it. Semantic success/error sit below the accent lightness so they stay distinguishable at any hue — 0.06 below in light, 0.10 in dark.
+**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely per theme. `colours.ts` sets a `data-theme` attribute instead of two hexes, and CSS resolves hue and chroma from it. Success and error alias the Lime and Berry themes rather than carrying their own hue, chroma and lightness — the tick and cross icons carry the meaning, so colour is never the only signal.
 
 **Tech Stack:** Tailwind CSS v4 (`@theme`), Vite 8, Lightning CSS, Cloudflare Workers (SSR), Vitest, Playwright.
 
@@ -17,21 +17,29 @@
 ## Target palette
 
 Every value below is computed, not picked. All pairings verified — worst accent
-ratio 5.36, worst overall 4.70.
+ratio 5.36, which is now also the worst overall: aliasing the semantics onto the
+themes removed the 4.70 error-dark-on-surface pairing that used to be tightest.
 
 **Revised after Task 1 sign-off (2026-07-18):** per-theme chroma, white base.
 See [Settled by the prototype](../specs/2026-07-18-oklch-derived-palette-design.md#settled-by-the-prototype).
 
-### Declared values (19)
+### Declared values (20)
 
 ```
---base-dark    #121213      --accent-l   light 0.50  dark 0.78
---base-light   #FAFAFA      --semantic-l light 0.44  dark 0.68
+bases          dark #121213 · light #FAFAFA
+surfaces       dark #2A2A2B · light #FFFFFF
+text           dark #FAF8F4 · light #262624
+accent-l       light 0.50 · dark 0.78
 hue angles     Lime 145 · Berry 5 · Blue 262 · Violet 305
-semantic hues  success 150 · error 27
 accent chroma  light  Lime 0.157 · Berry 0.201 · Blue 0.178 · Violet 0.237
                dark   Lime 0.174 · Berry 0.135 · Blue 0.111 · Violet 0.140
+semantics      success = Lime · error = Berry      (aliases, not values)
 ```
+
+This is the full count from `src/palette.ts`. Earlier figures in this document
+(10, then 18, then 19) used a looser convention that omitted the surfaces and
+text colours; under that same convention the previous design carried 26 values
+and this one carries 20.
 
 Chroma is `min(today's chroma, the hue's sRGB ceiling at that lightness)`. Five
 of the eight are ceiling-limited; three (Blue light, Violet light, Lime dark) sit
@@ -46,8 +54,8 @@ at today's value with headroom to spare.
 | Blue | `#245BC7` | 5.92 | 6.18 |
 | Violet | `#8420CB` | 6.60 | 6.89 |
 | text | `#262624` | 14.53 | 15.16 |
-| success | `#15632F` | 7.04 | 7.35 |
-| error | `#902824` | 8.00 | 8.35 |
+| success | `#00791E` | 5.36 | 5.59 |  ← the Lime accent
+| error | `#B60054` | 6.45 | 6.74 |  ← the Berry accent
 
 ### Resolved — dark (`bg #121213`, `surface #2A2A2B`, `text #FAF8F4`)
 
@@ -58,8 +66,8 @@ at today's value with headroom to spare.
 | Blue | `#90B7FF` | 9.27 | 7.10 |
 | Violet | `#CC9FFF` | 8.89 | 6.81 |
 | text | `#FAF8F4` | 17.65 | 13.52 |
-| success | `#63AB74` | 6.78 | 5.19 |
-| error | `#E27368` | 6.14 | 4.70 |
+| success | `#65D46D` | 9.98 | 7.64 |  ← the Lime accent
+| error | `#FF91AC` | 8.82 | 6.76 |  ← the Berry accent
 
 Every dark chroma except Lime's is at its sRGB ceiling — L=0.78 is what AA on
 `surface` requires, and it leaves little room for saturation. Lime is the one

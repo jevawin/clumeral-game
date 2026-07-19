@@ -57,10 +57,9 @@ across hues from a single shared parameter.
 ```
 2 bases        D #121213   ·   L #FAFAFA
 2 lightness    accent-L    light 0.50 · dark 0.78      ← the AA guarantee
-2 semantic-L   light 0.44 · dark 0.68
 8 chroma       per theme per mode, capped at today's saturation
 4 hue angles   Lime · Berry · Blue · Violet
-2 semantic H   success 150 · error 27
+semantics      success = Lime · error = Berry  (aliases, no values of their own)
 3 rules        surface   = one step from bg toward L  (cards lift in both modes)
                border    = mix(fg, bg, 12%)
                on-accent = bg
@@ -119,7 +118,7 @@ Two constraints follow:
   both `bg` and `surface` in all four themes. The split only existed because the
   hand-picked accents sat slightly too light.
 
-### Semantics get their own lightness band
+### Semantics alias two of the themes
 
 `success` and `error` must stay green and red whichever accent is active. Two
 collisions make that harder than it looks:
@@ -128,47 +127,48 @@ collisions make that harder than it looks:
 - **error vs Berry** — error sits at H≈26, proposed Berry at H=5. 22° apart.
 
 The issue flags the first. The second is equally real and was found during
-discuss.
+discuss. Both happen for a structural reason: today the semantics differ from the
+accents in **lightness as well as hue**. Fixing `L` deletes that second
+differentiator, leaving hue as the only separator — and two of four themes land
+inside it.
 
-Both happen for a structural reason: today the semantics differ from the accents
-in **lightness as well as hue**. Fixing `L` deletes that second differentiator,
-leaving hue as the only separator — and two of four themes land inside it.
+An earlier revision answered this with a lightness band, `semantic-L` set below
+`accent-L` so the semantics read as feedback rather than as ordinary accent text.
+Sign-off rejected it: at the bottom of the scale green is gamut-crushed (ceiling
+0.110 at L=0.40), so the light success green came out too dark, and lifting it
+spent the very separation the band existed to provide.
 
-The fix is to put the semantics back outside the accent lightness band, deeper in
-both modes:
+The resolution is to stop treating the collision as a problem. **Success is the
+Lime theme and error is the Berry theme** — same lightness, same chroma, same
+hue, no values of their own. Under Lime the success message and the accent are
+the same green; under Berry the error message and the accent are the same
+berry. That is acceptable because colour is not carrying the meaning: a filled
+tick sits beside the success text and a cross beside the error text, satisfying
+WCAG 1.4.1 on its own. The colour is reinforcement, not signal.
 
-```
-semantic-L      light 0.44 · dark 0.68      (accent-L − 0.06 · −0.10)
-```
+What this buys:
 
-The band is asymmetric, and declared per mode rather than derived, because
-green's gamut behaves differently at the two ends of the scale. At L=0.40 the
-sRGB ceiling for H 150 is 0.110 — exactly the declared chroma — so the light
-success green is already as vivid as sRGB permits and can only be brightened by
-raising L, which spends the band. Dark has headroom to 0.187 and needs no such
-trade. Sign-off found the light green too dark at 0.40; 0.44 is the lift, and it
-narrows the gap from the Lime accent from 0.111 to 0.071 in Oklab distance.
+- Six declared values disappear — the band (2), the semantic hues (2) and the
+  semantic chromas (2).
+- The semantics inherit the accent AA guarantee instead of needing their own
+  verification. There is no longer a pairing that only the semantics exercise.
+- The tightest pairing in the system disappears. Error dark on surface was 4.70;
+  the worst semantic ratio is now 5.36, equal to the worst accent.
+- Under the three themes that are *not* the aliased one, the semantics are more
+  distinct from the accent than the band ever made them.
 
-Deeper rather than lighter, in both modes, because pushing the dark semantics
-*up* collapses red's gamut ceiling to C 0.076 — a pale `#FFBFB6` pink. Going down
-keeps error a proper red near today's value:
+| | hex | vs bg | vs surface |
+|---|---|---|---|
+| success light (Lime) | `#00791E` | 5.36 | 5.59 |
+| error light (Berry) | `#B60054` | 6.45 | 6.74 |
+| success dark (Lime) | `#65D46D` | 9.98 | 7.64 |
+| error dark (Berry) | `#FF91AC` | 8.82 | 6.76 |
 
-Computed at the declared token chroma — success 0.11, error 0.14 — against the
-signed-off bases:
-
-| | L | hex | vs bg | vs surface |
-|---|---|---|---|---|
-| success light | 0.44 | `#15632F` | 7.04 | 7.35 |
-| error light | 0.44 | `#902824` | 8.00 | 8.35 |
-| success dark | 0.68 | `#63AB74` | 6.78 | 5.19 |
-| error dark | 0.68 | `#E27368` | 6.14 | 4.70 |
-
-Error-dark on surface is the tightest at 4.70 — thin, but it passes, which
-today's 4.18 does not.
-
-An earlier draft of this table listed success dark as `#45B164` and error dark as
-`#E66F64`. Both were computed at C 0.15, which is neither token's declared
-chroma; the values above are what the tokens actually resolve to.
+**The dependency this creates:** the tick and cross icons are now load-bearing
+for accessibility, not decoration. If either is ever removed, success and error
+become indistinguishable from the accent under their own theme and the aliasing
+has to be revisited. `tests/palette-contrast.spec.ts` records this next to the
+assertion that the two semantics differ from each other.
 
 Separation holds at any hue, so a future fifth theme cannot collide with the
 semantics. Since semantics do not vary per theme, their contrast is verified once
