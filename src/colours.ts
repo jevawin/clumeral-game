@@ -13,7 +13,17 @@ interface ColourTheme {
   hue: number;
   chromaLight: number;
   chromaDark: number;
+  icon: string;
 }
+
+// A fruit per theme, shown inside the swatch dot. Presentation only — it lives
+// here rather than in palette.ts, which holds colour values and nothing else.
+const ICONS: Record<ThemeName, string> = {
+  Lime: 'citrus',
+  Berry: 'cherry',
+  Blue: 'blueberry',
+  Violet: 'grape',
+};
 
 // Hue plus a chroma per mode. Lightness is shared and lives in tailwind.css,
 // which is what makes every theme AA-safe by construction — chroma is
@@ -23,6 +33,7 @@ const THEMES: ColourTheme[] = (Object.keys(PALETTE.hues) as ThemeName[]).map((na
   hue: PALETTE.hues[name],
   chromaLight: PALETTE.light.accentC[name],
   chromaDark: PALETTE.dark.accentC[name],
+  icon: ICONS[name],
 }));
 
 const root = document.documentElement;
@@ -68,6 +79,12 @@ function renderSwatches(): void {
     btn.style.setProperty('--swatch-h', String(t.hue));
     btn.style.setProperty('--swatch-cl', String(t.chromaLight));
     btn.style.setProperty('--swatch-cd', String(t.chromaDark));
+    // aria-hidden: the button already carries the theme name as its aria-label,
+    // so the fruit is decoration and must not be announced twice. It is drawn in
+    // --color-bg, which is the on-accent rule — contrast is the accent-on-bg
+    // ratio by symmetry, so it inherits the AA guarantee (#255).
+    btn.innerHTML =
+      `<svg aria-hidden="true" focusable="false"><use href="/sprites.svg#icon-${t.icon}"/></svg>`;
     btn.addEventListener('click', () => {
       applyColour(t);
       localStorage.setItem(STORAGE_COLOUR, t.name);
