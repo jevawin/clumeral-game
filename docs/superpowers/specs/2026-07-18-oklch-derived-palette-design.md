@@ -57,7 +57,7 @@ across hues from a single shared parameter.
 ```
 2 bases        D #121213   ·   L #FAFAFA
 2 lightness    accent-L    light 0.50 · dark 0.78      ← the AA guarantee
-1 delta        semantic-L = accent-L − 0.10
+2 semantic-L   light 0.44 · dark 0.68
 8 chroma       per theme per mode, capped at today's saturation
 4 hue angles   Lime · Berry · Blue · Violet
 2 semantic H   success 150 · error 27
@@ -138,8 +138,16 @@ The fix is to put the semantics back outside the accent lightness band, deeper i
 both modes:
 
 ```
-semantic-L = accent-L − 0.10       light 0.40 · dark 0.68
+semantic-L      light 0.44 · dark 0.68      (accent-L − 0.06 · −0.10)
 ```
+
+The band is asymmetric, and declared per mode rather than derived, because
+green's gamut behaves differently at the two ends of the scale. At L=0.40 the
+sRGB ceiling for H 150 is 0.110 — exactly the declared chroma — so the light
+success green is already as vivid as sRGB permits and can only be brightened by
+raising L, which spends the band. Dark has headroom to 0.187 and needs no such
+trade. Sign-off found the light green too dark at 0.40; 0.44 is the lift, and it
+narrows the gap from the Lime accent from 0.111 to 0.071 in Oklab distance.
 
 Deeper rather than lighter, in both modes, because pushing the dark semantics
 *up* collapses red's gamut ceiling to C 0.076 — a pale `#FFBFB6` pink. Going down
@@ -150,8 +158,8 @@ signed-off bases:
 
 | | L | hex | vs bg | vs surface |
 |---|---|---|---|---|
-| success light | 0.40 | `#005725` | 8.42 | 8.79 |
-| error light | 0.40 | `#831A18` | 9.46 | 9.88 |
+| success light | 0.44 | `#15632F` | 7.04 | 7.35 |
+| error light | 0.44 | `#902824` | 8.00 | 8.35 |
 | success dark | 0.68 | `#63AB74` | 6.78 | 5.19 |
 | error dark | 0.68 | `#E27368` | 6.14 | 4.70 |
 

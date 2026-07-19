@@ -25,7 +25,13 @@ export const PALETTE = {
     // min(today's chroma, the hue's sRGB ceiling at accentL). Lime and Berry are
     // ceiling-capped; Blue and Violet sit at today's value with room to spare.
     accentC: { Lime: 0.157, Berry: 0.201, Blue: 0.178, Violet: 0.237 },
-    semanticL: 0.4,
+    // 0.06 below the accent, not the 0.10 dark uses. Green is gamut-crushed at
+    // the bottom of the scale — at L=0.40 the ceiling for H 150 is 0.110, which
+    // is already the declared chroma, so the green cannot be made more vivid
+    // except by lifting L. Dark has headroom (ceiling 0.187 at L=0.68) and so
+    // keeps the wider band. The cost is a narrower gap from the Lime accent;
+    // checked by eye on the completed game screen, where the two sit together.
+    semanticL: 0.44,
   },
 
   dark: {

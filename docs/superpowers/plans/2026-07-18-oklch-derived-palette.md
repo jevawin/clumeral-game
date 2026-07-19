@@ -4,7 +4,7 @@
 
 **Goal:** Replace 31 hand-picked colour literals with a palette derived from two base neutrals, one lightness per mode, and one hue angle per theme — making the WCAG AA failure of #254 structurally unrepresentable.
 
-**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely per theme. `colours.ts` sets a `data-theme` attribute instead of two hexes, and CSS resolves hue and chroma from it. Semantic success/error sit one lightness step deeper than the accents so they stay distinguishable at any hue.
+**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely per theme. `colours.ts` sets a `data-theme` attribute instead of two hexes, and CSS resolves hue and chroma from it. Semantic success/error sit below the accent lightness so they stay distinguishable at any hue — 0.06 below in light, 0.10 in dark.
 
 **Tech Stack:** Tailwind CSS v4 (`@theme`), Vite 8, Lightning CSS, Cloudflare Workers (SSR), Vitest, Playwright.
 
@@ -22,11 +22,11 @@ ratio 5.36, worst overall 4.70.
 **Revised after Task 1 sign-off (2026-07-18):** per-theme chroma, white base.
 See [Settled by the prototype](../specs/2026-07-18-oklch-derived-palette-design.md#settled-by-the-prototype).
 
-### Declared values (18)
+### Declared values (19)
 
 ```
 --base-dark    #121213      --accent-l   light 0.50  dark 0.78
---base-light   #FAFAFA      --semantic-l = accent-l − 0.10
+--base-light   #FAFAFA      --semantic-l light 0.44  dark 0.68
 hue angles     Lime 145 · Berry 5 · Blue 262 · Violet 305
 semantic hues  success 150 · error 27
 accent chroma  light  Lime 0.157 · Berry 0.201 · Blue 0.178 · Violet 0.237
@@ -46,8 +46,8 @@ at today's value with headroom to spare.
 | Blue | `#245BC7` | 5.92 | 6.18 |
 | Violet | `#8420CB` | 6.60 | 6.89 |
 | text | `#262624` | 14.53 | 15.16 |
-| success | `#005725` | 8.42 | 8.79 |
-| error | `#831A18` | 9.46 | 9.88 |
+| success | `#15632F` | 7.04 | 7.35 |
+| error | `#902824` | 8.00 | 8.35 |
 
 ### Resolved — dark (`bg #121213`, `surface #2A2A2B`, `text #FAF8F4`)
 
@@ -436,7 +436,13 @@ git status --porcelain   # must be empty
 
 - [x] **Step 4: Record the outcome**
 
-**PASSED** — 2026-07-18. Emitted bundle:
+**PASSED** — 2026-07-18. Superseded later that day: sign-off feedback lifted the
+light semantic band from 0.10 to 0.06 while dark kept 0.10, so `--semantic-l` is
+now two declared literals and the `calc()` is gone. The probe result still stands
+and is recorded here because it de-risked the design before that change, and
+because it documents what this build pipeline does to `calc()` inside `oklch()`.
+
+Emitted bundle:
 
 ```
 --probe-al:.5

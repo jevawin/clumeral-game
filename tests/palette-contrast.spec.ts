@@ -55,7 +55,14 @@ describe('palette AA guarantee', () => {
     }
     // The lightness gap is what keeps success readable under Lime and error
     // readable under Berry, where hue separation alone is 5 deg and 22 deg.
-    expect(Math.abs(accentL - semanticL)).toBeGreaterThanOrEqual(0.09);
+    //
+    // Light runs a narrower band (0.06) than dark (0.10). Green's sRGB ceiling
+    // at L=0.40 is 0.110 — exactly the declared chroma — so the light success
+    // green is already as vivid as the gamut allows and can only be lifted by
+    // raising L, which spends the band. Dark has headroom to 0.187 and needs no
+    // such trade. Anything below 0.06 was visibly too close to Lime.
+    const floor = mode === 'light' ? 0.06 : 0.09;
+    expect(Math.abs(accentL - semanticL)).toBeGreaterThanOrEqual(floor);
   });
 
   it('bg text clears AA on both bg and surface in both modes', () => {

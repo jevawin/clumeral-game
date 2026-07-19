@@ -47,7 +47,11 @@
      pairings to verify — tests/palette-contrast.spec.ts covers it. */
 
   --accent-l: 0.50;
-  --semantic-l: calc(var(--accent-l) - 0.10);
+  /* Declared per mode rather than derived from --accent-l. The band is 0.06 in
+     light and 0.10 in dark: green is gamut-crushed at the bottom of the scale,
+     so the light success green can only be made more vivid by lifting L, while
+     dark has chroma headroom and keeps the wider gap from the accent. */
+  --semantic-l: 0.44;
 
   /* Hue and chroma per theme. colours.ts sets data-theme on <html>; the rules
      below @theme resolve both from it, so the mode half of the mapping stays in
@@ -114,6 +118,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
        per-theme rules. Keep equal to the Worker's :root.dark value or
        tests/token-parity.spec.ts fails. */
     --accent-c: 0.174;
+    --semantic-l: 0.68;
 
     --color-bg:      #121213;
     --color-surface: #2A2A2B;

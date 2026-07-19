@@ -62,7 +62,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
        /archive has no swatch UI but does honour the saved accent, so the
        per-theme rules are mirrored too — see below the base blocks. */
     --accent-l: 0.50;
-    --semantic-l: calc(var(--accent-l) - 0.10);
+    --semantic-l: 0.44;
     --accent-h: 145;
     --accent-c: 0.157;
     --color-bg:      #FAFAFA;
@@ -77,6 +77,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     color-scheme: dark;
     --accent-l: 0.78;
     --accent-c: 0.174;
+    --semantic-l: 0.68;
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
     --color-text:    #FAF8F4;
