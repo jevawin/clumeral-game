@@ -23,9 +23,12 @@ async function seriousViolations(page: import("@playwright/test").Page) {
 const A11Y_PROJECTS = ["chromium-desktop", "mobile-chromium"];
 
 // This axe pass runs BOTH colour schemes. It was light-only while #243 was open
-// (white-on-accent solid buttons, ~2.9:1 in dark) — that bug is now fixed by the
-// --color-on-accent token, so dark mode is a real gate rather than a known-red
-// one. colorScheme is pinned per describe so each run is deterministic regardless
+// (white-on-accent solid buttons, ~2.9:1 in dark) — solid-fill text is now the
+// page bg (#255 removed the --color-on-accent token that first fixed it), so
+// dark mode is a real gate rather than a known-red one. #255 also fixed the
+// accent-on-surface failure #254 shipped: contrast now rides on a shared
+// --accent-l, so every theme clears AA by construction.
+// colorScheme is pinned per describe so each run is deterministic regardless
 // of the runner's OS preference; GitHub's CI runner defaults to dark, which is
 // how #243 surfaced in the first place.
 for (const scheme of ["light", "dark"] as const) {

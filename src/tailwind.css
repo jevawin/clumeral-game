@@ -116,10 +116,10 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   html.dark {
     --accent-l: 0.78;
     /* Lime's dark chroma, as the default. Every theme's own rule outranks this
-       on specificity, so it only shows before colours.ts sets data-theme — and
-       it is what /archive renders with, since the Worker mirror carries no
-       per-theme rules. Keep equal to the Worker's :root.dark value or
-       tests/token-parity.spec.ts fails. */
+       on specificity, so it only shows before colours.ts sets data-theme. The
+       Worker mirror carries the same per-theme rules, so /archive honours the
+       saved theme rather than falling back to this. Keep all four equal to the
+       Worker's :root.dark values or tests/token-parity.spec.ts fails. */
     --chroma-lime:   0.174;
     --chroma-cherry:  0.135;
     --chroma-blueberry:   0.111;
