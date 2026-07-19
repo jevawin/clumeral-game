@@ -419,13 +419,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--color-text);
   }
   /* Eliminated digits are struck through as well as faded — the fade alone was
-     easy to miss on a phone. Alpha on the colour rather than opacity on the
-     span, so the strike can carry its own alpha: at 12% the rule was as faint
-     as the digit it crosses, so it sits at double that. */
+     easy to miss on a phone. Digit and rule sit at the same 18%: the digit up
+     from 12% so the strike has something to cross, the strike down from double
+     so it reads as struck rather than scored out. Because both want the same
+     alpha, plain opacity does it — it multiplies the strike along with the
+     digit, which is exactly what is wanted here. */
   .digit-box__grid span.elim {
-    color: color-mix(in srgb, var(--color-text) 12%, transparent);
+    opacity: 0.18;
     text-decoration: line-through;
-    text-decoration-color: color-mix(in srgb, var(--color-text) 24%, transparent);
   }
 }
 
