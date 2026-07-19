@@ -201,5 +201,28 @@ export function initRouter(d: RouterDeps): void {
   window.addEventListener('focus', checkStaleDay);
 
   // Initial render — also resolves any redirect on cold load.
-  navigate(location.pathname || '/');
+  //
+  // /archive is Worker-rendered, so its "Show puzzle" link is a full page load
+  // rather than an in-app navigate() and cannot pass skipResolve the way the
+  // SPA's own Show-puzzle links do. Without a marker the RTE-03 deep-link rules
+  // bounce it: to /solved if today is already done, to /welcome for a visitor
+  // with no stored history. ?from=archive carries that intent across the
+  // document boundary so the link lands where it says it will.
+  //
+  // Deliberately narrow: only /play, only this marker. A bare /play deep-link
+  // still redirects exactly as before.
+  const fromArchive =
+    location.pathname === '/play' &&
+    new URLSearchParams(location.search).get('from') === 'archive';
+
+  if (fromArchive) {
+    // Drop the marker before the first navigate. It is a one-shot instruction,
+    // not something that should sit in history, get shared, or survive a reload.
+    try {
+      history.replaceState(null, '', location.pathname);
+    } catch { /* ignore — environments without History */ }
+    navigate('/play', { skipResolve: true });
+  } else {
+    navigate(location.pathname || '/');
+  }
 }

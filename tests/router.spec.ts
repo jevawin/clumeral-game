@@ -26,6 +26,70 @@ beforeEach(() => {
   });
 });
 
+describe('archive Show-puzzle deep link (#255)', () => {
+  // /archive is Worker-rendered, so its Show-puzzle link is a full page load and
+  // cannot pass skipResolve. Without the marker the RTE-03 rules bounced it to
+  // /solved when today was already done, and to /welcome for a visitor with no
+  // stored history — so the button did not do what it said.
+
+  it('honours /play?from=archive when today is already solved', () => {
+    setPath('/play?from=archive');
+    initRouter({
+      hasData: () => true,
+      todayLocal: () => '2026-05-03',
+      todayEntry: () => ({ date: '2026-05-03', tries: 3 }) as never,
+      midInteraction: () => false,
+    });
+    expect(showScreen).toHaveBeenCalledWith('game');
+    expect(location.pathname).toBe('/play');
+  });
+
+  it('honours /play?from=archive for a visitor with no stored history', () => {
+    setPath('/play?from=archive');
+    initRouter({
+      hasData: () => false,
+      todayLocal: () => '2026-05-03',
+      todayEntry: () => null,
+      midInteraction: () => false,
+    });
+    expect(showScreen).toHaveBeenCalledWith('game');
+  });
+
+  it('strips the marker so it does not persist in the URL', () => {
+    setPath('/play?from=archive');
+    initRouter({
+      hasData: () => true,
+      todayLocal: () => '2026-05-03',
+      todayEntry: () => ({ date: '2026-05-03', tries: 3 }) as never,
+      midInteraction: () => false,
+    });
+    expect(location.search).toBe('');
+  });
+
+  it('still redirects a bare /play deep link when today is solved', () => {
+    setPath('/play');
+    initRouter({
+      hasData: () => true,
+      todayLocal: () => '2026-05-03',
+      todayEntry: () => ({ date: '2026-05-03', tries: 3 }) as never,
+      midInteraction: () => false,
+    });
+    expect(showScreen).toHaveBeenCalledWith('completion');
+    expect(location.pathname).toBe('/solved');
+  });
+
+  it('ignores the marker on any path other than /play', () => {
+    setPath('/welcome?from=archive');
+    initRouter({
+      hasData: () => true,
+      todayLocal: () => '2026-05-03',
+      todayEntry: () => ({ date: '2026-05-03', tries: 3 }) as never,
+      midInteraction: () => false,
+    });
+    expect(showScreen).toHaveBeenCalledWith('completion');
+  });
+});
+
 describe('router (RTE-01, POL-01..04)', () => {
   it('RTE-01: navigate(/play) updates location.pathname to /play', () => {
     navigate('/play');

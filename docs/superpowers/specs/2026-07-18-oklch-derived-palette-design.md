@@ -142,9 +142,11 @@ The resolution is to stop treating the collision as a problem. **Success is the
 Lime theme and error is the Berry theme** — same lightness, same chroma, same
 hue, no values of their own. Under Lime the success message and the accent are
 the same green; under Berry the error message and the accent are the same
-berry. That is acceptable because colour is not carrying the meaning: a filled
-tick sits beside the success text and a cross beside the error text, satisfying
-WCAG 1.4.1 on its own. The colour is reinforcement, not signal.
+berry. That is acceptable because colour is not carrying the meaning. Two other
+signals already do: the wording differs outright ("Solved in 2 tries!" against
+"Not quite — try again"), and a filled tick or cross sits beside it. Colour is
+the third signal, and the only one that is redundant — which satisfies WCAG
+1.4.1 comfortably rather than marginally.
 
 What this buys:
 
@@ -164,10 +166,11 @@ What this buys:
 | success dark (Lime) | `#65D46D` | 9.98 | 7.64 |
 | error dark (Berry) | `#FF91AC` | 8.82 | 6.76 |
 
-**The dependency this creates:** the tick and cross icons are now load-bearing
-for accessibility, not decoration. If either is ever removed, success and error
-become indistinguishable from the accent under their own theme and the aliasing
-has to be revisited. `tests/palette-contrast.spec.ts` records this next to the
+**The dependency this creates:** the wording and the icons are load-bearing, not
+decorative. Losing one is survivable — losing both would leave colour as the only
+signal, and under the aliased theme there is no colour difference left to read.
+So the rule is that success and error must always differ in words or icon, never
+in colour alone. `tests/palette-contrast.spec.ts` records this next to the
 assertion that the two semantics differ from each other.
 
 Separation holds at any hue, so a future fifth theme cannot collide with the

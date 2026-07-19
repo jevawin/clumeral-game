@@ -14,9 +14,9 @@ export const PALETTE = {
 
   // success and error are not colours of their own: they alias two of the themes
   // and resolve at the accent lightness and that theme's chroma. Meaning is
-  // carried by the tick and cross icons beside the text, so they do not need to
-  // stay distinguishable from the active accent, and colour is never the only
-  // signal (WCAG 1.4.1).
+  // carried by the wording ("Solved in N tries!" vs "Not quite") and by the tick
+  // and cross icons, so they do not need to stay distinguishable from the active
+  // accent — colour is the third signal here, not the only one (WCAG 1.4.1).
   //
   // This removes the semantic lightness band, both semantic hues and both
   // semantic chromas, and with them the tightest pairing in the system — error

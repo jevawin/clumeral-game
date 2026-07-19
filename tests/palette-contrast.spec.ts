@@ -61,10 +61,11 @@ describe('palette AA guarantee', () => {
     }
   });
 
-  // Colour is not the only signal for success/error — the tick and cross icons
-  // carry the meaning (WCAG 1.4.1), which is what lets the semantics sit at the
-  // same lightness as the accent. If those icons are ever removed, this aliasing
-  // has to be revisited.
+  // Colour is not the only signal for success/error — the wording differs and a
+  // tick/cross sits beside it (WCAG 1.4.1), which is what lets the semantics sit
+  // at the same lightness and hue as the accent. If success and error ever stop
+  // differing in words AND icon, colour becomes the only signal and there is
+  // none left to read under the aliased theme — revisit the aliasing then.
   it('success and error are distinct from each other', () => {
     for (const mode of modes) {
       const { accentL, accentC } = PALETTE[mode];

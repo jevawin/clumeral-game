@@ -288,7 +288,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   </header>
 
   <main class="archive">
-    <div class="archive-actions"><a href="/play" class="btn btn-hollow"><svg aria-hidden="true"><use href="/sprites.svg#icon-puzzle"/></svg>Show puzzle</a><a href="/solved" class="btn btn-hollow"><svg aria-hidden="true"><use href="/sprites.svg#icon-stats"/></svg>Show stats</a></div>
+    <div class="archive-actions"><a href="/play?from=archive" class="btn btn-hollow"><svg aria-hidden="true"><use href="/sprites.svg#icon-puzzle"/></svg>Show puzzle</a><a href="/solved" class="btn btn-hollow"><svg aria-hidden="true"><use href="/sprites.svg#icon-stats"/></svg>Show stats</a></div>
     <h1>Every Clumeral ever.</h1>
     <p class="subtitle">Tap to view a puzzle. Tap a column to sort by it.</p>
 
