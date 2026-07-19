@@ -1261,13 +1261,17 @@ than the palette.
 
 ### Still unverified
 
-- **The e2e suite has not been run since any of this.** `menu.spec.ts` and
-  `shadow-theme.spec.ts` were both edited for the rename and are unverified.
-- `shadow-theme.spec.ts` was rewritten to read the expected accent back from the
-  live page. It had been pinning the pre-#255 hexes, so it was already stale
-  before the rename — Task 10 would have hit it regardless.
-- Task 10 should expect other specs asserting literal colours to fail. Per the
-  plan below, confirm each by eye before changing an assertion.
+**Cleared by Task 10 on 2026-07-19** — the full suite ran green (260 e2e, 24 axe,
+169 unit). Kept for the record:
+
+- ~~The e2e suite has not been run since any of this.~~ Run. `menu.spec.ts` passed
+  untouched; `shadow-theme.spec.ts` needed a one-line parser fix (`0291173`) —
+  see Task 10 Step 3.
+- ~~`shadow-theme.spec.ts` was rewritten to read the expected accent back from the
+  live page.~~ That rewrite was correct and is why the fix was one line: the spec
+  compares the shadow to the *live* accent, so it needed no new hexes.
+- ~~Expect other specs asserting literal colours to fail.~~ None did. `shadow-theme`
+  was the only colour-asserting spec that broke, and not over a colour value.
 
 ---
 
@@ -1279,7 +1283,10 @@ moves.
 **Files:**
 - Modify (if selectors changed): `e2e/specs/*`
 
-- [ ] **Step 1: Unit suite**
+**Ran 2026-07-19. Outcome: green.** 169 unit · 24 axe · 260 e2e, one spec fixed.
+Findings recorded under each step.
+
+- [x] **Step 1: Unit suite**
 
 ```bash
 npm test
@@ -1287,7 +1294,9 @@ npm test
 
 Expected: PASS, including the contrast and parity specs.
 
-- [ ] **Step 2: axe, both schemes**
+PASS — 169 tests, 16 files.
+
+- [x] **Step 2: axe, both schemes**
 
 ```bash
 npx playwright test --grep axe
@@ -1296,7 +1305,10 @@ npx playwright test --grep axe
 Expected: 26 axe tests green, both colour schemes, including the open-menu and
 open-modal cases added in #254.
 
-- [ ] **Step 3: Full regression, 5-engine matrix**
+PASS — 24 green, 36 skipped. The count is 24 not 26: 12 axe cases (6 per scheme)
+across the two chromium projects. The other three engines skip axe by config.
+
+- [x] **Step 3: Full regression, 5-engine matrix**
 
 ```bash
 npm run test:e2e
@@ -1306,7 +1318,27 @@ Expected: full suite green. Any failure asserting a literal colour value is a
 **test that needs updating**, not necessarily a regression — but confirm each one
 by eye before changing an assertion.
 
-- [ ] **Step 4: Manual visual pass**
+First run: 250 passed, **10 failed**, all `shadow-theme.spec.ts`, light mode only,
+identical across all five engines — that consistency ruled out flake.
+
+Cause was the spec's channel regex, `([\d.]+)`, which cannot parse a negative
+number. Cherry light is chroma-capped at its sRGB ceiling, so green resolves to
+exactly 0 and float error takes it a hair under; the browser serialises
+`color(srgb 0.715305 -0.000747958 0.328425 / 0.3)`.
+
+Confirmed by eye before touching the assertion, per the instruction above: both
+the shadow and `--color-accent` rasterise through a canvas to `rgb(182, 0, 84)`
+— the planned `#B60054`. The rendering was correct; only the parser was not.
+This also reconciles with `inSrgbGamut`, which passes: it checks *linear*-light
+RGB against `eps 1e-4`, and linear `-5.8e-5` × 12.92 ≈ the `-0.00075` gamma value
+the browser prints. Both agree Cherry light is over the boundary by a rounding
+hair.
+
+Fixed in `0291173` — accept a sign and an exponent, and clamp to the byte range
+so both sides of the comparison sit in the same space (`resolvedAccent` already
+clamps via canvas). Re-run: **260 passed, 0 failed, 38 skipped.**
+
+- [x] **Step 4: Manual visual pass**
 
 ```bash
 npm run preview
@@ -1316,7 +1348,45 @@ Walk welcome → game → completion in all four themes × both modes. Confirm a
 the prototype signed off in Task 1. Check `/archive` separately, since it renders
 through the Worker path.
 
-- [ ] **Step 5: Commit any test updates**
+PASS. Rather than eyeball 8 combos for colour accuracy, the resolved tokens were
+rasterised through a canvas in the built preview and compared to the Task 1
+target tables. **Every one of the 8 theme × mode combos matches**, worst ratio
+5.36 (Lime light on bg). Screens were then checked by eye for legibility and
+layout, which is what numbers cannot catch.
+
+| mode | theme | accent | vs bg | vs surface |
+|---|---|---|---|---|
+| light | Lime | `#01791E` | 5.36 | 5.59 |
+| light | Cherry | `#B60054` | 6.45 | 6.74 |
+| light | Blueberry | `#245BC7` | 5.92 | 6.18 |
+| light | Grape | `#8420CC` | 6.58 | 6.86 |
+| dark | Lime | `#65D46D` | 9.98 | 7.64 |
+| dark | Cherry | `#FF91AC` | 8.82 | 6.76 |
+| dark | Blueberry | `#90B7FF` | 9.27 | 7.10 |
+| dark | Grape | `#CC9FFF` | 8.89 | 6.81 |
+
+Off-by-one hex differences against the target tables (`#01791E` vs `#00791E`,
+`#8420CC` vs `#8420CB`) are 1/255 rounding, not drift.
+
+Two things found that the plan predicted differently, both in the plan's favour:
+
+- **`/archive` honours the player's theme.** The parity test's scope comment in
+  the plan predicted it "always renders Lime". The shipped Worker carries
+  `:root[data-theme=...]` rules (`src/worker/puzzles.ts:98-105`) behind a
+  `--chroma-*` indirection, so the dark block redefines four chroma values
+  instead of repeating per-theme rules. Verified live: Cherry light and Grape
+  dark both render correctly. The committed `tests/token-parity.spec.ts` already
+  covers all four themes plus the semantic aliases — the stale comment exists
+  only in this plan document, not in the test.
+- **Semantics alias the themes rather than sitting in a lightness band.** Task 5's
+  draft text still describes `--semantic-l: calc(var(--accent-l) - 0.10)` with
+  hues 150/27. What shipped matches the architecture note at the top of this plan:
+  `--color-success` and `--color-error` are the Lime and Cherry accents at the
+  shared `--accent-l`. So under Lime, success *is* the accent colour; under
+  Cherry, error is. Verified that `ICON_CHECK`/`ICON_CROSS` accompany every
+  semantic message (`src/app.ts:294-310`), so colour is never the only signal.
+
+- [x] **Step 5: Commit any test updates**
 
 ```bash
 git add e2e/
@@ -1377,8 +1447,10 @@ PR body must record:
 - The three sign-off decisions from Task 1.
 - That `--color-accent-strong` and `--color-on-accent` are removed, partly
   undoing #254 by design.
-- The worst-case contrast ratios: 5.36 accent (Lime light), 4.70 overall (error
-  dark on surface).
+- The worst-case contrast ratio: **5.36**, Lime light on bg — which is now the
+  worst *overall* too, measured live in Task 10. The "4.70 overall, error dark on
+  surface" figure this bullet used to carry predates the semantics being aliased
+  onto the themes, which removed that pairing. Do not repeat it in the PR body.
 - That per-theme chroma raised the declared-value count from 10 to 18, and why
   it was worth it — shared chroma read as visibly muted at sign-off.
 - That five of the eight dark chroma values are sRGB gamut limits rather than
