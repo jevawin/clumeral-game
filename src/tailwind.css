@@ -341,8 +341,9 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     /* radiogroup wrapper */
   }
   .swatch-btn {
-    width: 28px;
-    height: 28px;
+    position: relative;
+    width: 32px;
+    height: 32px;
     border-radius: 9999px;
     border: none;
     padding: 0;
@@ -354,50 +355,57 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     /* The tint the lit mini digit box beside each clue uses (app.ts:
        border-accent bg-accent/50). */
     --swatch-tint: color-mix(in srgb, var(--swatch-colour) 50%, transparent);
-    transition: background-color 150ms ease;
   }
   /* Kept, unlike the rest of the dark colour rules: --accent-l flips on its own
      but swatch chroma cannot, because each dot carries its own pair (#255). */
   html.dark .swatch-btn {
     --swatch-colour: oklch(var(--accent-l) var(--swatch-cd) var(--swatch-h));
   }
-  .swatch-btn > * { grid-area: 1 / 1; }
 
-  /* Unselected: line art in the theme colour, filled with its own 50% tint. */
-  .swatch-btn svg {
-    /* 20px matches the menu-item icons. Same 24-unit viewBox and the same
-       stroke-width: 2 on the symbol, so matching the box size matches the
-       rendered stroke too — 2 x 20/24 = 1.67px in both places. */
-    width: 20px;
-    height: 20px;
+  /* Every swatch renders the same: line art in its theme colour, filled with
+     that colour at 50%. Selection is marked by the arrow below, not by changing
+     the fruit — so the four stay directly comparable. */
+  .swatch-fruit {
+    width: 24px;
+    height: 24px;
     color: var(--swatch-colour);
     --icon-fill: var(--swatch-tint);
     pointer-events: none;
   }
 
-  /* Selected: the fruit inverts onto a solid disc of its own colour. The stroke
-     takes the tint rendered opaquely over the page background, so it reads as a
-     cut-out of the disc; the fill matches the disc and disappears into it.
-     Solid-vs-outline is a shape difference, not a colour one, so the selected
-     state does not rely on hue to be perceivable. */
-  .swatch-btn[aria-checked="true"] {
-    background: var(--swatch-colour);
+  /* Sits outside the button box so the button stays square and its focus ring
+     stays circular. [data-swatches] carries the bottom padding that makes room.
+     Text colour, not the theme colour: it is a pointer, not another swatch. */
+  .swatch-arrow {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 1px;
+    width: 14px;
+    height: 14px;
+    color: var(--color-text);
+    visibility: hidden;
+    pointer-events: none;
   }
-  .swatch-btn[aria-checked="true"] svg {
-    color: color-mix(in srgb, var(--swatch-colour) 50%, var(--color-bg));
-    --icon-fill: var(--swatch-colour);
+  .swatch-btn[aria-checked="true"] .swatch-arrow {
+    visibility: visible;
   }
 
   /* outline rather than a box-shadow ring: the menu panel is --color-surface,
      not --color-bg, so a shadow gap would have to guess the backdrop colour.
-     outline-offset leaves a real transparent gap, which keeps the ring legible
-     against both the solid selected disc and the panel behind it. */
+     outline-offset leaves a real transparent gap instead. */
   .swatch-btn:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .swatch-btn { transition: none; }
+
+  /* Menu section rule. Inset to the menu items' own horizontal padding rather
+     than spanning the panel, and the same 1px --color-border as the header. */
+  .menu-sep {
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    margin: 0.5rem 1rem;
   }
 
   /* ─── Save score row — hidden by default, shown when submit sibling is visible ─── */

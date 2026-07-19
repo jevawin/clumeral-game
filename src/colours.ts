@@ -51,6 +51,10 @@ function applyColour(theme: ColourTheme): void {
 }
 
 function refreshSwatchState(): void {
+  // The menu section heading names the active theme in its own colour.
+  const nameEl = document.querySelector('[data-theme-name]');
+  if (nameEl) nameEl.textContent = active.name;
+
   const wrap = document.querySelector('[data-swatches]');
   if (!wrap) return;
   wrap.querySelectorAll<HTMLButtonElement>('.swatch-btn').forEach((btn) => {
@@ -79,12 +83,14 @@ function renderSwatches(): void {
     btn.style.setProperty('--swatch-h', String(t.hue));
     btn.style.setProperty('--swatch-cl', String(t.chromaLight));
     btn.style.setProperty('--swatch-cd', String(t.chromaDark));
-    // aria-hidden: the button already carries the theme name as its aria-label,
-    // so the fruit is decoration and must not be announced twice. It is drawn in
-    // --color-bg, which is the on-accent rule — contrast is the accent-on-bg
-    // ratio by symmetry, so it inherits the AA guarantee (#255).
+    // aria-hidden on both: the button already carries the theme name as its
+    // aria-label and its checked state as aria-checked, so neither the fruit nor
+    // the arrow should be announced. The arrow marks the selected theme and is
+    // always in the DOM — CSS shows it only on the checked swatch, so the row
+    // does not reflow when the selection moves.
     btn.innerHTML =
-      `<svg aria-hidden="true" focusable="false"><use href="/sprites.svg#icon-${t.icon}"/></svg>`;
+      `<svg class="swatch-fruit" aria-hidden="true" focusable="false"><use href="/sprites.svg#icon-${t.icon}"/></svg>` +
+      `<svg class="swatch-arrow" aria-hidden="true" focusable="false"><use href="/sprites.svg#icon-arrow-up"/></svg>`;
     btn.addEventListener('click', () => {
       applyColour(t);
       localStorage.setItem(STORAGE_COLOUR, t.name);
