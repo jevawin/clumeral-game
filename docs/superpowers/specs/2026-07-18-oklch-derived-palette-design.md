@@ -29,12 +29,12 @@ Measured, current values:
 |---|---|---|---|---|---|---|---|
 | Lime | light | `#0a850a` | 0.536 | 0.178 | 142.6 | 4.60 | 4.80 |
 | Lime | dark | `#1ead52` | 0.656 | 0.174 | 149.6 | 6.38 | **4.13** |
-| Berry | light | `#de1f46` | 0.581 | 0.219 | 18.1 | 4.58 | 4.78 |
-| Berry | dark | `#ea6c85` | 0.689 | 0.157 | 9.8 | 6.22 | **4.03** |
-| Blue | light | `#376ddb` | 0.559 | 0.178 | 262.5 | 4.60 | 4.80 |
-| Blue | dark | `#6393f2` | 0.673 | 0.151 | 262.8 | 6.23 | **4.03** |
-| Violet | light | `#9a44ea` | 0.582 | 0.237 | 303.4 | 4.58 | 4.78 |
-| Violet | dark | `#b679f0` | 0.688 | 0.177 | 305.9 | 6.22 | **4.03** |
+| Cherry | light | `#de1f46` | 0.581 | 0.219 | 18.1 | 4.58 | 4.78 |
+| Cherry | dark | `#ea6c85` | 0.689 | 0.157 | 9.8 | 6.22 | **4.03** |
+| Blueberry | light | `#376ddb` | 0.559 | 0.178 | 262.5 | 4.60 | 4.80 |
+| Blueberry | dark | `#6393f2` | 0.673 | 0.151 | 262.8 | 6.23 | **4.03** |
+| Grape | light | `#9a44ea` | 0.582 | 0.237 | 303.4 | 4.58 | 4.78 |
+| Grape | dark | `#b679f0` | 0.688 | 0.177 | 305.9 | 6.22 | **4.03** |
 
 All four dark accents fail on surface. The light accents pass, but only just —
 4.58–4.60 against a 4.50 bar.
@@ -42,7 +42,7 @@ All four dark accents fail on surface. The light accents pass, but only just —
 ## Why OKLCH rather than colour-mixing
 
 Mixing each hue toward the base neutrals to reach 5:1 needs a different
-percentage per theme — light: Lime 69%, Berry 82%, Blue 75%, Violet 76%; dark:
+percentage per theme — light: Lime 69%, Cherry 82%, Blueberry 75%, Grape 76%; dark:
 73/58/68/66. That is eight magic numbers replacing eight hex values. It moves the
 complexity instead of removing it. The cause is that hues differ in intrinsic
 lightness.
@@ -58,8 +58,8 @@ across hues from a single shared parameter.
 2 bases        D #121213   ·   L #FAFAFA
 2 lightness    accent-L    light 0.50 · dark 0.78      ← the AA guarantee
 8 chroma       per theme per mode, capped at today's saturation
-4 hue angles   Lime · Berry · Blue · Violet
-semantics      success = Lime · error = Berry  (aliases, no values of their own)
+4 hue angles   Lime · Cherry · Blueberry · Grape
+semantics      success = Lime · error = Cherry  (aliases, no values of their own)
 3 rules        surface   = one step from bg toward L  (cards lift in both modes)
                border    = mix(fg, bg, 12%)
                on-accent = bg
@@ -90,9 +90,9 @@ the time; the argument is unchanged under white, which only raises them):
 | theme (light) | at C=0.14 | at max chroma |
 |---|---|---|
 | Lime | 5.00 | 4.96 |
-| Berry | 5.74 | 5.97 |
-| Blue | 5.43 | 5.65 |
-| Violet | 5.69 | 6.19 |
+| Cherry | 5.74 | 5.97 |
+| Blueberry | 5.43 | 5.65 |
+| Grape | 5.69 | 6.19 |
 
 So the AA guarantee rides on `L` alone. Chroma and hue move freely underneath and
 **cannot** reintroduce the #254 bug class. That makes chroma a free aesthetic
@@ -103,9 +103,9 @@ Two constraints follow:
 - **Lime light is the tight one.** Green's gamut ceiling at L=0.50 is 0.157, the
   lowest of the four, and Lime carries the worst ratio in the system at every
   chroma. The light background value cannot drift downward without re-checking.
-- **Chroma is gamut-limited, not taste-limited, in five of eight cases.** Blue
-  dark caps at 0.111 and Berry/Violet dark at 0.135/0.140, all below today. A
-  shared dark chroma would have to sit under Blue's 0.111 and drag the other
+- **Chroma is gamut-limited, not taste-limited, in five of eight cases.** Blueberry
+  dark caps at 0.111 and Cherry/Grape dark at 0.135/0.140, all below today. A
+  shared dark chroma would have to sit under Blueberry's 0.111 and drag the other
   three down with it — which is why sign-off went per-theme.
 
 ### Two tokens disappear
@@ -124,7 +124,7 @@ Two constraints follow:
 collisions make that harder than it looks:
 
 - **success vs Lime** — both land near H 145–150. 0° separation.
-- **error vs Berry** — error sits at H≈26, proposed Berry at H=5. 22° apart.
+- **error vs Cherry** — error sits at H≈26, proposed Cherry at H=5. 22° apart.
 
 The issue flags the first. The second is equally real and was found during
 discuss. Both happen for a structural reason: today the semantics differ from the
@@ -139,9 +139,9 @@ Sign-off rejected it: at the bottom of the scale green is gamut-crushed (ceiling
 spent the very separation the band existed to provide.
 
 The resolution is to stop treating the collision as a problem. **Success is the
-Lime theme and error is the Berry theme** — same lightness, same chroma, same
+Lime theme and error is the Cherry theme** — same lightness, same chroma, same
 hue, no values of their own. Under Lime the success message and the accent are
-the same green; under Berry the error message and the accent are the same
+the same green; under Cherry the error message and the accent are the same
 berry. That is acceptable because colour is not carrying the meaning. Two other
 signals already do: the wording differs outright ("Solved in 2 tries!" against
 "Not quite — try again"), and a filled tick or cross sits beside it. Colour is
@@ -162,9 +162,9 @@ What this buys:
 | | hex | vs bg | vs surface |
 |---|---|---|---|
 | success light (Lime) | `#00791E` | 5.36 | 5.59 |
-| error light (Berry) | `#B60054` | 6.45 | 6.74 |
+| error light (Cherry) | `#B60054` | 6.45 | 6.74 |
 | success dark (Lime) | `#65D46D` | 9.98 | 7.64 |
-| error dark (Berry) | `#FF91AC` | 8.82 | 6.76 |
+| error dark (Cherry) | `#FF91AC` | 8.82 | 6.76 |
 
 **The dependency this creates:** the wording and the icons are load-bearing, not
 decorative. Losing one is survivable — losing both would leave colour as the only
@@ -266,7 +266,7 @@ Three perceptual questions the contrast maths could not answer. Decided
 Shared chroma read as visibly muted, which is what the prototype was built to
 test. The muting was never the lightness fix: L moves 0.536 → 0.50 in light,
 which is imperceptible. It was one shared chroma having to fit under the lowest
-ceiling across four hues, taking Violet from 0.237 → 0.14 and Berry from 0.219 →
+ceiling across four hues, taking Grape from 0.237 → 0.14 and Cherry from 0.219 →
 0.14.
 
 The rule is `min(today's chroma, the hue's sRGB ceiling at the AA lightness)`:
@@ -274,9 +274,9 @@ The rule is `min(today's chroma, the hue's sRGB ceiling at the AA lightness)`:
 | | light | vs today | dark | vs today |
 |---|---|---|---|---|
 | Lime | 0.157 | ceiling-capped from 0.178 | 0.174 | matches today |
-| Berry | 0.201 | ceiling-capped from 0.219 | 0.135 | ceiling-capped from 0.157 |
-| Blue | 0.178 | matches today | 0.111 | ceiling-capped from 0.151 |
-| Violet | 0.237 | matches today | 0.140 | ceiling-capped from 0.177 |
+| Cherry | 0.201 | ceiling-capped from 0.219 | 0.135 | ceiling-capped from 0.157 |
+| Blueberry | 0.178 | matches today | 0.111 | ceiling-capped from 0.151 |
+| Grape | 0.237 | matches today | 0.140 | ceiling-capped from 0.177 |
 
 Five of the eight are gamut-limited rather than chosen. That residual muting is
 the genuine cost of the AA fix in dark mode: clearing 4.5:1 on `surface` needs
@@ -326,7 +326,7 @@ Agreed up front, matched to a change where every colour on screen moves:
 - [ ] All accent text ≥4.5:1 on **both** `--color-bg` and `--color-surface`,
       4 themes × 2 modes, asserted by test
 - [ ] success/error distinguishable from the active accent, including under Lime
-      **and Berry**
+      **and Cherry**
 - [ ] Token parity test passing
 - [ ] axe suite green in light and dark, menu and modal cases included
 - [ ] DESIGN-SYSTEM.md rewritten around the derivation rules

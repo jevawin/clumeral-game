@@ -47,7 +47,12 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     // --color-accent inline here instead would win over the stylesheet and
     // pin /archive to a hardcoded value (#255).
     var saved = localStorage.getItem("dlng_colour");
-    var THEMES = ["Lime", "Berry", "Blue", "Violet"];
+    // Mirrors LEGACY_NAMES in src/colours.ts. /archive can be the first page a
+    // returning player hits, so it has to understand the pre-#255 names too or
+    // it would render Lime while the SPA renders their actual theme.
+    var LEGACY = { Berry: "Cherry", Blue: "Blueberry", Violet: "Grape" };
+    if (LEGACY[saved]) saved = LEGACY[saved];
+    var THEMES = ["Lime", "Cherry", "Blueberry", "Grape"];
     document.documentElement.dataset.theme =
       THEMES.indexOf(saved) !== -1 ? saved : "Lime";
   })();
@@ -63,9 +68,9 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
        per-theme rules are mirrored too — see below the base blocks. */
     --accent-l: 0.50;
     --chroma-lime:   0.157;
-    --chroma-berry:  0.201;
-    --chroma-blue:   0.178;
-    --chroma-violet: 0.237;
+    --chroma-cherry:  0.201;
+    --chroma-blueberry:   0.178;
+    --chroma-grape: 0.237;
     --accent-h: 145;
     --accent-c: var(--chroma-lime);
     --color-bg:      #FAFAFA;
@@ -74,15 +79,15 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
     --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
     --color-success: oklch(var(--accent-l) var(--chroma-lime) 145);
-    --color-error:   oklch(var(--accent-l) var(--chroma-berry) 5);
+    --color-error:   oklch(var(--accent-l) var(--chroma-cherry) 5);
   }
   :root.dark {
     color-scheme: dark;
     --accent-l: 0.78;
     --chroma-lime:   0.174;
-    --chroma-berry:  0.135;
-    --chroma-blue:   0.111;
-    --chroma-violet: 0.140;
+    --chroma-cherry:  0.135;
+    --chroma-blueberry:   0.111;
+    --chroma-grape: 0.140;
     --accent-c: var(--chroma-lime);
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
@@ -92,12 +97,12 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
 
   /* Per-theme hue and chroma — mirrors the html[data-theme] rules in
      src/tailwind.css. The inline script above sets the attribute from the saved
-     accent. Chroma is truncated to 3dp, never rounded: Berry dark's sRGB ceiling
+     accent. Chroma is truncated to 3dp, never rounded: Cherry dark's sRGB ceiling
      is 0.135523, so 0.136 would clip and shift lightness. */
   :root[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); }
-  :root[data-theme="Berry"]  { --accent-h: 5;   --accent-c: var(--chroma-berry); }
-  :root[data-theme="Blue"]   { --accent-h: 262; --accent-c: var(--chroma-blue); }
-  :root[data-theme="Violet"] { --accent-h: 305; --accent-c: var(--chroma-violet); }
+  :root[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); }
+  :root[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); }
+  :root[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: "Quicksand", system-ui, sans-serif; }

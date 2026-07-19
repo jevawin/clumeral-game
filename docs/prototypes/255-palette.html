@@ -37,32 +37,32 @@
   .proto-scope[data-mode="light"][data-cream="on"] { --base-light: #F3F1ED; --surface: #FAF8F4; }
   /* Toggle: per-theme chroma, capped at today's saturation.
      min(today's chroma, the hue's sRGB ceiling at the AA lightness). Five of the
-     eight are ceiling-limited and sit below today; three (Blue light, Violet
+     eight are ceiling-limited and sit below today; three (Blueberry light, Grape
      light, Lime dark) are pulled down off the ceiling to match today instead. */
   .proto-scope[data-chroma="per-theme"][data-theme="Lime"]   { --accent-c: 0.157; }  /* ceiling */
-  .proto-scope[data-chroma="per-theme"][data-theme="Berry"]  { --accent-c: 0.201; }  /* ceiling */
-  .proto-scope[data-chroma="per-theme"][data-theme="Blue"]   { --accent-c: 0.178; }  /* today */
-  .proto-scope[data-chroma="per-theme"][data-theme="Violet"] { --accent-c: 0.237; }  /* today */
+  .proto-scope[data-chroma="per-theme"][data-theme="Cherry"]  { --accent-c: 0.201; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-theme="Blueberry"]   { --accent-c: 0.178; }  /* today */
+  .proto-scope[data-chroma="per-theme"][data-theme="Grape"] { --accent-c: 0.237; }  /* today */
   .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.174; }  /* today */
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.135; }  /* ceiling */
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }  /* ceiling */
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Cherry"]  { --accent-c: 0.135; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blueberry"]   { --accent-c: 0.111; }  /* ceiling */
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Grape"] { --accent-c: 0.140; }  /* ceiling */
 
   /* Toggle: the same per-theme idea but uncapped, every hue at its ceiling.
      Kept only so the capped values can be compared against it. */
   .proto-scope[data-chroma="per-theme-max"][data-theme="Lime"]   { --accent-c: 0.157; }
-  .proto-scope[data-chroma="per-theme-max"][data-theme="Berry"]  { --accent-c: 0.201; }
-  .proto-scope[data-chroma="per-theme-max"][data-theme="Blue"]   { --accent-c: 0.231; }
-  .proto-scope[data-chroma="per-theme-max"][data-theme="Violet"] { --accent-c: 0.259; }
+  .proto-scope[data-chroma="per-theme-max"][data-theme="Cherry"]  { --accent-c: 0.201; }
+  .proto-scope[data-chroma="per-theme-max"][data-theme="Blueberry"]   { --accent-c: 0.231; }
+  .proto-scope[data-chroma="per-theme-max"][data-theme="Grape"] { --accent-c: 0.259; }
   .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.245; }
-  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.135; }
-  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }
-  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }
+  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Cherry"]  { --accent-c: 0.135; }
+  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Blueberry"]   { --accent-c: 0.111; }
+  .proto-scope[data-chroma="per-theme-max"][data-mode="dark"][data-theme="Grape"] { --accent-c: 0.140; }
   /* Hue angles per theme. */
   .proto-scope[data-theme="Lime"]   { --accent-h: 145; }
-  .proto-scope[data-theme="Berry"]  { --accent-h: 5; }
-  .proto-scope[data-theme="Blue"]   { --accent-h: 262; }
-  .proto-scope[data-theme="Violet"] { --accent-h: 305; }
+  .proto-scope[data-theme="Cherry"]  { --accent-h: 5; }
+  .proto-scope[data-theme="Blueberry"]   { --accent-h: 262; }
+  .proto-scope[data-theme="Grape"] { --accent-h: 305; }
 
   /* CURRENT palette, for the side-by-side. Hardcoded, as it is today. */
   .proto-scope[data-palette="current"] {
@@ -77,13 +77,13 @@
     --success: #4cc990; --error: #f07070; --on-accent: #121213;
   }
   .proto-scope[data-palette="current"][data-theme="Lime"]   { --accent: #0a850a; }
-  .proto-scope[data-palette="current"][data-theme="Berry"]  { --accent: #de1f46; }
-  .proto-scope[data-palette="current"][data-theme="Blue"]   { --accent: #376ddb; }
-  .proto-scope[data-palette="current"][data-theme="Violet"] { --accent: #9a44ea; }
+  .proto-scope[data-palette="current"][data-theme="Cherry"]  { --accent: #de1f46; }
+  .proto-scope[data-palette="current"][data-theme="Blueberry"]   { --accent: #376ddb; }
+  .proto-scope[data-palette="current"][data-theme="Grape"] { --accent: #9a44ea; }
   .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Lime"]   { --accent: #1ead52; }
-  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Berry"]  { --accent: #ea6c85; }
-  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Blue"]   { --accent: #6393f2; }
-  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Violet"] { --accent: #b679f0; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Cherry"]  { --accent: #ea6c85; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Blueberry"]   { --accent: #6393f2; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Grape"] { --accent: #b679f0; }
   /* Under the current palette, accent text uses accent-strong; under the
      proposed palette there is only one accent, so it falls back to it. */
   .proto-scope { --accent-text: var(--accent); }
@@ -107,7 +107,7 @@
 <body>
   <div class="proto-controls">
     <label>theme
-      <select id="theme"><option>Lime</option><option>Berry</option><option>Blue</option><option>Violet</option></select>
+      <select id="theme"><option>Lime</option><option>Cherry</option><option>Blueberry</option><option>Grape</option></select>
     </label>
     <label>mode
       <select id="mode"><option value="light">light</option><option value="dark">dark</option></select>

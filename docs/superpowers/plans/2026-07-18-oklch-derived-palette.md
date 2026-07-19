@@ -4,7 +4,7 @@
 
 **Goal:** Replace 31 hand-picked colour literals with a palette derived from two base neutrals, one lightness per mode, and one hue angle per theme — making the WCAG AA failure of #254 structurally unrepresentable.
 
-**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely per theme. `colours.ts` sets a `data-theme` attribute instead of two hexes, and CSS resolves hue and chroma from it. Success and error alias the Lime and Berry themes rather than carrying their own hue, chroma and lightness — the tick and cross icons carry the meaning, so colour is never the only signal.
+**Architecture:** Accents resolve as `oklch(var(--accent-l) var(--accent-c) var(--accent-h))`. Contrast is carried by `--accent-l` alone, shared across all four themes, so a theme cannot fail AA. Chroma and hue are contrast-inert and vary freely per theme. `colours.ts` sets a `data-theme` attribute instead of two hexes, and CSS resolves hue and chroma from it. Success and error alias the Lime and Cherry themes rather than carrying their own hue, chroma and lightness — the tick and cross icons carry the meaning, so colour is never the only signal.
 
 **Tech Stack:** Tailwind CSS v4 (`@theme`), Vite 8, Lightning CSS, Cloudflare Workers (SSR), Vitest, Playwright.
 
@@ -30,10 +30,10 @@ bases          dark #121213 · light #FAFAFA
 surfaces       dark #2A2A2B · light #FFFFFF
 text           dark #FAF8F4 · light #262624
 accent-l       light 0.50 · dark 0.78
-hue angles     Lime 145 · Berry 5 · Blue 262 · Violet 305
-accent chroma  light  Lime 0.157 · Berry 0.201 · Blue 0.178 · Violet 0.237
-               dark   Lime 0.174 · Berry 0.135 · Blue 0.111 · Violet 0.140
-semantics      success = Lime · error = Berry      (aliases, not values)
+hue angles     Lime 145 · Cherry 5 · Blueberry 262 · Grape 305
+accent chroma  light  Lime 0.157 · Cherry 0.201 · Blueberry 0.178 · Grape 0.237
+               dark   Lime 0.174 · Cherry 0.135 · Blueberry 0.111 · Grape 0.140
+semantics      success = Lime · error = Cherry      (aliases, not values)
 ```
 
 This is the full count from `src/palette.ts`. Earlier figures in this document
@@ -42,7 +42,7 @@ text colours; under that same convention the previous design carried 26 values
 and this one carries 20.
 
 Chroma is `min(today's chroma, the hue's sRGB ceiling at that lightness)`. Five
-of the eight are ceiling-limited; three (Blue light, Violet light, Lime dark) sit
+of the eight are ceiling-limited; three (Blueberry light, Grape light, Lime dark) sit
 at today's value with headroom to spare.
 
 ### Resolved — light (`bg #FAFAFA`, `surface #FFFFFF`, `text #262624`)
@@ -50,24 +50,24 @@ at today's value with headroom to spare.
 | token | hex | vs bg | vs surface |
 |---|---|---|---|
 | Lime | `#00791E` | 5.36 | 5.59 |
-| Berry | `#B60054` | 6.45 | 6.74 |
-| Blue | `#245BC7` | 5.92 | 6.18 |
-| Violet | `#8420CB` | 6.60 | 6.89 |
+| Cherry | `#B60054` | 6.45 | 6.74 |
+| Blueberry | `#245BC7` | 5.92 | 6.18 |
+| Grape | `#8420CB` | 6.60 | 6.89 |
 | text | `#262624` | 14.53 | 15.16 |
 | success | `#00791E` | 5.36 | 5.59 |  ← the Lime accent
-| error | `#B60054` | 6.45 | 6.74 |  ← the Berry accent
+| error | `#B60054` | 6.45 | 6.74 |  ← the Cherry accent
 
 ### Resolved — dark (`bg #121213`, `surface #2A2A2B`, `text #FAF8F4`)
 
 | token | hex | vs bg | vs surface |
 |---|---|---|---|
 | Lime | `#65D46D` | 9.98 | 7.64 |
-| Berry | `#FF91AC` | 8.82 | 6.76 |
-| Blue | `#90B7FF` | 9.27 | 7.10 |
-| Violet | `#CC9FFF` | 8.89 | 6.81 |
+| Cherry | `#FF91AC` | 8.82 | 6.76 |
+| Blueberry | `#90B7FF` | 9.27 | 7.10 |
+| Grape | `#CC9FFF` | 8.89 | 6.81 |
 | text | `#FAF8F4` | 17.65 | 13.52 |
 | success | `#65D46D` | 9.98 | 7.64 |  ← the Lime accent
-| error | `#FF91AC` | 8.82 | 6.76 |  ← the Berry accent
+| error | `#FF91AC` | 8.82 | 6.76 |  ← the Cherry accent
 
 Every dark chroma except Lime's is at its sRGB ceiling — L=0.78 is what AA on
 `surface` requires, and it leaves little room for saturation. Lime is the one
@@ -149,18 +149,18 @@ via `file://`.
   .proto-scope[data-cream="off"] { --base-light: #FAFAFA; --surface: #FFFFFF; }
   /* Toggle: per-theme chroma at each hue's sRGB ceiling. */
   .proto-scope[data-chroma="per-theme"][data-theme="Lime"]   { --accent-c: 0.157; }
-  .proto-scope[data-chroma="per-theme"][data-theme="Berry"]  { --accent-c: 0.201; }
-  .proto-scope[data-chroma="per-theme"][data-theme="Blue"]   { --accent-c: 0.232; }
-  .proto-scope[data-chroma="per-theme"][data-theme="Violet"] { --accent-c: 0.260; }
+  .proto-scope[data-chroma="per-theme"][data-theme="Cherry"]  { --accent-c: 0.201; }
+  .proto-scope[data-chroma="per-theme"][data-theme="Blueberry"]   { --accent-c: 0.232; }
+  .proto-scope[data-chroma="per-theme"][data-theme="Grape"] { --accent-c: 0.260; }
   .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Lime"]   { --accent-c: 0.245; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Berry"]  { --accent-c: 0.135; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blue"]   { --accent-c: 0.111; }
-  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Violet"] { --accent-c: 0.140; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Cherry"]  { --accent-c: 0.135; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Blueberry"]   { --accent-c: 0.111; }
+  .proto-scope[data-chroma="per-theme"][data-mode="dark"][data-theme="Grape"] { --accent-c: 0.140; }
   /* Hue angles per theme. */
   .proto-scope[data-theme="Lime"]   { --accent-h: 145; }
-  .proto-scope[data-theme="Berry"]  { --accent-h: 5; }
-  .proto-scope[data-theme="Blue"]   { --accent-h: 262; }
-  .proto-scope[data-theme="Violet"] { --accent-h: 305; }
+  .proto-scope[data-theme="Cherry"]  { --accent-h: 5; }
+  .proto-scope[data-theme="Blueberry"]   { --accent-h: 262; }
+  .proto-scope[data-theme="Grape"] { --accent-h: 305; }
 
   /* CURRENT palette, for the side-by-side. Hardcoded, as it is today. */
   .proto-scope[data-palette="current"] {
@@ -175,13 +175,13 @@ via `file://`.
     --success: #4cc990; --error: #f07070; --on-accent: #121213;
   }
   .proto-scope[data-palette="current"][data-theme="Lime"]   { --accent: #0a850a; }
-  .proto-scope[data-palette="current"][data-theme="Berry"]  { --accent: #de1f46; }
-  .proto-scope[data-palette="current"][data-theme="Blue"]   { --accent: #376ddb; }
-  .proto-scope[data-palette="current"][data-theme="Violet"] { --accent: #9a44ea; }
+  .proto-scope[data-palette="current"][data-theme="Cherry"]  { --accent: #de1f46; }
+  .proto-scope[data-palette="current"][data-theme="Blueberry"]   { --accent: #376ddb; }
+  .proto-scope[data-palette="current"][data-theme="Grape"] { --accent: #9a44ea; }
   .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Lime"]   { --accent: #1ead52; }
-  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Berry"]  { --accent: #ea6c85; }
-  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Blue"]   { --accent: #6393f2; }
-  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Violet"] { --accent: #b679f0; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Cherry"]  { --accent: #ea6c85; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Blueberry"]   { --accent: #6393f2; }
+  .proto-scope[data-palette="current"][data-mode="dark"][data-theme="Grape"] { --accent: #b679f0; }
   /* Under the current palette, accent text uses accent-strong; under the
      proposed palette there is only one accent, so it falls back to it. */
   .proto-scope { --accent-text: var(--accent); }
@@ -205,7 +205,7 @@ via `file://`.
 <body>
   <div class="proto-controls">
     <label>theme
-      <select id="theme"><option>Lime</option><option>Berry</option><option>Blue</option><option>Violet</option></select>
+      <select id="theme"><option>Lime</option><option>Cherry</option><option>Blueberry</option><option>Grape</option></select>
     </label>
     <label>mode
       <select id="mode"><option value="light">light</option><option value="dark">dark</option></select>
@@ -347,8 +347,8 @@ Verify by eye, and specifically check the two collision cases the spec calls out
 - **theme Lime + screen completion** — "Correct!" must not read as ordinary
   accent text. Separation here is the 0.10 lightness step, since success (H 150)
   and Lime (H 145) are only 5° apart.
-- **theme Berry + screen completion** — "Wrong" must not read as ordinary accent
-  text. Same 0.10 step; error (H 27) and Berry (H 5) are 22° apart.
+- **theme Cherry + screen completion** — "Wrong" must not read as ordinary accent
+  text. Same 0.10 step; error (H 27) and Cherry (H 5) are 22° apart.
 
 - [x] **Step 4: Commit the prototype**
 
@@ -661,7 +661,7 @@ describe('palette AA guarantee', () => {
       expect(contrastRatio(hex, surface), `${name} on surface`).toBeGreaterThanOrEqual(4.5);
     }
     // The lightness gap is what keeps success readable under Lime and error
-    // readable under Berry, where hue separation alone is 5 deg and 22 deg.
+    // readable under Cherry, where hue separation alone is 5 deg and 22 deg.
     expect(Math.abs(accentL - semanticL)).toBeGreaterThanOrEqual(0.09);
   });
 
@@ -697,7 +697,7 @@ mirror, and the tests all agree on.
 // Adding a fifth theme means adding one hue angle here. Nothing else.
 
 export const PALETTE = {
-  hues: { Lime: 145, Berry: 5, Blue: 262, Violet: 305 },
+  hues: { Lime: 145, Cherry: 5, Blueberry: 262, Grape: 305 },
 
   semantics: {
     success: { hue: 150, chroma: 0.11 },
@@ -709,9 +709,9 @@ export const PALETTE = {
     surface: '#FFFFFF',
     text: '#262624',
     accentL: 0.5,
-    // min(today's chroma, the hue's sRGB ceiling at accentL). Lime and Berry are
-    // ceiling-capped; Blue and Violet sit at today's value with room to spare.
-    accentC: { Lime: 0.157, Berry: 0.201, Blue: 0.178, Violet: 0.237 },
+    // min(today's chroma, the hue's sRGB ceiling at accentL). Lime and Cherry are
+    // ceiling-capped; Blueberry and Grape sit at today's value with room to spare.
+    accentC: { Lime: 0.157, Cherry: 0.201, Blueberry: 0.178, Grape: 0.237 },
     semanticL: 0.4,
   },
 
@@ -724,7 +724,7 @@ export const PALETTE = {
     // requires, and a lighter colour has less room for chroma — so these are
     // gamut limits, not choices. Lime could reach 0.245 and is held at today's
     // value instead.
-    accentC: { Lime: 0.174, Berry: 0.135, Blue: 0.111, Violet: 0.140 },
+    accentC: { Lime: 0.174, Cherry: 0.135, Blueberry: 0.111, Grape: 0.140 },
     semanticL: 0.68,
   },
 } as const;
@@ -797,7 +797,7 @@ with:
 
   /* Success / error must stay green and red whichever accent is active. At a
      fixed accent lightness, hue is the only differentiator left — and success
-     (H 150) sits 5 deg from Lime, error (H 27) sits 22 deg from Berry. The
+     (H 150) sits 5 deg from Lime, error (H 27) sits 22 deg from Cherry. The
      lightness step is what keeps them readable as feedback rather than as
      ordinary accent text. Deeper rather than lighter in both modes: pushing the
      dark semantics up collapses red's gamut ceiling to a pale pink. */
@@ -813,16 +813,16 @@ rules, not tokens):
 
 ```css
 html[data-theme="Lime"]   { --accent-h: 145; --accent-c: 0.157; }
-html[data-theme="Berry"]  { --accent-h: 5;   --accent-c: 0.201; }
-html[data-theme="Blue"]   { --accent-h: 262; --accent-c: 0.178; }
-html[data-theme="Violet"] { --accent-h: 305; --accent-c: 0.237; }
+html[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: 0.201; }
+html[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: 0.178; }
+html[data-theme="Grape"] { --accent-h: 305; --accent-c: 0.237; }
 
 /* Dark chroma is lower for every theme but Lime: L=0.78 leaves less sRGB room
    for saturation. Hue does not vary by mode, so it is not repeated. */
 html.dark[data-theme="Lime"]   { --accent-c: 0.174; }
-html.dark[data-theme="Berry"]  { --accent-c: 0.135; }
-html.dark[data-theme="Blue"]   { --accent-c: 0.111; }
-html.dark[data-theme="Violet"] { --accent-c: 0.140; }
+html.dark[data-theme="Cherry"]  { --accent-c: 0.135; }
+html.dark[data-theme="Blueberry"]   { --accent-c: 0.111; }
+html.dark[data-theme="Grape"] { --accent-c: 0.140; }
 ```
 
 - [ ] **Step 2: Replace the `html.dark` override**
@@ -1229,7 +1229,7 @@ Replace the hand-picked palette listing with the derivation. Cover:
   now clears AA on both `bg` and `surface`; on-accent is `bg`, which makes the
   two directions the same ratio by symmetry.
 - **The semantic lightness band** — why success/error sit `accent-l − 0.10`, and
-  the Lime/Berry collisions that make it necessary.
+  the Lime/Cherry collisions that make it necessary.
 - **The two known exceptions** — `--octo-c1/2/3` stay hardcoded hex (#210,
   cannot use `var()` in SVG `fill` keyframes, decorative, no contrast
   requirement); and the Worker token mirror in `src/worker/puzzles.ts`, guarded

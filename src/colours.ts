@@ -20,9 +20,19 @@ interface ColourTheme {
 // here rather than in palette.ts, which holds colour values and nothing else.
 const ICONS: Record<ThemeName, string> = {
   Lime: 'citrus',
-  Berry: 'cherry',
-  Blue: 'blueberry',
-  Violet: 'grape',
+  Cherry: 'cherry',
+  Blueberry: 'blueberry',
+  Grape: 'grape',
+};
+
+// Themes were renamed to fruit in #255. The stored preference is the theme name
+// itself, so without this every player not on Lime would silently reset to Lime
+// on their next visit. Reads are migrated and rewritten, so this can be dropped
+// once enough time has passed for stored values to have turned over.
+const LEGACY_NAMES: Record<string, ThemeName> = {
+  Berry: 'Cherry',
+  Blue: 'Blueberry',
+  Violet: 'Grape',
 };
 
 // Hue plus a chroma per mode. Lightness is shared and lives in tailwind.css,
@@ -103,8 +113,16 @@ function renderSwatches(): void {
 
 export function initColours(): void {
   const saved = localStorage.getItem(STORAGE_COLOUR);
-  const found = saved ? THEMES.find((t) => t.name === saved) : null;
+  const migrated = saved ? (LEGACY_NAMES[saved] ?? saved) : null;
+  const found = migrated ? THEMES.find((t) => t.name === migrated) : null;
   active = found ?? THEMES.find((t) => t.name === 'Lime')!;
+
+  // Write the new name back so the migration only has to happen once.
+  if (saved && migrated !== saved) {
+    try {
+      localStorage.setItem(STORAGE_COLOUR, active.name);
+    } catch { /* private mode — the migration just repeats next visit */ }
+  }
 
   renderSwatches();
   applyColour(active);
