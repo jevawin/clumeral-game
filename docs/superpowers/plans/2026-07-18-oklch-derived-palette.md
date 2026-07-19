@@ -1397,7 +1397,13 @@ git commit -m "test: update colour assertions for the derived palette (#255)"
 
 ## Task 11: Remove the prototype and open the PR
 
-- [ ] **Step 1: Delete the prototype**
+**Done 2026-07-19. PR [#258](https://github.com/jevawin/clumeral-game/pull/258)
+against `staging`.** The DA review found two HIGH issues; both were reproduced
+independently and fixed before the PR opened (`05bc3c2`). Details under Step 3.
+
+Final QA after the review fixes: **182 unit · 36 axe · 272 e2e**, 0 failures.
+
+- [x] **Step 1: Delete the prototype**
 
 It served its purpose at sign-off and should not ship. It stays in git history if
 anyone wants it back.
@@ -1409,7 +1415,17 @@ git commit -m "chore: remove the #255 prototype comparison page
 Signed off in Task 1. Kept in history at the commit that added it."
 ```
 
-- [ ] **Step 2: Count the literals**
+- [x] **Step 2: Count the literals**
+
+**Result:** 14 unique hexes in the grep's scope, not the ~12 predicted — the
+prediction forgot the octopus mascot fill (`#F6F0E8`) and the `theme-color` meta
+(`#f5edd8`). Palette-relevant literals went **18 → 6** (the six neutrals); the
+other 8 are decorative and pre-existing. The honest headline used in the PR is
+**31 literals → 20 declared values**, as the plan anticipated.
+
+`src/worker/feedback.ts` and `src/worker/stats.ts` carry 22 more hexes between
+them. Those are internal dashboards, not player-facing, and are out of scope.
+
 
 Confirm the headline claim before writing it in the PR body.
 
@@ -1422,18 +1438,73 @@ text colours, and the six `--octo-c*` decorative stops. The hue and chroma
 numbers are not hex literals, so this grep does not see them; the honest headline
 is 31 literals → ~18 declared values, not → 12.
 
-- [ ] **Step 3: DA review**
+- [x] **Step 3: DA review**
 
 Dispatch a **fresh-context subagent** per [docs/DA-REVIEW.md](../../DA-REVIEW.md).
 Give it the issue, the spec, and the diff. Do not summarise your own work for it
 — the point is a reviewer without your assumptions.
 
-- [ ] **Step 4: Self-review**
+Done. It was given the issue, the spec and the diff, and told explicitly *not* to
+read this plan. It earned the gate — **two HIGH findings**, both real, both
+reproduced before fixing:
+
+1. **`palette.ts` was not the source of truth it claimed to be.** Shipped code
+   read only `hues` and `accentC`; `accentL`, `bg`, `surface` and `text` were
+   read by nothing but the contrast test. `token-parity.spec.ts` compared the two
+   stylesheets *to each other*, so they could drift together away from
+   `palette.ts`. Verified the scenario: setting `--accent-l: 0.62` in both CSS
+   files passed all 169 tests while shipping light mode under 4.5:1. **This is
+   the exact bug class the whole task exists to remove**, reachable through the
+   single parameter the design rests on. Parity is now three-way; the drift
+   scenario was re-run and fails.
+
+2. **`?from=archive` was still bounced for its target user.** `coldRedirect`
+   calls `replaceState` at `router.ts:194`, rewriting the pathname, and
+   `fromArchive` read it afterwards. Any returning player whose last SPA visit
+   was an earlier day — the normal case for archive browsing — lost the marker.
+   `96e83d4`'s "lands on /play in every case" was false. The five router tests
+   never seeded a stale `dlng_last_visit_date`, so they passed over it. Marker is
+   now read before the redirect and exempted from it; 2 tests added, the first
+   fails without the fix.
+
+Also actioned: parity compares token *sets* by pattern rather than a fixed list;
+theme list and semantic aliases derive from `PALETTE`; the duplicated
+`LEGACY_NAMES` map is parity-checked; `Object.hasOwn` guards the legacy lookup;
+dead `[data-swatches]` rule removed; stale `--octo-c*` and archive-anchor
+comments corrected.
+
+Accepted rather than fixed, documented in `DESIGN-SYSTEM.md`: `--color-border`
+has a light-only Lightning CSS fallback (`#2626241f`) that only affects browsers
+predating `color-mix` support. Fixing it means reintroducing a hand-maintained
+per-mode literal, which is what this task removes.
+
+- [x] **Step 4: Self-review**
 
 Follow [docs/SELF-REVIEW.md](../../SELF-REVIEW.md) line by line over the full
 diff.
 
-- [ ] **Step 5: Push and open the PR against `staging`**
+Done against `origin/staging...HEAD` (not `main...HEAD` — staging carries #254
+and #253, which are not this PR's work). Caught two comments the branch had made
+stale, the checklist's stated #1 miss: `tailwind.css` claimed the Worker mirror
+carries no per-theme rules, and `a11y.spec.ts` still credited the removed
+`--color-on-accent` token. Fixed in `1e39ce9`.
+
+- [x] **Step 5: Push and open the PR against `staging`** — [#258](https://github.com/jevawin/clumeral-game/pull/258)
+
+Every bullet below is covered in the body, plus the four extra pieces of work and
+the DA findings. Axe theme coverage was added during this step by decision
+(`36986dd`): every axe scan had only ever run on the default Lime, so the other
+three themes were never scanned. 24 → 36 axe tests, all green.
+
+QA was re-run in full after the review fixes, since they changed shipped code:
+**182 unit · 36 axe · 272 e2e**, 0 failures.
+
+> One process note for next time: the first full e2e re-run **exited 0 while
+> actually failing** — port 4173 was held by a preview server, so Playwright
+> never started. `npm run test:e2e` masking a hard failure behind exit 0 is worth
+> knowing about. Stop preview servers before a suite run and read the tail, do
+> not trust the exit code.
+
 
 ```bash
 git push -u origin issue/255
