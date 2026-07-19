@@ -147,23 +147,33 @@
        One per colour theme. citrus/cherry/grape are Lucide; blueberry is drawn
        to match — Lucide has no berry, so it is a circle with an oversized
        asterisk calyx offset to the top right, at the same stroke weight and
-       cap style as the rest of the set. -->
-  <symbol id="icon-citrus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+       cap style as the rest of the set.
+
+       Stroke is currentColor; fill comes from the icon-fill custom property and
+       defaults to none, so one symbol serves both a hollow and a two-tone
+       treatment. Custom properties inherit into a use shadow tree, which a
+       presentation attribute of fill="none" would have blocked. Open paths
+       (stems, the calyx, the citrus segments) are pinned to fill:none so they
+       stay strokes rather than being implicitly closed and filled.
+
+       NB: XML comments cannot contain a double hyphen, so custom property names
+       are spelled out here rather than written literally. -->
+  <symbol id="icon-citrus" viewBox="0 0 24 24" style="fill:var(--icon-fill,none)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M21.66 17.67a1.08 1.08 0 0 1-.04 1.6A12 12 0 0 1 4.73 2.38a1.1 1.1 0 0 1 1.61-.04z" />
-    <path d="M19.65 15.66A8 8 0 0 1 8.35 4.34" />
-    <path d="m14 10-5.5 5.5" />
-    <path d="M14 17.85V10H6.15" />
+    <path style="fill:none" d="M19.65 15.66A8 8 0 0 1 8.35 4.34" />
+    <path style="fill:none" d="m14 10-5.5 5.5" />
+    <path style="fill:none" d="M14 17.85V10H6.15" />
   </symbol>
 
-  <symbol id="icon-cherry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="icon-cherry" viewBox="0 0 24 24" style="fill:var(--icon-fill,none)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M2 17a5 5 0 0 0 10 0c0-2.76-2.5-5-5-3-2.5-2-5 .24-5 3Z" />
     <path d="M12 17a5 5 0 0 0 10 0c0-2.76-2.5-5-5-3-2.5-2-5 .24-5 3Z" />
-    <path d="M7 14c3.22-2.91 4.29-8.75 5-12 1.66 2.38 4.94 9 5 12" />
+    <path style="fill:none" d="M7 14c3.22-2.91 4.29-8.75 5-12 1.66 2.38 4.94 9 5 12" />
     <path d="M22 9c-4.29 0-7.14-2.33-10-7 5.71 0 10 4.67 10 7Z" />
   </symbol>
 
-  <symbol id="icon-grape" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M22 5V2l-5.89 5.89" />
+  <symbol id="icon-grape" viewBox="0 0 24 24" style="fill:var(--icon-fill,none)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path style="fill:none" d="M22 5V2l-5.89 5.89" />
     <circle cx="16.6" cy="15.89" r="3" />
     <circle cx="8.11" cy="7.4" r="3" />
     <circle cx="12.35" cy="11.65" r="3" />
@@ -174,11 +184,11 @@
     <circle cx="5" cy="19" r="3" />
   </symbol>
 
-  <symbol id="icon-blueberry" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="icon-blueberry" viewBox="0 0 24 24" style="fill:var(--icon-fill,none)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="10.5" cy="13.5" r="7.5" />
-    <path d="M17 3.5v7" />
-    <path d="M13.97 5.25l6.06 3.5" />
-    <path d="M13.97 8.75l6.06-3.5" />
+    <path style="fill:none" d="M17 3.5v7" />
+    <path style="fill:none" d="M13.97 5.25l6.06 3.5" />
+    <path style="fill:none" d="M13.97 8.75l6.06-3.5" />
   </symbol>
 
 </svg>

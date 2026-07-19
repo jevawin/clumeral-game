@@ -341,38 +341,57 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     /* radiogroup wrapper */
   }
   .swatch-btn {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 9999px;
     border: none;
     padding: 0;
     cursor: pointer;
     display: grid;
     place-items: center;
-    background: oklch(var(--accent-l) var(--swatch-cl) var(--swatch-h));
-    box-shadow: 0 0 0 2px transparent;
-    transition: box-shadow 150ms ease;
+    background: transparent;
+    --swatch-colour: oklch(var(--accent-l) var(--swatch-cl) var(--swatch-h));
+    /* The tint the lit mini digit box beside each clue uses (app.ts:
+       border-accent bg-accent/50). */
+    --swatch-tint: color-mix(in srgb, var(--swatch-colour) 50%, transparent);
+    transition: background-color 150ms ease;
   }
   /* Kept, unlike the rest of the dark colour rules: --accent-l flips on its own
      but swatch chroma cannot, because each dot carries its own pair (#255). */
   html.dark .swatch-btn {
-    background: oklch(var(--accent-l) var(--swatch-cd) var(--swatch-h));
+    --swatch-colour: oklch(var(--accent-l) var(--swatch-cd) var(--swatch-h));
   }
-  /* The fruit sits in the page background colour on top of the accent fill —
-     the on-accent rule, so its contrast is the accent-on-bg ratio by symmetry
-     and needs no separate check. 14px inside 24px keeps the ring clear. */
+  .swatch-btn > * { grid-area: 1 / 1; }
+
+  /* Unselected: line art in the theme colour, filled with its own 50% tint. */
   .swatch-btn svg {
-    width: 14px;
-    height: 14px;
-    color: var(--color-bg);
+    width: 24px;
+    height: 24px;
+    color: var(--swatch-colour);
+    --icon-fill: var(--swatch-tint);
     pointer-events: none;
   }
+
+  /* Selected: the fruit inverts onto a solid disc of its own colour. The stroke
+     takes the tint rendered opaquely over the page background, so it reads as a
+     cut-out of the disc; the fill matches the disc and disappears into it.
+     Solid-vs-outline is a shape difference, not a colour one, so the selected
+     state does not rely on hue to be perceivable. */
   .swatch-btn[aria-checked="true"] {
-    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text);
+    background: var(--swatch-colour);
   }
+  .swatch-btn[aria-checked="true"] svg {
+    color: color-mix(in srgb, var(--swatch-colour) 50%, var(--color-bg));
+    --icon-fill: var(--swatch-colour);
+  }
+
+  /* outline rather than a box-shadow ring: the menu panel is --color-surface,
+     not --color-bg, so a shadow gap would have to guess the backdrop colour.
+     outline-offset leaves a real transparent gap, which keeps the ring legible
+     against both the solid selected disc and the panel behind it. */
   .swatch-btn:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text);
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
   @media (prefers-reduced-motion: reduce) {
     .swatch-btn { transition: none; }
