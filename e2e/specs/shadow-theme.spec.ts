@@ -55,9 +55,17 @@ async function cherryActiveShadow(page: Page): Promise<{ shadow: Rgb; accent: Rg
     .locator('[data-digit="0"]')
     .evaluate((el) => getComputedStyle(el).boxShadow);
 
-  const srgb = boxShadow.match(/color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
+  // Channels can be negative or use exponent notation. An accent sitting on its
+  // sRGB gamut ceiling lands a channel at exactly 0, and float error takes it a
+  // hair under — Cherry light serialises green as -0.000748. The browser clamps
+  // that to 0 when it paints, and `resolvedAccent` clamps too by going through a
+  // canvas, so clamping here keeps both sides of the comparison in the same space.
+  const num = String.raw`-?[\d.]+(?:e-?\d+)?`;
+  const srgb = boxShadow.match(new RegExp(`color\\(srgb\\s+(${num})\\s+(${num})\\s+(${num})`));
   expect(srgb, `expected an srgb color-mix shadow, got: ${boxShadow}`).not.toBeNull();
-  const [r, g, b] = srgb!.slice(1, 4).map((c) => Math.round(parseFloat(c) * 255));
+  const [r, g, b] = srgb!
+    .slice(1, 4)
+    .map((c) => Math.min(255, Math.max(0, Math.round(parseFloat(c) * 255))));
 
   return { shadow: { r, g, b }, accent: await resolvedAccent(page) };
 }
