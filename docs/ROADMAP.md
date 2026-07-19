@@ -21,20 +21,25 @@ Rules that keep it from rotting:
 ## Next
 
 **Puzzle integrity** (quick, unblocked — user-prioritised)
+
 1. [#235](https://github.com/jevawin/clumeral-game/issues/235) Audit + document the early archive — audit, not fix: originals are in KV and served from KV (spot-check green)
 2. [#193](https://github.com/jevawin/clumeral-game/issues/193) Add the redundant-clue removal pass to the generator — safe: cleans future puzzles only; optional KV backfill is answer-safe
 
+**Environment** (unblocks sharing staging without the workers.dev URL)
+
+3. [#260](https://github.com/jevawin/clumeral-game/issues/260) Set up `staging.clumeral.com` as a real staging environment — **gated on #257**: needs a separate Worker with its own KV, its own D1 and no cron, and standing up a second potential cron writer before #257 settles puzzle-write ownership works against it. Workers preview URLs cannot take a custom subdomain, so a second Worker is the only route
+
 **Usability core** (teach how to play + in-puzzle features)
 
-3. [#251](https://github.com/jevawin/clumeral-game/issues/251) Undo + Reset controls above the digit boxes — lead; strongest user demand (feedback D1 row #12)
-4. [#78](https://github.com/jevawin/clumeral-game/issues/78) Tap a box → surface only the clues relevant to it — when: after #251
-5. [#196](https://github.com/jevawin/clumeral-game/issues/196) Highlight the violated clues after a wrong guess — when: after #78
-6. [#227](https://github.com/jevawin/clumeral-game/issues/227) Full interactive guided tutorial with Clue — replaces the #214 MVP
-7. [#189](https://github.com/jevawin/clumeral-game/issues/189) Feedback-sent toast + (i) info-icon explanations — small; toast system already built
+4. [#251](https://github.com/jevawin/clumeral-game/issues/251) Undo + Reset controls above the digit boxes — lead; strongest user demand (feedback D1 row #12)
+5. [#78](https://github.com/jevawin/clumeral-game/issues/78) Tap a box → surface only the clues relevant to it — when: after #251
+6. [#196](https://github.com/jevawin/clumeral-game/issues/196) Highlight the violated clues after a wrong guess — when: after #78
+7. [#227](https://github.com/jevawin/clumeral-game/issues/227) Full interactive guided tutorial with Clue — replaces the #214 MVP
+8. [#189](https://github.com/jevawin/clumeral-game/issues/189) Feedback-sent toast + (i) info-icon explanations — small; toast system already built
 
 **Hygiene**
 
-8. [#256](https://github.com/jevawin/clumeral-game/issues/256) Exclude `.planning/` from the Tailwind content scan — **unblocked**: #255 shipped 2026-07-19, so the stylesheet has settled
+9. [#256](https://github.com/jevawin/clumeral-game/issues/256) Exclude `.planning/` from the Tailwind content scan — **unblocked**: #255 shipped 2026-07-19, so the stylesheet has settled
 
 ## Future — playability, stats, then depth
 
