@@ -96,12 +96,12 @@ From the dashboard, click **Resolve** / **Reopen**. That posts to
 Three things about that route are deliberate and easy to break:
 
 - **It only works on `clumeral.com` and `localhost`.** Everywhere else it 404s. This is
-  the important one. There is a single D1 binding and no environment override in
-  [wrangler.jsonc](../wrangler.jsonc), so **every preview deploy reads and writes the
-  production feedback database** — `staging-clumeral-game.jevawin.workers.dev` included.
-  Cloudflare Access cannot protect those hosts: a self-hosted Access app needs a hostname
-  on a zone in the account, and `workers.dev` is not one. Without the host gate, anyone
-  who was ever sent a preview link could `curl` triage changes into real rows.
+  not an authentication measure — Access *does* cover `workers.dev` hosts when the policy
+  pattern matches them. It is **data isolation**: there is a single D1 binding and no
+  environment override in [wrangler.jsonc](../wrangler.jsonc), so every preview deploy is
+  bound to the **production** feedback database. A signed-in admin resolving rows from
+  staging would be mutating real triage state. [#260](https://github.com/jevawin/clumeral-game/issues/260)
+  — a real staging Worker with its own D1 — is the actual fix.
   On production it additionally requires the `Cf-Access-Jwt-Assertion` header, so the
   route fails closed if the Access app is ever removed or re-scoped.
 - **It lives under `/feedback`, not `/api/feedback`.** Cloudflare Access gates the
@@ -115,6 +115,42 @@ Three things about that route are deliberate and easy to break:
 
 Consequence worth knowing: **you cannot test Resolve/Reopen from a preview URL.** Use
 localhost, or production after merge.
+
+## The dashboard is production-only
+
+`GET /feedback` on any non-canonical host **302s to `https://clumeral.com/feedback`**.
+Preview deploys never render it.
+
+Access is still the primary gate, but it is configured per hostname *pattern*, and preview
+hostnames are open-ended — a URL exists for every branch ever pushed. On **2026-07-22** a
+policy covering `*-clumeral-game.jevawin.workers.dev` left the bare
+`clumeral-game.jevawin.workers.dev` serving 12 live submissions, diagnostics included, to
+anyone who asked. The wildcard needed something before the hyphen.
+
+The redirect needs no pattern, so a new branch name cannot outrun it. Keep both: the
+redirect is the backstop, Access is the gate.
+
+**Two policy shapes to get right**, because neither is covered by the code:
+
+- `*.clumeral.com` does **not** match the apex `clumeral.com`. The canonical dashboard
+  needs its own entry — this is the one that matters, since the redirect points *at* it.
+- `*-clumeral-game.jevawin.workers.dev` does not match the bare
+  `clumeral-game.jevawin.workers.dev`.
+
+If Access is missing on the apex, `Cf-Access-Jwt-Assertion` never arrives and
+**Resolve/Reopen returns 403 in production** — fail-closed by design, but it looks like a
+broken button. Check the policy first.
+
+To verify coverage from the terminal — a `302` to `cloudflareaccess.com` is good, a `200`
+means exposed:
+
+```bash
+for u in https://clumeral.com/feedback \
+         https://clumeral-game.jevawin.workers.dev/feedback \
+         https://staging-clumeral-game.jevawin.workers.dev/feedback; do
+  curl -s -o /dev/null -w "%{http_code}  $u\n" "$u"
+done
+```
 
 To set `github_issue`, or to change state in bulk, go straight to D1:
 

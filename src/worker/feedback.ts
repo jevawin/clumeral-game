@@ -76,19 +76,30 @@ export function isSameOrigin(origin: string | null, expected: string): boolean {
   return origin === expected;
 }
 
-// Which hosts may mutate triage state.
+// The hosts where the feedback dashboard is allowed to operate at all: the real site,
+// and the developer's own machine (which is what the e2e suite drives). Everything
+// else is a preview deploy.
 //
-// This exists because there is exactly one D1 binding and no environment override
-// (wrangler.jsonc), so *every* preview deploy — `{branch}-clumeral-game.jevawin.workers.dev`,
-// staging included — reads and writes the PRODUCTION feedback database. Cloudflare
-// Access cannot cover those hosts: a self-hosted Access app needs a hostname on a zone
-// in the account, and `workers.dev` is not one. Without this gate, anyone who was ever
-// sent a preview link could POST triage changes to real rows, and the same-origin check
-// would wave it through because a curl caller sets Origin freely.
+// This governs two behaviours, for two different reasons:
 //
-// clumeral.com is behind Access. localhost is the developer's own machine (and is what
-// the e2e suite drives). Everything else is a preview host: read-only.
-export function canWriteTriage(hostname: string): boolean {
+//   1. Reads on a preview host redirect to production (see /feedback in index.ts).
+//      Preview hostnames are open-ended — a per-branch URL exists for every branch that
+//      has ever been pushed — so protecting them by enumerating patterns in a Cloudflare
+//      Access policy is a losing game. On 2026-07-22 a policy covering
+//      `*-clumeral-game.jevawin.workers.dev` left the bare `clumeral-game.jevawin.workers.dev`
+//      serving live feedback to anyone. A rule in code needs no pattern and cannot be
+//      outrun by a new branch name.
+//
+//   2. Writes on a preview host are refused outright. This is NOT an authentication
+//      problem — Access does cover workers.dev hosts when the pattern matches. It is a
+//      data-isolation problem: there is one D1 binding and no environment override
+//      (wrangler.jsonc), so every preview deploy is bound to the PRODUCTION feedback
+//      database. An authenticated admin on staging mutating real triage rows is still
+//      wrong. #260 (a real staging Worker with its own D1) is the actual fix.
+//
+// The same-origin check cannot substitute for either: it proves a request IS
+// same-origin, never WHICH origin, and a curl caller sets both sides.
+export function isCanonicalHost(hostname: string): boolean {
   return hostname === "clumeral.com" || hostname === "localhost" || hostname === "127.0.0.1";
 }
 

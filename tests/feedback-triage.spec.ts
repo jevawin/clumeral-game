@@ -4,7 +4,7 @@ import {
   isSameOrigin,
   isStatus,
   statusOf,
-  canWriteTriage,
+  isCanonicalHost,
   renderFeedbackPage,
   type FeedbackRow,
 } from '../src/worker/feedback.ts';
@@ -99,30 +99,33 @@ describe('statusOf — falls open on anything unexpected', () => {
   });
 });
 
-describe('canWriteTriage — which hosts may mutate triage state', () => {
-  it('allows production, which sits behind Cloudflare Access', () => {
-    expect(canWriteTriage('clumeral.com')).toBe(true);
+describe('isCanonicalHost — governs the redirect and the write gate', () => {
+  it('allows production and localhost', () => {
+    expect(isCanonicalHost('clumeral.com')).toBe(true);
+    expect(isCanonicalHost('localhost')).toBe(true);
+    expect(isCanonicalHost('127.0.0.1')).toBe(true);
   });
 
-  it('allows localhost, the developer machine and the e2e target', () => {
-    expect(canWriteTriage('localhost')).toBe(true);
-    expect(canWriteTriage('127.0.0.1')).toBe(true);
+  it('refuses every preview host shape, including the bare workers.dev one', () => {
+    // The bare host is the one a Cloudflare Access policy for
+    // `*-clumeral-game.jevawin.workers.dev` misses — nothing precedes the hyphen.
+    // On 2026-07-22 it was serving live feedback unauthenticated. A predicate in
+    // code needs no pattern, so a new branch name cannot outrun it.
+    expect(isCanonicalHost('clumeral-game.jevawin.workers.dev')).toBe(false);
+    expect(isCanonicalHost('staging-clumeral-game.jevawin.workers.dev')).toBe(false);
+    expect(isCanonicalHost('issue-225-clumeral-game.jevawin.workers.dev')).toBe(false);
+    expect(isCanonicalHost('some-branch-nobody-has-pushed-yet-clumeral-game.jevawin.workers.dev')).toBe(false);
   });
 
-  it('refuses preview hosts, which bind production D1 and cannot carry Access', () => {
-    // A self-hosted Access app needs a hostname on a zone in the account, and
-    // workers.dev is not one. Without this gate anyone with a preview link could
-    // POST triage changes to real rows.
-    expect(canWriteTriage('staging-clumeral-game.jevawin.workers.dev')).toBe(false);
-    expect(canWriteTriage('issue-225-clumeral-game.jevawin.workers.dev')).toBe(false);
-    expect(canWriteTriage('clumeral-game.jevawin.workers.dev')).toBe(false);
+  it('refuses subdomains of the real site — a wildcard policy does not imply canonical', () => {
+    expect(isCanonicalHost('www.clumeral.com')).toBe(false);
+    expect(isCanonicalHost('staging.clumeral.com')).toBe(false);
   });
 
   it('refuses lookalike hosts', () => {
-    expect(canWriteTriage('clumeral.com.evil.com')).toBe(false);
-    expect(canWriteTriage('notclumeral.com')).toBe(false);
-    expect(canWriteTriage('www.clumeral.com')).toBe(false);
-    expect(canWriteTriage('')).toBe(false);
+    expect(isCanonicalHost('clumeral.com.evil.com')).toBe(false);
+    expect(isCanonicalHost('notclumeral.com')).toBe(false);
+    expect(isCanonicalHost('')).toBe(false);
   });
 });
 

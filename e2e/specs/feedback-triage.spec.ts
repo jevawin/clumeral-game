@@ -112,3 +112,30 @@ test.describe("feedback triage", () => {
     expect(res.status()).toBe(404);
   });
 });
+
+// The dashboard is served on canonical hosts only. Preview deploys bounce to
+// production, so a Cloudflare Access policy that misses a hostname pattern cannot
+// leave live feedback exposed (2026-07-22: `clumeral-game.jevawin.workers.dev` was
+// serving it unauthenticated because the policy wildcard required a hyphen prefix).
+//
+// vite's own host check rejects a spoofed Host header before the Worker sees it, so
+// this asserts the localhost side — that the rule does NOT fire on a canonical host.
+// The host-matching itself is unit-tested in tests/feedback-triage.spec.ts.
+test.describe("feedback dashboard host rule", () => {
+  test("localhost serves the dashboard rather than redirecting", async ({ request }) => {
+    const res = await request.get("/feedback?all=1", { maxRedirects: 0 });
+    expect(res.status()).toBe(200);
+    expect(await res.text()).toContain("<title>Feedback");
+  });
+
+  test("the status route is reachable on localhost, not bounced", async ({ request, baseURL }) => {
+    // A redirect here would silently retarget a write at production, so the rule is
+    // GET-only and the POST answers 404 on preview hosts instead.
+    const res = await request.post("/feedback/99999/status", {
+      form: { status: "resolved", back: BASE },
+      headers: { Origin: origin(baseURL) },
+      maxRedirects: 0,
+    });
+    expect(res.status()).toBe(404);
+  });
+});

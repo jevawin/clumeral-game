@@ -7,7 +7,7 @@ import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
 import {
-  renderFeedbackPage, parseStatusPath, isSameOrigin, isStatus, canWriteTriage,
+  renderFeedbackPage, parseStatusPath, isSameOrigin, isStatus, isCanonicalHost,
   type FeedbackRow,
 } from './feedback.ts';
 
@@ -287,6 +287,20 @@ export default {
       return handleFeedbackSubmit(request, env);
     }
 
+    // Preview deploys never serve the dashboard — they bounce to the canonical one.
+    //
+    // Access is the primary gate on /feedback, but it is configured per hostname
+    // pattern, and preview hostnames are open-ended: a URL exists for every branch ever
+    // pushed. On 2026-07-22 a policy covering `*-clumeral-game.jevawin.workers.dev` left
+    // the bare `clumeral-game.jevawin.workers.dev` serving live feedback unauthenticated.
+    // This rule needs no pattern, so a new branch name cannot outrun it.
+    //
+    // GET only: the status POST below answers 404 on these hosts instead, since
+    // redirecting a write would silently retarget it at production.
+    if (request.method === 'GET' && url.pathname.startsWith('/feedback') && !isCanonicalHost(url.hostname)) {
+      return Response.redirect(`https://clumeral.com${url.pathname}${url.search}`, 302);
+    }
+
     // GET /feedback — admin HTML table. Access control is enforced at the edge by
     // Cloudflare Access (Zero Trust app on this path), not in code — like an
     // unlinked dashboard, but private. POST /api/feedback above stays public so
@@ -339,7 +353,7 @@ export default {
       // write path is refused anywhere but clumeral.com and localhost. Mirrors the
       // inverse gate on /api/dev/answer above. Without this the same-origin check
       // below is worthless on preview hosts — a curl caller sets both sides.
-      if (!canWriteTriage(url.hostname)) {
+      if (!isCanonicalHost(url.hostname)) {
         return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
       }
       // Fail closed if the Access app is ever removed or re-scoped: on production the
