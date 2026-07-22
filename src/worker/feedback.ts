@@ -20,6 +20,87 @@ export interface FeedbackRow {
   local_today: string | null;
   screen: string | null;
   host: string | null;
+  // Triage state (#225).
+  status: string | null;
+  github_issue: number | null;
+  resolved_at: string | null;
+}
+
+// ── Triage state (#225) ──
+
+// Only two states. Richer outcomes (wontfix, duplicate) are carried by the linked
+// GitHub issue's own state rather than duplicated here — one place to be wrong.
+export const STATUSES = ["open", "resolved"] as const;
+export type Status = (typeof STATUSES)[number];
+
+export function isStatus(v: unknown): v is Status {
+  return typeof v === "string" && (STATUSES as readonly string[]).includes(v);
+}
+
+// Anything that is not exactly 'resolved' reads as open.
+//
+// The column is NOT NULL DEFAULT 'open' in both 0001 and 0004, so NULL should be
+// unreachable — this is not modelling real rows, it is refusing to hide a row on the
+// strength of a value we did not expect. Falling open keeps unrecognised state
+// visible in the triage queue; falling resolved would silently drop it.
+export function statusOf(row: FeedbackRow): Status {
+  return row.status === "resolved" ? "resolved" : "open";
+}
+
+// POST /feedback/:id/status — deliberately under the /feedback prefix so it inherits
+// the Cloudflare Access rule that gates the dashboard. A route under /api/feedback
+// would inherit the *public* rule instead (players submit there), which would leave
+// the write path open to anyone.
+const STATUS_PATH = /^\/feedback\/(\d+)\/status$/;
+
+export function parseStatusPath(pathname: string): number | null {
+  const m = STATUS_PATH.exec(pathname);
+  if (m === null) return null;
+  const id = Number(m[1]);
+  // The regex already excludes signs, decimals and whitespace. This catches the
+  // remaining case: an integer too large to represent exactly.
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+// Access proves *who* the caller is, not *which page* made the request — an
+// authenticated admin's browser can be induced to POST from an attacker's page.
+// Requiring a same-origin Origin header closes that. Absent header → reject: this
+// route is only ever reached from our own form, so there is no legitimate
+// origin-less caller to accommodate.
+//
+// Note what this does NOT do: it checks that a request is same-origin, never *which*
+// origin. On a host with no Access policy it is worth nothing, because the attacker
+// sets both sides. See canWriteTriage.
+export function isSameOrigin(origin: string | null, expected: string): boolean {
+  if (origin === null || origin === "") return false;
+  return origin === expected;
+}
+
+// The hosts where the feedback dashboard is allowed to operate at all: the real site,
+// and the developer's own machine (which is what the e2e suite drives). Everything
+// else is a preview deploy.
+//
+// This governs two behaviours, for two different reasons:
+//
+//   1. Reads on a preview host redirect to production (see /feedback in index.ts).
+//      Preview hostnames are open-ended — a per-branch URL exists for every branch that
+//      has ever been pushed — so protecting them by enumerating patterns in a Cloudflare
+//      Access policy is a losing game. On 2026-07-22 a policy covering
+//      `*-clumeral-game.jevawin.workers.dev` left the bare `clumeral-game.jevawin.workers.dev`
+//      serving live feedback to anyone. A rule in code needs no pattern and cannot be
+//      outrun by a new branch name.
+//
+//   2. Writes on a preview host are refused outright. This is NOT an authentication
+//      problem — Access does cover workers.dev hosts when the pattern matches. It is a
+//      data-isolation problem: there is one D1 binding and no environment override
+//      (wrangler.jsonc), so every preview deploy is bound to the PRODUCTION feedback
+//      database. An authenticated admin on staging mutating real triage rows is still
+//      wrong. #260 (a real staging Worker with its own D1) is the actual fix.
+//
+// The same-origin check cannot substitute for either: it proves a request IS
+// same-origin, never WHICH origin, and a curl caller sets both sides.
+export function isCanonicalHost(hostname: string): boolean {
+  return hostname === "clumeral.com" || hostname === "localhost" || hostname === "127.0.0.1";
 }
 
 // Real feedback comes from the production host; everything else (preview
@@ -40,11 +121,11 @@ function esc(v: unknown): string {
 // Sample cards shown ONLY when the database returns no rows, so the layout can be
 // previewed locally without seeding. Clearly flagged as fake by the banner.
 const SAMPLE: FeedbackRow[] = [
-  { id: 5, created_at: "2026-04-30 09:21:24", category: "general", message: "Great game! Would be useful to have ‘undo’ and ‘restart’ buttons. Is there a reason the number can’t start with 0?", puzzle_number: "#54", puzzle_date: "2026-04-30", device: "iPhone", browser: "Safari 26.4", user_agent: "Mozilla/5.0 (iPhone …) Version/26.4 Mobile/15E148 Safari/604.1", history: null, prefs: null, active: null, tz_offset: 60, local_today: "2026-04-30", screen: "390x844", host: "clumeral.com" },
-  { id: 4, created_at: "2026-04-22 13:46:22", category: "praise", message: "Absolutely love this puzzle game! I've shared it with work colleagues and friends.", puzzle_number: "#46", puzzle_date: "2026-04-22", device: "Desktop", browser: "Edge 147.0.0.0", user_agent: null, history: null, prefs: null, active: null, tz_offset: null, local_today: null, screen: null, host: "clumeral.com" },
-  { id: 3, created_at: "2026-04-17 07:42:05", category: "suggestion", message: "It would be good to see your winning streak.", puzzle_number: "#41", puzzle_date: "2026-04-17", device: "Android Phone", browser: "Chrome 147.0.0.0", user_agent: null, history: null, prefs: null, active: null, tz_offset: null, local_today: null, screen: null, host: "clumeral.com" },
-  { id: 2, created_at: "2026-04-09 11:32:18", category: "bug", message: "Couldn't select 0 as the first number once I'd deselected it accidentally.", puzzle_number: "#33", puzzle_date: "2026-04-09", device: "Android Phone", browser: "Chrome 146.0.0.0", user_agent: "Mozilla/5.0 (Linux; Android 10; K) … Chrome/146.0.0.0 Mobile Safari/537.36", history: '[{"date":"2026-04-09","tries":2,"answer":800}]', prefs: '{"theme":"dark"}', active: null, tz_offset: 0, local_today: "2026-04-09", screen: "412x915", host: "clumeral.com" },
-  { id: 1, created_at: "2026-06-08 21:10:00", category: "general", message: "testing the form on the preview build", puzzle_number: "#93", puzzle_date: "2026-06-08", device: "Desktop", browser: "Firefox 150.0.2", user_agent: "Mozilla/5.0 (Windows NT 10.0 …) Firefox/150.0.2", history: null, prefs: null, active: null, tz_offset: 0, local_today: "2026-06-08", screen: "1280x720", host: "new-design-clumeral-game.jevawin.workers.dev" },
+  { id: 5, created_at: "2026-04-30 09:21:24", category: "general", message: "Great game! Would be useful to have ‘undo’ and ‘restart’ buttons. Is there a reason the number can’t start with 0?", puzzle_number: "#54", puzzle_date: "2026-04-30", device: "iPhone", browser: "Safari 26.4", user_agent: "Mozilla/5.0 (iPhone …) Version/26.4 Mobile/15E148 Safari/604.1", history: null, prefs: null, active: null, tz_offset: 60, local_today: "2026-04-30", screen: "390x844", host: "clumeral.com", status: "open", github_issue: 251, resolved_at: null },
+  { id: 4, created_at: "2026-04-22 13:46:22", category: "praise", message: "Absolutely love this puzzle game! I've shared it with work colleagues and friends.", puzzle_number: "#46", puzzle_date: "2026-04-22", device: "Desktop", browser: "Edge 147.0.0.0", user_agent: null, history: null, prefs: null, active: null, tz_offset: null, local_today: null, screen: null, host: "clumeral.com", status: "resolved", github_issue: null, resolved_at: "2026-04-23 08:00:00" },
+  { id: 3, created_at: "2026-04-17 07:42:05", category: "suggestion", message: "It would be good to see your winning streak.", puzzle_number: "#41", puzzle_date: "2026-04-17", device: "Android Phone", browser: "Chrome 147.0.0.0", user_agent: null, history: null, prefs: null, active: null, tz_offset: null, local_today: null, screen: null, host: "clumeral.com", status: "open", github_issue: 163, resolved_at: null },
+  { id: 2, created_at: "2026-04-09 11:32:18", category: "bug", message: "Couldn't select 0 as the first number once I'd deselected it accidentally.", puzzle_number: "#33", puzzle_date: "2026-04-09", device: "Android Phone", browser: "Chrome 146.0.0.0", user_agent: "Mozilla/5.0 (Linux; Android 10; K) … Chrome/146.0.0.0 Mobile Safari/537.36", history: '[{"date":"2026-04-09","tries":2,"answer":800}]', prefs: '{"theme":"dark"}', active: null, tz_offset: 0, local_today: "2026-04-09", screen: "412x915", host: "clumeral.com", status: "resolved", github_issue: 219, resolved_at: "2026-06-09 12:00:00" },
+  { id: 1, created_at: "2026-06-08 21:10:00", category: "general", message: "testing the form on the preview build", puzzle_number: "#93", puzzle_date: "2026-06-08", device: "Desktop", browser: "Firefox 150.0.2", user_agent: "Mozilla/5.0 (Windows NT 10.0 …) Firefox/150.0.2", history: null, prefs: null, active: null, tz_offset: 0, local_today: "2026-06-08", screen: "1280x720", host: "new-design-clumeral-game.jevawin.workers.dev", status: "open", github_issue: null, resolved_at: null },
 ];
 
 function source(host: string | null): string {
@@ -69,12 +150,42 @@ function debug(row: FeedbackRow): string {
   return `<details class="dbg"><summary>Diagnostics</summary><div class="dbg-body">${body}</div></details>`;
 }
 
-function card(r: FeedbackRow): string {
+const REPO = "https://github.com/jevawin/clumeral-game";
+
+// The triage footer: where this row ended up, and the one control that changes it.
+// A plain form POST, not fetch — this page ships no client JS and there is no reason
+// to start for an admin-only view. `back` returns the reader to the filter they were
+// on instead of dumping them at the default.
+function triage(r: FeedbackRow, sample: boolean, back: string): string {
+  const st = statusOf(r);
+  const next = st === "resolved" ? "open" : "resolved";
+  const link =
+    r.github_issue !== null
+      ? `<a class="issue" href="${REPO}/issues/${esc(r.github_issue)}" rel="noreferrer">#${esc(r.github_issue)}</a>`
+      : "";
+  const when = st === "resolved" && r.resolved_at !== null
+    ? `<span class="when">${esc(r.resolved_at)}</span>`
+    : "";
+  // Sample cards are not real rows — a button would 404 on a made-up id.
+  const button = sample
+    ? ""
+    : `<form method="post" action="/feedback/${esc(r.id)}/status">
+        <input type="hidden" name="status" value="${next}">
+        <input type="hidden" name="back" value="${esc(back)}">
+        <button type="submit" class="act act-${next}">${next === "resolved" ? "Resolve" : "Reopen"}</button>
+      </form>`;
+  return `<div class="triage">
+    <span class="st st-${st}">${st}</span>${link}${when}${button}
+  </div>`;
+}
+
+function card(r: FeedbackRow, sample: boolean, back: string): string {
   const meta = [r.puzzle_number, r.puzzle_date, r.device, r.browser]
     .filter((v) => v !== null && v !== "")
     .map((v) => `<span>${esc(v)}</span>`)
     .join("");
-  return `<article class="card${isTest(r.host) ? " is-test" : ""}">
+  const done = statusOf(r) === "resolved";
+  return `<article class="card${isTest(r.host) ? " is-test" : ""}${done ? " is-done" : ""}">
     <div class="row">
       <span class="cat cat-${esc(r.category)}">${esc(r.category)}</span>
       ${source(r.host)}
@@ -82,25 +193,71 @@ function card(r: FeedbackRow): string {
     </div>
     <p class="msg">${esc(r.message)}</p>
     <div class="meta">${meta}</div>
+    ${triage(r, sample, back)}
     ${debug(r)}
   </article>`;
 }
 
-export function renderFeedbackPage(rows: FeedbackRow[], hostname: string, showAll: boolean): string {
-  const fake = rows.length === 0;
+// Nothing matched the current filters. Reached mainly by clearing the triage queue,
+// which is a success state, so it says so and offers the way to widen the view.
+function empty(showAll: boolean, showResolved: boolean): string {
+  const hint = !showResolved
+    ? `<a href="${queryFor(showAll, true)}">Show resolved</a>`
+    : !showAll
+      ? `<a href="${queryFor(true, showResolved)}">Show all (incl. test)</a>`
+      : "";
+  return `<p class="empty">Nothing open here. ${hint}</p>`;
+}
+
+// Rebuilds the current query string so a filter toggle preserves the other filter
+// and the resolve button can return you here.
+function queryFor(showAll: boolean, showResolved: boolean): string {
+  const p = new URLSearchParams();
+  if (showAll) p.set("all", "1");
+  if (showResolved) p.set("status", "all");
+  const q = p.toString();
+  return q === "" ? "/feedback" : `/feedback?${q}`;
+}
+
+export function renderFeedbackPage(
+  rows: FeedbackRow[],
+  hostname: string,
+  showAll: boolean,
+  showResolved = false,
+  notice = "",
+): string {
+  // Sample cards exist so the layout can be previewed against an empty database.
+  // Only show them when nothing is filtered — otherwise clearing the triage queue,
+  // which is the whole point of #225, would replace a clean board with five invented
+  // submissions under a "no feedback yet" banner.
+  const filtered = !showAll || !showResolved;
+  const fake = rows.length === 0 && !filtered;
+  const emptyQueue = rows.length === 0 && filtered;
   const list = fake ? SAMPLE : rows;
+  const back = queryFor(showAll, showResolved);
 
   const banner = fake
     ? `<div class="banner" role="alert">⚠ No feedback in this database yet — showing <b>sample data</b> so you can preview the layout. These are not real submissions.</div>`
     : "";
 
+  // Status changes redirect back here, so the confirmation arrives as new-document
+  // content. role="status" would not be announced — a live region has to exist before
+  // its contents change — so this is role="alert", which is announced on load.
+  const flash = notice === ""
+    ? ""
+    : `<div class="flash" role="alert">${esc(notice)}</div>`;
+
   const toggle = showAll
-    ? `<a class="toggle" href="/feedback">Show clumeral.com only</a>`
-    : `<a class="toggle" href="/feedback?all=1">Show all (incl. test)</a>`;
+    ? `<a class="toggle" href="${queryFor(false, showResolved)}">Show clumeral.com only</a>`
+    : `<a class="toggle" href="${queryFor(true, showResolved)}">Show all (incl. test)</a>`;
+
+  const statusToggle = showResolved
+    ? `<a class="toggle" href="${queryFor(showAll, false)}">Hide resolved</a>`
+    : `<a class="toggle" href="${queryFor(showAll, true)}">Show resolved</a>`;
 
   const countLabel = fake
     ? "sample data"
-    : `${list.length} ${showAll ? "submission" + (list.length === 1 ? "" : "s") + " · all sources" : "submission" + (list.length === 1 ? "" : "s")}`;
+    : `${list.length} ${showAll ? "submission" + (list.length === 1 ? "" : "s") + " · all sources" : "submission" + (list.length === 1 ? "" : "s")}${showResolved ? "" : " · open only"}`;
 
   return `<!doctype html>
 <html lang="en">
@@ -119,6 +276,8 @@ export function renderFeedbackPage(rows: FeedbackRow[], hostname: string, showAl
     --warn-fg: light-dark(#92400e, #fbbf24);
     --warn-bd: #f59e0b;
     --warn-bg: light-dark(#fffbeb, #2a230f);
+    --ok: light-dark(#15803d, #4ade80);
+    --ok-bg: light-dark(#f0fdf4, #10241a);
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: Canvas; line-height: 1.45; -webkit-text-size-adjust: 100%; }
@@ -126,7 +285,10 @@ export function renderFeedbackPage(rows: FeedbackRow[], hostname: string, showAl
   header.top { position: sticky; top: 0; background: Canvas; padding: 0.75rem 0; border-bottom: 1px solid var(--line); z-index: 1; }
   h1 { font-size: 1.15rem; margin: 0; }
   .sub { color: var(--muted); font-size: 0.82rem; margin: 0.2rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; }
-  .toggle { margin-left: auto; color: var(--acc); text-decoration: none; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; display: inline-flex; align-items: center; }
+  /* The toggle group takes the auto margin, not each toggle — two auto margins
+     push the second onto its own line. */
+  .toggles { margin-left: auto; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .toggle { color: var(--acc); text-decoration: none; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; display: inline-flex; align-items: center; }
   .banner { margin: 0.9rem 0 0; padding: 0.7rem 0.85rem; border: 1px solid var(--warn-bd); background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; font-size: 0.85rem; }
   .list { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem 0.9rem; }
@@ -150,16 +312,32 @@ export function renderFeedbackPage(rows: FeedbackRow[], hostname: string, showAl
   .dbg-body b { color: var(--muted); flex: 0 0 5.5rem; }
   .dbg-body span { word-break: break-all; min-width: 0; }
   .empty { color: var(--muted); text-align: center; padding: 2rem 0; }
+  .flash { margin: 0.9rem 0 0; padding: 0.6rem 0.85rem; border: 1px solid var(--ok); background: var(--ok-bg); color: var(--ok); border-radius: 10px; font-size: 0.85rem; }
+  /* Resolved rows are de-emphasised by their border and badge, not by fading the
+     card — dropping opacity takes the already-muted .meta line below AA. */
+  .card.is-done { border-style: dashed; }
+  .triage { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .st { padding: 0.12rem 0.5rem; border-radius: 999px; font-size: 0.7rem; text-transform: capitalize; border: 1px solid var(--line); }
+  .st-open { color: var(--warn-fg); border-color: var(--warn-bd); }
+  .st-resolved { color: var(--ok); border-color: var(--ok); }
+  .issue { color: var(--acc); text-decoration: none; font-size: 0.76rem; font-family: ui-monospace, monospace; }
+  .triage .when { color: var(--muted); font-size: 0.72rem; }
+  .triage form { margin: 0 0 0 auto; }
+  /* 44px min — the checklist's touch target floor. */
+  .act { font: inherit; font-size: 0.78rem; cursor: pointer; padding: 0.5rem 0.9rem; min-height: 44px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--acc); }
+  .act-resolved { border-color: var(--ok); color: var(--ok); }
+  .act:hover { border-color: currentColor; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <header class="top">
       <h1>Feedback</h1>
-      <p class="sub"><span>${esc(hostname)}</span><span>${countLabel}</span>${toggle}</p>
+      <p class="sub"><span>${esc(hostname)}</span><span>${countLabel}</span><span class="toggles">${statusToggle}${toggle}</span></p>
     </header>
+    ${flash}
     ${banner}
-    <div class="list">${list.map(card).join("")}</div>
+    ${emptyQueue ? empty(showAll, showResolved) : `<div class="list">${list.map((r) => card(r, fake, back)).join("")}</div>`}
   </div>
 </body>
 </html>`;
