@@ -7,12 +7,13 @@
 --
 -- github_issue is the triage bot's memory: it tells "already filed as #271" from
 -- "never seen", which is what stops follow-up feedback opening duplicate tickets.
+-- Not re-runnable: ADD COLUMN fails with "duplicate column name" on a second pass.
+-- Same as 0003. Run it once, against the remote, before deploying code that reads
+-- these columns.
 ALTER TABLE feedback ADD COLUMN status TEXT NOT NULL DEFAULT 'open';
 ALTER TABLE feedback ADD COLUMN github_issue INTEGER;
 ALTER TABLE feedback ADD COLUMN resolved_at TEXT;
 
--- Defensive: the DEFAULT above already backfills existing rows, but an interrupted
--- or partially-applied run should still land on 'open' rather than NULL.
-UPDATE feedback SET status = 'open' WHERE status IS NULL OR status = '';
-
+-- No backfill statement is needed: NOT NULL DEFAULT 'open' sets every existing row
+-- to 'open' as part of the ALTER, and the column can never hold NULL afterwards.
 CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback (status);

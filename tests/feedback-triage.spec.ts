@@ -4,6 +4,7 @@ import {
   isSameOrigin,
   isStatus,
   statusOf,
+  canWriteTriage,
   renderFeedbackPage,
   type FeedbackRow,
 } from '../src/worker/feedback.ts';
@@ -81,9 +82,11 @@ describe('isStatus', () => {
   });
 });
 
-describe('statusOf — pre-#225 rows', () => {
+describe('statusOf — falls open on anything unexpected', () => {
+  // The column is NOT NULL DEFAULT 'open' in both 0001 and 0004, so neither NULL nor
+  // a junk value should be reachable. These assert the failure direction: an
+  // unrecognised value keeps the row visible in the queue rather than hiding it.
   it('treats a NULL status as open', () => {
-    // Rows written before the migration were never triaged, which is what open means.
     expect(statusOf(row({ status: null }))).toBe('open');
   });
 
@@ -93,6 +96,33 @@ describe('statusOf — pre-#225 rows', () => {
 
   it('reads resolved', () => {
     expect(statusOf(row({ status: 'resolved' }))).toBe('resolved');
+  });
+});
+
+describe('canWriteTriage — which hosts may mutate triage state', () => {
+  it('allows production, which sits behind Cloudflare Access', () => {
+    expect(canWriteTriage('clumeral.com')).toBe(true);
+  });
+
+  it('allows localhost, the developer machine and the e2e target', () => {
+    expect(canWriteTriage('localhost')).toBe(true);
+    expect(canWriteTriage('127.0.0.1')).toBe(true);
+  });
+
+  it('refuses preview hosts, which bind production D1 and cannot carry Access', () => {
+    // A self-hosted Access app needs a hostname on a zone in the account, and
+    // workers.dev is not one. Without this gate anyone with a preview link could
+    // POST triage changes to real rows.
+    expect(canWriteTriage('staging-clumeral-game.jevawin.workers.dev')).toBe(false);
+    expect(canWriteTriage('issue-225-clumeral-game.jevawin.workers.dev')).toBe(false);
+    expect(canWriteTriage('clumeral-game.jevawin.workers.dev')).toBe(false);
+  });
+
+  it('refuses lookalike hosts', () => {
+    expect(canWriteTriage('clumeral.com.evil.com')).toBe(false);
+    expect(canWriteTriage('notclumeral.com')).toBe(false);
+    expect(canWriteTriage('www.clumeral.com')).toBe(false);
+    expect(canWriteTriage('')).toBe(false);
   });
 });
 
@@ -123,8 +153,8 @@ describe('renderFeedbackPage — triage controls', () => {
 
   it('renders no resolve form for the sample data', () => {
     // Sample cards have invented ids — a button there would POST to a row that
-    // does not exist.
-    const html = renderFeedbackPage([], 'clumeral.com', false);
+    // does not exist. Sample only shows unfiltered (all sources, all statuses).
+    const html = renderFeedbackPage([], 'clumeral.com', true, true);
     expect(html).toContain('sample data');
     expect(html).not.toContain('/status"');
   });
@@ -137,12 +167,35 @@ describe('renderFeedbackPage — triage controls', () => {
   it('shows the flash notice after a status change', () => {
     const html = renderFeedbackPage([row()], 'clumeral.com', false, false, 'Status updated.');
     expect(html).toContain('Status updated.');
-    expect(html).toContain('role="status"');
+    // role="alert", not role="status" — the flash arrives via a 303 as new-document
+    // content, and a live region has to exist before its contents change to be announced.
+    expect(html).toContain('role="alert"');
   });
 
   it('labels the default view as open only', () => {
     expect(renderFeedbackPage([row()], 'clumeral.com', false)).toContain('open only');
     expect(renderFeedbackPage([row()], 'clumeral.com', false, true)).not.toContain('open only');
+  });
+});
+
+describe('renderFeedbackPage — cleared queue is not mistaken for an empty database', () => {
+  it('shows an empty state, not sample data, when the open queue is cleared', () => {
+    // Resolving every row is the goal state of #225. Falling back to SAMPLE there
+    // would replace a clean board with five invented submissions under a banner
+    // reading "No feedback in this database yet".
+    const html = renderFeedbackPage([], 'clumeral.com', false);
+    expect(html).not.toContain('sample data');
+    expect(html).not.toContain('These are not real submissions');
+    expect(html).toContain('Nothing open here');
+  });
+
+  it('offers the way to widen the view from the empty state', () => {
+    expect(renderFeedbackPage([], 'clumeral.com', false)).toContain('Show resolved');
+    expect(renderFeedbackPage([], 'clumeral.com', false, true)).toContain('Show all');
+  });
+
+  it('still shows sample data on a genuinely empty database', () => {
+    expect(renderFeedbackPage([], 'clumeral.com', true, true)).toContain('sample data');
   });
 });
 

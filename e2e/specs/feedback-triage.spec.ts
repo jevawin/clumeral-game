@@ -7,6 +7,10 @@ import { test, expect } from "../fixtures.ts";
 // SQL, so the insert path and the read path are exercised together. Locally the
 // request host is `localhost`, which the dashboard classifies as test traffic —
 // hence `all=1` on every read here.
+//
+// Every project in the matrix shares one D1 and runs fullyParallel, so a message
+// must be unique per *project*, not just per test — otherwise firefox resolves the
+// row chromium is still asserting on.
 
 const BASE = "/feedback?all=1&status=all";
 
@@ -20,7 +24,8 @@ function origin(baseURL: string | undefined): string {
 // dashboard. The suite is fullyParallel and every test shares one D1, so "newest row"
 // is not necessarily ours — find the card carrying this test's unique message and
 // take the id from that card alone.
-async function submitAndGetId(request: import("@playwright/test").APIRequestContext, message: string) {
+async function submitAndGetId(request: import("@playwright/test").APIRequestContext, label: string) {
+  const message = `${label} [${test.info().project.name}]`;
   const post = await request.post("/api/feedback", {
     data: { category: "bug", message, puzzleNumber: "#1", date: "2026-07-22" },
   });
@@ -32,21 +37,21 @@ async function submitAndGetId(request: import("@playwright/test").APIRequestCont
 
   const id = /action="\/feedback\/(\d+)\/status"/.exec(card as string)?.[1];
   expect(id, `no status form in the card for "${message}"`).toBeDefined();
-  return Number(id);
+  return { id: Number(id), message };
 }
 
 test.describe("feedback triage", () => {
   test("a new row renders as open with a Resolve control", async ({ request }) => {
-    const id = await submitAndGetId(request, "triage: renders open");
+    const { id, message } = await submitAndGetId(request, "triage: renders open");
     const html = await (await request.get(BASE)).text();
 
     expect(html).toContain(`action="/feedback/${id}/status"`);
     expect(html).toContain("Resolve");
-    expect(html).toContain("triage: renders open");
+    expect(html).toContain(message);
   });
 
   test("resolving hides the row from the default view and Reopen restores it", async ({ request, baseURL }) => {
-    const id = await submitAndGetId(request, "triage: resolve round trip");
+    const { id, message } = await submitAndGetId(request, "triage: resolve round trip");
 
     const res = await request.post(`/feedback/${id}/status`, {
       form: { status: "resolved", back: BASE },
@@ -57,11 +62,11 @@ test.describe("feedback triage", () => {
 
     // Default view is the outstanding queue — the resolved row drops out of it.
     const openOnly = await (await request.get("/feedback?all=1")).text();
-    expect(openOnly).not.toContain("triage: resolve round trip");
+    expect(openOnly).not.toContain(message);
 
     // ?status=all widens it back, and the control flips to Reopen.
     const all = await (await request.get(BASE)).text();
-    expect(all).toContain("triage: resolve round trip");
+    expect(all).toContain(message);
     expect(all).toContain("Reopen");
 
     const back = await request.post(`/feedback/${id}/status`, {
@@ -70,11 +75,11 @@ test.describe("feedback triage", () => {
       maxRedirects: 0,
     });
     expect(back.status()).toBe(303);
-    expect(await (await request.get("/feedback?all=1")).text()).toContain("triage: resolve round trip");
+    expect(await (await request.get("/feedback?all=1")).text()).toContain(message);
   });
 
   test("a cross-origin POST is refused", async ({ request }) => {
-    const id = await submitAndGetId(request, "triage: csrf guard");
+    const { id, message } = await submitAndGetId(request, "triage: csrf guard");
 
     const res = await request.post(`/feedback/${id}/status`, {
       form: { status: "resolved", back: BASE },
@@ -84,11 +89,11 @@ test.describe("feedback triage", () => {
     expect(res.status()).toBe(403);
 
     // The row is untouched — still in the open queue.
-    expect(await (await request.get("/feedback?all=1")).text()).toContain("triage: csrf guard");
+    expect(await (await request.get("/feedback?all=1")).text()).toContain(message);
   });
 
   test("an unknown status value is rejected", async ({ request, baseURL }) => {
-    const id = await submitAndGetId(request, "triage: bad status");
+    const { id } = await submitAndGetId(request, "triage: bad status");
 
     const res = await request.post(`/feedback/${id}/status`, {
       form: { status: "wontfix", back: BASE },

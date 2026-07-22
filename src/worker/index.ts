@@ -6,7 +6,10 @@ import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
-import { renderFeedbackPage, parseStatusPath, isSameOrigin, isStatus, type FeedbackRow } from './feedback.ts';
+import {
+  renderFeedbackPage, parseStatusPath, isSameOrigin, isStatus, canWriteTriage,
+  type FeedbackRow,
+} from './feedback.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -300,8 +303,10 @@ export default {
       const cols = `id, created_at, category, message, puzzle_number, puzzle_date, device,
                     browser, user_agent, history, prefs, active, tz_offset, local_today, screen, host,
                     status, github_issue, resolved_at`;
-      // Rows predating #225 have status NULL, which is semantically open — they were
-      // never triaged. The NULL check keeps them in the default view.
+      // Matches statusOf(): anything that is not exactly 'resolved' stays in the open
+      // queue. The NULL arm should be unreachable (the column is NOT NULL DEFAULT
+      // 'open'), but `status <> 'resolved'` alone is NULL-not-true in SQL, which would
+      // hide such a row rather than surface it. Kept so an unexpected value fails visible.
       const openOnly = `(status IS NULL OR status <> 'resolved')`;
       const realOnly = `(host = 'clumeral.com' OR host IS NULL)`;
       const where = [showAll ? '' : realOnly, showResolved ? '' : openOnly].filter(Boolean).join(' AND ');
@@ -328,13 +333,36 @@ export default {
     //
     // The bot does not use this endpoint — GitHub Actions writes D1 directly with
     // `wrangler d1 execute --remote`, so automation never depends on Access.
-    if (request.method === 'POST' && parseStatusPath(url.pathname) !== null) {
-      const id = parseStatusPath(url.pathname) as number;
+    const statusId = request.method === 'POST' ? parseStatusPath(url.pathname) : null;
+    if (statusId !== null) {
+      // Preview deploys bind the PRODUCTION D1 and cannot sit behind Access, so the
+      // write path is refused anywhere but clumeral.com and localhost. Mirrors the
+      // inverse gate on /api/dev/answer above. Without this the same-origin check
+      // below is worthless on preview hosts — a curl caller sets both sides.
+      if (!canWriteTriage(url.hostname)) {
+        return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+      }
+      // Fail closed if the Access app is ever removed or re-scoped: on production the
+      // JWT header is injected by Access on every request, so its absence means the
+      // gate is gone and this route is exposed.
+      if (url.hostname === 'clumeral.com' && !request.headers.get('Cf-Access-Jwt-Assertion')) {
+        return new Response('Forbidden: Cloudflare Access assertion missing', {
+          status: 403,
+          headers: { 'Content-Type': 'text/plain' },
+        });
+      }
       // Access authenticates the caller but not the calling page, so a logged-in
       // admin could be made to POST from an attacker's site. Same-origin required.
       if (!isSameOrigin(request.headers.get('Origin'), url.origin)) {
         return new Response('Forbidden', { status: 403, headers: { 'Content-Type': 'text/plain' } });
       }
+      // A non-form body would make formData() throw and surface as a 500; the caller
+      // sent the wrong thing, so say so.
+      const ct = request.headers.get('Content-Type') ?? '';
+      if (!ct.includes('form-urlencoded') && !ct.includes('form-data')) {
+        return new Response('Bad request', { status: 400, headers: { 'Content-Type': 'text/plain' } });
+      }
+      const id = statusId;
       try {
         const form = await request.formData();
         const status = form.get('status');
@@ -349,11 +377,13 @@ export default {
         if (res.meta.changes === 0) {
           return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
         }
-        // Return to the filter the reader was on, not the default view. `back` is
-        // never trusted as a redirect target — only the query is reused, so a
-        // crafted value cannot send anyone off-site.
+        // Return to the filter the reader was on, not the default view. The value is
+        // matched against a strict shape rather than merely prefix-checked: a
+        // startsWith('/feedback') test admits control characters, and a CR or LF in a
+        // Location value makes the runtime reject the whole header — which would throw
+        // *after* the UPDATE committed and report a 500 for a change that landed.
         const raw = form.get('back');
-        const backQuery = typeof raw === 'string' && raw.startsWith('/feedback') ? raw : '/feedback';
+        const backQuery = typeof raw === 'string' && /^\/feedback(\?[\w=&%.-]*)?$/.test(raw) ? raw : '/feedback';
         const sep = backQuery.includes('?') ? '&' : '?';
         return new Response(null, { status: 303, headers: { Location: `${backQuery}${sep}done=1` } });
       } catch (err: unknown) {

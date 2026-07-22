@@ -78,9 +78,11 @@ The debug fields are individual columns, not one JSON blob. No PII is collected.
 progress — are carried by the **linked GitHub issue's own state**, not duplicated here.
 One place to be wrong is better than two that disagree.
 
-Rows written before this migration have `status` NULL. That reads as **open** everywhere
-(the Worker's filter is `status IS NULL OR status <> 'resolved'`), which is correct: they
-were never triaged.
+Existing rows were backfilled to `open` by the migration itself — `ADD COLUMN status TEXT
+NOT NULL DEFAULT 'open'` sets every row as part of the ALTER, so `status` can never be
+NULL. The Worker's filter is still written `status IS NULL OR status <> 'resolved'`: bare
+`status <> 'resolved'` is NULL-not-true in SQL, so an unexpected value would *hide* a row
+rather than surface it. Anything unrecognised falls **open**, staying visible in the queue.
 
 `github_issue` is the important column. It's what tells "already filed as #271" from
 "never seen", so follow-up feedback about the same thing can join an existing ticket
@@ -91,16 +93,28 @@ instead of opening a duplicate. Set it whenever you file an issue from a row.
 From the dashboard, click **Resolve** / **Reopen**. That posts to
 `POST /feedback/:id/status`.
 
-Two things about that route are deliberate and easy to break:
+Three things about that route are deliberate and easy to break:
 
+- **It only works on `clumeral.com` and `localhost`.** Everywhere else it 404s. This is
+  the important one. There is a single D1 binding and no environment override in
+  [wrangler.jsonc](../wrangler.jsonc), so **every preview deploy reads and writes the
+  production feedback database** — `staging-clumeral-game.jevawin.workers.dev` included.
+  Cloudflare Access cannot protect those hosts: a self-hosted Access app needs a hostname
+  on a zone in the account, and `workers.dev` is not one. Without the host gate, anyone
+  who was ever sent a preview link could `curl` triage changes into real rows.
+  On production it additionally requires the `Cf-Access-Jwt-Assertion` header, so the
+  route fails closed if the Access app is ever removed or re-scoped.
 - **It lives under `/feedback`, not `/api/feedback`.** Cloudflare Access gates the
   `/feedback` path; `POST /api/feedback` is deliberately **public** so players can submit.
-  A write route under the `api` prefix would inherit the public rule and let anyone
-  change triage state. Don't move it.
+  A write route under the `api` prefix would inherit the public rule. Don't move it.
 - **It requires a same-origin `Origin` header.** Access proves who the caller is, not
   which page made the request — a signed-in admin's browser can be induced to POST from
   an attacker's page. A missing header is rejected too; the only legitimate caller is the
-  dashboard's own form.
+  dashboard's own form. Note this only proves a request *is* same-origin, never *which*
+  origin, so it is worth nothing without the host gate above.
+
+Consequence worth knowing: **you cannot test Resolve/Reopen from a preview URL.** Use
+localhost, or production after merge.
 
 To set `github_issue`, or to change state in bulk, go straight to D1:
 
@@ -127,7 +141,20 @@ Commands ([package.json](../package.json)):
 
 The remote script takes the file as an argument on purpose. It can't just run every migration
 in order: `0002` is a **one-time legacy import**, and re-running it would duplicate every
-imported row. Name the file you mean.
+imported row. Name the file you mean. Migrations are not re-runnable either — a second
+`ADD COLUMN` fails with `duplicate column name`.
+
+### Apply the migration BEFORE merging to main
+
+Merging to `main` deploys automatically. If the code lands before the columns exist, every
+dashboard load throws `no such column: status` and returns a 500. Player submissions keep
+working (the INSERT names no new columns), but triage is dead until you catch up.
+
+So the order is: run the migration against remote, **then** merge.
+
+```bash
+npm run db:migrate:remote -- migrations/0004_add_triage_columns.sql
+```
 
 ## The debug payload
 

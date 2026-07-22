@@ -37,8 +37,12 @@ export function isStatus(v: unknown): v is Status {
   return typeof v === "string" && (STATUSES as readonly string[]).includes(v);
 }
 
-// Rows written before #225 have no status. Treat them as open — they were never
-// triaged, which is exactly what open means.
+// Anything that is not exactly 'resolved' reads as open.
+//
+// The column is NOT NULL DEFAULT 'open' in both 0001 and 0004, so NULL should be
+// unreachable — this is not modelling real rows, it is refusing to hide a row on the
+// strength of a value we did not expect. Falling open keeps unrecognised state
+// visible in the triage queue; falling resolved would silently drop it.
 export function statusOf(row: FeedbackRow): Status {
   return row.status === "resolved" ? "resolved" : "open";
 }
@@ -63,9 +67,29 @@ export function parseStatusPath(pathname: string): number | null {
 // Requiring a same-origin Origin header closes that. Absent header → reject: this
 // route is only ever reached from our own form, so there is no legitimate
 // origin-less caller to accommodate.
+//
+// Note what this does NOT do: it checks that a request is same-origin, never *which*
+// origin. On a host with no Access policy it is worth nothing, because the attacker
+// sets both sides. See canWriteTriage.
 export function isSameOrigin(origin: string | null, expected: string): boolean {
   if (origin === null || origin === "") return false;
   return origin === expected;
+}
+
+// Which hosts may mutate triage state.
+//
+// This exists because there is exactly one D1 binding and no environment override
+// (wrangler.jsonc), so *every* preview deploy — `{branch}-clumeral-game.jevawin.workers.dev`,
+// staging included — reads and writes the PRODUCTION feedback database. Cloudflare
+// Access cannot cover those hosts: a self-hosted Access app needs a hostname on a zone
+// in the account, and `workers.dev` is not one. Without this gate, anyone who was ever
+// sent a preview link could POST triage changes to real rows, and the same-origin check
+// would wave it through because a curl caller sets Origin freely.
+//
+// clumeral.com is behind Access. localhost is the developer's own machine (and is what
+// the e2e suite drives). Everything else is a preview host: read-only.
+export function canWriteTriage(hostname: string): boolean {
+  return hostname === "clumeral.com" || hostname === "localhost" || hostname === "127.0.0.1";
 }
 
 // Real feedback comes from the production host; everything else (preview
@@ -163,6 +187,17 @@ function card(r: FeedbackRow, sample: boolean, back: string): string {
   </article>`;
 }
 
+// Nothing matched the current filters. Reached mainly by clearing the triage queue,
+// which is a success state, so it says so and offers the way to widen the view.
+function empty(showAll: boolean, showResolved: boolean): string {
+  const hint = !showResolved
+    ? `<a href="${queryFor(showAll, true)}">Show resolved</a>`
+    : !showAll
+      ? `<a href="${queryFor(true, showResolved)}">Show all (incl. test)</a>`
+      : "";
+  return `<p class="empty">Nothing open here. ${hint}</p>`;
+}
+
 // Rebuilds the current query string so a filter toggle preserves the other filter
 // and the resolve button can return you here.
 function queryFor(showAll: boolean, showResolved: boolean): string {
@@ -180,7 +215,13 @@ export function renderFeedbackPage(
   showResolved = false,
   notice = "",
 ): string {
-  const fake = rows.length === 0;
+  // Sample cards exist so the layout can be previewed against an empty database.
+  // Only show them when nothing is filtered — otherwise clearing the triage queue,
+  // which is the whole point of #225, would replace a clean board with five invented
+  // submissions under a "no feedback yet" banner.
+  const filtered = !showAll || !showResolved;
+  const fake = rows.length === 0 && !filtered;
+  const emptyQueue = rows.length === 0 && filtered;
   const list = fake ? SAMPLE : rows;
   const back = queryFor(showAll, showResolved);
 
@@ -188,10 +229,12 @@ export function renderFeedbackPage(
     ? `<div class="banner" role="alert">⚠ No feedback in this database yet — showing <b>sample data</b> so you can preview the layout. These are not real submissions.</div>`
     : "";
 
-  // Status changes redirect back here, so the confirmation has to survive the hop.
+  // Status changes redirect back here, so the confirmation arrives as new-document
+  // content. role="status" would not be announced — a live region has to exist before
+  // its contents change — so this is role="alert", which is announced on load.
   const flash = notice === ""
     ? ""
-    : `<div class="flash" role="status">${esc(notice)}</div>`;
+    : `<div class="flash" role="alert">${esc(notice)}</div>`;
 
   const toggle = showAll
     ? `<a class="toggle" href="${queryFor(false, showResolved)}">Show clumeral.com only</a>`
@@ -259,7 +302,9 @@ export function renderFeedbackPage(
   .dbg-body span { word-break: break-all; min-width: 0; }
   .empty { color: var(--muted); text-align: center; padding: 2rem 0; }
   .flash { margin: 0.9rem 0 0; padding: 0.6rem 0.85rem; border: 1px solid var(--ok); background: var(--ok-bg); color: var(--ok); border-radius: 10px; font-size: 0.85rem; }
-  .card.is-done { opacity: 0.6; }
+  /* Resolved rows are de-emphasised by their border and badge, not by fading the
+     card — dropping opacity takes the already-muted .meta line below AA. */
+  .card.is-done { border-style: dashed; }
   .triage { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
   .st { padding: 0.12rem 0.5rem; border-radius: 999px; font-size: 0.7rem; text-transform: capitalize; border: 1px solid var(--line); }
   .st-open { color: var(--warn-fg); border-color: var(--warn-bd); }
@@ -267,7 +312,8 @@ export function renderFeedbackPage(
   .issue { color: var(--acc); text-decoration: none; font-size: 0.76rem; font-family: ui-monospace, monospace; }
   .triage .when { color: var(--muted); font-size: 0.72rem; }
   .triage form { margin: 0 0 0 auto; }
-  .act { font: inherit; font-size: 0.78rem; cursor: pointer; padding: 0.35rem 0.7rem; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--acc); }
+  /* 44px min — the checklist's touch target floor. */
+  .act { font: inherit; font-size: 0.78rem; cursor: pointer; padding: 0.5rem 0.9rem; min-height: 44px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--acc); }
   .act-resolved { border-color: var(--ok); color: var(--ok); }
   .act:hover { border-color: currentColor; }
 </style>
@@ -280,7 +326,7 @@ export function renderFeedbackPage(
     </header>
     ${flash}
     ${banner}
-    <div class="list">${list.map((r) => card(r, fake, back)).join("")}</div>
+    ${emptyQueue ? empty(showAll, showResolved) : `<div class="list">${list.map((r) => card(r, fake, back)).join("")}</div>`}
   </div>
 </body>
 </html>`;

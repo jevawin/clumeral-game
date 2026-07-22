@@ -19,6 +19,8 @@
 			"/api/*",
 			"/stats",
 			"/feedback",
+			// POST /feedback/:id/status — triage state (#225).
+			"/feedback/*",
 			"/sw.js"
 		]
 	},
