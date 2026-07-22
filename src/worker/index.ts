@@ -6,7 +6,7 @@ import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
 import { renderArchivePage } from './puzzles.ts';
-import { renderFeedbackPage, type FeedbackRow } from './feedback.ts';
+import { renderFeedbackPage, parseStatusPath, isSameOrigin, isStatus, type FeedbackRow } from './feedback.ts';
 
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -293,23 +293,72 @@ export default {
       // Default to real (clumeral.com) feedback; ?all=1 includes preview/test rows.
       // Legacy rows were backfilled to clumeral.com, so the NULL case = real too.
       const showAll = url.searchParams.get('all') === '1';
+      // Resolved rows are hidden by default — the point of #225 is that the default
+      // view is the outstanding queue, not the full archive. ?status=all widens it.
+      const showResolved = url.searchParams.get('status') === 'all';
+      const notice = url.searchParams.get('done') === '1' ? 'Status updated.' : '';
       const cols = `id, created_at, category, message, puzzle_number, puzzle_date, device,
-                    browser, user_agent, history, prefs, active, tz_offset, local_today, screen, host`;
+                    browser, user_agent, history, prefs, active, tz_offset, local_today, screen, host,
+                    status, github_issue, resolved_at`;
+      // Rows predating #225 have status NULL, which is semantically open — they were
+      // never triaged. The NULL check keeps them in the default view.
+      const openOnly = `(status IS NULL OR status <> 'resolved')`;
+      const realOnly = `(host = 'clumeral.com' OR host IS NULL)`;
+      const where = [showAll ? '' : realOnly, showResolved ? '' : openOnly].filter(Boolean).join(' AND ');
       try {
-        const stmt = showAll
-          ? env.FEEDBACK_DB.prepare(`SELECT ${cols} FROM feedback ORDER BY id DESC LIMIT ?`).bind(limit)
-          : env.FEEDBACK_DB.prepare(
-              `SELECT ${cols} FROM feedback
-                WHERE host = 'clumeral.com' OR host IS NULL
-                ORDER BY id DESC LIMIT ?`,
-            ).bind(limit);
+        const stmt = env.FEEDBACK_DB.prepare(
+          `SELECT ${cols} FROM feedback${where ? ` WHERE ${where}` : ''} ORDER BY id DESC LIMIT ?`,
+        ).bind(limit);
         const { results } = await stmt.all<FeedbackRow>();
-        return new Response(renderFeedbackPage(results, url.hostname, showAll), {
+        return new Response(renderFeedbackPage(results, url.hostname, showAll, showResolved, notice), {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
         });
       } catch (err: unknown) {
         console.error('Feedback page query failed:', err instanceof Error ? err.message : String(err));
         return new Response('Could not load feedback', { status: 500, headers: { 'Content-Type': 'text/plain' } });
+      }
+    }
+
+    // POST /feedback/:id/status — flip a row between open and resolved (#225).
+    //
+    // This lives under /feedback, NOT /api/feedback, and that is load-bearing: the
+    // Cloudflare Access app gates the /feedback path, while POST /api/feedback is
+    // deliberately public so players can submit. Moving this route would silently
+    // hand the write path to anyone.
+    //
+    // The bot does not use this endpoint — GitHub Actions writes D1 directly with
+    // `wrangler d1 execute --remote`, so automation never depends on Access.
+    if (request.method === 'POST' && parseStatusPath(url.pathname) !== null) {
+      const id = parseStatusPath(url.pathname) as number;
+      // Access authenticates the caller but not the calling page, so a logged-in
+      // admin could be made to POST from an attacker's site. Same-origin required.
+      if (!isSameOrigin(request.headers.get('Origin'), url.origin)) {
+        return new Response('Forbidden', { status: 403, headers: { 'Content-Type': 'text/plain' } });
+      }
+      try {
+        const form = await request.formData();
+        const status = form.get('status');
+        if (!isStatus(status)) {
+          return new Response('Bad request', { status: 400, headers: { 'Content-Type': 'text/plain' } });
+        }
+        const resolvedAt = status === 'resolved' ? new Date().toISOString().replace('T', ' ').slice(0, 19) : null;
+        const res = await env.FEEDBACK_DB
+          .prepare(`UPDATE feedback SET status = ?, resolved_at = ? WHERE id = ?`)
+          .bind(status, resolvedAt, id)
+          .run();
+        if (res.meta.changes === 0) {
+          return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+        }
+        // Return to the filter the reader was on, not the default view. `back` is
+        // never trusted as a redirect target — only the query is reused, so a
+        // crafted value cannot send anyone off-site.
+        const raw = form.get('back');
+        const backQuery = typeof raw === 'string' && raw.startsWith('/feedback') ? raw : '/feedback';
+        const sep = backQuery.includes('?') ? '&' : '?';
+        return new Response(null, { status: 303, headers: { Location: `${backQuery}${sep}done=1` } });
+      } catch (err: unknown) {
+        console.error('Feedback status update failed:', err instanceof Error ? err.message : String(err));
+        return new Response('Could not update status', { status: 500, headers: { 'Content-Type': 'text/plain' } });
       }
     }
 
