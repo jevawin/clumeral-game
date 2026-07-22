@@ -25,9 +25,12 @@ what you're working on. Top of _Next_ is what follows.
 Or from the terminal:
 
 ```bash
-gh project item-list 3 --owner jevawin --format json \
+gh project item-list 3 --owner jevawin --limit 200 --format json \
   --jq '.items[] | select(.status=="Now" or .status=="Next") | "\(.status)\t#\(.content.number)\t\(.title)"'
 ```
+
+`--limit` is not optional. Without it `gh` returns only the first **30** items and filters
+that page — with 57 items on the board it silently drops rows rather than erroring.
 
 **Add an item:** open a normal issue. The board's auto-add workflow files it into
 **Inbound**. Anything the feedback triage bot creates lands there too, tagged `feedback`
