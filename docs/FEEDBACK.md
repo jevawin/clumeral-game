@@ -168,7 +168,7 @@ The loop from raw feedback to shipped work:
    the open queue by default. For anything actionable, create a GitHub issue, record its number on
    the row (`github_issue`), then hit **Resolve**. The row drops out of the default view and won't
    be re-triaged next visit.
-2. **Review new GitHub issues.** Prioritise the open issues (including the ones just filed), then reflect the order in [ROADMAP.md](ROADMAP.md) — issue number + one-line title + trigger condition, newest priorities first.
+2. **Review new GitHub issues.** New issues land in **Inbound** on the [Clumeral Roadmap board](https://github.com/users/jevawin/projects/3). Drag each to Now / Next / Future and drop it in the right position — column order *is* the priority order. Put any blocker or sequencing note in the **Trigger** field.
 3. **Work from the roadmap.** Pull the top _Now_ item and build it. Detail stays in the GitHub issue, not the roadmap.
 
 Resolve means **triaged**, not shipped — the row is captured in GitHub, and the linked issue tracks
