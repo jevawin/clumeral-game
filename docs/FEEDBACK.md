@@ -92,7 +92,7 @@ Caveat: `db:migrate:remote` currently runs **only** `0001`. For a new migration,
 The loop from raw feedback to shipped work:
 
 1. **Review feedback.** Read the [`/feedback` dashboard](https://clumeral.com/feedback) (or query D1 directly). For anything actionable, create a GitHub issue — bug, suggestion, or roadmap candidate — then **mark the feedback row complete** once it's captured in GitHub, so it isn't re-triaged next visit.
-2. **Review new GitHub issues.** Prioritise the open issues (including the ones just filed), then reflect the order in [ROADMAP.md](ROADMAP.md) — issue number + one-line title + trigger condition, newest priorities first.
+2. **Review new GitHub issues.** New issues land in **Inbound** on the [Clumeral Roadmap board](https://github.com/users/jevawin/projects/3). Drag each to Now / Next / Future and drop it in the right position — column order *is* the priority order. Put any blocker or sequencing note in the **Trigger** field.
 3. **Work from the roadmap.** Pull the top _Now_ item and build it. Detail stays in the GitHub issue, not the roadmap.
 
 **Dependency — marking rows complete needs #225.** Step 1's "mark the feedback row complete" is blocked until [#225 — Feedback: add open / resolved state for triage](https://github.com/jevawin/clumeral-game/issues/225) ships (still **open**, P2). Until then: capture-to-GitHub happens, but feedback rows can't be marked done — so a row may be re-read across visits. Track which rows are already captured by their linked issue number. When #225 lands, document the state model (open / resolved), who triages and how often, and any new columns/migrations **here**.

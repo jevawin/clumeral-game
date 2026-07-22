@@ -19,9 +19,23 @@ Harness auto-assigns `claude/*` — ignore it.
 3. Review gates for non-trivial changes: DA review (fresh subagent) → self-review
 4. On user approval: `gh pr merge --squash` into `staging` (work branches are short-lived → squash)
 5. Repeat for other work branches
-6. When staging ready: open PR `staging → main`, share staging URL + PR link
+6. When staging ready: open PR `staging → main`, share staging URL + PR link — **list a `Closes #NUM` line for every issue in the bundle** (see below)
 7. User merges on GitHub with a **merge commit** ("Create a merge commit" — NOT squash; see Post-merge sync for why)
 8. Run post-merge sync + cleanup (below)
+
+## Closing references on release PRs
+
+Every `staging → main` PR body must carry one `Closes #NUM` line per issue it ships. GitHub only
+auto-closes on merge to the default branch, and only from the PR body or a commit message — naming
+the issue in prose does nothing.
+
+Skipping this is not cosmetic. The 2026-07-22 sweep found **8 issues that had shipped weeks earlier
+and were still open** (#81, #155, #194, #199, #202, #228, #249, #255), because #254, #258 and #261
+each described their issues in prose without a single closing reference. The roadmap and the issue
+list drifted apart until someone read the code to work out what was actually done.
+
+Squash-merging a work branch into `staging` does **not** close anything — `staging` is not the
+default branch. The closing reference has to be on the `staging → main` PR.
 
 ## Preview URLs
 
