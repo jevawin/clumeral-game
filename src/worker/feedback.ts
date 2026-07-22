@@ -231,7 +231,10 @@ export function renderFeedbackPage(
   header.top { position: sticky; top: 0; background: Canvas; padding: 0.75rem 0; border-bottom: 1px solid var(--line); z-index: 1; }
   h1 { font-size: 1.15rem; margin: 0; }
   .sub { color: var(--muted); font-size: 0.82rem; margin: 0.2rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; }
-  .toggle { margin-left: auto; color: var(--acc); text-decoration: none; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; display: inline-flex; align-items: center; }
+  /* The toggle group takes the auto margin, not each toggle — two auto margins
+     push the second onto its own line. */
+  .toggles { margin-left: auto; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .toggle { color: var(--acc); text-decoration: none; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; min-height: 36px; display: inline-flex; align-items: center; }
   .banner { margin: 0.9rem 0 0; padding: 0.7rem 0.85rem; border: 1px solid var(--warn-bd); background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; font-size: 0.85rem; }
   .list { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.75rem; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0.85rem 0.9rem; }
@@ -273,7 +276,7 @@ export function renderFeedbackPage(
   <div class="wrap">
     <header class="top">
       <h1>Feedback</h1>
-      <p class="sub"><span>${esc(hostname)}</span><span>${countLabel}</span>${statusToggle}${toggle}</p>
+      <p class="sub"><span>${esc(hostname)}</span><span>${countLabel}</span><span class="toggles">${statusToggle}${toggle}</span></p>
     </header>
     ${flash}
     ${banner}
