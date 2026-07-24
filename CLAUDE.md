@@ -22,7 +22,7 @@ Every roadmap item follows at least a minimal **discuss → plan → execute →
 3. **Execute** — build it with atomic commits.
 4. **Review** — the review gates above (DA review → self-review) before any PR.
 
-**Tooling is your discretion.** Run it yourself following this cycle, use GSD (`/gsd-*`), or use superpowers skills — whichever fits the item.
+**Tooling is your discretion.** Run it yourself following this cycle, or use superpowers skills (`brainstorming`, `writing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`, `requesting-code-review`) — whichever fits the item.
 
 **QA is proportional and decided up front.** The level of automated QA (Playwright e2e against the production build) is set during discuss/plan, matched to the change — a header tweak warrants little or none; a long or logic-heavy task warrants the full suite. Don't run a 40-minute QA battering on a trivial change. Suite design: [QA regression spec](docs/superpowers/specs/2026-05-31-playwright-qa-regression-design.md).
 
@@ -53,7 +53,6 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 
 Update the respective doc if it's incorrect or your work makes it outdated.
 
-<!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
 **Clumeral Redesign**
@@ -69,24 +68,16 @@ Clumeral is a daily number puzzle at clumeral.com. Players get clues about a 3-d
 - **Compatibility**: Must work on all current browsers (ES2022 target)
 - **Performance**: Celebration animation must be skippable and under 3s
 - **Design**: Under 15 semantic colour tokens in tailwind.config.ts
-<!-- GSD:project-end -->
 
-<!-- GSD:workflow-start source:GSD defaults -->
-## GSD Workflow Enforcement
+## Workflow enforcement (superpowers)
 
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+Before making non-trivial changes, invoke the matching superpowers skill so planning artifacts and review gates stay in sync:
 
-Use these entry points:
-- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd-debug` for investigation and bug fixing
-- `/gsd-execute-phase` for planned phase work
+- **`brainstorming`** — new features, before writing any code
+- **`writing-plans`** — multi-step work after brainstorming
+- **`systematic-debugging`** — bugs, test failures, unexpected behaviour
+- **`test-driven-development`** — writing implementation
+- **`verification-before-completion`** — before claiming work is done or committing
+- **`requesting-code-review`** / **`receiving-code-review`** — the review gates before opening a PR
 
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
-
-<!-- GSD:profile-start -->
-## Developer Profile
-
-> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
+Single-file typo/copy fixes, or tweaks inside an active planned task, can skip this.
