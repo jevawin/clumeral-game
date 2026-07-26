@@ -2,8 +2,15 @@
 # single engine against the production build, and blocks merge on red.
 #
 # Scope is deliberate (see docs/superpowers/specs/2026-06-28-post-redesign-stabilisation-design.md,
-# PR 3): chromium only, all specs. "Fast" comes from dropping 4 of 5 engines —
-# the full browser matrix stays manual and proportional per CLAUDE.md's QA rule.
+# PR 3): chromium only, all specs. "Fast" comes from dropping 4 of 5 engines.
+#
+# The other 4 engines now run automatically at the RELEASE boundary only —
+# ci-matrix.yml, on PRs into main. Keeping this gate single-engine is what makes
+# it fast and low-flake enough to be a REQUIRED check on every PR, including the
+# high volume opened by the dev bot; breadth is bought where it's proportional.
+#
+# Runs on PRs into BOTH staging and main: work branches merge into staging, so a
+# main-only trigger would let every day-to-day change through ungated.
 #
 # No Cloudflare deploy: Playwright's webServer runs `npm run e2e:serve`
 # (vite build + preview + local D1 seed) and the Cloudflare Vite plugin serves
@@ -12,7 +19,7 @@ name: CI smoke gate
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
 
 # A new push to the same PR cancels the in-flight run — no point finishing a
 # gate against superseded code.

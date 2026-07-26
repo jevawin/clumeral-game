@@ -1,0 +1,83 @@
+# Full browser matrix — the RELEASE gate.
+#
+# Runs the remaining engines that ci-smoke.yml deliberately drops, and only where
+# breadth is proportional: PRs into main (i.e. staging -> main releases), plus
+# manual dispatch. Day-to-day work branches merging into staging stay on the fast
+# single-engine smoke gate.
+#
+# chromium-desktop is intentionally ABSENT: ci-smoke.yml already runs it on the
+# same PR, so repeating it here would just burn Actions minutes.
+#
+# legacy-chromium is a different SPEC SET (testMatch: LEGACY in playwright.config.ts),
+# not another engine — it's what proves the ES2022 browser-support constraint.
+#
+# NOT a required status check on day one. Let it prove itself non-flaky across a
+# few releases first (WebKit on Ubuntu runners is the usual culprit), then add it
+# to the main ruleset's required checks. A flaky REQUIRED check is worse than none:
+# it trains you to bypass the gate.
+name: CI browser matrix
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-matrix:
+    name: e2e ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      # Report every engine's result, not just the first failure — knowing it
+      # breaks on mobile-webkit AND firefox is more useful than one red job.
+      fail-fast: false
+      matrix:
+        include:
+          # Highest value first: this is a phone-first daily puzzle, so iOS
+          # Safari is where CSS (light-dark(), Lightning CSS) diverges most.
+          - project: mobile-webkit
+            browser: webkit
+          - project: webkit-desktop
+            browser: webkit
+          - project: mobile-chromium
+            browser: chromium
+          - project: firefox-desktop
+            browser: firefox
+          - project: legacy-chromium
+            browser: chromium
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Only this job's engine. --with-deps pulls the OS libraries it needs.
+      - name: Install Playwright ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      # Same self-contained webServer as the smoke gate: vite build + preview +
+      # local D1 seed, Worker API in-process. No Cloudflare deploy, no secrets.
+      - name: Run ${{ matrix.project }}
+        run: npx playwright test --project=${{ matrix.project }}
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() && failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          # Must be unique per matrix job or the uploads collide.
+          name: playwright-report-${{ matrix.project }}
+          path: playwright-report/
+          retention-days: 7
