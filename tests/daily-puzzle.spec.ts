@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   generatePuzzle,
@@ -141,6 +141,27 @@ describe('runDailyCron', () => {
     expect(store.puts).toEqual([]);
   });
 
+  // Every date gets two write attempts — as tomorrow on D-1, as today on D.
+  // A failure on today must not spend tomorrow's attempt too (DA finding 1).
+  it('still attempts tomorrow when today throws', async () => {
+    const store = fakeStore();
+    const realGet = store.get.bind(store);
+    store.get = async <T>(key: string, type: 'json'): Promise<T | null> => {
+      if (key === '2026-05-29') throw new Error('KV transient failure');
+      return realGet<T>(key, type);
+    };
+
+    await expect(runDailyCron(store, '2026-05-29')).rejects.toThrow(/2026-05-29/);
+    expect(store.puts.map(p => p.key)).toEqual(['2026-05-30']);
+  });
+
+  it('reports every failed date in the thrown error', async () => {
+    const store = fakeStore();
+    store.get = async () => { throw new Error('KV down'); };
+    await expect(runDailyCron(store, '2026-05-29'))
+      .rejects.toThrow('Cron could not freeze: 2026-05-29, 2026-05-30');
+  });
+
   it('defaults to the worker UTC today', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-29T12:00:00Z'));
@@ -174,22 +195,42 @@ describe('#205 tolerance path after the cron pre-generates tomorrow', () => {
 // #257 arose — the write was incidental to a read-through helper nobody re-read.
 // Enforced structurally, in the spirit of token-parity.spec.ts.
 describe('write authority is enforced, not just documented (#257)', () => {
-  const workerSrc = readFileSync(resolve(__dirname, '../src/worker/index.ts'), 'utf8');
+  // Comments are stripped before matching. This codebase documents heavily, and
+  // a guard that fails because someone WROTE DOWN the rule it enforces (e.g. a
+  // comment reading "never call PUZZLES.put() here") is worse than no guard.
+  const stripComments = (src: string): string =>
+    src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
-  it('index.ts never writes to the PUZZLES namespace directly', () => {
-    expect(workerSrc).not.toMatch(/PUZZLES\s*\.\s*put\s*\(/);
+  const workerDir = resolve(__dirname, '../src/worker');
+  const sources = readdirSync(workerDir)
+    .filter(f => f.endsWith('.ts'))
+    .map(f => ({ file: f, src: stripComments(readFileSync(resolve(workerDir, f), 'utf8')) }));
+
+  // Repo-wide, not just index.ts: a put() added in any other worker module
+  // would be just as permanent, and scoping the guard to the file we happened
+  // to be editing is how the next one slips through.
+  it('daily-puzzle.ts is the only worker module that writes to KV', () => {
+    const writers = sources.filter(s => /\.\s*put\s*\(/.test(s.src)).map(s => s.file);
+    expect(writers).toEqual(['daily-puzzle.ts']);
   });
 
-  it('index.ts does not import the persisting helper', () => {
+  it('the raw persisting helper is not reachable from a request handler', () => {
     // runDailyCron is the sanctioned cron entry point; ensureDailyPuzzle is the
-    // raw writer and has no business being reachable from a request handler.
-    expect(workerSrc).not.toMatch(/\bensureDailyPuzzle\b/);
+    // raw writer and has no business being named outside its own module.
+    const leaked = sources
+      .filter(s => s.file !== 'daily-puzzle.ts' && /\bensureDailyPuzzle\b/.test(s.src))
+      .map(s => s.file);
+    expect(leaked).toEqual([]);
   });
 
-  it('runDailyCron is used only by the scheduled handler', () => {
-    const uses = workerSrc.match(/\brunDailyCron\b/g) ?? [];
-    expect(uses).toHaveLength(2);  // the import, and the call in scheduled()
-    expect(workerSrc).toMatch(/async scheduled\([^)]*\)[^{]*\{\s*await runDailyCron\(env\.PUZZLES\);\s*\}/);
+  it('runDailyCron appears in index.ts only as the import and the scheduled call', () => {
+    // Deliberately NOT pinning the shape of the handler body — an earlier
+    // version of this test did, and would have failed the moment error handling
+    // was added to the cron (DA review finding 4). The invariant worth holding
+    // is reachability, not formatting.
+    const index = sources.find(s => s.file === 'index.ts')!.src;
+    expect(index.match(/\brunDailyCron\b/g) ?? []).toHaveLength(2);
+    expect(index).toMatch(/async scheduled\b[\s\S]*\brunDailyCron\(/);
   });
 });
 

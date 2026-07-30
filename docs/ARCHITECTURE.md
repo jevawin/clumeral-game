@@ -66,7 +66,7 @@ Puzzles are **generated once, then frozen in KV** — the archive is static by c
 - `readDailyPuzzle(store, date)` (`worker/daily-puzzle.ts`) reads the `PUZZLES` KV namespace by date key. Present → return it. Absent → generate (`runFilterLoop`) and return it **without storing**. **KV entries have no TTL and are never overwritten.**
 - **Writes belong to the cron alone** — see [Write authority](#write-authority-cron-only-257) below.
 - **Both** display (`GET /api/puzzle*`) **and** guess-validation (`POST /api/guess`, daily path) read the same frozen KV entry — a stored puzzle stays self-consistent forever.
-- **Consequence:** changing the generator (e.g. adding Fibonacci, adding a redundant-clue pass) affects only **future dates not yet in KV**, plus random puzzles. It **cannot rewrite already-served puzzles.** No puzzle-versioning system exists or is needed — KV *is* the freeze.
+- **Consequence:** changing the generator (e.g. adding Fibonacci, adding a redundant-clue pass) affects **any date not yet in KV** — normally future dates, but also any past date that was never frozen — plus random puzzles. It **cannot rewrite already-served puzzles.** No puzzle-versioning system exists or is needed — KV *is* the freeze.
 - **Random puzzles** are the exception: not stored — re-derived from the HMAC-signed token seed on each guess (`handleGuess` token path, `crypto.ts`). Self-consistent within a session.
 
 ### Write authority (cron-only, #257)
@@ -85,7 +85,7 @@ Two named functions rather than a persist flag: a request handler cannot acquire
 
 **Why the cron freezes tomorrow too.** `date-guard.ts` deliberately tolerates `today+1` so a UTC+14 player at local midnight is not locked out (#205). Before this, tomorrow was never pre-generated, so that tolerance path was a live write on every deployment, every day — a preview build could mint tomorrow's production puzzle. Pre-generating tomorrow makes the tolerance path a cache hit, and the freeze point predictable (cron time) rather than "whenever the first ahead-of-UTC player opens the app".
 
-Ephemeral generation is not a *different* puzzle — it is deterministic from the date seed, so a pre-cron serve matches what the cron later stores, provided the serving deployment's property set matches production's. A mismatched preview build can now only affect the player in front of it, transiently, instead of freezing a broken puzzle for everyone forever. Cost of the trade: if the cron fails, players are served correct puzzles that leave no stored record — recoverable, since generation is reproducible from the date.
+Ephemeral generation is not a *different* puzzle — it is deterministic from the date seed, so a pre-cron serve matches what the cron later stores, provided the serving deployment's property set matches production's. A mismatched preview build can now only affect the player in front of it, transiently, instead of freezing a broken puzzle for everyone forever. Cost of the trade: if the cron fails, players are served correct puzzles that leave no stored record. That is recoverable **only while the generator is unchanged** — after a property-set change (#254 added Fibonacci; #193 will add a redundant-clue pass) what was served ephemerally during the outage cannot be reconstructed from anywhere. A cron outage is therefore not harmless: `runDailyCron` throws on any failed date so the invocation shows as errored rather than passing quietly.
 
 Covered by `tests/daily-puzzle.spec.ts`.
 

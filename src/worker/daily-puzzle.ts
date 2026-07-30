@@ -35,9 +35,17 @@ export interface StoredPuzzle {
 }
 
 /** The slice of KVNamespace this module needs. Narrow so tests can substitute
- *  a plain object and assert on writes. */
-export interface PuzzleStore {
+ *  a plain object and assert on writes.
+ *
+ *  Split in two so the read path is write-incapable *by type*, not by
+ *  convention: readDailyPuzzle takes a PuzzleReader, which has no put() to
+ *  call. The comment above is then a compile-time guarantee rather than a
+ *  promise (DA review finding 6). */
+export interface PuzzleReader {
   get<T>(key: string, type: 'json'): Promise<T | null>;
+}
+
+export interface PuzzleStore extends PuzzleReader {
   put(key: string, value: string): Promise<void>;
 }
 
@@ -48,8 +56,9 @@ export function generatePuzzle(date: string): StoredPuzzle {
   return { answer, clues, puzzleNumber: puzzleNumber(date) };
 }
 
-/** Request path. Cache-first; generates ephemerally on a miss. NEVER writes. */
-export async function readDailyPuzzle(store: PuzzleStore, date: string): Promise<StoredPuzzle> {
+/** Request path. Cache-first; generates ephemerally on a miss. NEVER writes —
+ *  it is handed a PuzzleReader, which has no put() to reach for. */
+export async function readDailyPuzzle(store: PuzzleReader, date: string): Promise<StoredPuzzle> {
   const cached = await store.get<StoredPuzzle>(date, 'json');
   return cached ?? generatePuzzle(date);
 }
@@ -72,9 +81,33 @@ export function cronPuzzleDates(today: string): [string, string] {
   return [today, nextUTCDate(today)];
 }
 
-/** Nightly cron entry point. Idempotent — a re-run writes nothing. */
+/** Nightly cron entry point. Idempotent — a re-run writes nothing.
+ *
+ *  Each date is attempted independently. The safety margin in this design is
+ *  that every date gets TWO write attempts — once as "tomorrow" on day D-1, and
+ *  again as "today" on day D. Without isolation a transient failure on today
+ *  (a cache hit in steady state, so normally the cheap one) would abort the run
+ *  before tomorrow was ever attempted, silently spending that margin.
+ *
+ *  Failures are logged per date and then rethrown together, so the invocation
+ *  is visibly errored in the dashboard rather than failing quietly. Nothing
+ *  backfills a date that misses both attempts: no request path writes any more,
+ *  and cronPuzzleDates only ever looks forward. That is deliberate — freezing a
+ *  past date under a since-changed generator would store something different
+ *  from what players were already served, which is worse than the hole. */
 export async function runDailyCron(store: PuzzleStore, today: string = todayUTC()): Promise<void> {
+  const failed: string[] = [];
+
   for (const date of cronPuzzleDates(today)) {
-    await ensureDailyPuzzle(store, date);
+    try {
+      await ensureDailyPuzzle(store, date);
+    } catch (err) {
+      console.error(`[cron] failed to freeze ${date}:`, err);
+      failed.push(date);
+    }
+  }
+
+  if (failed.length) {
+    throw new Error(`Cron could not freeze: ${failed.join(', ')}`);
   }
 }
