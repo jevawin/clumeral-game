@@ -1,7 +1,8 @@
 // Worker entry point — serves API routes for puzzle data and guess validation.
 // The answer is never sent to the client.
 
-import { runFilterLoop, makeRng, dateSeedInt, todayUTC, puzzleNumber, puzzleDate } from './puzzle.ts';
+import { runFilterLoop, makeRng, todayUTC, puzzleNumber, puzzleDate } from './puzzle.ts';
+import { readDailyPuzzle, runDailyCron, type StoredPuzzle } from './daily-puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { getStats, renderDashboard } from './stats.ts';
@@ -21,12 +22,6 @@ interface Env {
   CF_API_TOKEN: string;
 }
 
-interface StoredPuzzle {
-  answer: number;
-  clues: { propKey: string; label: string; operator: string; value: number | boolean }[];
-  puzzleNumber: number;
-}
-
 const VALID_EVENTS = new Set([
   'puzzle_start', 'puzzle_complete', 'incorrect_guess',
   'htp_opened', 'feedback_submitted',
@@ -41,19 +36,12 @@ function json(data: unknown, status = 200, headers: Record<string, string> = {})
   });
 }
 
-// ─── Puzzle generation + KV caching ──────────────────────────────────────────
+// ─── Puzzle reads ────────────────────────────────────────────────────────────
 
-async function getDailyPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
-  // Try KV first
-  const cached = await env.PUZZLES.get<StoredPuzzle>(date, 'json');
-  if (cached) return cached;
-
-  // Generate and store
-  const rng = makeRng(dateSeedInt(date));
-  const { answer, clues } = runFilterLoop(rng);
-  const puzzle: StoredPuzzle = { answer, clues, puzzleNumber: puzzleNumber(date) };
-  await env.PUZZLES.put(date, JSON.stringify(puzzle));
-  return puzzle;
+// Request handlers read; only the cron writes. See daily-puzzle.ts for why —
+// PUZZLES is shared across every deployment and its entries are write-once.
+function getDailyPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
+  return readDailyPuzzle(env.PUZZLES, date);
 }
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
@@ -557,8 +545,9 @@ export default {
   },
 
   // ── Cron: pre-generate today's puzzle at midnight UTC ──
+  // Freezes today AND tomorrow (#257). Pre-generating tomorrow is what makes the
+  // date-guard +1 tolerance a cache hit, so no request path ever needs to write.
   async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
-    const today = todayUTC();
-    await getDailyPuzzle(env, today);
+    await runDailyCron(env.PUZZLES);
   },
 };
