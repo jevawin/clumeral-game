@@ -126,3 +126,5 @@ Issues and ideas tracked on [GitHub Issues](https://github.com/jevawin/clumeral-
 [MIT](LICENSE) — see LICENSE file for details.
 
 <!-- protection probe 2026-07-30T14:33:02+01:00 -->
+
+<!-- protection probe 2 2026-07-30T15:17:49+01:00 -->
