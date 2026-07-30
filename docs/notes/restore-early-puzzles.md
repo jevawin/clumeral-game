@@ -17,10 +17,14 @@ that differ from what players originally saw.
 
 ## What's already been confirmed (don't redo)
 
-- **Puzzles are KV-first.** `getDailyPuzzle()` in `src/worker/index.ts` reads the
-  stored puzzle from the `PUZZLES` KV namespace by date key, and only recomputes +
-  `put()`s if KV has no entry. KV entries have **no TTL** and are **never
+- **Puzzles are KV-first.** `readDailyPuzzle()` in `src/worker/daily-puzzle.ts`
+  reads the stored puzzle from the `PUZZLES` KV namespace by date key, and only
+  recomputes if KV has no entry. KV entries have **no TTL** and are **never
   overwritten** once written.
+  Since #257 the request path **does not persist** what it recomputes — only the
+  nightly cron writes (`ensureDailyPuzzle`). So an early date missing from KV is
+  now served freshly generated every time rather than being frozen by the first
+  request, which is what this audit needs to check for.
 - **Git history is squashed.** Root commit is `2026-04-01` (~50 commits). **No
   `.csv` was ever committed.** `EPOCH_DATE = 2026-03-08` = puzzle #1, ~3 weeks
   before history begins.
