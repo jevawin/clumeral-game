@@ -197,6 +197,15 @@ export function todayUTC() {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
+// The calendar day after dateStr, in UTC. Used by the cron to pre-generate
+// tomorrow (#257) — date arithmetic via Date so month/year/leap rollover is
+// handled by the platform rather than by string surgery.
+export function nextUTCDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export function dateSeedInt(dateStr: string): number {
   return parseInt(dateStr.replace(/-/g, ''), 10);
 }
