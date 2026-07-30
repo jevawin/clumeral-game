@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   generatePuzzle,
   readDailyPuzzle,
@@ -164,6 +166,30 @@ describe('#205 tolerance path after the cron pre-generates tomorrow', () => {
 
     expect(puzzle).toEqual(JSON.parse(store.data.get('2026-05-30')!));
     expect(store.puts).toEqual([]);
+  });
+});
+
+// The behavioural tests above prove the current handlers don't write. They
+// cannot stop a NEW handler being added with a put() in it, which is exactly how
+// #257 arose — the write was incidental to a read-through helper nobody re-read.
+// Enforced structurally, in the spirit of token-parity.spec.ts.
+describe('write authority is enforced, not just documented (#257)', () => {
+  const workerSrc = readFileSync(resolve(__dirname, '../src/worker/index.ts'), 'utf8');
+
+  it('index.ts never writes to the PUZZLES namespace directly', () => {
+    expect(workerSrc).not.toMatch(/PUZZLES\s*\.\s*put\s*\(/);
+  });
+
+  it('index.ts does not import the persisting helper', () => {
+    // runDailyCron is the sanctioned cron entry point; ensureDailyPuzzle is the
+    // raw writer and has no business being reachable from a request handler.
+    expect(workerSrc).not.toMatch(/\bensureDailyPuzzle\b/);
+  });
+
+  it('runDailyCron is used only by the scheduled handler', () => {
+    const uses = workerSrc.match(/\brunDailyCron\b/g) ?? [];
+    expect(uses).toHaveLength(2);  // the import, and the call in scheduled()
+    expect(workerSrc).toMatch(/async scheduled\([^)]*\)[^{]*\{\s*await runDailyCron\(env\.PUZZLES\);\s*\}/);
   });
 });
 

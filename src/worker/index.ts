@@ -38,9 +38,10 @@ function json(data: unknown, status = 200, headers: Record<string, string> = {})
 
 // ─── Puzzle reads ────────────────────────────────────────────────────────────
 
-// Request handlers read; only the cron writes. See daily-puzzle.ts for why —
-// PUZZLES is shared across every deployment and its entries are write-once.
-function getDailyPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
+// Request handlers call readDailyPuzzle directly; only `scheduled` writes.
+// See daily-puzzle.ts for why — PUZZLES is shared across every deployment
+// (preview URLs included) and its entries are write-once.
+function readPuzzle(env: Env, date: string): Promise<StoredPuzzle> {
   return readDailyPuzzle(env.PUZZLES, date);
 }
 
@@ -58,7 +59,7 @@ async function handleGetPuzzle(env: Env, url: URL): Promise<Response> {
   // back-compat path).
   const requested = url.searchParams.get('date');
   const date = requested && !isFuturePuzzleDate(requested) ? requested : todayUTC();
-  const puzzle = await getDailyPuzzle(env, date);
+  const puzzle = await readPuzzle(env, date);
   // no-store: the response now varies by ?date= and is day-sensitive — never let
   // an intermediary pin one player's local-day (or today+1) response past rollover.
   return json(
@@ -111,7 +112,7 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
     if (isFuturePuzzleDate(body.date)) {
       return json({ error: 'Cannot guess future puzzles' }, 400);
     }
-    const puzzle = await getDailyPuzzle(env, body.date);
+    const puzzle = await readPuzzle(env, body.date);
     return json({ correct: guess === puzzle.answer });
   }
 
@@ -236,7 +237,7 @@ export default {
       if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
       const date = puzzleDate(num);
       if (isFuturePuzzleDate(date)) return json({ error: 'Puzzle not available yet' }, 400);
-      const puzzle = await getDailyPuzzle(env, date);
+      const puzzle = await readPuzzle(env, date);
       return json({ date, puzzleNumber: num, clues: puzzle.clues });
     }
 
@@ -249,7 +250,7 @@ export default {
       if (num < 1) return json({ error: 'Invalid puzzle number' }, 400);
       const date = puzzleDate(num);
       if (date >= todayUTC()) return json({ error: 'Solution not available' }, 403);
-      const puzzle = await getDailyPuzzle(env, date);
+      const puzzle = await readPuzzle(env, date);
       return json({ answer: puzzle.answer });
     }
 
@@ -265,7 +266,7 @@ export default {
         return json({ answer });
       }
       const today = todayUTC();
-      const puzzle = await getDailyPuzzle(env, today);
+      const puzzle = await readPuzzle(env, today);
       return json({ answer: puzzle.answer });
     }
 
@@ -472,7 +473,7 @@ export default {
       );
       const dates = new Set(keys.keys.map(k => k.name));
       if (!dates.has(today)) {
-        const p = await getDailyPuzzle(env, today);
+        const p = await readPuzzle(env, today);
         puzzles.push({ num: todayNum, date: today, clues: p.clues.length });
       }
       const valid = puzzles.filter((p): p is NonNullable<typeof p> => p !== null);
@@ -544,9 +545,9 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  // ── Cron: pre-generate today's puzzle at midnight UTC ──
-  // Freezes today AND tomorrow (#257). Pre-generating tomorrow is what makes the
-  // date-guard +1 tolerance a cache hit, so no request path ever needs to write.
+  // ── Cron: pre-generate today's and tomorrow's puzzles at midnight UTC ──
+  // Tomorrow is what makes the date-guard +1 tolerance a cache hit, so no
+  // request path ever needs to write (#257). The only writer in the worker.
   async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
     await runDailyCron(env.PUZZLES);
   },
