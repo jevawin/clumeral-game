@@ -106,3 +106,25 @@ Inspect a stored puzzle: `wrangler kv key get "YYYY-MM-DD" --binding PUZZLES --r
 - `dlng_last_visit_date` — last-seen local date key, drives the midnight rollover
 
 `dlng_` prefix = legacy name. **Never rename** — persisted in user browsers.
+
+## sessionStorage keys
+
+- `dlng_undo` — the digit-box undo stack (#251), `{v, scope, cur, e}`; validated on load
+
+The only key not in localStorage, and deliberately so. The stack should survive a reload and
+a tab restore — otherwise a mis-tapped Reset followed by a refresh is unrecoverable — but it
+must not outlive the tab: a stack that outlived the board it describes would be worse than
+no stack.
+
+It is **not** date-guarded like `dlng_active`. It carries two guards instead:
+
+- `scope` (`date:<puzzle-date>` or `random:<token>`) — the entries hold whole boards, so
+  applying one puzzle's stack to another's board would silently corrupt it.
+- `cur` — the board the stack described when it was written. This store is per-tab while
+  `dlng_active` is shared across tabs, so scope alone cannot tell whether the two came from
+  the same place: play in tab A, play on in tab B, reload tab A, and the scopes still match
+  over diverged boards. Undo would then jump the board back by however many moves tab B made.
+
+The stack is only rehydrated on the path where the board itself restores (today's daily
+mid-game restore), and only written there too — an archive or `/random` stack is never read
+back, so writing one would be discarded I/O on the hottest path in the game.

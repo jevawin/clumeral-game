@@ -65,7 +65,28 @@ gh issue create --repo jevawin/clumeral-game \
 
 Add `--milestone "<name>"` if specified and existing.
 
+## Add it to the board — always
+
+`gh issue create` does **not** put the issue on the Clumeral Roadmap board. An issue that
+isn't on the board is invisible to the only view anyone actually plans from, so this step is
+not optional:
+
+```
+gh project item-add 3 --owner jevawin --url <issue-url>
+```
+
+New items land in **Inbound**, which is the right starting column — triage moves them on.
+The command prints nothing on success; confirm it landed with:
+
+```
+gh project item-list 3 --owner jevawin --format json --limit 200
+```
+
+To move an item to another column afterwards, the Status field is `PVTSSF_lAHOAX-Ag84BeK9ozhYnKgc`
+with options Inbound `3ab9ddb3`, Future `ed55b95e`, Next `ef252ae0`, Now `cb7a0430`, Done `2818abf0`.
+
 ## After
 
 - Show issue URL
 - One-line summary of what was created
+- Confirm which board column it landed in

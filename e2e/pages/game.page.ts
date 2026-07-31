@@ -13,6 +13,10 @@ export class GamePage {
   readonly archiveBack: Locator;
   readonly firstClueTag: Locator;
   readonly tagTip: Locator;
+  readonly boardControls: Locator;
+  readonly undo: Locator;
+  readonly reset: Locator;
+  readonly undoMsg: Locator;
 
   constructor(public readonly page: Page) {
     this.screen = page.locator('[data-screen="game"]');
@@ -25,6 +29,15 @@ export class GamePage {
     this.archiveBack = page.locator("[data-archive-back]");
     this.firstClueTag = page.locator("[data-clue-tag]").first();
     this.tagTip = page.locator("[data-tag-tip]");
+    this.boardControls = page.locator("[data-board-controls]");
+    this.undo = page.locator("[data-undo]");
+    this.reset = page.locator("[data-reset]");
+    this.undoMsg = page.locator("[data-undo-msg]");
+  }
+
+  /** Digit spans inside a box carry `elim` once eliminated. */
+  boxDigit(box: number, digit: number): Locator {
+    return this.page.locator(`[data-digit="${box}"] .digit-box__grid span`).nth(digit);
   }
 
   async open(): Promise<void> {
