@@ -94,7 +94,13 @@ Undo stays live. That falls out of the rules above rather than needing a special
 - [x] **4. Wire `app.ts`.** Push a snapshot in `toggleDigit`, implement Undo and Reset,
       enable/disable rendering, hide on solve, clear history on new puzzle and on restore.
 - [x] **5. e2e spec.** `e2e/specs/undo-reset.spec.ts` — the acceptance criteria as browser tests.
-- [ ] **6. Review gates.** DA review (authorised by Jamie), then self-review, then PR.
+- [x] **6. Review gates.** Three DA review rounds (authorised by Jamie) plus self-review.
+
+Round 3 caught two that would have shipped broken: the stack fingerprint was saved *before*
+the board mutated, so `loadUndo` rejected it on every reload and the sessionStorage
+persistence was dead in all cases; and the e2e helper paired `aria-disabled` with
+`toBeEnabled()`, which Playwright resolves through `aria-disabled` for button roles — a
+contradiction that would have failed eight tests in CI.
 
 ## QA scope
 
