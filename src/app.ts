@@ -4,6 +4,7 @@
 import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive } from './storage.ts';
+import { startingBoard, isStartingBoard, createHistory } from './history.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
@@ -72,6 +73,10 @@ const dom = {
   history: $('[data-history]') as HTMLElement | null,
   historyList: $('[data-history-list]') as HTMLElement | null,
   clueList: $('[data-clue-list]') as HTMLElement | null,
+  boardControls: $('[data-board-controls]') as HTMLElement | null,
+  undoBtn: $('[data-undo]') as HTMLButtonElement | null,
+  resetBtn: $('[data-reset]') as HTMLButtonElement | null,
+  undoMsg: $('[data-undo-msg]') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -80,16 +85,13 @@ let gameState: GameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
 let submitting = false; // guard against double-submit during API call
 
-function initPossibles(): Set<number>[] {
-  return [
-    new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]),          // hundreds: no zero
-    new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-  ];
-}
-
-let possibles: Set<number>[] = initPossibles();
+let possibles: Set<number>[] = startingBoard();
 let activeBox: number | null = null; // 0 | 1 | 2 | null
+
+// Undo stack for the digit boxes (#251). Deliberately NOT persisted: the board
+// restores from dlng_active across a reload, the history does not. Keeping it
+// in memory avoids a storage schema bump for state nobody misses after a day.
+const history = createHistory();
 
 // ─── Storage helper (uses todayKey from date.ts) ─────────────────────────────
 
@@ -383,14 +385,12 @@ function buildKeypad() {
     btn.type = "button";
     const disabled = activeBox === 0 && d === 0;
     const elim = disabled || !possibles[activeBox].has(d);
-    btn.className = `h-12 rounded-sm font-mono text-lg font-normal border-[1.5px] touch-manipulation active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
-      elim
-        ? // Struck through as well as faded, matching the digit boxes. No
-          // decoration colour: the rule inherits currentColor, so it lands at
-          // the same alpha as the digit it crosses.
-          'bg-surface text-text/25 border-border shadow-none line-through'
-        : 'bg-surface text-text border-border shadow-key'
-    }`;
+    // .key-face carries the surface, border and tap-offset shared with the
+    // undo/reset controls above the boxes (see tailwind.css).
+    // Struck through as well as faded, matching the digit boxes. .is-elim is a
+    // CSS class rather than utilities so it outranks .key-face on specificity
+    // instead of relying on source order.
+    btn.className = `key-face h-12 font-mono text-lg font-normal${elim ? ' is-elim' : ''}`;
     btn.textContent = String(d);
     btn.setAttribute("data-key", String(d));
     btn.setAttribute("aria-label", `Toggle number ${d}`);
@@ -429,18 +429,72 @@ function toggleDigit(digit: number): void {
   const s = possibles[activeBox];
   if (s.has(digit)) {
     if (s.size === 1) return; // guard: cannot eliminate last digit
+    // Snapshot AFTER the guard: a blocked toggle changes nothing, and pushing
+    // here would leave a no-op on the stack that makes one Undo press look dead.
+    history.push(possibles);
     s.delete(digit);
     // First-play walkthrough hook (issue #214). Fires only on elimination. No-op once dlng_history exists.
     document.dispatchEvent(new CustomEvent("game:digit-eliminated"));
   } else {
+    history.push(possibles);
     s.add(digit);
   }
+  // The player is back to playing, so the post-reset prompt has served its purpose.
+  showUndoMsg(false);
   // Save mid-game state after every digit mutation — daily only (D-06, D-08).
   // Payload is tiny so no debounce needed (Pitfall 5).
   if (!gameState.isRandom) saveActive(buildActiveState());
   renderBox(activeBox);
   buildKeypad();
+  renderBoardControls();
   checkSubmit();
+}
+
+// ─── Undo / Reset controls (#251) ────────────────────────────────────────────
+
+function showUndoMsg(show: boolean): void {
+  dom.undoMsg?.classList.toggle("hidden", !show);
+}
+
+// Undo and Reset don't share a condition. Straight after a Reset the board IS
+// the starting board, so Reset disables itself while Undo stays live to unwind it.
+function renderBoardControls(): void {
+  // Hidden wholesale on a solved puzzle — a solve must not be unwound back into play.
+  const hide = gameState.solved;
+  dom.boardControls?.classList.toggle("hidden", hide);
+  dom.boardControls?.classList.toggle("flex", !hide);
+  if (dom.undoBtn) dom.undoBtn.disabled = !history.canUndo();
+  if (dom.resetBtn) dom.resetBtn.disabled = isStartingBoard(possibles);
+}
+
+// Applies a board restored from the history stack. Shared by Undo and Reset so
+// the save/render/re-check sequence can't drift between them.
+function applyBoard(next: Set<number>[]): void {
+  possibles = next;
+  renderFeedback(null);
+  if (!gameState.isRandom) saveActive(buildActiveState());
+  renderAllBoxes();
+  buildKeypad();
+  renderBoardControls();
+  checkSubmit();
+}
+
+function undoLast(): void {
+  if (gameState.solved) return;
+  const previous = history.undo();
+  if (previous === null) return;
+  showUndoMsg(false);
+  applyBoard(previous);
+}
+
+function resetBoard(): void {
+  if (gameState.solved || isStartingBoard(possibles)) return;
+  // One entry, so a single Undo press restores the whole pre-reset board.
+  history.push(possibles);
+  applyBoard(startingBoard());
+  // Points the player at the Undo that will unwind this — the reason Reset
+  // needs no confirmation step.
+  showUndoMsg(true);
 }
 
 function openBox(i: number): void {
@@ -502,6 +556,11 @@ function showCompletedState(tries: number, replayDate?: string): void {
   }
   dom.submitWrap?.classList.add("hidden");
   dom.history?.classList.add("hidden");
+  // Solved: nothing left to unwind. Clear as well as hide, so a later /random
+  // or archive puzzle on the same SPA session can't inherit a stale stack.
+  history.clear();
+  showUndoMsg(false);
+  renderBoardControls();
 
   // Archive row visibility tied to replayDate so a daily /play view never inherits archive chrome.
   if (dom.archiveRow) {
@@ -537,8 +596,11 @@ function resetPuzzleUI() {
       el.classList.remove("bg-success/12", "border-success/40", "pointer-events-none");
     }
   }
-  possibles = initPossibles();
+  possibles = startingBoard();
+  history.clear();
+  showUndoMsg(false);
   renderAllBoxes();
+  renderBoardControls();
   closeKeypad();
   checkSubmit();
 }
@@ -568,8 +630,13 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
     gameState = { answer: null, guesses: draft.guesses, solved: false, puzzleNum: num, date };
     // Rebuild possibles from the stored arrays (Array → Set per box).
     possibles = draft.possibles.map((arr) => new Set(arr));
+    // Undo history does not survive a reload (#251) — the board restores, the
+    // stack starts empty, so Undo is disabled until the player changes something.
+    history.clear();
+    showUndoMsg(false);
     // Reuse idempotent renderers — no new DOM logic (Pitfall 2: boxes are in DOM from renderClues above).
     renderAllBoxes();
+    renderBoardControls();
     renderHistory(gameState.guesses);
     if (draft.activeBox !== null) openBox(draft.activeBox);
     if (draft.feedbackKey === 'incorrect') renderFeedback('incorrect');
@@ -683,6 +750,11 @@ async function handleGuess() {
         if (el) el.classList.add("bg-success/12", "border-success/40", "pointer-events-none");
       }
       dom.submitWrap?.classList.add("hidden");
+      // Hide undo/reset here too: only the archive branch below reaches
+      // showCompletedState, the other two navigate away instead (#251).
+      history.clear();
+      showUndoMsg(false);
+      renderBoardControls();
 
       // Record game before rendering completion so loadHistory includes today's entry.
       // Always record daily solves so a reload can detect "already solved today" even when
@@ -816,6 +888,11 @@ for (let i = 0; i < 3; i++) {
 
 // Submit button
 dom.submitBtn?.addEventListener("click", () => { handleGuess(); });
+
+// Undo / Reset (#251). Native <button disabled> already blocks click and keyboard
+// activation, so there's no separate guard needed here.
+dom.undoBtn?.addEventListener("click", () => { undoLast(); });
+dom.resetBtn?.addEventListener("click", () => { resetBoard(); });
 
 // Save checkbox
 if (dom.saveCheck) {

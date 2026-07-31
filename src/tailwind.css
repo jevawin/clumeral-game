@@ -570,6 +570,57 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .btn svg { width: 1rem; height: 1rem; flex-shrink: 0; }
   .btn-sm svg { width: 0.875rem; height: 0.875rem; }
 
+  /* ─── Shared "interactive face": the keypad keys and the undo/reset controls (#251).
+     Single source for the surface, border and tap-offset so the controls above the
+     boxes read as the same family of element as the keys below them. buildKeypad()
+     in app.ts composes this with its own elim/normal variants. ─── */
+  .key-face {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-key);
+    touch-action: manipulation;
+  }
+  /* Press-down offset. Excluded when disabled so a dead control doesn't
+     animate as though it did something. */
+  .key-face:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+  /* Eliminated keypad digit. Two classes, so it beats .key-face on specificity
+     rather than on source order — which is what utilities would have depended on.
+     No decoration colour: the rule inherits currentColor, so the strike lands at
+     the same alpha as the digit it crosses. */
+  .key-face.is-elim {
+    color: color-mix(in oklab, var(--color-text) 25%, transparent);
+    box-shadow: none;
+    text-decoration-line: line-through;
+  }
+
+  /* ─── Undo / Reset controls above the digit boxes (#251) ─── */
+  .board-ctrl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 2.75rem;   /* 44px — minimum touch target (CONVENTIONS.md) */
+    padding: 0 0.75rem;
+    font-family: "Quicksand", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .board-ctrl svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+  /* Faded, not hidden: the controls stay in place so the row never reflows,
+     and the player can see the affordance exists before it's usable. */
+  .board-ctrl:disabled {
+    opacity: 0.4;
+    cursor: default;
+    box-shadow: none;
+  }
+
   /* ─── Recurring decimal overdot (per D-08) ─── */
   .recurring {
     display: inline-block;
