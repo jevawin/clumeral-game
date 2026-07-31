@@ -17,7 +17,8 @@ const STORAGE_UNDO = "dlng_undo";   // sessionStorage — see the undo stack sec
 const ACTIVE_MAX_LEN = 4096;
 
 // The undo stack holds up to HISTORY_LIMIT whole boards, so its ceiling is much
-// higher than ActiveState's. Kept in step with HISTORY_LIMIT in undo-stack.ts.
+// higher than ActiveState's. Derived from HISTORY_LIMIT rather than duplicated:
+// a hardcoded copy that fell behind would reject every stack a newer build wrote.
 const UNDO_MAX_ENTRIES = HISTORY_LIMIT;
 const UNDO_MAX_LEN = 32768;
 
@@ -138,22 +139,46 @@ export function clearActive(): void {
 // stack to another's board would silently corrupt it — the scope check is what
 // prevents that, and it replaces loadActive's today-only date guard.
 
+// Digit-order-insensitive board comparison. Sets serialise in insertion order,
+// and re-adding a digit puts it at the end, so two identical boards can produce
+// differently-ordered arrays.
+function sameBoard(stored: unknown, current: number[][]): boolean {
+  if (!validBoxes(stored)) return false;
+  const asc = (a: number, b: number) => a - b;
+  return (stored as number[][]).every((box, i) => {
+    const x = [...box].sort(asc);
+    const y = [...current[i]].sort(asc);
+    return x.length === y.length && x.every((d, j) => d === y[j]);
+  });
+}
+
 /**
- * Save the stack for `scope`. An empty stack removes the key rather than storing
- * an empty payload — nothing to restore is the same state as nothing stored.
+ * Save the stack for `scope`, along with `current` — the board the stack
+ * describes. An empty stack removes the key rather than storing an empty
+ * payload: nothing to restore is the same state as nothing stored.
  */
-export function saveUndo(scope: string, entries: StoredEntry[]): void {
+export function saveUndo(scope: string, entries: StoredEntry[], current: number[][]): void {
   try {
     if (entries.length === 0) {
       sessionStorage.removeItem(STORAGE_UNDO);
       return;
     }
-    sessionStorage.setItem(STORAGE_UNDO, JSON.stringify({ v: 1, scope, e: entries }));
+    sessionStorage.setItem(STORAGE_UNDO, JSON.stringify({ v: 1, scope, e: entries, cur: current }));
   } catch { /* quota exceeded — non-critical, undo just won't survive a reload */ }
 }
 
-/** Returns the stored stack for `scope`, or null if absent, stale or invalid. */
-export function loadUndo(scope: string): StoredEntry[] | null {
+/**
+ * Returns the stored stack, or null if absent, stale, invalid, or describing a
+ * different board than `current`.
+ *
+ * The board check is not belt-and-braces, it is load-bearing. This store is
+ * per-tab but the board's own store (dlng_active) is shared across tabs, so
+ * scope alone cannot tell you the two came from the same place: play in tab A,
+ * play on in tab B, then reload tab A and the scopes still match while the
+ * boards have diverged. Undoing then jumps the board back by however many moves
+ * tab B made, in one press, with no redo.
+ */
+export function loadUndo(scope: string, current: number[][]): StoredEntry[] | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_UNDO);
     if (!raw) return null;
@@ -167,6 +192,10 @@ export function loadUndo(scope: string): StoredEntry[] | null {
 
     // Wrong puzzle — discard rather than apply another board's history.
     if (typeof d.scope !== 'string' || d.scope !== scope) return null;
+
+    // Right puzzle, wrong board — another tab has moved the game on since this
+    // stack was written.
+    if (!sameBoard(d.cur, current)) return null;
 
     if (!Array.isArray(d.e) || d.e.length > UNDO_MAX_ENTRIES) return null;
 

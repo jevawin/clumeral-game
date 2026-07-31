@@ -281,6 +281,12 @@ test.describe("undo and reset controls", () => {
 
     const undo = await game.undo.boundingBox();
     const reset = await game.reset.boundingBox();
-    expect(reset!.x).toBeGreaterThan(undo!.x + undo!.width);
+    const row = await game.boardControls.boundingBox();
+
+    // Anchored to the ends of the row, not merely in DOM order — a plain
+    // "reset.x > undo.x" would still pass with the two buttons sitting side by
+    // side on the left, which is the layout this replaced.
+    expect(undo!.x).toBeCloseTo(row!.x, 0);
+    expect(reset!.x + reset!.width).toBeCloseTo(row!.x + row!.width, 0);
   });
 });

@@ -9,6 +9,10 @@ beforeEach(() => sessionStorage.clear());
 
 const SCOPE = 'date:2026-05-29';
 
+// The board the stack describes. saveUndo stores it; loadUndo refuses to hand the
+// stack back unless the caller's board matches.
+const BOARD: number[][] = [[1, 2], [0, 1, 2], [4, 5]];
+
 function entries(): StoredEntry[] {
   return [
     { b: [[1, 2, 3], [0, 1, 2], [4, 5]], k: 'toggle' },
@@ -18,29 +22,29 @@ function entries(): StoredEntry[] {
 
 describe('saveUndo / loadUndo', () => {
   it('round-trips a stack', () => {
-    saveUndo(SCOPE, entries());
-    expect(loadUndo(SCOPE)).toEqual(entries());
+    saveUndo(SCOPE, entries(), BOARD);
+    expect(loadUndo(SCOPE, BOARD)).toEqual(entries());
   });
 
   it('returns null when nothing is stored', () => {
-    expect(loadUndo(SCOPE)).toBeNull();
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('writes to sessionStorage, not localStorage', () => {
-    saveUndo(SCOPE, entries());
+    saveUndo(SCOPE, entries(), BOARD);
     expect(sessionStorage.getItem('dlng_undo')).toBeTruthy();
     expect(localStorage.getItem('dlng_undo')).toBeNull();
   });
 
   it('clearUndo removes it', () => {
-    saveUndo(SCOPE, entries());
+    saveUndo(SCOPE, entries(), BOARD);
     clearUndo();
-    expect(loadUndo(SCOPE)).toBeNull();
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('saving an empty stack clears the key rather than storing an empty payload', () => {
-    saveUndo(SCOPE, entries());
-    saveUndo(SCOPE, []);
+    saveUndo(SCOPE, entries(), BOARD);
+    saveUndo(SCOPE, [], BOARD);
     expect(sessionStorage.getItem('dlng_undo')).toBeNull();
   });
 });
@@ -49,18 +53,48 @@ describe('saveUndo / loadUndo', () => {
 // stack holds whole boards, so a cross-puzzle restore would be a real corruption.
 describe('scope guard', () => {
   it('rejects a stack saved under a different date', () => {
-    saveUndo('date:2026-05-28', entries());
-    expect(loadUndo('date:2026-05-29')).toBeNull();
+    saveUndo('date:2026-05-28', entries(), BOARD);
+    expect(loadUndo('date:2026-05-29', BOARD)).toBeNull();
   });
 
   it('rejects a daily stack when a random puzzle asks for it', () => {
-    saveUndo(SCOPE, entries());
-    expect(loadUndo('random:abc123')).toBeNull();
+    saveUndo(SCOPE, entries(), BOARD);
+    expect(loadUndo('random:abc123', BOARD)).toBeNull();
   });
 
   it('rejects a different random token', () => {
-    saveUndo('random:abc123', entries());
-    expect(loadUndo('random:def456')).toBeNull();
+    saveUndo('random:abc123', entries(), BOARD);
+    expect(loadUndo('random:def456', BOARD)).toBeNull();
+  });
+});
+
+// The scope check alone is not enough. This store is per-tab, but the board's
+// own store (dlng_active) is shared across tabs, so two tabs on the same puzzle
+// produce matching scopes over diverged boards. Without the board check, undoing
+// after a reload jumps back by however many moves the other tab made — in one
+// press, with no redo.
+describe('board guard', () => {
+  it('rejects a stack whose board has moved on', () => {
+    saveUndo(SCOPE, entries(), BOARD);
+    const movedOn = [[1, 2], [0, 1, 2], [4]];   // another tab eliminated the 5
+    expect(loadUndo(SCOPE, movedOn)).toBeNull();
+  });
+
+  it('rejects when a box gained a digit as well as when it lost one', () => {
+    saveUndo(SCOPE, entries(), BOARD);
+    expect(loadUndo(SCOPE, [[1, 2], [0, 1, 2], [4, 5, 6]])).toBeNull();
+  });
+
+  it('accepts the same board written in a different digit order', () => {
+    // Sets serialise in insertion order, and re-adding a digit puts it last, so
+    // an identical board can come back with its digits shuffled.
+    saveUndo(SCOPE, entries(), [[2, 1], [2, 0, 1], [5, 4]]);
+    expect(loadUndo(SCOPE, BOARD)).toEqual(entries());
+  });
+
+  it('rejects a payload with no board recorded at all', () => {
+    sessionStorage.setItem('dlng_undo', JSON.stringify({ v: 1, scope: SCOPE, e: entries() }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 });
 
@@ -71,62 +105,62 @@ describe('payload validation', () => {
 
   it('rejects unparseable JSON', () => {
     store('{not json');
-    expect(loadUndo(SCOPE)).toBeNull();
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects a wrong schema version', () => {
     store(JSON.stringify({ v: 2, scope: SCOPE, e: entries() }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects an oversized payload', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: entries() }) + ' '.repeat(200_000));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: entries() }) + ' '.repeat(200_000));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects entries that are not an array', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: 'nope' }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: 'nope' }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects an unknown entry kind', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: [{ b: [[1], [0], [0]], k: 'redo' }] }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: [{ b: [[1], [0], [0]], k: 'redo' }] }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects a board without exactly three boxes', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: [{ b: [[1], [0]], k: 'toggle' }] }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: [{ b: [[1], [0]], k: 'toggle' }] }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects an empty box — the game can never produce one', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: [{ b: [[1], [], [0]], k: 'toggle' }] }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: [{ b: [[1], [], [0]], k: 'toggle' }] }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects a zero in the hundreds box', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: [{ b: [[0, 1], [0], [0]], k: 'toggle' }] }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: [{ b: [[0, 1], [0], [0]], k: 'toggle' }] }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects out-of-range digits', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: [{ b: [[1], [10], [0]], k: 'toggle' }] }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: [{ b: [[1], [10], [0]], k: 'toggle' }] }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects non-integer digits', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: [{ b: [[1], [1.5], [0]], k: 'toggle' }] }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: [{ b: [[1], [1.5], [0]], k: 'toggle' }] }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('rejects a stack longer than the cap', () => {
     const many = Array.from({ length: 101 }, () => ({ b: [[1], [0], [0]], k: 'toggle' }));
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: many }));
-    expect(loadUndo(SCOPE)).toBeNull();
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: many }));
+    expect(loadUndo(SCOPE, BOARD)).toBeNull();
   });
 
   it('accepts a valid payload at the boundary — a single-digit board', () => {
-    store(JSON.stringify({ v: 1, scope: SCOPE, e: [{ b: [[9], [0], [0]], k: 'reset' }] }));
-    expect(loadUndo(SCOPE)).toEqual([{ b: [[9], [0], [0]], k: 'reset' }]);
+    store(JSON.stringify({ v: 1, scope: SCOPE, cur: BOARD, e: [{ b: [[9], [0], [0]], k: 'reset' }] }));
+    expect(loadUndo(SCOPE, BOARD)).toEqual([{ b: [[9], [0], [0]], k: 'reset' }]);
   });
 });

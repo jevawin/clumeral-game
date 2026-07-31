@@ -102,9 +102,27 @@ function undoScope(): string {
   return `date:${gameState.date ?? todayKey()}`;
 }
 
+// The stack is only ever read back on the mid-game restore path, which is
+// today's daily puzzle only — loadActive's date guard means an archive board
+// never restores, and /random mints a fresh token per load. Writing outside that
+// case would be ~8KB of synchronous sessionStorage per tap, discarded unread.
+function undoIsRestorable(): boolean {
+  return !gameState.isRandom && gameState.date === todayKey();
+}
+
+// The board the stack describes, saved with it so a stack written in another tab
+// can be told apart from this one's. See loadUndo.
+function boardDigits(): number[][] {
+  return possibles.map((s) => [...s]);
+}
+
+function persistHistory(): void {
+  if (undoIsRestorable()) saveUndo(undoScope(), boardHistory.toJSON(), boardDigits());
+}
+
 function pushHistory(kind: EntryKind = 'toggle'): void {
   boardHistory.push(possibles, kind);
-  saveUndo(undoScope(), boardHistory.toJSON());
+  persistHistory();
 }
 
 function clearHistory(): void {
@@ -497,11 +515,11 @@ function renderBoardControls(): void {
   // The label tracks the top of the stack rather than a one-shot "just reset"
   // flag, so it comes BACK to "Undo reset" if the player toggles after a reset
   // and then steps back down onto the reset entry again.
-  if (dom.undoLabel) {
-    const undoingReset = boardHistory.nextKind() === 'reset';
-    dom.undoLabel.textContent = undoingReset ? "Undo reset" : "Undo";
-    dom.undoBtn?.setAttribute("aria-label", undoingReset ? "Undo reset" : "Undo last change");
-  }
+  const undoingReset = boardHistory.nextKind() === 'reset';
+  if (dom.undoLabel) dom.undoLabel.textContent = undoingReset ? "Undo reset" : "Undo";
+  // Set outside the label guard: the accessible name must not depend on the
+  // visible span still existing.
+  dom.undoBtn?.setAttribute("aria-label", undoingReset ? "Undo reset" : "Undo last change");
   rescueFocus();
 }
 
@@ -534,7 +552,7 @@ function undoLast(): void {
   if (gameState.solved) return;
   const previous = boardHistory.undo();
   if (previous === null) return;
-  saveUndo(undoScope(), boardHistory.toJSON());
+  persistHistory();
   announceReset(false);
   applyBoard(previous);
 }
@@ -685,7 +703,7 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
     // assigned above, so undoScope() reads the right date. loadUndo returns null
     // for a missing, forged or wrong-puzzle payload, in which case the stack
     // simply starts empty and Undo stays disabled.
-    const storedUndo = loadUndo(undoScope());
+    const storedUndo = loadUndo(undoScope(), draft.possibles);
     if (storedUndo) boardHistory.load(storedUndo);
     else clearHistory();
     announceReset(false);

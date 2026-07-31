@@ -123,8 +123,9 @@ export function createHistory(limit: number = HISTORY_LIMIT): History {
       for (const e of entries) {
         stack.push({ board: e.b.map((digits) => new Set(digits)), kind: e.k });
       }
-      // A payload longer than the cap (an older build with a bigger limit, or a
-      // forged one) is trimmed the same way a live push would trim it.
+      // The module's own invariant, not a described behaviour of the store:
+      // loadUndo currently rejects an over-cap payload outright, so this is
+      // unreachable from that caller. It stays so the cap holds for any caller.
       if (stack.length > limit) stack.splice(0, stack.length - limit);
     },
   };
