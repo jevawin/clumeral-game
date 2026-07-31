@@ -246,7 +246,11 @@
 
             <!-- Undo / Reset controls (#251). Hidden as a row once the puzzle is
                  solved; individually disabled when there's nothing to act on. -->
-            <div data-board-controls class="flex items-center gap-2 mt-5">
+            <!-- -mb-3 pulls the boxes up close to the controls without putting the
+                 boxes' own spacing on a sibling that gets hidden: when this row is
+                 display:none its margins go with it, so [data-digits] keeps the same
+                 mt-5 offset from the clues that it has on a solved board. -->
+            <div data-board-controls class="flex items-center gap-2 mt-5 -mb-3">
               <button type="button" data-undo class="key-face board-ctrl" disabled aria-label="Undo last change">
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-undo"/></svg>
                 Undo
@@ -255,13 +259,15 @@
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-reset"/></svg>
                 Reset
               </button>
-              <!-- Shown after a Reset to point at the Undo that will unwind it.
-                   Trails the row so appearing can't shove the buttons sideways. -->
-              <p data-undo-msg class="hidden text-sm text-text font-[Quicksand]" aria-live="polite">Undo reset</p>
+              <!-- Filled in after a Reset to point at the Undo that will unwind it.
+                   Always present and driven by text content, not display — a live
+                   region toggled in and out of the layout is unreliably announced.
+                   Trails the row so filling it can't shove the buttons sideways. -->
+              <p data-undo-msg class="text-sm text-text font-[Quicksand]" role="status" aria-live="polite"></p>
             </div>
 
             <!-- Number boxes -->
-            <div data-digits class="flex gap-2 w-full mt-2" role="group" aria-label="Number boxes">
+            <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Number boxes">
               <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds box" aria-expanded="false"></div>
               <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens box" aria-expanded="false"></div>
               <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units box" aria-expanded="false"></div>

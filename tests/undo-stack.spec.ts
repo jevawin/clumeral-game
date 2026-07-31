@@ -5,8 +5,8 @@ import {
   isStartingBoard,
   createHistory,
   HISTORY_LIMIT,
-} from '../src/history.ts';
-import type { Board } from '../src/history.ts';
+} from '../src/undo-stack.ts';
+import type { Board } from '../src/undo-stack.ts';
 
 // Boards are Set<number>[] — three boxes, hundreds first. Compared as arrays of
 // sorted arrays so a failure prints the digits rather than "Set(9) !== Set(9)".
@@ -168,17 +168,38 @@ describe('createHistory', () => {
     expect(history.undo()).toBeNull();
   });
 
-  it('caps depth and drops the oldest entries first', () => {
-    const history = createHistory();
+  it('caps depth and drops the OLDEST entries, keeping the newest', () => {
+    // Use a small cap so the snapshots can be tagged distinctly. Each push is
+    // preceded by a real elimination, so every snapshot differs — without that,
+    // an implementation that dropped the newest entries would pass too.
+    const history = createHistory(3);
     const board = startingBoard();
 
-    // Push one more than the cap, tagging each snapshot by eliminating a
-    // distinct digit from the tens box before pushing the next.
-    for (let i = 0; i < HISTORY_LIMIT + 1; i++) {
+    // Push 5 states into a cap of 3: before eliminating 0, then 1, 2, 3, 4.
+    for (let i = 0; i < 5; i++) {
       history.push(board);
-      board[1].delete(i % 10);
-      board[1].add(i % 10);
+      board[1].delete(i);
     }
+    expect(history.depth()).toBe(3);
+
+    // The three survivors must be the three most recent: the states before
+    // eliminating 2, 3 and 4 respectively. Most recent pops first.
+    expect(history.undo()![1].has(4)).toBe(true);  // 4 not yet eliminated
+    expect(history.undo()![1].has(3)).toBe(true);
+    const oldest = history.undo()!;
+    expect(oldest[1].has(2)).toBe(true);
+    // ...and that oldest survivor still carries the earlier eliminations, proving
+    // it's the third-newest snapshot and not the original starting board.
+    expect(oldest[1].has(0)).toBe(false);
+    expect(oldest[1].has(1)).toBe(false);
+
+    expect(history.canUndo()).toBe(false);
+  });
+
+  it('defaults to HISTORY_LIMIT when no cap is given', () => {
+    const history = createHistory();
+    const board = startingBoard();
+    for (let i = 0; i < HISTORY_LIMIT + 1; i++) history.push(board);
 
     expect(history.depth()).toBe(HISTORY_LIMIT);
   });

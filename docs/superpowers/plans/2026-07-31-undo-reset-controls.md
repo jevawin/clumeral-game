@@ -95,3 +95,18 @@ Separately filed while scoping this: [#282](https://github.com/jevawin/clumeral-
   cleared there, not just hidden, so nothing survives to unwind.
 - **Persistence.** `saveActive` fires on every mutation. Undo and Reset change the board, so
   they must save too, or a reload resurrects the pre-undo state.
+
+## Accepted trade-off: a reset is unrecoverable after a reload
+
+Raised by the DA review, left as designed — flagging it so it's a decision on the record
+rather than an oversight.
+
+Reset persists the emptied board to `dlng_active` immediately, while the pre-reset board
+lives only in the in-memory stack. So the sequence "mis-tap Reset → iOS discards the tab →
+reopen" loses the eliminations for good. The Undo safety net that justifies having no
+confirmation step lasts only as long as the page does.
+
+Fixing it properly means persisting the pre-reset board, which is exactly the storage schema
+bump the discussion ruled out. Both available fixes (a `preReset` field in `dlng_active`, or
+not saving until the next real mutation) are larger than this ticket. If the loss shows up in
+feedback, that's the change to make.

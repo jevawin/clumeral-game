@@ -8,8 +8,13 @@ import { expectActiveScreen } from "../helpers/screens.ts";
 // per test, driven through the real keypad rather than by poking state.
 
 // Eliminate `digits` from box 1, which starts {0..9}.
+//
+// Only opens the box if it isn't already open: selectBox() TOGGLES, so clicking
+// an already-active box closes the keypad instead of opening it.
 async function eliminate(game: GamePage, digits: number[]): Promise<void> {
-  await game.openBox(1);
+  if ((await game.digit(1).getAttribute("aria-expanded")) !== "true") {
+    await game.openBox(1);
+  }
   await expect(game.page.locator("[data-keypad] [data-key]").first()).toBeVisible();
   for (const d of digits) await game.tapKey(d);
 }
@@ -116,7 +121,6 @@ test.describe("undo and reset controls", () => {
     await expect(game.reset).toBeDisabled();
     // ...but the reset itself is still undoable, and the prompt says so.
     await expect(game.undo).toBeEnabled();
-    await expect(game.undoMsg).toBeVisible();
     await expect(game.undoMsg).toHaveText("Undo reset");
   });
 
@@ -132,7 +136,7 @@ test.describe("undo and reset controls", () => {
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
     await expect(game.boxDigit(1, 5)).toHaveClass(/elim/);
     await expect(game.boxDigit(1, 6)).toHaveClass(/elim/);
-    await expect(game.undoMsg).toBeHidden();
+    await expect(game.undoMsg).toBeEmpty();
   });
 
   test("the reset prompt clears when the player eliminates again", async ({ page }) => {
@@ -141,10 +145,10 @@ test.describe("undo and reset controls", () => {
     await eliminate(game, [4]);
 
     await game.reset.click();
-    await expect(game.undoMsg).toBeVisible();
+    await expect(game.undoMsg).toHaveText("Undo reset");
 
     await eliminate(game, [9]);
-    await expect(game.undoMsg).toBeHidden();
+    await expect(game.undoMsg).toBeEmpty();
   });
 
   test("the last remaining candidate in a box still cannot be eliminated", async ({ page }) => {
@@ -172,10 +176,10 @@ test.describe("undo and reset controls", () => {
     // Solving the daily puzzle lands on the completion screen.
     await expectActiveScreen(page, "completion");
 
-    // Revisiting /play renders the solved-replay view: answer digits, no keypad.
-    // The controls must not come back with it — undoing here would step a solved
-    // board back into a playable one.
-    await page.goto("/play");
+    // Back to the board via the completion screen's Show-puzzle link. A plain
+    // goto("/play") would NOT work: once today is solved, RTE-03 resolves /play
+    // straight back to /solved, so the assertions below would never run.
+    await page.locator("[data-completion-show-puzzle]").click();
     await expectActiveScreen(page, "game");
     await expect(game.feedback).toContainText(/Solved in/i);
     await expect(game.boardControls).toBeHidden();

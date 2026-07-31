@@ -4,7 +4,7 @@
 import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive } from './storage.ts';
-import { startingBoard, isStartingBoard, createHistory } from './history.ts';
+import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
@@ -91,7 +91,7 @@ let activeBox: number | null = null; // 0 | 1 | 2 | null
 // Undo stack for the digit boxes (#251). Deliberately NOT persisted: the board
 // restores from dlng_active across a reload, the history does not. Keeping it
 // in memory avoids a storage schema bump for state nobody misses after a day.
-const history = createHistory();
+const boardHistory = createHistory();
 
 // ─── Storage helper (uses todayKey from date.ts) ─────────────────────────────
 
@@ -431,12 +431,12 @@ function toggleDigit(digit: number): void {
     if (s.size === 1) return; // guard: cannot eliminate last digit
     // Snapshot AFTER the guard: a blocked toggle changes nothing, and pushing
     // here would leave a no-op on the stack that makes one Undo press look dead.
-    history.push(possibles);
+    boardHistory.push(possibles);
     s.delete(digit);
     // First-play walkthrough hook (issue #214). Fires only on elimination. No-op once dlng_history exists.
     document.dispatchEvent(new CustomEvent("game:digit-eliminated"));
   } else {
-    history.push(possibles);
+    boardHistory.push(possibles);
     s.add(digit);
   }
   // The player is back to playing, so the post-reset prompt has served its purpose.
@@ -452,8 +452,11 @@ function toggleDigit(digit: number): void {
 
 // ─── Undo / Reset controls (#251) ────────────────────────────────────────────
 
+// Driven by text content, not by display:none. A live region toggled in and out
+// of the layout is unreliably announced — VoiceOver in particular often stays
+// silent — and this prompt is the whole reason Reset needs no confirmation step.
 function showUndoMsg(show: boolean): void {
-  dom.undoMsg?.classList.toggle("hidden", !show);
+  if (dom.undoMsg) dom.undoMsg.textContent = show ? "Undo reset" : "";
 }
 
 // Undo and Reset don't share a condition. Straight after a Reset the board IS
@@ -463,8 +466,22 @@ function renderBoardControls(): void {
   const hide = gameState.solved;
   dom.boardControls?.classList.toggle("hidden", hide);
   dom.boardControls?.classList.toggle("flex", !hide);
-  if (dom.undoBtn) dom.undoBtn.disabled = !history.canUndo();
+  if (dom.undoBtn) dom.undoBtn.disabled = !boardHistory.canUndo();
   if (dom.resetBtn) dom.resetBtn.disabled = isStartingBoard(possibles);
+  rescueFocus();
+}
+
+// Both controls can disable themselves as a direct result of being pressed, and
+// the browser blurs a disabled element — dropping a keyboard player back to the
+// top of the document mid-interaction. Reset especially: it disables itself on
+// press, so without this the player can't simply Tab to the Undo that unwinds it.
+function rescueFocus(): void {
+  const active = document.activeElement as HTMLElement | null;
+  if (active !== dom.undoBtn && active !== dom.resetBtn) return;
+  if (!(active as HTMLButtonElement).disabled) return;
+  const sibling = active === dom.undoBtn ? dom.resetBtn : dom.undoBtn;
+  if (sibling && !sibling.disabled) sibling.focus();
+  else (document.querySelector('[data-digit="0"]') as HTMLElement | null)?.focus();
 }
 
 // Applies a board restored from the history stack. Shared by Undo and Reset so
@@ -481,7 +498,7 @@ function applyBoard(next: Set<number>[]): void {
 
 function undoLast(): void {
   if (gameState.solved) return;
-  const previous = history.undo();
+  const previous = boardHistory.undo();
   if (previous === null) return;
   showUndoMsg(false);
   applyBoard(previous);
@@ -490,7 +507,7 @@ function undoLast(): void {
 function resetBoard(): void {
   if (gameState.solved || isStartingBoard(possibles)) return;
   // One entry, so a single Undo press restores the whole pre-reset board.
-  history.push(possibles);
+  boardHistory.push(possibles);
   applyBoard(startingBoard());
   // Points the player at the Undo that will unwind this — the reason Reset
   // needs no confirmation step.
@@ -558,7 +575,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
   dom.history?.classList.add("hidden");
   // Solved: nothing left to unwind. Clear as well as hide, so a later /random
   // or archive puzzle on the same SPA session can't inherit a stale stack.
-  history.clear();
+  boardHistory.clear();
   showUndoMsg(false);
   renderBoardControls();
 
@@ -597,7 +614,7 @@ function resetPuzzleUI() {
     }
   }
   possibles = startingBoard();
-  history.clear();
+  boardHistory.clear();
   showUndoMsg(false);
   renderAllBoxes();
   renderBoardControls();
@@ -632,7 +649,7 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
     possibles = draft.possibles.map((arr) => new Set(arr));
     // Undo history does not survive a reload (#251) — the board restores, the
     // stack starts empty, so Undo is disabled until the player changes something.
-    history.clear();
+    boardHistory.clear();
     showUndoMsg(false);
     // Reuse idempotent renderers — no new DOM logic (Pitfall 2: boxes are in DOM from renderClues above).
     renderAllBoxes();
@@ -752,7 +769,7 @@ async function handleGuess() {
       dom.submitWrap?.classList.add("hidden");
       // Hide undo/reset here too: only the archive branch below reaches
       // showCompletedState, the other two navigate away instead (#251).
-      history.clear();
+      boardHistory.clear();
       showUndoMsg(false);
       renderBoardControls();
 
@@ -940,7 +957,13 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  if (e.key === "Enter" && possibles.every((s) => s.size === 1)) {
+  // Enter submits a fully-resolved board — but not when the focus is on Undo or
+  // Reset. This listener is on document, and preventDefault() during bubbling
+  // still cancels a button's activation, so without this guard a keyboard player
+  // who tabs to Undo on a resolved board and presses Enter burns a try instead
+  // of undoing (#251).
+  const onBoardControl = (e.target as HTMLElement | null)?.closest?.("[data-board-controls]");
+  if (e.key === "Enter" && !onBoardControl && possibles.every((s) => s.size === 1)) {
     e.preventDefault();
     handleGuess();
     return;
@@ -1157,6 +1180,7 @@ window._devFillAnswer = async () => {
     const { answer } = await res.json() as { answer: number };
     const digits = [Math.floor(answer / 100), Math.floor((answer % 100) / 10), answer % 10];
     digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
+    renderBoardControls(); // board changed under the controls' feet — keep Reset live
     checkSubmit();
   } catch { /* dev only */ }
 };
