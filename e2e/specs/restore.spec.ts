@@ -45,3 +45,58 @@ test.describe("mid-game restore", () => {
     await expect(restored.nth(5)).not.toHaveClass(/elim/);
   });
 });
+
+// #284 — the same refresh, by a player who has never finished a puzzle. The test
+// above seeds history, which is exactly why it stayed green while this was broken:
+// the router's deep-link gate read dlng_history alone, so a first-timer's reload
+// failed it and landed on /welcome with their board still in dlng_active.
+//
+// No seeding here on purpose. That means the first-play walkthrough is live, but
+// it only types into the header and never blocks the board, so it can't affect
+// these assertions.
+test.describe("mid-game restore — first-time player (#284)", () => {
+  test("reloading after eliminating a digit resumes the board, not welcome", async ({ page }) => {
+    await page.goto("/welcome");
+    await page.locator("[data-play-btn]").click();
+    await expectActiveScreen(page, "game");
+
+    const box = page.locator('[data-digit="1"]');
+    await box.click();
+    await expect(page.locator("[data-keypad] [data-key]").first()).toBeVisible();
+    await page.locator('[data-key="4"]').click();
+    await expect(page.locator('[data-digit="1"] .digit-box__grid span').nth(4)).toHaveClass(/elim/);
+
+    await page.reload();
+
+    await expectActiveScreen(page, "game");
+    expect(new URL(page.url()).pathname).toBe("/play");
+    await expect(page.locator('[data-digit="1"] .digit-box__grid span').nth(4)).toHaveClass(/elim/);
+  });
+
+  test("reloading before touching anything still resumes the board", async ({ page }) => {
+    // Pressing Play is the commitment — a refresh a second later must not throw the
+    // player back to the landing screen just because they hadn't tapped a digit yet.
+    await page.goto("/welcome");
+    await page.locator("[data-play-btn]").click();
+    await expectActiveScreen(page, "game");
+    await expect(page.locator('[data-digit="0"]')).toBeVisible();
+
+    await page.reload();
+
+    await expectActiveScreen(page, "game");
+    expect(new URL(page.url()).pathname).toBe("/play");
+  });
+
+  test("a stranger deep-linking /play still lands on welcome", async ({ page }) => {
+    // The gate this fix widened. Someone who was sent a /play link has neither
+    // history nor a board of their own, and must not be dropped into the game.
+    // Twice: the first visit must not leave anything behind that lets the second in.
+    await page.goto("/play");
+    await expectActiveScreen(page, "welcome");
+    expect(new URL(page.url()).pathname).toBe("/welcome");
+
+    await page.goto("/play");
+    await expectActiveScreen(page, "welcome");
+    expect(new URL(page.url()).pathname).toBe("/welcome");
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { saveActive, loadActive, clearActive } from '../src/storage.ts';
+import { saveActive, loadActive, clearActive, hasPlayerData } from '../src/storage.ts';
 import type { ActiveState } from '../src/types.ts';
 
 // setup.ts runs localStorage.clear() before every test globally — no explicit clear needed here.
@@ -261,5 +261,44 @@ describe('clearActive', () => {
 
   it('does not throw when called with nothing stored', () => {
     expect(() => clearActive()).not.toThrow();
+  });
+});
+
+// The router's RTE-03 deep-link gate (#284). It used to read dlng_history alone,
+// which bounced a first-time player from /play to /welcome on a mid-game refresh —
+// their board was in dlng_active, but they had no history row until their first solve.
+describe('hasPlayerData — router deep-link gate', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('is false for a stranger: no history, no active board', () => {
+    vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+    expect(hasPlayerData()).toBe(false);
+  });
+
+  it('is true for a returning player with history but no active board', () => {
+    vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+    localStorage.setItem('dlng_history', JSON.stringify([{ date: '2026-01-01', tries: 3 }]));
+    expect(hasPlayerData()).toBe(true);
+  });
+
+  it("is true mid-game with no history at all — the first-timer's refresh (#284)", () => {
+    vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+    saveActive(makeState());
+    expect(localStorage.getItem('dlng_history')).toBeNull();
+    expect(hasPlayerData()).toBe(true);
+  });
+
+  it("is false when the only active board is yesterday's — a stale draft is not data", () => {
+    vi.setSystemTime(new Date(YESTERDAY + 'T22:00:00'));
+    saveActive(makeState({ date: YESTERDAY }));
+    vi.setSystemTime(new Date(TODAY + 'T09:00:00'));
+    expect(hasPlayerData()).toBe(false);
+  });
+
+  it('is false when the stored active board is forged — loadActive rejects it', () => {
+    vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+    localStorage.setItem('dlng_active', JSON.stringify({ v: 1, date: TODAY, possibles: 'nope', guesses: [], activeBox: null, feedbackKey: null }));
+    expect(hasPlayerData()).toBe(false);
   });
 });
