@@ -1,16 +1,44 @@
 // Clumeral — storage.ts
-// localStorage helpers for prefs, game history, and active mid-game state.
+// localStorage helpers for prefs, game history, and active mid-game state, plus
+// the sessionStorage-backed undo stack.
 
 import type { HistoryEntry, Prefs, ActiveState } from './types.ts';
+import type { StoredEntry } from './undo-stack.ts';
+import { HISTORY_LIMIT } from './undo-stack.ts';
 import { todayKey } from './date.ts';
 
 const STORAGE_HISTORY = "dlng_history";
 const STORAGE_PREFS = "dlng_prefs";
 const STORAGE_ACTIVE = "dlng_active";
+const STORAGE_UNDO = "dlng_undo";   // sessionStorage — see the undo stack section below
 
 // Max payload length guard for loadActive. ActiveState is tiny (< 200 bytes normally);
 // 4096 bytes is a generous ceiling that still rejects any oversized/forged payload.
 const ACTIVE_MAX_LEN = 4096;
+
+// The undo stack holds up to HISTORY_LIMIT whole boards, so its ceiling is much
+// higher than ActiveState's. Kept in step with HISTORY_LIMIT in undo-stack.ts.
+const UNDO_MAX_ENTRIES = HISTORY_LIMIT;
+const UNDO_MAX_LEN = 32768;
+
+// A board is three boxes, each a non-empty array of integer digits 0–9, with the
+// hundreds box (index 0) forbidding 0 — the invariant startingBoard() establishes
+// in undo-stack.ts. Rejects forged payloads with empty boxes, floats, or
+// out-of-range values. Shared by loadActive and loadUndo, which both store boards.
+function validBoxes(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value.every(
+      (box, i) =>
+        Array.isArray(box) &&
+        box.length >= 1 &&
+        (box as unknown[]).every(
+          (n) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 9 && !(i === 0 && n === 0),
+        ),
+    )
+  );
+}
 
 export function loadPrefs(): Prefs {
   try {
@@ -73,18 +101,9 @@ export function loadActive(): ActiveState | null {
     // Embedded here so callers cannot accidentally skip this check (RESEARCH Pitfall 4).
     if (typeof d.date !== 'string' || d.date !== todayKey()) return null;
 
-    // Shape validation — possibles must be a length-3 array of arrays (T-05-08).
-    if (!Array.isArray(d.possibles) || d.possibles.length !== 3 || !d.possibles.every(Array.isArray)) return null;
-
-    // Cell content validation (CR-01) — each box must be a non-empty array of integer
-    // digits 0–9; the hundreds box (index 0) forbids 0 (invariant from startingBoard in undo-stack.ts).
-    // Reject any forged payload with empty cells, non-digits, floats, or out-of-range values.
-    const digitsOk = (d.possibles as unknown[]).every((arr, i) =>
-      Array.isArray(arr) &&
-      arr.length >= 1 &&
-      (arr as unknown[]).every((n) => Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 9 && !(i === 0 && (n as number) === 0))
-    );
-    if (!digitsOk) return null;
+    // Shape and cell validation (T-05-08, CR-01) — shared with loadUndo, which
+    // stores whole boards too.
+    if (!validBoxes(d.possibles)) return null;
 
     // guesses must be an array of integers in the valid puzzle range (100–999).
     if (!Array.isArray(d.guesses)) return null;
@@ -105,4 +124,65 @@ export function loadActive(): ActiveState | null {
 
 export function clearActive(): void {
   try { localStorage.removeItem(STORAGE_ACTIVE); } catch { /* ignore */ }
+}
+
+// ─── Undo stack (#251) ───────────────────────────────────────────────────────
+//
+// sessionStorage, NOT localStorage, and deliberately so: the stack should survive
+// a reload and a tab restore — otherwise a mis-tapped Reset followed by a refresh
+// is unrecoverable — but it has no business outliving the tab. Yesterday's undo
+// steps are noise, and the board itself already restores from dlng_active.
+//
+// `scope` identifies which puzzle the stack belongs to ("date:2026-05-29",
+// "random:<token>"). The entries hold whole boards, so applying one puzzle's
+// stack to another's board would silently corrupt it — the scope check is what
+// prevents that, and it replaces loadActive's today-only date guard.
+
+/**
+ * Save the stack for `scope`. An empty stack removes the key rather than storing
+ * an empty payload — nothing to restore is the same state as nothing stored.
+ */
+export function saveUndo(scope: string, entries: StoredEntry[]): void {
+  try {
+    if (entries.length === 0) {
+      sessionStorage.removeItem(STORAGE_UNDO);
+      return;
+    }
+    sessionStorage.setItem(STORAGE_UNDO, JSON.stringify({ v: 1, scope, e: entries }));
+  } catch { /* quota exceeded — non-critical, undo just won't survive a reload */ }
+}
+
+/** Returns the stored stack for `scope`, or null if absent, stale or invalid. */
+export function loadUndo(scope: string): StoredEntry[] | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_UNDO);
+    if (!raw) return null;
+
+    // Reject oversized payloads before parse. A full stack of 100 boards is
+    // roughly 5KB, so 32KB is generous and still rejects a DoS-sized string.
+    if (raw.length > UNDO_MAX_LEN) return null;
+
+    const d = JSON.parse(raw) as Record<string, unknown>;
+    if (d?.v !== 1) return null;
+
+    // Wrong puzzle — discard rather than apply another board's history.
+    if (typeof d.scope !== 'string' || d.scope !== scope) return null;
+
+    if (!Array.isArray(d.e) || d.e.length > UNDO_MAX_ENTRIES) return null;
+
+    const entriesOk = (d.e as unknown[]).every((entry) => {
+      if (typeof entry !== 'object' || entry === null) return false;
+      const { b, k } = entry as Record<string, unknown>;
+      return (k === 'toggle' || k === 'reset') && validBoxes(b);
+    });
+    if (!entriesOk) return null;
+
+    return d.e as StoredEntry[];
+  } catch {
+    return null;
+  }
+}
+
+export function clearUndo(): void {
+  try { sessionStorage.removeItem(STORAGE_UNDO); } catch { /* ignore */ }
 }

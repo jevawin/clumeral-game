@@ -47,6 +47,16 @@ interface Entry {
   kind: EntryKind;
 }
 
+/**
+ * JSON-safe form of one entry, for the sessionStorage round trip. Keys are short
+ * because the whole stack is re-serialised on every digit tap.
+ */
+export interface StoredEntry {
+  /** One sorted digit array per box. */
+  b: number[][];
+  k: EntryKind;
+}
+
 export interface History {
   /** Snapshot the board as it stands *before* a change is applied. */
   push(board: Board, kind?: EntryKind): void;
@@ -57,6 +67,10 @@ export interface History {
   canUndo(): boolean;
   clear(): void;
   depth(): number;
+  /** Plain JSON for persistence. Oldest entry first. */
+  toJSON(): StoredEntry[];
+  /** Replace the stack from persisted JSON. Callers must validate first. */
+  load(entries: StoredEntry[]): void;
 }
 
 export function createHistory(limit: number = HISTORY_LIMIT): History {
@@ -90,6 +104,28 @@ export function createHistory(limit: number = HISTORY_LIMIT): History {
 
     depth() {
       return stack.length;
+    },
+
+    toJSON() {
+      // Sorted so the payload is stable between saves — otherwise Set iteration
+      // order (insertion order, and re-adding a digit puts it at the end) would
+      // make identical boards serialise differently.
+      return stack.map((e) => ({
+        b: e.board.map((box) => [...box].sort((x, y) => x - y)),
+        k: e.kind,
+      }));
+    },
+
+    load(entries) {
+      // Rebuild the Sets rather than holding the caller's arrays, so later
+      // mutation of the parsed payload can't reach into the stack.
+      stack.length = 0;
+      for (const e of entries) {
+        stack.push({ board: e.b.map((digits) => new Set(digits)), kind: e.k });
+      }
+      // A payload longer than the cap (an older build with a bigger limit, or a
+      // forged one) is trimmed the same way a live push would trim it.
+      if (stack.length > limit) stack.splice(0, stack.length - limit);
     },
   };
 }

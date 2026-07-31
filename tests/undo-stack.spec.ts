@@ -264,6 +264,94 @@ describe('createHistory', () => {
   });
 });
 
+// The stack survives a reload via sessionStorage, so it has to convert to and
+// from plain JSON. Conversion lives here (pure); the storage call lives in
+// storage.ts.
+describe('serialisation', () => {
+  it('serialises an empty stack to an empty array', () => {
+    expect(createHistory().toJSON()).toEqual([]);
+  });
+
+  it('serialises boards as sorted digit arrays with their kind', () => {
+    const history = createHistory();
+    const board = startingBoard();
+    board[1].delete(4);
+    history.push(board, 'reset');
+
+    expect(history.toJSON()).toEqual([
+      {
+        b: [
+          [1, 2, 3, 4, 5, 6, 7, 8, 9],
+          [0, 1, 2, 3, 5, 6, 7, 8, 9],
+          [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        ],
+        k: 'reset',
+      },
+    ]);
+  });
+
+  it('round-trips a stack through JSON', () => {
+    const original = createHistory();
+    const board = startingBoard();
+    original.push(board, 'toggle');
+    board[0].delete(7);
+    original.push(board, 'reset');
+
+    const revived = createHistory();
+    revived.load(JSON.parse(JSON.stringify(original.toJSON())));
+
+    expect(revived.depth()).toBe(2);
+    expect(revived.nextKind()).toBe('reset');
+    expect(shape(revived.undo()!)).toEqual([
+      [1, 2, 3, 4, 5, 6, 8, 9],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    ]);
+    expect(revived.nextKind()).toBe('toggle');
+  });
+
+  it('load replaces whatever was already on the stack', () => {
+    const history = createHistory();
+    history.push(startingBoard());
+    history.push(startingBoard());
+    history.load([{ b: [[1], [2], [3]], k: 'reset' }]);
+
+    expect(history.depth()).toBe(1);
+    expect(history.nextKind()).toBe('reset');
+  });
+
+  it('load([]) empties the stack', () => {
+    const history = createHistory();
+    history.push(startingBoard());
+    history.load([]);
+
+    expect(history.canUndo()).toBe(false);
+  });
+
+  it('load respects the cap, keeping the newest entries', () => {
+    const history = createHistory(2);
+    history.load([
+      { b: [[1], [0], [0]], k: 'toggle' },
+      { b: [[2], [0], [0]], k: 'toggle' },
+      { b: [[3], [0], [0]], k: 'reset' },
+    ]);
+
+    expect(history.depth()).toBe(2);
+    expect(history.nextKind()).toBe('reset');
+    expect([...history.undo()![0]]).toEqual([3]);
+    expect([...history.undo()![0]]).toEqual([2]);
+  });
+
+  it('does not alias the loaded data', () => {
+    const history = createHistory();
+    const data = [{ b: [[1, 2], [0], [0]], k: 'toggle' as const }];
+    history.load(data);
+    data[0].b[0].push(9);
+
+    expect([...history.undo()![0]]).toEqual([1, 2]);
+  });
+});
+
 // The board must never be restorable into a state the game itself would refuse.
 // Snapshots are only ever taken of states the app already allowed, so this holds
 // by construction — these tests pin that invariant so a future refactor can't

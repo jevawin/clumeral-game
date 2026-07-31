@@ -214,7 +214,7 @@ test.describe("undo and reset controls", () => {
     await expect(game.boardControls).toBeHidden();
   });
 
-  test("history does not survive a reload, but the board does", async ({ page }) => {
+  test("the undo stack survives a reload along with the board", async ({ page }) => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
     await eliminate(game, [4, 5]);
@@ -225,10 +225,33 @@ test.describe("undo and reset controls", () => {
     // Board restored from dlng_active...
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
     await expect(game.boxDigit(1, 5)).toHaveClass(/elim/);
-    // ...history deliberately not (#251) — nothing to step back to.
-    await expect(game.undo).toBeDisabled();
-    // Reset still works: it reads the board, not the stack.
-    await expect(game.reset).toBeEnabled();
+
+    // ...and the stack from sessionStorage, so Undo still steps back.
+    await expect(game.undo).toBeEnabled();
+    await game.undo.click();
+    await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+  });
+
+  // The whole point of persisting the stack: this sequence used to lose the
+  // eliminations for good.
+  test("a reset can still be undone after a reload", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4, 5, 6]);
+
+    await game.reset.click();
+    await page.reload();
+    await expectActiveScreen(page, "game");
+
+    // The button still knows the next step back is a reset.
+    await expect(game.undo).toBeEnabled();
+    await expect(game.undo).toHaveText("Undo reset");
+
+    await game.undo.click();
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 5)).toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 6)).toHaveClass(/elim/);
   });
 
   test("controls are keyboard operable", async ({ page }) => {

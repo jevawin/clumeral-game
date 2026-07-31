@@ -24,7 +24,8 @@ the outcome here because the issue's Open Questions section is now stale.
 - Reset is **one click, no confirmation**. Safety comes from Undo, not a prompt.
 - Undo after a Reset restores the **whole** pre-reset board in a single press.
 - Both controls are **hidden once the puzzle is solved** — a solve can never be unwound back into play.
-- Undo history **resets on reload**. The board still restores from `dlng_active` as it does today; only the history is dropped. No storage schema change, no migration.
+- Undo history **persists in sessionStorage** under `dlng_undo`, alongside the board's own
+  `dlng_active` in localStorage. Revised 2026-07-31 — see below.
 
 **Presentation**
 
@@ -108,17 +109,32 @@ Separately filed while scoping this: [#282](https://github.com/jevawin/clumeral-
 - **Persistence.** `saveActive` fires on every mutation. Undo and Reset change the board, so
   they must save too, or a reload resurrects the pre-undo state.
 
-## Accepted trade-off: a reset is unrecoverable after a reload
+## Resolved: the stack persists in sessionStorage
 
-Raised by the DA review, left as designed — flagging it so it's a decision on the record
-rather than an oversight.
+The first cut kept the stack in memory, per the original "reset history, keep the board"
+decision. The DA review then found the hole that opened up: Reset writes the emptied board
+to `dlng_active` immediately, so "mis-tap Reset → iOS discards the tab → reopen" lost the
+eliminations for good. The Undo that justifies having no confirmation step only lived as
+long as the page did.
 
-Reset persists the emptied board to `dlng_active` immediately, while the pre-reset board
-lives only in the in-memory stack. So the sequence "mis-tap Reset → iOS discards the tab →
-reopen" loses the eliminations for good. The Undo safety net that justifies having no
-confirmation step lasts only as long as the page does.
+Jamie's call was to persist it, and **sessionStorage is the right home** — it sidesteps the
+objection that killed the original idea:
 
-Fixing it properly means persisting the pre-reset board, which is exactly the storage schema
-bump the discussion ruled out. Both available fixes (a `preReset` field in `dlng_active`, or
-not saving until the next real mutation) are larger than this ticket. If the loss shows up in
-feedback, that's the change to make.
+- It's a **separate key** (`dlng_undo`), so no `dlng_active` schema bump and no migration.
+- It survives reload and tab restore, which is exactly the window that was broken.
+- It does **not** outlive the tab. Yesterday's undo steps are noise, and a stack that
+  outlived the board it refers to would be worse than none.
+
+`scope` is what keeps it honest. Entries hold whole boards, so applying one puzzle's stack to
+another's board would silently corrupt it. Every payload is tagged `date:<puzzle-date>` or
+`random:<token>` and rejected on mismatch — the same job `loadActive`'s today-only date guard
+does, generalised to cover archive and random puzzles too.
+
+The stack is only rehydrated on the path where the **board itself** restores (the mid-game
+daily restore). Everywhere else the stack is cleared, so it can never be applied to a board
+it doesn't describe.
+
+`dlng_undo` is user-editable like any web storage, so `loadUndo` validates every field before
+the app sees it — version, scope, entry count against the cap, entry kind, and each board
+through the same `validBoxes` check `loadActive` uses. That check was extracted rather than
+copied, so the two readers can't drift.

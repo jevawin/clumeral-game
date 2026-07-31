@@ -3,8 +3,9 @@
 
 import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
-import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive } from './storage.ts';
+import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
+import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
@@ -89,10 +90,27 @@ let submitting = false; // guard against double-submit during API call
 let possibles: Set<number>[] = startingBoard();
 let activeBox: number | null = null; // 0 | 1 | 2 | null
 
-// Undo stack for the digit boxes (#251). Deliberately NOT persisted: the board
-// restores from dlng_active across a reload, the history does not. Keeping it
-// in memory avoids a storage schema bump for state nobody misses after a day.
+// Undo stack for the digit boxes (#251). Mirrored into sessionStorage after
+// every change so a mis-tapped Reset followed by a refresh is still recoverable.
 const boardHistory = createHistory();
+
+// Which puzzle the stored stack belongs to. The entries hold whole boards, so
+// restoring one puzzle's stack onto another's board would corrupt it — random
+// puzzles key on their token because they have no date.
+function undoScope(): string {
+  if (gameState.isRandom) return `random:${gameState.token ?? 'none'}`;
+  return `date:${gameState.date ?? todayKey()}`;
+}
+
+function pushHistory(kind: EntryKind = 'toggle'): void {
+  boardHistory.push(possibles, kind);
+  saveUndo(undoScope(), boardHistory.toJSON());
+}
+
+function clearHistory(): void {
+  boardHistory.clear();
+  clearUndo();
+}
 
 // ─── Storage helper (uses todayKey from date.ts) ─────────────────────────────
 
@@ -432,12 +450,12 @@ function toggleDigit(digit: number): void {
     if (s.size === 1) return; // guard: cannot eliminate last digit
     // Snapshot AFTER the guard: a blocked toggle changes nothing, and pushing
     // here would leave a no-op on the stack that makes one Undo press look dead.
-    boardHistory.push(possibles);
+    pushHistory();
     s.delete(digit);
     // First-play walkthrough hook (issue #214). Fires only on elimination. No-op once dlng_history exists.
     document.dispatchEvent(new CustomEvent("game:digit-eliminated"));
   } else {
-    boardHistory.push(possibles);
+    pushHistory();
     s.add(digit);
   }
   // Back to playing, so the reset announcement has served its purpose. The
@@ -516,6 +534,7 @@ function undoLast(): void {
   if (gameState.solved) return;
   const previous = boardHistory.undo();
   if (previous === null) return;
+  saveUndo(undoScope(), boardHistory.toJSON());
   announceReset(false);
   applyBoard(previous);
 }
@@ -524,7 +543,7 @@ function resetBoard(): void {
   if (gameState.solved || isStartingBoard(possibles)) return;
   // One entry, tagged so the Undo control can label itself "Undo reset". A
   // single press restores the whole pre-reset board.
-  boardHistory.push(possibles, 'reset');
+  pushHistory('reset');
   applyBoard(startingBoard());
   announceReset(true);
 }
@@ -590,7 +609,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
   dom.history?.classList.add("hidden");
   // Solved: nothing left to unwind. Clear as well as hide, so a later /random
   // or archive puzzle on the same SPA session can't inherit a stale stack.
-  boardHistory.clear();
+  clearHistory();
   announceReset(false);
   renderBoardControls();
 
@@ -629,7 +648,7 @@ function resetPuzzleUI() {
     }
   }
   possibles = startingBoard();
-  boardHistory.clear();
+  clearHistory();
   announceReset(false);
   renderAllBoxes();
   renderBoardControls();
@@ -662,9 +681,13 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
     gameState = { answer: null, guesses: draft.guesses, solved: false, puzzleNum: num, date };
     // Rebuild possibles from the stored arrays (Array → Set per box).
     possibles = draft.possibles.map((arr) => new Set(arr));
-    // Undo history does not survive a reload (#251) — the board restores, the
-    // stack starts empty, so Undo is disabled until the player changes something.
-    boardHistory.clear();
+    // Restore the undo stack alongside the board (#251). gameState is already
+    // assigned above, so undoScope() reads the right date. loadUndo returns null
+    // for a missing, forged or wrong-puzzle payload, in which case the stack
+    // simply starts empty and Undo stays disabled.
+    const storedUndo = loadUndo(undoScope());
+    if (storedUndo) boardHistory.load(storedUndo);
+    else clearHistory();
     announceReset(false);
     // Reuse idempotent renderers — no new DOM logic (Pitfall 2: boxes are in DOM from renderClues above).
     renderAllBoxes();
@@ -784,7 +807,7 @@ async function handleGuess() {
       dom.submitWrap?.classList.add("hidden");
       // Hide undo/reset here too: only the archive branch below reaches
       // showCompletedState, the other two navigate away instead (#251).
-      boardHistory.clear();
+      clearHistory();
       announceReset(false);
       renderBoardControls();
 
