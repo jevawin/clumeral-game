@@ -194,10 +194,20 @@ test.describe("undo and reset controls", () => {
     await game.undo.click();
     await expect(game.undo).toHaveText("Undo reset");
 
-    // One more press unwinds the reset itself, restoring the original board.
+    // One more press unwinds the reset itself, restoring the pre-reset board.
     await game.undo.click();
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+
+    // Still one entry left — the snapshot taken before 4 was eliminated — so the
+    // label drops back to plain "Undo" and the control stays live.
+    await expect(game.undo).toHaveText("Undo");
+    await expectAvailable(game.undo);
+
+    // That last press empties the stack and returns the untouched board.
+    await game.undo.click();
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
     await expectUnavailable(game.undo);
+    await expectUnavailable(game.reset);
   });
 
   test("the last remaining candidate in a box still cannot be eliminated", async ({ page }) => {
