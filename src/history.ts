@@ -1,0 +1,77 @@
+// Undo history for the digit boxes (issue #251).
+//
+// app.ts holds the live board as an array of three Sets and mutates them in
+// place, so an undo stack has to store *clones* — pushing a reference would
+// capture nothing. Everything here is pure and DOM-free so it can be unit
+// tested; app.ts owns the rendering.
+
+export type Board = Set<number>[];
+
+// The hundreds box has no 0: the answer is 100-999.
+const STARTING_DIGITS: readonly number[][] = [
+  [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+];
+
+// Far more steps than a real game needs (a board has 29 digits to eliminate),
+// but toggling the same digit on and off is unbounded, so the stack is capped
+// to keep a fidget session from growing it forever.
+export const HISTORY_LIMIT = 100;
+
+export function startingBoard(): Board {
+  return STARTING_DIGITS.map((digits) => new Set(digits));
+}
+
+export function cloneBoard(board: Board): Board {
+  return board.map((box) => new Set(box));
+}
+
+/** True when every box still holds its full starting set — nothing to reset. */
+export function isStartingBoard(board: Board): boolean {
+  return board.every((box, i) => {
+    const starting = STARTING_DIGITS[i];
+    return box.size === starting.length && starting.every((d) => box.has(d));
+  });
+}
+
+export interface History {
+  /** Snapshot the board as it stands *before* a change is applied. */
+  push(board: Board): void;
+  /** Step back one change. Returns the restored board, or null if empty. */
+  undo(): Board | null;
+  canUndo(): boolean;
+  clear(): void;
+  depth(): number;
+}
+
+export function createHistory(limit: number = HISTORY_LIMIT): History {
+  const stack: Board[] = [];
+
+  return {
+    push(board) {
+      stack.push(cloneBoard(board));
+      // Oldest first: the far end of the stack is the least likely to be wanted.
+      if (stack.length > limit) stack.splice(0, stack.length - limit);
+    },
+
+    undo() {
+      const previous = stack.pop();
+      // Clone on the way out too, so the caller mutating the restored board
+      // (which app.ts does, on the very next toggle) can't reach into the stack.
+      return previous ? cloneBoard(previous) : null;
+    },
+
+    canUndo() {
+      return stack.length > 0;
+    },
+
+    clear() {
+      stack.length = 0;
+    },
+
+    depth() {
+      return stack.length;
+    },
+  };
+}

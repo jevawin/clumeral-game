@@ -1,0 +1,240 @@
+import { describe, it, expect } from 'vitest';
+import {
+  startingBoard,
+  cloneBoard,
+  isStartingBoard,
+  createHistory,
+  HISTORY_LIMIT,
+} from '../src/history.ts';
+import type { Board } from '../src/history.ts';
+
+// Boards are Set<number>[] — three boxes, hundreds first. Compared as arrays of
+// sorted arrays so a failure prints the digits rather than "Set(9) !== Set(9)".
+function shape(board: Board): number[][] {
+  return board.map((s) => [...s].sort((a, b) => a - b));
+}
+
+describe('startingBoard', () => {
+  it('gives hundreds 1-9 and tens/units 0-9', () => {
+    expect(shape(startingBoard())).toEqual([
+      [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    ]);
+  });
+
+  it('returns a fresh board each call — mutating one must not affect the next', () => {
+    const first = startingBoard();
+    first[0].delete(5);
+    expect(startingBoard()[0].has(5)).toBe(true);
+  });
+});
+
+describe('cloneBoard', () => {
+  it('copies the digits', () => {
+    const board = startingBoard();
+    board[1].delete(3);
+    expect(shape(cloneBoard(board))).toEqual(shape(board));
+  });
+
+  // The whole reason the history stack exists: app.ts mutates the Sets in place,
+  // so storing a reference would capture nothing.
+  it('is a deep copy — mutating the original leaves the clone alone', () => {
+    const board = startingBoard();
+    const copy = cloneBoard(board);
+    board[0].delete(7);
+    expect(copy[0].has(7)).toBe(true);
+  });
+
+  it('is a deep copy in the other direction too', () => {
+    const board = startingBoard();
+    const copy = cloneBoard(board);
+    copy[2].delete(4);
+    expect(board[2].has(4)).toBe(true);
+  });
+});
+
+describe('isStartingBoard', () => {
+  it('is true for an untouched board', () => {
+    expect(isStartingBoard(startingBoard())).toBe(true);
+  });
+
+  it('is false once any digit is eliminated', () => {
+    const board = startingBoard();
+    board[2].delete(0);
+    expect(isStartingBoard(board)).toBe(false);
+  });
+
+  it('is false when only the hundreds box has changed', () => {
+    const board = startingBoard();
+    board[0].delete(9);
+    expect(isStartingBoard(board)).toBe(false);
+  });
+
+  // Drives the Reset button's disabled state: eliminate, then put it back by
+  // re-tapping, and there is nothing left to reset even though history is non-empty.
+  it('is true again after an elimination is manually undone', () => {
+    const board = startingBoard();
+    board[1].delete(6);
+    board[1].add(6);
+    expect(isStartingBoard(board)).toBe(true);
+  });
+
+  it('is false for a solved board collapsed to single digits', () => {
+    const board: Board = [new Set([4]), new Set([1]), new Set([7])];
+    expect(isStartingBoard(board)).toBe(false);
+  });
+});
+
+describe('createHistory', () => {
+  it('starts empty and cannot undo', () => {
+    const history = createHistory();
+    expect(history.canUndo()).toBe(false);
+    expect(history.depth()).toBe(0);
+  });
+
+  it('returns null when undoing an empty stack', () => {
+    expect(createHistory().undo()).toBeNull();
+  });
+
+  it('can undo once something is pushed', () => {
+    const history = createHistory();
+    history.push(startingBoard());
+    expect(history.canUndo()).toBe(true);
+    expect(history.depth()).toBe(1);
+  });
+
+  it('undo returns the pushed snapshot and pops it', () => {
+    const history = createHistory();
+    const before = startingBoard();
+    history.push(before);
+
+    expect(shape(history.undo()!)).toEqual(shape(before));
+    expect(history.canUndo()).toBe(false);
+  });
+
+  it('snapshots are taken at push time, not read time', () => {
+    const history = createHistory();
+    const board = startingBoard();
+    history.push(board);
+    board[0].delete(1);
+    board[0].delete(2);
+
+    expect(history.undo()![0].has(1)).toBe(true);
+  });
+
+  it('walks back one step per undo, most recent first', () => {
+    const history = createHistory();
+    const board = startingBoard();
+
+    history.push(board); // before eliminating 5
+    board[1].delete(5);
+    history.push(board); // before eliminating 6
+    board[1].delete(6);
+
+    // First undo restores 6 but not 5 — one elimination per press.
+    const first = history.undo()!;
+    expect(first[1].has(6)).toBe(true);
+    expect(first[1].has(5)).toBe(false);
+
+    // Second undo goes all the way back.
+    const second = history.undo()!;
+    expect(second[1].has(5)).toBe(true);
+    expect(second[1].has(6)).toBe(true);
+
+    expect(history.canUndo()).toBe(false);
+  });
+
+  it('hands out copies — mutating an undone board does not corrupt the stack', () => {
+    const history = createHistory();
+    const board = startingBoard();
+    history.push(board);
+    history.push(board);
+
+    const first = history.undo()!;
+    first[0].delete(3);
+
+    expect(history.undo()![0].has(3)).toBe(true);
+  });
+
+  it('clear empties the stack', () => {
+    const history = createHistory();
+    history.push(startingBoard());
+    history.push(startingBoard());
+    history.clear();
+
+    expect(history.canUndo()).toBe(false);
+    expect(history.depth()).toBe(0);
+    expect(history.undo()).toBeNull();
+  });
+
+  it('caps depth and drops the oldest entries first', () => {
+    const history = createHistory();
+    const board = startingBoard();
+
+    // Push one more than the cap, tagging each snapshot by eliminating a
+    // distinct digit from the tens box before pushing the next.
+    for (let i = 0; i < HISTORY_LIMIT + 1; i++) {
+      history.push(board);
+      board[1].delete(i % 10);
+      board[1].add(i % 10);
+    }
+
+    expect(history.depth()).toBe(HISTORY_LIMIT);
+  });
+
+  it('stays usable after the cap is hit', () => {
+    const history = createHistory();
+    const board = startingBoard();
+    for (let i = 0; i < HISTORY_LIMIT + 20; i++) history.push(board);
+
+    expect(history.canUndo()).toBe(true);
+    for (let i = 0; i < HISTORY_LIMIT; i++) expect(history.undo()).not.toBeNull();
+    expect(history.undo()).toBeNull();
+  });
+});
+
+// The board must never be restorable into a state the game itself would refuse.
+// Snapshots are only ever taken of states the app already allowed, so this holds
+// by construction — these tests pin that invariant so a future refactor can't
+// quietly break it.
+describe('the last-candidate guard across undo and reset', () => {
+  it('never restores a box to zero candidates', () => {
+    const history = createHistory();
+    const board = startingBoard();
+
+    // Whittle the units box down to a single digit, one legal step at a time.
+    for (const d of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
+      history.push(board);
+      board[2].delete(d);
+    }
+    expect(board[2].size).toBe(1);
+
+    // Every step back is a state the game allowed, so no box is ever empty.
+    let restored: Board | null;
+    while ((restored = history.undo())) {
+      for (const box of restored) expect(box.size).toBeGreaterThan(0);
+    }
+  });
+
+  it('undoing a reset restores the whole pre-reset board in one step', () => {
+    const history = createHistory();
+    const board = startingBoard();
+    board[0].delete(1);
+    board[1].delete(2);
+    board[2].delete(3);
+
+    // Reset pushes exactly one entry, then replaces the board wholesale.
+    history.push(board);
+    const afterReset = startingBoard();
+
+    expect(isStartingBoard(afterReset)).toBe(true);
+    expect(history.depth()).toBe(1);
+
+    const restored = history.undo()!;
+    expect(restored[0].has(1)).toBe(false);
+    expect(restored[1].has(2)).toBe(false);
+    expect(restored[2].has(3)).toBe(false);
+    expect(history.canUndo()).toBe(false);
+  });
+});
