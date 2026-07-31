@@ -346,19 +346,35 @@ test.describe("undo and reset controls", () => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
 
-    // Read it off the digit SPAN, not the box that carries the class — the
-    // symptom was a highlight on one character, so what matters is that
-    // user-select inherits all the way down.
+    // Check the behaviour on the digit SPAN, not its computed style. `user-select`
+    // is NOT an inherited property: `auto` on a child resolves to the parent's
+    // *used* value, so a span inside a `none` box reports "auto" in Firefox while
+    // being perfectly unselectable. Chromium reports the used value instead, and
+    // WebKit exposes only `-webkit-user-select`, so `.userSelect` is undefined
+    // there. Reading computed style off the span asserted an engine quirk, not the
+    // fix — it passed on Chromium and failed on the other three. Double-clicking
+    // and finding no selection is the symptom Dave actually reported.
     for (const box of [0, 1, 2]) {
-      const userSelect = await game
-        .page.locator(`[data-digit="${box}"] .digit-box__grid span`).first()
-        .evaluate((el) => getComputedStyle(el).userSelect);
-      expect(userSelect, `digits in box ${box} must not be selectable`).toBe("none");
+      await game.page.locator(`[data-digit="${box}"] .digit-box__grid span`).first().dblclick();
+      const selected = await game.page.evaluate(() => window.getSelection()?.toString() ?? "");
+      expect(selected, `digits in box ${box} must not be selectable`).toBe("");
+    }
+
+    // The style assertion still has a place — on the elements that carry the rule,
+    // where the computed value is the declared one. `webkitUserSelect` is the
+    // fallback for WebKit, which doesn't surface the unprefixed property at all.
+    const declaredSelect = (el: Element) => {
+      const cs = getComputedStyle(el) as CSSStyleDeclaration & { webkitUserSelect?: string };
+      return cs.userSelect ?? cs.webkitUserSelect ?? cs.getPropertyValue("-webkit-user-select");
+    };
+    for (const box of [0, 1, 2]) {
+      const boxSelect = await game.page.locator(`[data-digit="${box}"]`).evaluate(declaredSelect);
+      expect(boxSelect, `box ${box} must declare user-select: none`).toBe("none");
     }
 
     // And the keypad keys, which had the same gap.
     await game.openBox(1);
-    const keySelect = await game.key(5).evaluate((el) => getComputedStyle(el).userSelect);
+    const keySelect = await game.key(5).evaluate(declaredSelect);
     expect(keySelect, "keypad keys must not be selectable").toBe("none");
   });
 
