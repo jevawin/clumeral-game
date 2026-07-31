@@ -86,6 +86,55 @@ describe('isStartingBoard', () => {
   });
 });
 
+// The Undo button reads "Undo reset" whenever the NEXT step back would undo a
+// reset, so the stack has to remember what each entry was, not just the board.
+describe('entry kinds', () => {
+  it('reports no kind for an empty stack', () => {
+    expect(createHistory().nextKind()).toBeNull();
+  });
+
+  it('defaults an entry to a toggle', () => {
+    const history = createHistory();
+    history.push(startingBoard());
+    expect(history.nextKind()).toBe('toggle');
+  });
+
+  it('reports a reset entry as a reset', () => {
+    const history = createHistory();
+    history.push(startingBoard(), 'reset');
+    expect(history.nextKind()).toBe('reset');
+  });
+
+  it('reports the most recent entry, not the oldest', () => {
+    const history = createHistory();
+    history.push(startingBoard(), 'reset');
+    history.push(startingBoard(), 'toggle');
+    expect(history.nextKind()).toBe('toggle');
+  });
+
+  // The label has to come BACK to "Undo reset" if the player toggles after a
+  // reset and then steps back onto the reset entry again.
+  it('returns to reset once the toggles above it are undone', () => {
+    const history = createHistory();
+    history.push(startingBoard(), 'reset');
+    history.push(startingBoard(), 'toggle');
+    expect(history.nextKind()).toBe('toggle');
+
+    history.undo();
+    expect(history.nextKind()).toBe('reset');
+
+    history.undo();
+    expect(history.nextKind()).toBeNull();
+  });
+
+  it('clear drops the kinds with the boards', () => {
+    const history = createHistory();
+    history.push(startingBoard(), 'reset');
+    history.clear();
+    expect(history.nextKind()).toBeNull();
+  });
+});
+
 describe('createHistory', () => {
   it('starts empty and cannot undo', () => {
     const history = createHistory();

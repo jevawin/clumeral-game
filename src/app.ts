@@ -77,6 +77,7 @@ const dom = {
   undoBtn: $('[data-undo]') as HTMLButtonElement | null,
   resetBtn: $('[data-reset]') as HTMLButtonElement | null,
   undoMsg: $('[data-undo-msg]') as HTMLElement | null,
+  undoLabel: $('[data-undo-label]') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -439,8 +440,9 @@ function toggleDigit(digit: number): void {
     boardHistory.push(possibles);
     s.add(digit);
   }
-  // The player is back to playing, so the post-reset prompt has served its purpose.
-  showUndoMsg(false);
+  // Back to playing, so the reset announcement has served its purpose. The
+  // visible label follows the stack, so it needs no clearing here.
+  announceReset(false);
   // Save mid-game state after every digit mutation — daily only (D-06, D-08).
   // Payload is tiny so no debounce needed (Pitfall 5).
   if (!gameState.isRandom) saveActive(buildActiveState());
@@ -452,11 +454,13 @@ function toggleDigit(digit: number): void {
 
 // ─── Undo / Reset controls (#251) ────────────────────────────────────────────
 
-// Driven by text content, not by display:none. A live region toggled in and out
-// of the layout is unreliably announced — VoiceOver in particular often stays
-// silent — and this prompt is the whole reason Reset needs no confirmation step.
-function showUndoMsg(show: boolean): void {
-  if (dom.undoMsg) dom.undoMsg.textContent = show ? "Undo reset" : "";
+// Screen-reader announcement for a reset. The visible cue is the Undo button's
+// own label, but a sighted-only cue would leave the one signal that Reset is
+// recoverable unannounced. Driven by text content, not display:none — a live
+// region toggled in and out of the layout is unreliably announced (VoiceOver in
+// particular often stays silent).
+function announceReset(on: boolean): void {
+  if (dom.undoMsg) dom.undoMsg.textContent = on ? "Board reset. Undo reset available." : "";
 }
 
 // Undo and Reset don't share a condition. Straight after a Reset the board IS
@@ -471,6 +475,15 @@ function renderBoardControls(): void {
   // target for a stray Enter or an assistive-tech activation.
   if (dom.undoBtn) dom.undoBtn.disabled = hide || !boardHistory.canUndo();
   if (dom.resetBtn) dom.resetBtn.disabled = hide || isStartingBoard(possibles);
+
+  // The label tracks the top of the stack rather than a one-shot "just reset"
+  // flag, so it comes BACK to "Undo reset" if the player toggles after a reset
+  // and then steps back down onto the reset entry again.
+  if (dom.undoLabel) {
+    const undoingReset = boardHistory.nextKind() === 'reset';
+    dom.undoLabel.textContent = undoingReset ? "Undo reset" : "Undo";
+    dom.undoBtn?.setAttribute("aria-label", undoingReset ? "Undo reset" : "Undo last change");
+  }
   rescueFocus();
 }
 
@@ -503,18 +516,17 @@ function undoLast(): void {
   if (gameState.solved) return;
   const previous = boardHistory.undo();
   if (previous === null) return;
-  showUndoMsg(false);
+  announceReset(false);
   applyBoard(previous);
 }
 
 function resetBoard(): void {
   if (gameState.solved || isStartingBoard(possibles)) return;
-  // One entry, so a single Undo press restores the whole pre-reset board.
-  boardHistory.push(possibles);
+  // One entry, tagged so the Undo control can label itself "Undo reset". A
+  // single press restores the whole pre-reset board.
+  boardHistory.push(possibles, 'reset');
   applyBoard(startingBoard());
-  // Points the player at the Undo that will unwind this — the reason Reset
-  // needs no confirmation step.
-  showUndoMsg(true);
+  announceReset(true);
 }
 
 function openBox(i: number): void {
@@ -579,7 +591,7 @@ function showCompletedState(tries: number, replayDate?: string): void {
   // Solved: nothing left to unwind. Clear as well as hide, so a later /random
   // or archive puzzle on the same SPA session can't inherit a stale stack.
   boardHistory.clear();
-  showUndoMsg(false);
+  announceReset(false);
   renderBoardControls();
 
   // Archive row visibility tied to replayDate so a daily /play view never inherits archive chrome.
@@ -618,7 +630,7 @@ function resetPuzzleUI() {
   }
   possibles = startingBoard();
   boardHistory.clear();
-  showUndoMsg(false);
+  announceReset(false);
   renderAllBoxes();
   renderBoardControls();
   closeKeypad();
@@ -653,7 +665,7 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
     // Undo history does not survive a reload (#251) — the board restores, the
     // stack starts empty, so Undo is disabled until the player changes something.
     boardHistory.clear();
-    showUndoMsg(false);
+    announceReset(false);
     // Reuse idempotent renderers — no new DOM logic (Pitfall 2: boxes are in DOM from renderClues above).
     renderAllBoxes();
     renderBoardControls();
@@ -773,7 +785,7 @@ async function handleGuess() {
       // Hide undo/reset here too: only the archive branch below reaches
       // showCompletedState, the other two navigate away instead (#251).
       boardHistory.clear();
-      showUndoMsg(false);
+      announceReset(false);
       renderBoardControls();
 
       // Record game before rendering completion so loadHistory includes today's entry.

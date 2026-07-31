@@ -35,22 +35,36 @@ export function isStartingBoard(board: Board): boolean {
   });
 }
 
+/**
+ * What kind of change an entry steps back over. The Undo control labels itself
+ * from this, so a player always knows whether the next press unwinds a single
+ * digit or the whole reset.
+ */
+export type EntryKind = 'toggle' | 'reset';
+
+interface Entry {
+  board: Board;
+  kind: EntryKind;
+}
+
 export interface History {
   /** Snapshot the board as it stands *before* a change is applied. */
-  push(board: Board): void;
+  push(board: Board, kind?: EntryKind): void;
   /** Step back one change. Returns the restored board, or null if empty. */
   undo(): Board | null;
+  /** Kind of the change the next undo would step back over, or null if empty. */
+  nextKind(): EntryKind | null;
   canUndo(): boolean;
   clear(): void;
   depth(): number;
 }
 
 export function createHistory(limit: number = HISTORY_LIMIT): History {
-  const stack: Board[] = [];
+  const stack: Entry[] = [];
 
   return {
-    push(board) {
-      stack.push(cloneBoard(board));
+    push(board, kind = 'toggle') {
+      stack.push({ board: cloneBoard(board), kind });
       // Oldest first: the far end of the stack is the least likely to be wanted.
       if (stack.length > limit) stack.splice(0, stack.length - limit);
     },
@@ -59,7 +73,11 @@ export function createHistory(limit: number = HISTORY_LIMIT): History {
       const previous = stack.pop();
       // Clone on the way out too, so the caller mutating the restored board
       // (which app.ts does, on the very next toggle) can't reach into the stack.
-      return previous ? cloneBoard(previous) : null;
+      return previous ? cloneBoard(previous.board) : null;
+    },
+
+    nextKind() {
+      return stack.length > 0 ? stack[stack.length - 1].kind : null;
     },
 
     canUndo() {

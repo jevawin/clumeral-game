@@ -33,12 +33,24 @@ the outcome here because the issue's Open Questions section is now stale.
   phone-first game.
 - Icons from Lucide (`undo-2`, `rotate-ccw`), added as symbols to `public/sprites.svg`.
   No npm dependency: the project has no Lucide package and builds its own sprite sheet.
-- Positioned between the clue list and the digit boxes.
+- Positioned between the clue list and the digit boxes, **Undo left, Reset right**.
 - Styled from the same classes as the keypad buttons, including the tap-offset active state,
   so they read as the same family of interactive elements.
 - Always visible during play, faded and disabled when not applicable.
-- After a Reset, a 14px foreground-colour "Undo reset" message sits **next to** the Undo
-  button, outside it. It clears when Undo is pressed, or on the player's next elimination.
+- After a Reset, **the Undo button relabels itself to "Undo reset"** rather than showing a
+  separate message. It reverts to "Undo" on the player's next tap.
+
+### The label follows the stack, not a flag
+
+Each history entry records its kind (`toggle` or `reset`), and the button labels itself from
+whatever the *next* press would step back over. A one-shot "just reset" flag would be wrong:
+after a reset, toggle a digit (label → "Undo"), then press Undo once, and you are standing on
+the reset entry again — the label has to read "Undo reset" a second time. Kind-per-entry gives
+that for free; a flag would have gone quiet.
+
+The visible label is the only cue a sighted player needs, but it changes silently for a screen
+reader unless the button happens to be focused, so a reset also fires a visually-hidden
+`role="status"` announcement.
 
 **An earlier two-tap confirm design was dropped.** It specced "Tap again to reset" with a 5s
 countdown replacing the icon. Jamie cut it in favour of one-click plus the Undo affordance:

@@ -110,18 +110,23 @@ test.describe("undo and reset controls", () => {
     await expect(game.boxDigit(0, 0)).toHaveClass(/elim/);
   });
 
-  test("after a reset, Reset disables but Undo stays live with a prompt", async ({ page }) => {
+  test("after a reset, Reset disables but Undo stays live and relabels", async ({ page }) => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
     await eliminate(game, [4, 5]);
+    await expect(game.undo).toHaveText("Undo");
 
     await game.reset.click();
 
     // The board is the starting board, so there is nothing left to reset...
     await expect(game.reset).toBeDisabled();
-    // ...but the reset itself is still undoable, and the prompt says so.
+    // ...but the reset itself is still undoable, and the button says so.
     await expect(game.undo).toBeEnabled();
-    await expect(game.undoMsg).toHaveText("Undo reset");
+    await expect(game.undo).toHaveText("Undo reset");
+    await expect(game.undo).toHaveAttribute("aria-label", "Undo reset");
+    // A relabelled button is silent to a screen reader unless it happens to be
+    // focused, so the reset is announced separately.
+    await expect(game.undoMsg).toHaveText(/Board reset/);
   });
 
   test("undoing a reset restores the whole pre-reset board in one press", async ({ page }) => {
@@ -136,19 +141,43 @@ test.describe("undo and reset controls", () => {
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
     await expect(game.boxDigit(1, 5)).toHaveClass(/elim/);
     await expect(game.boxDigit(1, 6)).toHaveClass(/elim/);
-    await expect(game.undoMsg).toBeEmpty();
+    await expect(game.undo).toHaveText("Undo");
   });
 
-  test("the reset prompt clears when the player eliminates again", async ({ page }) => {
+  test("the Undo label reverts to plain Undo on the next elimination", async ({ page }) => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
     await eliminate(game, [4]);
 
     await game.reset.click();
-    await expect(game.undoMsg).toHaveText("Undo reset");
+    await expect(game.undo).toHaveText("Undo reset");
 
     await eliminate(game, [9]);
-    await expect(game.undoMsg).toBeEmpty();
+    await expect(game.undo).toHaveText("Undo");
+  });
+
+  // The label follows the top of the stack, not a one-shot flag, so stepping
+  // back down onto the reset entry has to bring "Undo reset" back.
+  test("the Undo label returns to Undo reset when the stack steps back onto it", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4]);
+
+    await game.reset.click();
+    await expect(game.undo).toHaveText("Undo reset");
+
+    // Toggle after the reset — label goes back to plain Undo...
+    await eliminate(game, [9]);
+    await expect(game.undo).toHaveText("Undo");
+
+    // ...and undoing that toggle lands back on the reset entry.
+    await game.undo.click();
+    await expect(game.undo).toHaveText("Undo reset");
+
+    // One more press unwinds the reset itself, restoring the original board.
+    await game.undo.click();
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+    await expect(game.undo).toBeDisabled();
   });
 
   test("the last remaining candidate in a box still cannot be eliminated", async ({ page }) => {
@@ -221,5 +250,14 @@ test.describe("undo and reset controls", () => {
 
     await expect(game.undo).toHaveAttribute("aria-label", /undo/i);
     await expect(game.reset).toHaveAttribute("aria-label", /reset/i);
+  });
+
+  test("Reset sits to the right of Undo", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    const undo = await game.undo.boundingBox();
+    const reset = await game.reset.boundingBox();
+    expect(reset!.x).toBeGreaterThan(undo!.x + undo!.width);
   });
 });

@@ -250,20 +250,23 @@
                  boxes' own spacing on a sibling that gets hidden: when this row is
                  display:none its margins go with it, so [data-digits] keeps the same
                  mt-5 offset from the clues that it has on a solved board. -->
-            <div data-board-controls class="flex items-center gap-2 mt-5 -mb-3">
+            <div data-board-controls class="flex items-center justify-between gap-2 mt-5 -mb-3">
+              <!-- Undo's label is rewritten to "Undo reset" whenever the next press
+                   would unwind a reset — see renderBoardControls in app.ts. -->
               <button type="button" data-undo class="key-face board-ctrl" disabled aria-label="Undo last change">
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-undo"/></svg>
-                Undo
+                <span data-undo-label>Undo</span>
               </button>
+              <!-- Announcement only: the visible cue for a reset is Undo's own
+                   label, but that changes silently for a screen reader unless the
+                   button happens to be focused. Driven by text content, not
+                   display — a live region toggled in and out of the layout is
+                   unreliably announced. -->
+              <p data-undo-msg class="sr-only" role="status" aria-live="polite"></p>
               <button type="button" data-reset class="key-face board-ctrl" disabled aria-label="Reset all boxes">
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-reset"/></svg>
                 Reset
               </button>
-              <!-- Filled in after a Reset to point at the Undo that will unwind it.
-                   Always present and driven by text content, not display — a live
-                   region toggled in and out of the layout is unreliably announced.
-                   Trails the row so filling it can't shove the buttons sideways. -->
-              <p data-undo-msg class="text-sm text-text font-[Quicksand]" role="status" aria-live="polite"></p>
             </div>
 
             <!-- Number boxes -->
