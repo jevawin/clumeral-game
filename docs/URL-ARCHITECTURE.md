@@ -62,13 +62,19 @@ The `dlng_active` half is #284. History alone meant a player who had never
 finished a puzzle failed the gate, so refreshing mid-game bounced them from
 `/play` to `/welcome` while their board sat in storage unread. `loadActive()`
 rejects stale-dated and forged payloads, so only a genuinely restorable board
-counts, and a stranger following a shared link still has neither.
+counts, and a stranger who merely follows a shared `/play` link still has neither.
 
-`dlng_active` is written on the first digit change (`saveActive`) and, so that a
-refresh before that first tap resumes too, by `markPuzzleStarted()` in `app.ts`
-when the game screen is entered on `/play`. That marker never writes off `/play`
-(the boot fetch renders clues while `/welcome` is showing) and never overwrites
-an existing board.
+`dlng_active` is written by `saveActive` whenever the board or the open box
+changes, and — so that a refresh before the first tap resumes too — by
+`markPuzzleStarted()` in `app.ts` when the game screen is entered on `/play`.
+That marker never writes off `/play` (the boot fetch renders clues while
+`/welcome` is showing) and never overwrites an existing board.
+
+One consequence worth knowing: anyone who reaches `/play` deliberately —
+including via the archive's `?from=archive` link, which bypasses the gate by
+design — has a board from then on, so a bare `/play` link stops bouncing them for
+the rest of that local day. They asked for the game and got it; the gate only
+ever aimed at the visitor who never did.
 
 `navigate(path, { skipResolve: true })` bypasses the resolver — used for the
 Play button (user explicitly chose to play, deep-link gate doesn't apply) and
@@ -103,6 +109,7 @@ links.
 | nothing                   | `/archive/<past-date>`     | game screen, replay-able        |
 | nothing                   | `/archive/<future-date>`   | `/archive` (ARC-03)             |
 | nothing                   | `/archive/<garbage>`       | `/archive` (ARC-03)             |
+| board in progress, no history | `/play`                | `/play`, board restored (#284)  |
 | solved today              | `/welcome`                 | `/solved` (post-solve home)     |
 | solved today              | `/play`                    | `/solved` (post-solve home)     |
 | solved today              | `/solved`                  | `/solved`                       |

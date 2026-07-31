@@ -79,7 +79,10 @@ test.describe("mid-game restore — first-time player (#284)", () => {
     await page.goto("/welcome");
     await page.locator("[data-play-btn]").click();
     await expectActiveScreen(page, "game");
-    await expect(page.locator('[data-digit="0"]')).toBeVisible();
+    // Wait for the puzzle fetch, not just the static markup: the digit boxes are in
+    // index.html from the start, but the marker can only be written once today's
+    // puzzle has loaded. renderClues drops aria-busy, so this is the real signal.
+    await expect(page.locator("[data-clue-list]")).not.toHaveAttribute("aria-busy", "true");
 
     await page.reload();
 
