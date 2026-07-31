@@ -40,6 +40,10 @@ default branch. The closing reference has to be on the `staging → main` PR.
 ## Preview URLs
 
 - Work: `https://{branch}-clumeral-game.jevawin.workers.dev`
+  — **`/` in a branch name becomes `-`**, so `issue/251` → `issue-251-clumeral-game.jevawin.workers.dev`.
+  The URL is live as soon as the Workers Build on the branch push goes green; it does not
+  need a PR. Check the build with
+  `gh api repos/jevawin/clumeral-game/commits/<sha>/check-runs`.
 - Staging: `https://staging-clumeral-game.jevawin.workers.dev`
 - Prod: `https://clumeral.com`
 
