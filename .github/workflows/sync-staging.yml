@@ -1,0 +1,52 @@
+# Keep `staging` in step with `main` automatically.
+#
+# Why this exists: the dev bot is a non-admin Write collaborator and GitHub's rulesets
+# refuse it any write to `main` or `staging` — that refusal is the containment, proven
+# empirically, and must not be softened. But it also means the bot cannot do the one
+# harmless piece of post-merge housekeeping: bringing `staging` back in step after a
+# merge into `main`. This workflow does it instead.
+#
+# Auth: a repo deploy key (write), whose private half is an ENVIRONMENT secret on
+# `staging-sync`, and that environment is restricted to the `main` branch.
+# The branch restriction is load-bearing, not tidiness: Actions secrets are normally
+# readable by ANY workflow in the repo, including one added on a pull-request branch —
+# same-repo PRs DO receive secrets — so a plain repo secret could be exfiltrated by a
+# branch the bot pushes, with no human merge, handing it exactly the staging write we
+# are withholding. Scoped to an environment only `main` may deploy to, a PR-branch
+# workflow cannot reach it.
+name: sync staging from main
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sync-staging
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: staging-sync
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ssh-key: ${{ secrets.STAGING_SYNC_KEY }}
+
+      - name: Fast-forward staging to main
+        run: |
+          set -euo pipefail
+          git fetch origin main staging
+          ahead=$(git rev-list --count origin/staging ^origin/main)
+          if [ "$ahead" -ne 0 ]; then
+            echo "::warning title=staging not synced::staging has $ahead commit(s) not in main — refusing to move it, as that would discard work. Open a PR instead."
+            exit 0
+          fi
+          if [ "$(git rev-parse origin/staging)" = "$(git rev-parse origin/main)" ]; then
+            echo "staging already matches main — nothing to do."
+            exit 0
+          fi
+          git push origin origin/main:refs/heads/staging
+          echo "staging fast-forwarded to $(git rev-parse --short origin/main)"
