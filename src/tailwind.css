@@ -581,12 +581,17 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-key);
     touch-action: manipulation;
+    /* Not selectable: these are tap targets, and a long-press that selects the
+       digit inside one looks like a rendering bug (#251). */
+    user-select: none;
+    -webkit-user-select: none;
   }
-  /* Press-down offset. Excluded when unavailable so a dead control doesn't
-     animate as though it did something. Covers aria-disabled as well as the
-     native attribute: the undo/reset controls use the former so that pressing
-     one which has just become unavailable can't throw focus away (#251). */
-  .key-face:active:not(:disabled):not([aria-disabled="true"]) {
+  /* Press-down offset. Excluded only for the undo/reset controls when they are
+     unavailable, so a dead control doesn't animate as though it did something.
+     Deliberately NOT excluded for every aria-disabled .key-face: the keypad's
+     hundreds-box 0 is aria-disabled but still does something — it opens the
+     "the first box can't be 0" explainer — so it must keep its press feedback. */
+  .key-face:active:not(:disabled):not(.board-ctrl[aria-disabled="true"]) {
     transform: translate(2px, 2px);
     box-shadow: none;
   }

@@ -116,13 +116,18 @@ function boardDigits(): number[][] {
   return possibles.map((s) => [...s]);
 }
 
+// MUST be called AFTER the board has been mutated, never before. The stored
+// fingerprint has to describe the same board that saveActive writes to
+// dlng_active, or loadUndo's board check rejects the stack on every reload and
+// the persistence is silently dead.
 function persistHistory(): void {
   if (undoIsRestorable()) saveUndo(undoScope(), boardHistory.toJSON(), boardDigits());
 }
 
+// Snapshots the board as it stands BEFORE the caller changes it. Deliberately
+// does not persist: the caller does that once the change has landed.
 function pushHistory(kind: EntryKind = 'toggle'): void {
   boardHistory.push(possibles, kind);
-  persistHistory();
 }
 
 function clearHistory(): void {
@@ -480,8 +485,10 @@ function toggleDigit(digit: number): void {
   // visible label follows the stack, so it needs no clearing here.
   announceReset(false);
   // Save mid-game state after every digit mutation — daily only (D-06, D-08).
-  // Payload is tiny so no debounce needed (Pitfall 5).
+  // Payload is tiny so no debounce needed (Pitfall 5). The undo stack is saved
+  // alongside it so the two always describe the same board.
   if (!gameState.isRandom) saveActive(buildActiveState());
+  persistHistory();
   renderBox(activeBox);
   buildKeypad();
   renderBoardControls();
@@ -543,6 +550,7 @@ function applyBoard(next: Set<number>[]): void {
   possibles = next;
   renderFeedback(null);
   if (!gameState.isRandom) saveActive(buildActiveState());
+  persistHistory();
   renderAllBoxes();
   buildKeypad();
   renderBoardControls();
@@ -553,9 +561,8 @@ function undoLast(): void {
   if (gameState.solved) return;
   const previous = boardHistory.undo();
   if (previous === null) return;
-  persistHistory();
   announceReset(false);
-  applyBoard(previous);
+  applyBoard(previous);   // persists the popped stack against the restored board
 }
 
 function resetBoard(): void {
@@ -963,8 +970,10 @@ for (let i = 0; i < 3; i++) {
 // Submit button
 dom.submitBtn?.addEventListener("click", () => { handleGuess(); });
 
-// Undo / Reset (#251). Native <button disabled> already blocks click and keyboard
-// activation, so there's no separate guard needed here.
+// Undo / Reset (#251). These are marked aria-disabled rather than natively
+// disabled, so a press still reaches the handler when the control is unavailable.
+// Both handlers re-derive live state and return early, which is what makes that
+// safe — see setUnavailable.
 dom.undoBtn?.addEventListener("click", () => { undoLast(); });
 dom.resetBtn?.addEventListener("click", () => { resetBoard(); });
 

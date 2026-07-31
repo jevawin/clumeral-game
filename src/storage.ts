@@ -143,7 +143,10 @@ export function clearActive(): void {
 // and re-adding a digit puts it at the end, so two identical boards can produce
 // differently-ordered arrays.
 function sameBoard(stored: unknown, current: number[][]): boolean {
-  if (!validBoxes(stored)) return false;
+  // Both sides validated. `current` comes from trusted callers today, so this is
+  // belt-and-braces — but without it a malformed `current` would throw into
+  // loadUndo's catch and read as "no stored stack" rather than as the bug it is.
+  if (!validBoxes(stored) || !validBoxes(current)) return false;
   const asc = (a: number, b: number) => a - b;
   return (stored as number[][]).every((box, i) => {
     const x = [...box].sort(asc);

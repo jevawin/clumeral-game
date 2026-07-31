@@ -9,12 +9,18 @@ import { expectActiveScreen } from "../helpers/screens.ts";
 // per test, driven through the real keypad rather than by poking state.
 
 // The controls use aria-disabled rather than the native disabled attribute, so
-// they stay focusable and pressing a just-disabled one can't throw focus away
-// (#251). Assert the attribute directly rather than relying on toBeDisabled()
-// inferring it — the distinction is the point.
+// they stay focusable and pressing a just-unavailable one can't throw focus away
+// (#251).
+//
+// Note Playwright resolves toBeEnabled/toBeDisabled through aria-disabled for
+// button roles, so toBeEnabled() would FAIL here even though the element is not
+// natively disabled. The native flag has to be read off the DOM directly.
 async function expectUnavailable(button: Locator): Promise<void> {
   await expect(button).toHaveAttribute("aria-disabled", "true");
-  await expect(button).toBeEnabled();   // never NATIVELY disabled
+  expect(
+    await button.evaluate((el) => (el as HTMLButtonElement).disabled),
+    "must be aria-disabled, never natively disabled — native disabled steals focus",
+  ).toBe(false);
 }
 
 async function expectAvailable(button: Locator): Promise<void> {
@@ -300,10 +306,17 @@ test.describe("undo and reset controls", () => {
 
     const digitsBefore = await game.digit(1).innerHTML();
 
-    await game.undo.click();
-    await game.reset.click();
+    // force: Playwright's actionability check treats aria-disabled as disabled
+    // and would otherwise wait forever. Pressing it anyway is the whole point —
+    // a real user's tap is not gated on Playwright's opinion.
+    await game.undo.focus();
+    await game.undo.click({ force: true });
 
-    // Focus stays on whatever the player pressed — not thrown to a digit box.
+    // Focus stays exactly where the player put it, not thrown to a digit box.
+    await expect(game.undo).toBeFocused();
+
+    await game.reset.click({ force: true });
+
     await expect(game.digit(0)).not.toBeFocused();
     await expect(game.digit(1)).not.toBeFocused();
     await expect(game.digit(2)).not.toBeFocused();
@@ -323,12 +336,20 @@ test.describe("undo and reset controls", () => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
 
+    // Read it off the digit SPAN, not the box that carries the class — the
+    // symptom was a highlight on one character, so what matters is that
+    // user-select inherits all the way down.
     for (const box of [0, 1, 2]) {
-      const userSelect = await game.digit(box).evaluate(
-        (el) => getComputedStyle(el).userSelect || getComputedStyle(el).webkitUserSelect,
-      );
-      expect(userSelect, `box ${box} must not be selectable`).toBe("none");
+      const userSelect = await game
+        .page.locator(`[data-digit="${box}"] .digit-box__grid span`).first()
+        .evaluate((el) => getComputedStyle(el).userSelect);
+      expect(userSelect, `digits in box ${box} must not be selectable`).toBe("none");
     }
+
+    // And the keypad keys, which had the same gap.
+    await game.openBox(1);
+    const keySelect = await game.key(5).evaluate((el) => getComputedStyle(el).userSelect);
+    expect(keySelect, "keypad keys must not be selectable").toBe("none");
   });
 
   test("controls carry accessible names", async ({ page }) => {
