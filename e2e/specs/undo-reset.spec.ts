@@ -315,6 +315,22 @@ test.describe("undo and reset controls", () => {
     await expectUnavailable(game.reset);
   });
 
+  // Also from Dave's report: the digits inside a box were selectable text, so a
+  // stray double-tap or long-press put a selection highlight on a single
+  // character. The How To Play box had user-select:none; the game boxes, built
+  // from utilities rather than the .digit-box class, had missed it.
+  test("digits in the boxes cannot be text-selected", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    for (const box of [0, 1, 2]) {
+      const userSelect = await game.digit(box).evaluate(
+        (el) => getComputedStyle(el).userSelect || getComputedStyle(el).webkitUserSelect,
+      );
+      expect(userSelect, `box ${box} must not be selectable`).toBe("none");
+    }
+  });
+
   test("controls carry accessible names", async ({ page }) => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
