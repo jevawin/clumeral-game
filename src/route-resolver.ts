@@ -10,7 +10,7 @@ export type Route =
   | { kind: 'archive-date'; date: string };
 
 export interface ResolveCtx {
-  hasData: boolean; // any dlng_* storage key present
+  hasData: boolean; // a played puzzle in history, or a restorable board for today
   todayEntry: HistoryEntry | null;
   todayLocal: string; // YYYY-MM-DD
   midInteraction: boolean; // ignored here; the router uses it for stale-day skip
@@ -29,7 +29,9 @@ export function isValidDate(d: string): boolean {
 
 export function resolveRoute(path: string, ctx: ResolveCtx): Route {
   // /play redirect rules (RTE-03).
-  // !hasData (no history): stranger/fresh visitor — bounce to /welcome.
+  // !hasData (no history, no board in progress): stranger/fresh visitor — bounce
+  // to /welcome. A board counts because a first-timer refreshing mid-game has one
+  // and no history at all (#284) — see hasPlayerData in storage.ts.
   // todayEntry exists (already solved today): /solved is the post-solve home —
   // /play is only reachable inwards via the explicit Show-puzzle link
   // (skipResolve), never as a deep-link destination.

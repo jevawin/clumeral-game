@@ -3,7 +3,7 @@
 
 import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
-import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, saveUndo, loadUndo, clearUndo } from './storage.ts';
+import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
@@ -153,6 +153,27 @@ function buildActiveState(): ActiveState {
     activeBox,
     feedbackKey: null,
   };
+}
+
+// Persist the starting board the moment the player is actually on /play, so a
+// refresh before they have touched anything still resumes the game rather than
+// dropping them on /welcome (#284). Without this, dlng_active is only written on
+// the first tap, and "tap Play, refresh" looks exactly like the bug it fixes.
+//
+// Every guard here earns its place:
+//   - pathname: startDailyPuzzle also runs while /welcome is on screen (the boot
+//     fetch renders clues into the hidden game screen), and writing there would
+//     hand the RTE-03 deep-link gate a false positive for someone who never played.
+//   - solved/random/date: only today's live daily board is restorable at all.
+//   - loadActive(): never overwrite an existing draft. On cold load this can run
+//     before the restore path has read it, and a starting board written over real
+//     progress is the very thing dlng_active exists to prevent.
+function markPuzzleStarted(): void {
+  if (location.pathname !== '/play') return;
+  if (gameState.isRandom || gameState.solved) return;
+  if (gameState.date !== todayKey()) return;
+  if (loadActive() !== null) return;
+  saveActive(buildActiveState());
 }
 
 // ─── Clue helpers ─────────────────────────────────────────────────────────────
@@ -731,6 +752,10 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
   gameState = { answer: null, guesses: [], solved: false, puzzleNum: num, date };
   resetPuzzleUI();
   track("puzzle_start");
+  // After resetPuzzleUI, so the marker describes the starting board (#284). Covers
+  // the player who reached /play before this fetch resolved; the screens:enter
+  // listener covers the commoner case of pressing Play once it already has.
+  markPuzzleStarted();
 
   const prefs = loadPrefs();
   saveScore = prefs.saveScore;
@@ -1159,9 +1184,10 @@ if (isRandomBoot) {
   loadPuzzle();
 } else {
   initRouter({
-    // hasData = user has played at least one puzzle. RTE-03 deep-link redirect:
-    // a stranger sharing /play with someone who's never played should see /welcome.
-    hasData: () => !!localStorage.getItem('dlng_history'),
+    // hasData = this browser has a played puzzle in history OR a restorable board
+    // for today. RTE-03 deep-link redirect: a stranger sharing /play with someone
+    // who's never played should see /welcome — they have neither. See hasPlayerData.
+    hasData: hasPlayerData,
     todayLocal: todayKey,
     todayEntry,
     midInteraction: () => activeBox !== null || submitting,
@@ -1203,6 +1229,15 @@ document.addEventListener('completion:show-puzzle', () => {
 // Without this, /play would show the post-solve "Correct! That's puzzle #N"
 // feedback or stale stats from earlier renders. Using showCompletedState keeps
 // the message consistent with cold-load and archive replay paths.
+// Entering the game screen is the point the player has committed to today's
+// puzzle — mark it started so a refresh before the first tap comes back here
+// (#284). markPuzzleStarted is a no-op unless this really is today's live daily
+// board on /play with no draft already stored.
+document.addEventListener('screens:enter', (e) => {
+  if ((e as CustomEvent).detail?.screen !== 'game') return;
+  markPuzzleStarted();
+});
+
 document.addEventListener('screens:enter', (e) => {
   const screen = (e as CustomEvent).detail?.screen;
   if (screen !== 'game' || !gameState.solved || gameState.tries == null) return;

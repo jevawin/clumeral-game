@@ -127,6 +127,25 @@ export function clearActive(): void {
   try { localStorage.removeItem(STORAGE_ACTIVE); } catch { /* ignore */ }
 }
 
+// Does this browser hold anything worth returning to? Backs the router's RTE-03
+// deep-link gate (docs/URL-ARCHITECTURE.md) — see the note there on why history
+// alone was not enough.
+//
+// History alone missed the player who has never finished a puzzle: no history
+// row exists until recordGame runs, so a first-timer refreshing mid-game failed
+// the gate and was bounced from /play to /welcome with their board still sitting
+// in dlng_active (#284). A restorable draft is data, so it counts here.
+//
+// A stranger following a shared /play link still has neither, so the redirect
+// they exist for is unchanged. loadActive's date and schema guards do the work:
+// yesterday's leftovers and forged payloads return null and so don't count.
+export function hasPlayerData(): boolean {
+  try {
+    if (localStorage.getItem(STORAGE_HISTORY)) return true;
+  } catch { /* private mode / disabled storage — fall through to the draft check */ }
+  return loadActive() !== null;
+}
+
 // ─── Undo stack (#251) ───────────────────────────────────────────────────────
 //
 // sessionStorage, NOT localStorage, and deliberately so: the stack should survive
