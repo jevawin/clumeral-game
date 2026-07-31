@@ -77,7 +77,7 @@ export function loadActive(): ActiveState | null {
     if (!Array.isArray(d.possibles) || d.possibles.length !== 3 || !d.possibles.every(Array.isArray)) return null;
 
     // Cell content validation (CR-01) — each box must be a non-empty array of integer
-    // digits 0–9; the hundreds box (index 0) forbids 0 (invariant from initPossibles).
+    // digits 0–9; the hundreds box (index 0) forbids 0 (invariant from startingBoard in undo-stack.ts).
     // Reject any forged payload with empty cells, non-digits, floats, or out-of-range values.
     const digitsOk = (d.possibles as unknown[]).every((arr, i) =>
       Array.isArray(arr) &&

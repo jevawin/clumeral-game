@@ -2,7 +2,7 @@
 
 **Goal:** Give players a one-press Undo and a one-click Reset above the digit boxes, so a mis-tapped elimination costs one press instead of manual re-entry.
 
-**Architecture:** A new pure module `src/history.ts` owns an undo stack of cloned board snapshots. `app.ts` pushes a snapshot before every board mutation and pops one on Undo. Keeping the stack in its own module is what makes it unit-testable — `app.ts` is UI-only per [CONVENTIONS.md](../../CONVENTIONS.md), and the snapshot logic is the only part with real edge cases.
+**Architecture:** A new pure module `src/undo-stack.ts` owns an undo stack of cloned board snapshots. `app.ts` pushes a snapshot before every board mutation and pops one on Undo. Keeping the stack in its own module is what makes it unit-testable — `app.ts` is UI-only per [CONVENTIONS.md](../../CONVENTIONS.md), and the snapshot logic is the only part with real edge cases.
 
 **Tech Stack:** Vite 8, TypeScript, Tailwind v4, Vitest, Playwright.
 
@@ -57,16 +57,16 @@ Undo stays live. That falls out of the rules above rather than needing a special
 
 ## Tasks
 
-- [ ] **1. `src/history.ts` + unit tests.** Pure module, tests first. Snapshot clone/restore,
-      push, undo, canUndo, clear, isStartingState, depth cap. No DOM.
-- [ ] **2. Sprite icons.** Add Lucide `undo-2` and `rotate-ccw` symbols to `public/sprites.svg`,
+- [x] **1. `src/undo-stack.ts` + unit tests.** Pure module, tests first. Snapshot clone/restore,
+      push, undo, canUndo, clear, isStartingBoard, depth cap. No DOM.
+- [x] **2. Sprite icons.** Add Lucide `undo-2` and `rotate-ccw` symbols to `public/sprites.svg`,
       matching the existing symbols' stroke conventions.
-- [ ] **3. Markup.** Controls row in `index.html` between the clue list and `[data-digits]`.
+- [x] **3. Markup.** Controls row in `index.html` between the clue list and `[data-digits]`.
       Real `<button type="button">`s with `data-undo` / `data-reset`, aria-labels, and the
       message element `[data-undo-msg]`.
-- [ ] **4. Wire `app.ts`.** Push a snapshot in `toggleDigit`, implement Undo and Reset,
+- [x] **4. Wire `app.ts`.** Push a snapshot in `toggleDigit`, implement Undo and Reset,
       enable/disable rendering, hide on solve, clear history on new puzzle and on restore.
-- [ ] **5. e2e spec.** `e2e/specs/undo-reset.spec.ts` — the acceptance criteria as browser tests.
+- [x] **5. e2e spec.** `e2e/specs/undo-reset.spec.ts` — the acceptance criteria as browser tests.
 - [ ] **6. Review gates.** DA review (authorised by Jamie), then self-review, then PR.
 
 ## QA scope
@@ -91,7 +91,7 @@ Separately filed while scoping this: [#282](https://github.com/jevawin/clumeral-
 - **Blocked toggles must not push.** `toggleDigit` returns early when the guard fires. Pushing
   a snapshot before that check would leave a no-op entry on the stack, and Undo would appear
   to do nothing for one press.
-- **Solved boards.** `showSolved` overwrites `possibles` with the answer digits. History must be
+- **Solved boards.** `showCompletedState` overwrites `possibles` with the answer digits. History must be
   cleared there, not just hidden, so nothing survives to unwind.
 - **Persistence.** `saveActive` fires on every mutation. Undo and Reset change the board, so
   they must save too, or a reload resurrects the pre-undo state.

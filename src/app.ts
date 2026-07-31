@@ -466,8 +466,11 @@ function renderBoardControls(): void {
   const hide = gameState.solved;
   dom.boardControls?.classList.toggle("hidden", hide);
   dom.boardControls?.classList.toggle("flex", !hide);
-  if (dom.undoBtn) dom.undoBtn.disabled = !boardHistory.canUndo();
-  if (dom.resetBtn) dom.resetBtn.disabled = isStartingBoard(possibles);
+  // Disabled as well as hidden when solved. A solved board isn't the starting
+  // board, so Reset's own rule would leave it enabled — hidden but still a live
+  // target for a stray Enter or an assistive-tech activation.
+  if (dom.undoBtn) dom.undoBtn.disabled = hide || !boardHistory.canUndo();
+  if (dom.resetBtn) dom.resetBtn.disabled = hide || isStartingBoard(possibles);
   rescueFocus();
 }
 
