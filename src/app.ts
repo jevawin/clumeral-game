@@ -506,11 +506,10 @@ function renderBoardControls(): void {
   const hide = gameState.solved;
   dom.boardControls?.classList.toggle("hidden", hide);
   dom.boardControls?.classList.toggle("flex", !hide);
-  // Disabled as well as hidden when solved. A solved board isn't the starting
-  // board, so Reset's own rule would leave it enabled — hidden but still a live
-  // target for a stray Enter or an assistive-tech activation.
-  if (dom.undoBtn) dom.undoBtn.disabled = hide || !boardHistory.canUndo();
-  if (dom.resetBtn) dom.resetBtn.disabled = hide || isStartingBoard(possibles);
+  // Unavailable as well as hidden when solved. A solved board isn't the starting
+  // board, so Reset's own rule would otherwise leave it live.
+  setUnavailable(dom.undoBtn, hide || !boardHistory.canUndo());
+  setUnavailable(dom.resetBtn, hide || isStartingBoard(possibles));
 
   // The label tracks the top of the stack rather than a one-shot "just reset"
   // flag, so it comes BACK to "Undo reset" if the player toggles after a reset
@@ -520,20 +519,22 @@ function renderBoardControls(): void {
   // Set outside the label guard: the accessible name must not depend on the
   // visible span still existing.
   dom.undoBtn?.setAttribute("aria-label", undoingReset ? "Undo reset" : "Undo last change");
-  rescueFocus();
 }
 
-// Both controls can disable themselves as a direct result of being pressed, and
-// the browser blurs a disabled element — dropping a keyboard player back to the
-// top of the document mid-interaction. Reset especially: it disables itself on
-// press, so without this the player can't simply Tab to the Undo that unwinds it.
-function rescueFocus(): void {
-  const active = document.activeElement as HTMLElement | null;
-  if (active !== dom.undoBtn && active !== dom.resetBtn) return;
-  if (!(active as HTMLButtonElement).disabled) return;
-  const sibling = active === dom.undoBtn ? dom.resetBtn : dom.undoBtn;
-  if (sibling && !sibling.disabled) sibling.focus();
-  else (document.querySelector('[data-digit="0"]') as HTMLElement | null)?.focus();
+// aria-disabled, NOT the native disabled attribute. Both controls can become
+// unavailable as a direct result of being pressed, and the browser blurs a
+// natively-disabled element — so a keyboard or screen-reader user was thrown back
+// to the top of the document at exactly the moment Reset had cleared their board.
+// aria-disabled announces the state and greys the control while leaving it
+// focusable, so the user keeps their place and moves focus themselves. Same
+// pattern the keypad already uses for the hundreds-box 0.
+//
+// Safe because both handlers no-op when there's nothing to do: undoLast returns
+// on an empty stack, resetBoard on an already-starting board.
+function setUnavailable(btn: HTMLButtonElement | null, unavailable: boolean): void {
+  if (!btn) return;
+  if (unavailable) btn.setAttribute("aria-disabled", "true");
+  else btn.removeAttribute("aria-disabled");
 }
 
 // Applies a board restored from the history stack. Shared by Undo and Reset so

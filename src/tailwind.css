@@ -582,9 +582,11 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     box-shadow: var(--shadow-key);
     touch-action: manipulation;
   }
-  /* Press-down offset. Excluded when disabled so a dead control doesn't
-     animate as though it did something. */
-  .key-face:active:not(:disabled) {
+  /* Press-down offset. Excluded when unavailable so a dead control doesn't
+     animate as though it did something. Covers aria-disabled as well as the
+     native attribute: the undo/reset controls use the former so that pressing
+     one which has just become unavailable can't throw focus away (#251). */
+  .key-face:active:not(:disabled):not([aria-disabled="true"]) {
     transform: translate(2px, 2px);
     box-shadow: none;
   }
@@ -614,8 +616,10 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   .board-ctrl svg { width: 1rem; height: 1rem; flex-shrink: 0; }
   /* Faded, not hidden: the controls stay in place so the row never reflows,
-     and the player can see the affordance exists before it's usable. */
-  .board-ctrl:disabled {
+     and the player can see the affordance exists before it's usable. Keyed on
+     aria-disabled — these buttons are never natively disabled, so they stay
+     focusable and keep the user's place. */
+  .board-ctrl[aria-disabled="true"] {
     opacity: 0.4;
     cursor: default;
     box-shadow: none;

@@ -5,6 +5,11 @@
 - Semantic HTML, ARIA only where semantics insufficient
 - Contrast: 4.5:1 text, 3:1 large text / UI
 - Keyboard nav: Tab / Enter / Escape
+- **A control that can become unavailable while focused uses `aria-disabled`, not the native
+  `disabled` attribute** — and the handler no-ops instead. Browsers blur a natively-disabled
+  element, so disabling one in response to its own press throws the user's focus to the top of
+  the document. Announce the state and let the user move focus themselves; never move it for
+  them. Used by the keypad's hundreds-box `0` and the undo/reset controls (#251).
 - No info by colour alone
 - Touch targets ≥ 44px
 

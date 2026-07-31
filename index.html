@@ -253,7 +253,10 @@
             <div data-board-controls class="flex items-center justify-between gap-2 mt-5 -mb-3">
               <!-- Undo's label is rewritten to "Undo reset" whenever the next press
                    would unwind a reset — see renderBoardControls in app.ts. -->
-              <button type="button" data-undo class="key-face board-ctrl" disabled aria-label="Undo last change">
+              <!-- aria-disabled, not the native disabled attribute: the controls stay
+                   focusable so pressing one that has just become unavailable can't
+                   throw the user's focus away. See setUnavailable in app.ts. -->
+              <button type="button" data-undo class="key-face board-ctrl" aria-disabled="true" aria-label="Undo last change">
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-undo"/></svg>
                 <span data-undo-label>Undo</span>
               </button>
@@ -263,7 +266,7 @@
                    display — a live region toggled in and out of the layout is
                    unreliably announced. -->
               <p data-undo-msg class="sr-only" role="status" aria-live="polite"></p>
-              <button type="button" data-reset class="key-face board-ctrl" disabled aria-label="Reset all boxes">
+              <button type="button" data-reset class="key-face board-ctrl" aria-disabled="true" aria-label="Reset all boxes">
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-reset"/></svg>
                 Reset
               </button>

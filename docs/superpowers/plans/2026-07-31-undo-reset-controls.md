@@ -37,7 +37,8 @@ the outcome here because the issue's Open Questions section is now stale.
 - Positioned between the clue list and the digit boxes, **Undo left, Reset right**.
 - Styled from the same classes as the keypad buttons, including the tap-offset active state,
   so they read as the same family of interactive elements.
-- Always visible during play, faded and disabled when not applicable.
+- Always visible during play, faded and marked `aria-disabled` when not applicable — never
+  natively `disabled`. See below.
 - After a Reset, **the Undo button relabels itself to "Undo reset"** rather than showing a
   separate message. It reverts to "Undo" on the player's next tap.
 
@@ -57,6 +58,19 @@ reader unless the button happens to be focused, so a reset also fires a visually
 countdown replacing the icon. Jamie cut it in favour of one-click plus the Undo affordance:
 simpler to build, and it removes a `prefers-reduced-motion` case entirely rather than
 handling one. Noted so the countdown isn't re-proposed as a missing feature.
+
+### Unavailable, not disabled
+
+Both controls can become unavailable *as a direct result of being pressed* — Reset always does.
+A natively-`disabled` element is blurred by the browser, so the first build threw focus to the
+first digit box at exactly that moment. Dave reported it as "pressing undo or reset when there
+is nothing to undo or reset highlights the 0 in whichever box is selected".
+
+The fix is not to move focus better, it is not to move it at all: `aria-disabled` announces the
+state and greys the control while leaving it focusable, so the user keeps their place and moves
+focus themselves. Safe because both handlers already no-op — `undoLast` returns on an empty
+stack, `resetBoard` on an already-starting board. Same pattern the keypad already uses for the
+hundreds-box `0`. Now a convention in [CONVENTIONS.md](../../CONVENTIONS.md).
 
 ## Enabled-state rules
 

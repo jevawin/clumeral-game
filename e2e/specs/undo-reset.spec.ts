@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures.ts";
+import type { Locator } from "@playwright/test";
 import { GamePage } from "../pages/game.page.ts";
 import { gotoPlayableGame } from "../helpers/game-setup.ts";
 import { solvePuzzle } from "../helpers/solve.ts";
@@ -6,6 +7,19 @@ import { expectActiveScreen } from "../helpers/screens.ts";
 
 // Undo / Reset controls above the digit boxes (#251). One acceptance criterion
 // per test, driven through the real keypad rather than by poking state.
+
+// The controls use aria-disabled rather than the native disabled attribute, so
+// they stay focusable and pressing a just-disabled one can't throw focus away
+// (#251). Assert the attribute directly rather than relying on toBeDisabled()
+// inferring it — the distinction is the point.
+async function expectUnavailable(button: Locator): Promise<void> {
+  await expect(button).toHaveAttribute("aria-disabled", "true");
+  await expect(button).toBeEnabled();   // never NATIVELY disabled
+}
+
+async function expectAvailable(button: Locator): Promise<void> {
+  await expect(button).not.toHaveAttribute("aria-disabled", "true");
+}
 
 // Eliminate `digits` from box 1, which starts {0..9}.
 //
@@ -38,8 +52,8 @@ test.describe("undo and reset controls", () => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
 
-    await expect(game.undo).toBeDisabled();
-    await expect(game.reset).toBeDisabled();
+    await expectUnavailable(game.undo);
+    await expectUnavailable(game.reset);
   });
 
   test("both enable after an elimination", async ({ page }) => {
@@ -47,8 +61,8 @@ test.describe("undo and reset controls", () => {
     await gotoPlayableGame(page);
     await eliminate(game, [4]);
 
-    await expect(game.undo).toBeEnabled();
-    await expect(game.reset).toBeEnabled();
+    await expectAvailable(game.undo);
+    await expectAvailable(game.reset);
   });
 
   test("undo reverts the most recent elimination, one press at a time", async ({ page }) => {
@@ -81,8 +95,8 @@ test.describe("undo and reset controls", () => {
     await eliminate(game, [7]);
 
     await game.undo.click();
-    await expect(game.undo).toBeDisabled();
-    await expect(game.reset).toBeDisabled();
+    await expectUnavailable(game.undo);
+    await expectUnavailable(game.reset);
   });
 
   test("reset restores every box to its full starting set", async ({ page }) => {
@@ -119,9 +133,9 @@ test.describe("undo and reset controls", () => {
     await game.reset.click();
 
     // The board is the starting board, so there is nothing left to reset...
-    await expect(game.reset).toBeDisabled();
+    await expectUnavailable(game.reset);
     // ...but the reset itself is still undoable, and the button says so.
-    await expect(game.undo).toBeEnabled();
+    await expectAvailable(game.undo);
     await expect(game.undo).toHaveText("Undo reset");
     await expect(game.undo).toHaveAttribute("aria-label", "Undo reset");
     // A relabelled button is silent to a screen reader unless it happens to be
@@ -177,7 +191,7 @@ test.describe("undo and reset controls", () => {
     // One more press unwinds the reset itself, restoring the original board.
     await game.undo.click();
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
-    await expect(game.undo).toBeDisabled();
+    await expectUnavailable(game.undo);
   });
 
   test("the last remaining candidate in a box still cannot be eliminated", async ({ page }) => {
@@ -227,7 +241,7 @@ test.describe("undo and reset controls", () => {
     await expect(game.boxDigit(1, 5)).toHaveClass(/elim/);
 
     // ...and the stack from sessionStorage, so Undo still steps back.
-    await expect(game.undo).toBeEnabled();
+    await expectAvailable(game.undo);
     await game.undo.click();
     await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
@@ -245,7 +259,7 @@ test.describe("undo and reset controls", () => {
     await expectActiveScreen(page, "game");
 
     // The button still knows the next step back is a reset.
-    await expect(game.undo).toBeEnabled();
+    await expectAvailable(game.undo);
     await expect(game.undo).toHaveText("Undo reset");
 
     await game.undo.click();
@@ -264,7 +278,41 @@ test.describe("undo and reset controls", () => {
     await page.keyboard.press("Enter");
 
     await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
-    await expect(game.undo).toBeDisabled();
+    await expectUnavailable(game.undo);
+
+    // The press emptied the stack, so Undo is now unavailable — but focus must
+    // stay put. An earlier build natively disabled it, which blurred it and
+    // dumped focus onto the first digit box (reported by Dave, 2026-07-31).
+    await expect(game.undo).toBeFocused();
+  });
+
+  // Regression: pressing a control that has nothing to do must be inert. It must
+  // not move focus, and it must not touch the board.
+  test("pressing an unavailable control does nothing at all", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    // Open a box so there is a selected box to disturb, then confirm both
+    // controls are unavailable on the untouched board.
+    await game.openBox(1);
+    await expectUnavailable(game.undo);
+    await expectUnavailable(game.reset);
+
+    const digitsBefore = await game.digit(1).innerHTML();
+
+    await game.undo.click();
+    await game.reset.click();
+
+    // Focus stays on whatever the player pressed — not thrown to a digit box.
+    await expect(game.digit(0)).not.toBeFocused();
+    await expect(game.digit(1)).not.toBeFocused();
+    await expect(game.digit(2)).not.toBeFocused();
+
+    // Board untouched, box still open, controls still unavailable.
+    expect(await game.digit(1).innerHTML()).toBe(digitsBefore);
+    await expect(game.digit(1)).toHaveAttribute("aria-expanded", "true");
+    await expectUnavailable(game.undo);
+    await expectUnavailable(game.reset);
   });
 
   test("controls carry accessible names", async ({ page }) => {
