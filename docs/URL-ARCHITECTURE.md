@@ -36,7 +36,7 @@ calls `navigate()` / `replaceRoute()`.
 
 | Input path                              | Condition                          | Resolves to        |
 |-----------------------------------------|------------------------------------|--------------------|
-| `/play`                                 | `!hasData` (no `dlng_history`)     | `welcome`          |
+| `/play`                                 | `!hasData` (no history, no board)  | `welcome`          |
 | `/play`                                 | `todayEntry` (already solved)      | `solved`           |
 | `/play`                                 | otherwise                          | `play`             |
 | `/welcome`                              | `todayEntry` (already solved)      | `solved`           |
@@ -53,9 +53,28 @@ are reachable but redirect to `/welcome` if state is missing. Post-solve,
 The only way to reach `/play` after solving is the explicit Show-puzzle link
 on `/solved` (which uses `skipResolve` to bypass the redirect).
 
-`hasData` is `localStorage.getItem('dlng_history')` only — `dlng_uid` (analytics
-UID, set unconditionally at boot) does NOT count. Otherwise a stranger sharing
-`/play` with someone who's never played would skip the redirect.
+`hasData` is `hasPlayerData()` in `storage.ts`: a `dlng_history` entry **or** a
+board `loadActive()` accepts for today (`dlng_active`). `dlng_uid` (analytics UID,
+set unconditionally at boot) does NOT count — otherwise a stranger sharing `/play`
+with someone who's never played would skip the redirect.
+
+The `dlng_active` half is #284. History alone meant a player who had never
+finished a puzzle failed the gate, so refreshing mid-game bounced them from
+`/play` to `/welcome` while their board sat in storage unread. `loadActive()`
+rejects stale-dated and forged payloads, so only a genuinely restorable board
+counts, and a stranger who merely follows a shared `/play` link still has neither.
+
+`dlng_active` is written by `saveActive` whenever the board or the open box
+changes, and — so that a refresh before the first tap resumes too — by
+`markPuzzleStarted()` in `app.ts` when the game screen is entered on `/play`.
+That marker never writes off `/play` (the boot fetch renders clues while
+`/welcome` is showing) and never overwrites an existing board.
+
+One consequence worth knowing: anyone who reaches `/play` deliberately —
+including via the archive's `?from=archive` link, which bypasses the gate by
+design — has a board from then on, so a bare `/play` link stops bouncing them for
+the rest of that local day. They asked for the game and got it; the gate only
+ever aimed at the visitor who never did.
 
 `navigate(path, { skipResolve: true })` bypasses the resolver — used for the
 Play button (user explicitly chose to play, deep-link gate doesn't apply) and
@@ -90,6 +109,7 @@ links.
 | nothing                   | `/archive/<past-date>`     | game screen, replay-able        |
 | nothing                   | `/archive/<future-date>`   | `/archive` (ARC-03)             |
 | nothing                   | `/archive/<garbage>`       | `/archive` (ARC-03)             |
+| board in progress, no history | `/play`                | `/play`, board restored (#284)  |
 | solved today              | `/welcome`                 | `/solved` (post-solve home)     |
 | solved today              | `/play`                    | `/solved` (post-solve home)     |
 | solved today              | `/solved`                  | `/solved`                       |

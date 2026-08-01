@@ -244,11 +244,39 @@
               </div>
             </div>
 
+            <!-- Undo / Reset controls (#251). Hidden as a row once the puzzle is
+                 solved; individually disabled when there's nothing to act on.
+                 -mb-3 pulls the boxes up close to the controls without putting the
+                 boxes' own spacing on a sibling that gets hidden: when this row is
+                 display:none its margins go with it, so [data-digits] keeps the same
+                 mt-5 offset from the clues that it has on a solved board. -->
+            <div data-board-controls class="flex items-center justify-between gap-2 mt-5 -mb-3">
+              <!-- Undo's label is rewritten to "Undo reset" whenever the next press
+                   would unwind a reset — see renderBoardControls in app.ts. -->
+              <!-- aria-disabled, not the native disabled attribute: the controls stay
+                   focusable so pressing one that has just become unavailable can't
+                   throw the user's focus away. See setUnavailable in app.ts. -->
+              <button type="button" data-undo class="key-face board-ctrl" aria-disabled="true" aria-label="Undo last change">
+                <svg aria-hidden="true"><use href="/sprites.svg#icon-undo"/></svg>
+                <span data-undo-label>Undo</span>
+              </button>
+              <!-- Announcement only: the visible cue for a reset is Undo's own
+                   label, but that changes silently for a screen reader unless the
+                   button happens to be focused. Driven by text content, not
+                   display — a live region toggled in and out of the layout is
+                   unreliably announced. -->
+              <p data-undo-msg class="sr-only" role="status" aria-live="polite"></p>
+              <button type="button" data-reset class="key-face board-ctrl" aria-disabled="true" aria-label="Reset all boxes">
+                <svg aria-hidden="true"><use href="/sprites.svg#icon-reset"/></svg>
+                Reset
+              </button>
+            </div>
+
             <!-- Number boxes -->
             <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Number boxes">
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="0" role="button" tabindex="0" aria-label="Hundreds box" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="1" role="button" tabindex="0" aria-label="Tens box" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation" data-digit="2" role="button" tabindex="0" aria-label="Units box" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="0" role="button" tabindex="0" aria-label="Hundreds box" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="1" role="button" tabindex="0" aria-label="Tens box" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="2" role="button" tabindex="0" aria-label="Units box" aria-expanded="false"></div>
             </div>
 
             <!-- Keypad -->
