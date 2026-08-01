@@ -234,6 +234,24 @@ lands here. Items 48-52 supersede 35, 37, 38 and 39.
     makes the controls taller, but only on keyboard devices — touch layout is untouched, so the
     "buttons push the clues down" problem Jamie raised on 2026-07-31 does not get worse on phones.
 
+62. **Layout, per Jamie 2026-08-01 — supersedes item 48's reading of the sketch.** The button
+    stays a row: icon on one side, a text column beside it. That column holds the label and, when
+    present, the shortcut beneath it, and the group is vertically centred against the icon
+    (`align-items: center`). With no shortcut the label is centred alone; with a shortcut the two
+    share the space and both shift. The icon is not reordered and the label does not move above
+    it.
+63. A 200ms transition on the position shift, plus a fade on the shortcut text as it appears.
+    (Jamie's call — "to make it less janky")
+64. **Item 41 is dropped.** There IS a transition now, so it must honour
+    `prefers-reduced-motion: reduce` — under that setting the hint appears instantly with no
+    movement or fade. (assumed — Jamie owns accessibility and this is the standard partner to any
+    new motion; it is also cheap)
+65. The transition is only ever seen on a hybrid device. On a desktop the pointer test (item 21a)
+    matches before first paint, so the hint is simply there; the animated reveal happens when the
+    keydown trigger (21b) fires mid-session on a tablet with a keyboard. (assumed)
+66. The reveal makes the button taller, which nudges the digit boxes below it down a few pixels.
+    Accepted — the 200ms transition is what stops that reading as a glitch. (assumed — item 63)
+
 ## 8. Copy & wording
 Settled: pending · Ack: pending
 
@@ -309,6 +327,28 @@ the screen reader will NOT pick it up as things stand.
 
 ## 10. Analytics
 Settled: pending · Ack: pending
+
+Context: Undo and Reset ship with **no analytics at all** today — #251 added none because nobody
+asked. So this is not "add a keyboard property to the existing event"; the events do not exist.
+
+67. Add two events, both fired for button presses as well as shortcuts, using the `source`
+    parameter `track()` already takes: `undo_used` and `reset_used`, with `source` of `keyboard`
+    or `button`.
+    My rec: track both routes, not just the keyboard. Why: a keyboard-only count is a number with
+    no denominator — we would know 40 shortcut undos happened and have no idea whether that is
+    most undos or a rounding error. The split is the entire question this feature raises.
+68. Nothing tracks the hint being displayed.
+    My rec: no impression event. Why: it would fire on essentially every desktop game load, which
+    is a lot of noise to answer a question the `source` split already answers better.
+69. Auto-repeat (item 18) does not spam events: when a `keydown` arrives with `e.repeat === true`
+    the undo still runs but no event is sent. (assumed — holding the key for a second would
+    otherwise post thirty identical rows and wreck the numbers)
+70. Presses that do nothing (empty history, already-clear board) send no event. Only real actions
+    are counted. (assumed)
+71. Anonymity is unchanged: `track()` already sends only the existing anonymous `uid` from
+    localStorage plus the `newUser` flag. No new field, nothing identifying, no key-by-key
+    logging. (assumed)
+72. No worker change — `/api/event` takes arbitrary event names already. (assumed — item 30)
 
 ## 11. Done / test plan
 Settled: pending · Ack: pending
