@@ -17,6 +17,26 @@ Existing ground truth (read before writing anything):
 ## 1. What it is
 Settled: pending · Ack: pending
 
+Proposed short form: sections 1, 2, 3, 6, 8, 9, 10, 11 — dropping §4 (no puzzle maths), §5 (no
+new stored state; the existing sessionStorage history is untouched) and §7 (no new UI unless §8
+adds a discoverability hint). Awaiting Jamie's approval; not self-granted.
+
+1. Problem: Undo and Reset are reachable only by Tab-ing to the two buttons under the board. A
+   player working the board from the keyboard (digits, arrows, Enter) has to leave the digit
+   boxes, land on a control, press it, then navigate back — repeatedly, since undo is a
+   repeated action. (assumed — that is the only route the #251 build shipped)
+2. Who it is for: desktop/laptop keyboard players. Touch is unaffected; there is no keyboard.
+   (assumed)
+3. Why now: the controls shipped recently (#251) and are in daily use, so the friction is live.
+   (assumed)
+4. Is the goal speed for fluent keyboard players, or accessibility for people who cannot
+   comfortably use a pointer?
+   My rec: treat it as speed-for-fluency, with accessibility as a hard constraint it must not
+   damage. Why: the Tab route already works and is accessible today, so this is an ergonomics
+   win, not a gap being closed — but a careless binding (bare letter keys, silent action, keys
+   that fire inside the feedback textarea) could easily make things worse for screen-reader
+   users. Framing it this way means §9 can veto a binding on accessibility grounds.
+
 ## 2. Out of scope
 Settled: pending · Ack: pending
 
