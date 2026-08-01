@@ -15,11 +15,11 @@ Existing ground truth (read before writing anything):
 ---
 
 ## 1. What it is
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-01 · Ack: pending (Dave)
 
-Proposed short form: sections 1, 2, 3, 6, 8, 9, 10, 11 — dropping §4 (no puzzle maths), §5 (no
-new stored state; the existing sessionStorage history is untouched) and §7 (no new UI unless §8
-adds a discoverability hint). Awaiting Jamie's approval; not self-granted.
+Short form: WITHDRAWN. The original proposal dropped §5 and §7; Jamie's answer to 4 asks for a
+visible UI element when a keyboard is detected, which puts §7 (how it looks) and possibly §5
+(remembering a dismissal) back in scope. Running the full brief minus §4 (no puzzle maths).
 
 1. Problem: Undo and Reset are reachable only by Tab-ing to the two buttons under the board. A
    player working the board from the keyboard (digits, arrows, Enter) has to leave the digit
@@ -36,9 +36,36 @@ adds a discoverability hint). Awaiting Jamie's approval; not self-granted.
    win, not a gap being closed — but a careless binding (bare letter keys, silent action, keys
    that fire inside the feedback textarea) could easily make things worse for screen-reader
    users. Framing it this way means §9 can veto a binding on accessibility grounds.
+   **Answered — Jamie: "4 both."** Both goals count: speed for fluent keyboard players AND
+   accessibility for people who cannot comfortably use a pointer. §9 is therefore a first-class
+   goal here, not only a veto.
+5. Jamie, same message: "We should have some form ui element when keyboard is detected if poss
+   like ctrl/cmd + z (x for reset)." Recorded as three directions, carried into the sections
+   that own them:
+   - the bindings are Ctrl/Cmd+Z for Undo and Ctrl/Cmd+X for Reset → §3
+   - there is a visible hint in the UI showing them → §7
+   - the hint appears only once a keyboard is detected, not on touch → §3/§7
 
 ## 2. Out of scope
 Settled: pending · Ack: pending
+
+6. No redo. Ctrl/Cmd+Shift+Z stays unbound and does nothing. (assumed — there is no redo in the
+   product; the history stack is undo-only)
+7. No new shortcuts for anything else — submit, digit entry, box navigation, theme, menu,
+   feedback. The existing digit / Tab / arrow / Enter / Escape bindings are untouched.
+   (assumed — Jamie asked for undo and reset)
+8. Shortcuts are not user-remappable or configurable, and there is no settings surface for them.
+   (assumed — no settings screen exists to hang it off)
+9. No change to what Undo and Reset actually do: same history stack, same 100-entry cap, same
+   sessionStorage persistence, same solved-board rules. The shortcut is a second trigger for the
+   existing `undoLast()` / `resetBoard()`. (assumed — behaviour parity is the whole point)
+10. No touch/mobile change. Nothing new appears on a device with no keyboard. (assumed)
+11. Should the shortcuts also be documented in How to Play, or does the on-screen hint carry it
+    alone?
+    My rec: hint only, no How to Play change. Why: How to Play is read once, before the player
+    has a board in front of them, and it is the screen we keep trying to keep short; a hint next
+    to the buttons is in the right place at the right moment. Cheap to add later if the hint
+    proves too quiet.
 
 ## 3. How it works
 Settled: pending · Ack: pending
