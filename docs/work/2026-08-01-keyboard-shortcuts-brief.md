@@ -15,7 +15,7 @@ Existing ground truth (read before writing anything):
 ---
 
 ## 1. What it is
-Settled: Jamie 2026-08-01 · Ack: pending (Dave)
+Settled: Jamie 2026-08-01 · Ack: Dave 2026-08-01
 
 Short form: WITHDRAWN. The original proposal dropped §5 and §7; Jamie's answer to 4 asks for a
 visible UI element when a keyboard is detected, which puts §7 (how it looks) and possibly §5
@@ -47,7 +47,7 @@ visible UI element when a keyboard is detected, which puts §7 (how it looks) an
    - the hint appears only once a keyboard is detected, not on touch → §3/§7
 
 ## 2. Out of scope
-Settled: Jamie 2026-08-01 ("11 hint only, everything else good") · Ack: pending (Dave)
+Settled: Jamie 2026-08-01 ("11 hint only, everything else good") · Ack: Dave 2026-08-01
 
 6. No redo. Ctrl/Cmd+Shift+Z stays unbound and does nothing. (assumed — there is no redo in the
    product; the history stack is undo-only)
@@ -69,7 +69,7 @@ Settled: Jamie 2026-08-01 ("11 hint only, everything else good") · Ack: pending
 
 ## 3. How it works
 Settled: Jamie 2026-08-01 (accepted all recommendations — 20 keep Ctrl/Cmd+X, 21 two-trigger
-detection, 22 no confirm) · Ack: pending (Dave)
+detection, 22 no confirm) · Ack: Dave 2026-08-01
 
 12. Bindings (from Jamie, item 5): **Ctrl+Z or Cmd+Z = Undo**, **Ctrl+X or Cmd+X = Reset**.
     Either modifier is accepted on either platform — matching on `e.ctrlKey || e.metaKey` rather
@@ -124,7 +124,7 @@ to do with clues or maths or logic") · Ack: n/a
     until he says the n/a is right.
 
 ## 5. State & persistence
-Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: pending (Dave)
+Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: Dave 2026-08-01
 
 24. No new persisted state for the shortcuts themselves. They read and write the same
     sessionStorage undo history that the buttons already use, through the same functions.
@@ -141,7 +141,8 @@ Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: pending (Dave)
     rather it survive a refresh on an iPad.)
 
 ## 6. How it fits
-Settled: pending · Ack: pending
+Settled: pending (Jamie — items 32, 33) · Ack: Dave 2026-08-01 (as proposed; re-ask if a
+recommendation changes)
 
 Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new export),
 `src/walkthrough.ts` (one new export). NOT touched: `src/undo-stack.ts`, `src/storage.ts`,
@@ -179,7 +180,7 @@ Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new 
     `undo-stack.ts` was split from `app.ts` in #251)
 
 ## 7. How it looks
-Settled: pending · Ack: pending
+Settled: pending (Jamie) · Ack: Dave 2026-08-01 (as proposed; re-ask if a recommendation changes)
 
 35. Placement: inline in the existing `[data-board-controls]` row, centred between Undo and
     Reset. That row is `flex items-center justify-between` with a button pinned at each end, so
@@ -208,6 +209,29 @@ Settled: pending · Ack: pending
 
 ## 8. Copy & wording
 Settled: pending · Ack: pending
+
+43. The hint names the key AND the action, rather than keys alone:
+    - Mac: `⌘Z undo · ⌘X reset`
+    - everything else: `Ctrl+Z undo · Ctrl+X reset`
+    My rec: as above. Why: keys alone (`⌘Z · ⌘X`) is unreadable — nothing tells you which is
+    which, and the buttons at either end are too far apart to imply it. Naming the action costs
+    two short words.
+44. Separator is a middle dot with spaces (` · `), matching nothing else in the UI but reading as
+    a quiet divider at small size. (assumed)
+45. The action words are lowercase — `undo`, not `Undo` — even though the buttons are
+    capitalised.
+    My rec: lowercase. Why: it reads as an aside rather than a third and fourth control competing
+    with the two real buttons beside it. Jamie owns type, so this is his call, and matching the
+    buttons with `Undo` / `Reset` is the obvious alternative.
+46. Screen-reader wording is NOT the visible string. `⌘` is announced inconsistently — VoiceOver
+    says "command" but other readers fall back to the Unicode name, "place of interest sign".
+    My rec: give the hint element a spelled-out accessible name — "Keyboard shortcuts: Command Z
+    to undo, Command X to reset" (or "Control Z … Control X …" off the Mac). Why: the glyph is
+    right for sighted players and wrong for spoken output; splitting the two costs one attribute.
+    §9 decides whether the hint is exposed to assistive tech at all.
+47. Nothing else changes wording. The buttons keep "Undo" / "Undo reset" / "Reset", their
+    `aria-label`s keep "Undo last change" / "Undo reset" / "Reset all boxes", and the live region
+    keeps "Board reset. Undo reset available." (assumed — item 9)
 
 ## 9. Accessibility
 Settled: pending · Ack: pending
