@@ -123,7 +123,7 @@ Settled: n/a — awaiting a word from Dave (owner) · Ack: n/a
     until he says the n/a is right.
 
 ## 5. State & persistence
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: pending (Dave)
 
 24. No new persisted state for the shortcuts themselves. They read and write the same
     sessionStorage undo history that the buttons already use, through the same functions.
@@ -141,6 +141,41 @@ Settled: pending · Ack: pending
 
 ## 6. How it fits
 Settled: pending · Ack: pending
+
+Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new export),
+`src/walkthrough.ts` (one new export). NOT touched: `src/undo-stack.ts`, `src/storage.ts`,
+`src/router.ts`, anything under `src/worker/`.
+
+28. The bindings live in the existing `document` `keydown` listener in `src/app.ts` (~line 1014),
+    as a new branch placed **before** the digit branch. (assumed — a modified keypress must be
+    matched first so `Ctrl+Z` can never be read as anything else; the digit branch already
+    parses `e.key` as a number without checking modifiers)
+29. They call the existing `undoLast()` and `resetBoard()` in `app.ts`. No new state, no
+    duplicated logic, so `renderBoardControls()`, `applyBoard()`, `persistHistory()` and
+    `announceReset()` all run exactly as they do for a click. (assumed — item 14)
+30. `src/undo-stack.ts` and `src/storage.ts` are untouched, and there is no worker or API change.
+    (assumed — item 9)
+31. The hint element is added to `index.html` inside `[data-board-controls]` (that div at line
+    253, which already holds Undo, Reset and the `[data-undo-msg]` live region). Exact position
+    and styling are §7. Its show/hide is one small function in `app.ts` alongside
+    `renderBoardControls()`. Tailwind utilities only, no new colour token — the design budget is
+    under 15 and this is a muted text label. (assumed)
+32. Screen scoping needs a reliable "is the game screen showing?". `screens.ts` holds
+    `currentScreen` as module-private state and exports only `showScreen()`.
+    My rec: add an exported `getCurrentScreen(): ScreenId | null` to `screens.ts` and gate on it.
+    Why: the alternative is sniffing `display` / `aria-hidden` off the screen element from
+    `app.ts`, which is wrong mid-transition (the fade sets `aria-hidden` on the outgoing screen
+    before the swap) and duplicates knowledge that module already owns.
+33. Overlay guard (item 16) needs the same. Modals set `.open` and the menu toggles `.hidden`,
+    both readable from the DOM, but the walkthrough keeps a private `active` flag.
+    My rec: export `isWalkthroughActive(): boolean` from `walkthrough.ts` and check the two DOM
+    conditions inline. Why: the walkthrough drives the player through real board actions, so an
+    undo landing mid-step could desync it; and a flag is exact where a DOM guess is not.
+34. To keep something unit-testable out of the DOM glue, the key matching itself is a pure
+    function — `matchShortcut(e): 'undo' | 'reset' | null` — living beside the handler or in
+    `undo-stack.ts`'s neighbourhood, and unit tested for the modifier rules in items 12 and 13.
+    Everything else is event wiring and is covered by e2e in §11. (assumed — matches how
+    `undo-stack.ts` was split from `app.ts` in #251)
 
 ## 7. How it looks
 Settled: pending · Ack: pending
