@@ -47,7 +47,7 @@ visible UI element when a keyboard is detected, which puts §7 (how it looks) an
    - the hint appears only once a keyboard is detected, not on touch → §3/§7
 
 ## 2. Out of scope
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-01 ("11 hint only, everything else good") · Ack: pending (Dave)
 
 6. No redo. Ctrl/Cmd+Shift+Z stays unbound and does nothing. (assumed — there is no redo in the
    product; the history stack is undo-only)
@@ -69,6 +69,49 @@ Settled: pending · Ack: pending
 
 ## 3. How it works
 Settled: pending · Ack: pending
+
+12. Bindings (from Jamie, item 5): **Ctrl+Z or Cmd+Z = Undo**, **Ctrl+X or Cmd+X = Reset**.
+    Either modifier is accepted on either platform — matching on `e.ctrlKey || e.metaKey` rather
+    than sniffing the OS, so a Mac user with a PC keyboard and vice versa both work.
+    (assumed — Jamie chose the keys)
+13. The other modifiers must be absent. `Ctrl/Cmd+Shift+Z` (the redo idiom) and any Alt
+    combination do nothing at all, rather than falling through to undo. (assumed — silently
+    undoing when someone asked to redo is worse than ignoring them; see item 6)
+14. Both shortcuts call the existing `undoLast()` / `resetBoard()` unchanged. Same history entry,
+    same "Undo reset" relabel, same sessionStorage write, same live-region announcement as a
+    click. There is no separate keyboard code path. (assumed — item 9)
+15. When a shortcut acts, it calls `preventDefault()` so the browser's own undo / cut does not
+    also fire. (assumed)
+16. Hard exclusions — the handler returns immediately when:
+    - focus is in a text field (the feedback `textarea`, any `input`). Cmd+X must still cut text
+      the player is typing into feedback, and Cmd+Z must still undo their typing.
+    - a modal or overlay is open: feedback, how to play, the menu, or the walkthrough.
+    (assumed — a shortcut that eats Cut inside a textarea is a bug, not a feature)
+17. Game screen only. On a solved board both are inert already — `undoLast()` and `resetBoard()`
+    return early on `gameState.solved`, and the controls are hidden — so no extra guard is needed
+    beyond not binding on other screens. (assumed — parity with the buttons)
+18. Auto-repeat is allowed: holding Ctrl/Cmd+Z steps back repeatedly until the stack is empty,
+    the same as native undo. (assumed)
+19. Pressing a shortcut when the action is unavailable (empty history, or a board already at its
+    starting state) does nothing and changes nothing on screen. What a screen reader hears in
+    that moment is decided in §9.
+20. Ctrl/Cmd+X is the system Cut. Worth a conscious yes: is Reset still the right thing to hang
+    off it?
+    My rec: keep X. Why: it pairs with Z in the same hand, it is what Jamie asked for, and the
+    only real collision is inside a text field, which item 16 already excludes — there is nothing
+    cuttable on the board itself. Alternative if we would rather not touch a system key at all:
+    Ctrl/Cmd+Backspace ("delete it all"), which is unbound outside text fields.
+21. How do we decide a keyboard is present, for the hint in §7?
+    My rec: two triggers, either one shows the hint. (a) `matchMedia('(hover: hover) and
+    (pointer: fine)')` matches — a real pointer means a laptop or desktop, which effectively
+    always means a keyboard; (b) any `keydown` has been seen this session — which catches an
+    iPad with a Magic Keyboard, where the pointer test fails. Why: pure touch users never see it,
+    desktop users see it without having to press anything first, and hybrid users get it the
+    moment they use the keyboard.
+22. Does a keyboard-triggered Reset need a confirm step, given it wipes the board in one press?
+    My rec: no. Why: it is fully recoverable with one Ctrl/Cmd+Z, the Undo control relabels
+    itself to "Undo reset", and the live region already says "Board reset. Undo reset available."
+    A confirm dialog would also break the speed goal from item 4.
 
 ## 4. Maths
 Settled: pending · Ack: pending
