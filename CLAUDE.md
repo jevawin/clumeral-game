@@ -13,7 +13,30 @@ Clumeral is a daily number puzzle at [clumeral.com](https://clumeral.com). Proje
 - **After merging `staging → main`**, run the post-merge sync (below). Skipping this causes divergence.
 - **After any PR merge**, run post-merge cleanup: `git remote prune origin` and delete the local branch.
 
+## How work happens here
+
+Brief → Plan → Build, each closed by a fresh-context devil's-advocate review, with context
+cleared between stages.
+
+1. **Brief** — `.claude/skills/briefing/`. 11 sections, one at a time, every item carrying
+   a recommendation. Writes `docs/work/<date>-<slug>-brief.md`.
+2. `da-brief` review → clear context.
+3. **Plan** — `.claude/skills/planning/`, working from the brief file. Writes
+   `docs/work/<date>-<slug>-plan.md`. Jamie approves it.
+4. `da-plan` review → clear context.
+5. **Build** — from the plan file. Then human review, then `da-build`, then push and PR.
+
+The brief and plan files are committed on the feature branch and merge with the PR. They
+are the memory across the context clears: **anything agreed only in chat is lost.**
+
+Ownership: Jamie owns types, accessibility, plan approval and merges. Dave owns maths.
+Everything else is joint and needs both — blocking sign-off on owned sections, a
+non-blocking ack on joint ones.
+
 ## Workflow
+
+The cycle below is the general shape; **Brief → Plan → Build above is how it is actually
+run**, and where the two differ, the stages above win.
 
 Every roadmap item follows at least a minimal **discuss → plan → execute → review** cycle:
 
