@@ -28,8 +28,9 @@ npm-debug.log*
 .wrangler/
 .vite/
 
-# Claude Code local state
-.claude/
+# Claude Code local state — except the shared process skills, which are repo content
+.claude/*
+!.claude/skills/
 
 # Playwright
 /test-results/
