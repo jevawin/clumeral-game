@@ -115,7 +115,8 @@ detection, 22 no confirm) · Ack: pending (Dave)
     A confirm dialog would also break the speed goal from item 4.
 
 ## 4. Maths
-Settled: n/a — awaiting a word from Dave (owner) · Ack: n/a
+Settled: n/a — confirmed by Dave 2026-08-01 ("I'm happy", answering Jamie's "this affects nothing
+to do with clues or maths or logic") · Ack: n/a
 
 23. n/a. Nothing here touches puzzle generation, clue selection or filtering. The shortcuts are a
     second trigger for two functions that only rearrange the player's own eliminations; the
@@ -179,6 +180,31 @@ Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new 
 
 ## 7. How it looks
 Settled: pending · Ack: pending
+
+35. Placement: inline in the existing `[data-board-controls]` row, centred between Undo and
+    Reset. That row is `flex items-center justify-between` with a button pinned at each end, so
+    the middle is already empty space and no new row is added. (assumed — Jamie flagged on
+    2026-07-31 that the controls adding a row makes the clues easier to lose; this adds none)
+36. Order matches the buttons: the undo key on the left of the pair, the reset key on the right.
+    (assumed)
+37. Styling: small muted plain text, no `<kbd>` badges or borders.
+    My rec: plain text. Why: badges are four extra boxes of chrome sitting between two buttons
+    that already have icons and labels, in a design deliberately kept minimal. Alternative if it
+    reads too weakly: `<kbd>`-style pills using the existing border token.
+38. Colour: an existing muted treatment (the `text-text/60` already used for placeholders), so no
+    new colour token and both themes are covered. (assumed — the budget is under 15 tokens)
+39. The hint does not grey out or change when Undo or Reset become unavailable. It stays
+    constant. (assumed — it describes which keys exist, and text flickering next to the board on
+    every digit tap is noise)
+40. Mac vs Windows: show only the one that applies — `⌘Z` / `⌘X` on a Mac, `Ctrl+Z` / `Ctrl+X`
+    elsewhere, detected once at load and defaulting to Ctrl when detection is unclear.
+    My rec: platform-specific, not both. Why: "Ctrl/Cmd+Z" doubles the width of a label squeezed
+    between two buttons, and the handler accepts either modifier regardless (item 12) so a wrong
+    guess is cosmetic, never broken.
+41. It appears without animation or transition — it is either there on load or it is not.
+    (assumed)
+42. On a solved board it disappears with the controls row, because it sits inside it. (assumed —
+    item 17)
 
 ## 8. Copy & wording
 Settled: pending · Ack: pending
