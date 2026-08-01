@@ -141,8 +141,7 @@ Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: Dave 2026-08-01
     rather it survive a refresh on an iPad.)
 
 ## 6. How it fits
-Settled: pending (Jamie — items 32, 33) · Ack: Dave 2026-08-01 (as proposed; re-ask if a
-recommendation changes)
+Settled: Jamie 2026-08-01 ("6 approved" — items 32 and 33 both go ahead) · Ack: Dave 2026-08-01
 
 Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new export),
 `src/walkthrough.ts` (one new export). NOT touched: `src/undo-stack.ts`, `src/storage.ts`,
@@ -180,7 +179,9 @@ Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new 
     `undo-stack.ts` was split from `app.ts` in #251)
 
 ## 7. How it looks
-Settled: pending (Jamie) · Ack: Dave 2026-08-01 (as proposed; re-ask if a recommendation changes)
+Settled: REOPENED 2026-08-01 by Jamie — placement moved inside the buttons. Dave's earlier ack
+covered the between-the-buttons version and does NOT carry over; re-ask him.
+See items 48-52 below, which supersede 35, 37, 38 and 39.
 
 35. Placement: inline in the existing `[data-board-controls]` row, centred between Undo and
     Reset. That row is `flex items-center justify-between` with a button pinned at each end, so
@@ -206,6 +207,32 @@ Settled: pending (Jamie) · Ack: Dave 2026-08-01 (as proposed; re-ask if a recom
     (assumed)
 42. On a solved board it disappears with the controls row, because it sits inside it. (assumed —
     item 17)
+
+### §7 reopened 2026-08-01 — hint moves inside the buttons (Jamie)
+
+Jamie: "8 try inside the button new row" with a sketch of Undo / icon / `ctrl + z` stacked, and
+"Small text, 14px or even 12px". Numbered his message as §8; it is a placement decision, so it
+lands here. Items 48-52 supersede 35, 37, 38 and 39.
+
+48. There are now **two** hints, one inside each button, not one shared label between them. Each
+    button gains a second line under its existing icon+label row: `⌘Z` inside Undo, `⌘X` inside
+    Reset. `.board-ctrl` becomes a column — the current icon+label row stays exactly as it is and
+    the shortcut line sits below it. (My read of the sketch; Jamie's drawing put the label above
+    the icon, which would also reorder the existing content — flagged, not assumed.)
+49. Size: 0.875rem (14px) rather than 0.75rem (12px).
+    My rec: 14px, matching the button's existing label size. Why: see item 53 — the button fades
+    to `opacity: 0.4` whenever the control is unavailable, which is a large part of the time, and
+    12px at 40% opacity is the hardest thing in the app to read. 12px is defensible if we would
+    rather have the size contrast; 14px costs nothing.
+50. **Item 38 is dropped.** The muted `text-text/60` treatment does not survive at this size —
+    small text must clear 4.5:1 (WCAG 1.4.3), and 60% opacity on the body colour will not. The
+    shortcut line uses the full text colour, verified in both themes.
+51. **Item 39 is dropped.** The hint is inside the button now, so it inherits the button's
+    `aria-disabled` fade automatically. It greys with its control instead of staying constant —
+    which is arguably better: the key genuinely does nothing while the control is unavailable.
+52. Sizes rise in `rem`, not `px`, so browser zoom and text-only resize both work. The extra line
+    makes the controls taller, but only on keyboard devices — touch layout is untouched, so the
+    "buttons push the clues down" problem Jamie raised on 2026-07-31 does not get worse on phones.
 
 ## 8. Copy & wording
 Settled: pending · Ack: pending
@@ -234,7 +261,51 @@ Settled: pending · Ack: pending
     keeps "Board reset. Undo reset available." (assumed — item 9)
 
 ## 9. Accessibility
-Settled: pending · Ack: pending
+Settled: pending (Jamie — owner, blocking) · Ack: n/a (Jamie owns it outright)
+
+Jamie asked directly: "rare size rule break but contrast is good and screen read picks up, okay
+for accessibility?" Answer: yes on the size, with three conditions — and one correction, because
+the screen reader will NOT pick it up as things stand.
+
+53. Size is fine. WCAG sets no minimum font size; what it sets is contrast (1.4.3, 4.5:1 for text
+    under 24px) and resize (1.4.4, up to 200% without loss). 14px or 12px passes both provided
+    items 50 and 52 hold — full-strength colour, rem units. The one caveat is the existing
+    `.board-ctrl[aria-disabled="true"] { opacity: 0.4 }` fade: an unavailable control drops the
+    whole button, shortcut line included, well below 4.5:1. That is permitted — 1.4.3 exempts
+    inactive components, and the 14px button label already lives with it — but it is why item 49
+    recommends 14px over 12px.
+54. **Correction: the shortcut text will not be announced.** Both buttons carry an explicit
+    `aria-label` ("Undo last change", "Reset all boxes"), and an `aria-label` replaces the
+    element's contents entirely for assistive tech. Adding a visible `⌘Z` inside the button
+    changes nothing a screen reader hears.
+    My rec: add `aria-describedby` on each button pointing at its shortcut span, and give that
+    span visually-hidden spelled-out text — "Keyboard shortcut: Command Z" — alongside the
+    visible glyph. Why: description is announced after the name, so the button still leads with
+    "Undo last change" and the shortcut follows once, rather than bloating the name that gets
+    re-read on every state change. The alternative — folding it into the `aria-label` — makes the
+    name longer every single time focus lands.
+55. Item 46 stands and now has a home: `⌘` is read inconsistently (VoiceOver says "command",
+    others fall back to "place of interest sign"), so the spoken string spells the modifier out
+    and the glyph is visual only.
+56. A keyboard-triggered **Undo** currently announces nothing. Clicking Undo is self-evident —
+    focus is on the button — but a shortcut fired while focus sits on a digit box leaves a
+    screen-reader user with no confirmation anything happened.
+    My rec: reuse the existing `[data-undo-msg]` live region to say "Undone." on a keyboard undo,
+    and "Undo reset." when the entry stepped back over was a reset. Why: silent state change is
+    the exact failure §1 item 4 says we must not introduce.
+57. Pressing a shortcut when the control is unavailable announces why, rather than doing nothing
+    silently: "Nothing to undo." / "Board is already clear."
+    My rec: announce. Why: it matches the line Jamie drew on 2026-07-31 — "don't move focus, just
+    notify a screen reader it's disabled" — and an unexplained silence is indistinguishable from
+    a broken key.
+58. Reset via keyboard keeps its existing announcement, "Board reset. Undo reset available." No
+    change. (assumed — item 14)
+59. A shortcut never moves focus. Wherever the player was, they stay. (assumed — the whole reason
+    #251 used `aria-disabled` instead of `disabled`)
+60. WCAG 2.1.4 (Character Key Shortcuts) does not apply: both bindings require a modifier. This
+    is why bare `U` / `R` were never proposed — a single-character shortcut would have needed a
+    remap or disable mechanism, which item 8 rules out. (assumed)
+61. The hint is not a live region and never announces itself. It is static description. (assumed)
 
 ## 10. Analytics
 Settled: pending · Ack: pending
