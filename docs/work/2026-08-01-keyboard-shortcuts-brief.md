@@ -68,7 +68,8 @@ Settled: Jamie 2026-08-01 ("11 hint only, everything else good") · Ack: pending
     proves too quiet.
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-01 (accepted all recommendations — 20 keep Ctrl/Cmd+X, 21 two-trigger
+detection, 22 no confirm) · Ack: pending (Dave)
 
 12. Bindings (from Jamie, item 5): **Ctrl+Z or Cmd+Z = Undo**, **Ctrl+X or Cmd+X = Reset**.
     Either modifier is accepted on either platform — matching on `e.ctrlKey || e.metaKey` rather
@@ -114,10 +115,29 @@ Settled: pending · Ack: pending
     A confirm dialog would also break the speed goal from item 4.
 
 ## 4. Maths
-Settled: pending · Ack: pending
+Settled: n/a — awaiting a word from Dave (owner) · Ack: n/a
+
+23. n/a. Nothing here touches puzzle generation, clue selection or filtering. The shortcuts are a
+    second trigger for two functions that only rearrange the player's own eliminations; the
+    answer, the clue set and the daily seed are untouched. Dave owns maths, so this stays open
+    until he says the n/a is right.
 
 ## 5. State & persistence
 Settled: pending · Ack: pending
+
+24. No new persisted state for the shortcuts themselves. They read and write the same
+    sessionStorage undo history that the buttons already use, through the same functions.
+    (assumed — item 9)
+25. The hint is permanent inline text, not a dismissible notice: no close button, no "seen"
+    flag, no storage key. (assumed — a dismissal would mean a localStorage key plus a decision
+    about whether it comes back tomorrow; a quiet inline label does not earn that)
+26. The hint does not fade out after first use or after N days. It stays for anyone on a
+    keyboard device. (assumed — it is a label, not an onboarding step; it costs nothing to leave)
+27. The "a keyboard has been seen" flag from item 21 lives in memory for the page session only,
+    not in sessionStorage. (assumed — a desktop is covered by the pointer test on every load, so
+    only a touch-first device with a keyboard loses the hint on refresh, and it comes straight
+    back on the next keypress. The alternative, one sessionStorage key, is available if we would
+    rather it survive a refresh on an iPad.)
 
 ## 6. How it fits
 Settled: pending · Ack: pending
