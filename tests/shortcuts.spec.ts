@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { matchShortcut, modifierLabel } from '../src/shortcuts.ts';
+import { describe, it, expect, afterEach } from 'vitest';
+import { matchShortcut, modifierLabel, isTypingTarget } from '../src/shortcuts.ts';
 import type { ShortcutKeyEvent } from '../src/shortcuts.ts';
 
 // Build a key event with every modifier off unless overridden — the tests below
@@ -74,5 +74,47 @@ describe('modifierLabel', () => {
   it('defaults to Ctrl when the platform is unknown', () => {
     expect(modifierLabel(undefined)).toBe('Ctrl');
     expect(modifierLabel('')).toBe('Ctrl');
+  });
+});
+
+describe('isTypingTarget', () => {
+  afterEach(() => { document.body.innerHTML = ''; });
+
+  function mount(html: string): HTMLElement {
+    document.body.innerHTML = html;
+    return document.body.firstElementChild as HTMLElement;
+  }
+
+  it('is true for the controls a player types into', () => {
+    for (const html of [
+      '<input type="text">',
+      '<textarea></textarea>',
+      '<select><option>a</option></select>',
+      '<div contenteditable="true"></div>',
+      '<div contenteditable=""></div>',
+    ]) {
+      expect(isTypingTarget(mount(html)), html).toBe(true);
+    }
+  });
+
+  // Events land on the deepest element, so a span inside a contenteditable has
+  // to count as typing too.
+  it('is true for a descendant of an editable region', () => {
+    mount('<div contenteditable="true"><span id="inner">x</span></div>');
+    expect(isTypingTarget(document.getElementById('inner'))).toBe(true);
+  });
+
+  it('is false for the board and its controls', () => {
+    for (const html of [
+      '<button data-undo>Undo</button>',
+      '<div data-digit="1"></div>',
+      '<body-like></body-like>',
+    ]) {
+      expect(isTypingTarget(mount(html)), html).toBe(false);
+    }
+  });
+
+  it('is false for a null target', () => {
+    expect(isTypingTarget(null)).toBe(false);
   });
 });
