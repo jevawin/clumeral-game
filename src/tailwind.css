@@ -620,21 +620,30 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     cursor: pointer;
   }
   .board-ctrl svg { width: 1rem; height: 1rem; flex-shrink: 0; }
-  /* Label and shortcut stack in a column beside the icon, centred against it —
-     so with no shortcut the label sits alone in the middle, and with one the
-     pair shares the same space. The icon never moves. */
+  /* Label and shortcut stack in a column beside the icon, the column vertically
+     centred against it — so with no shortcut the label sits alone in the middle,
+     and with one the pair shares the same space. The icon never moves.
+     The two lines are left-aligned to each other, not centred, so the label and
+     the shortcut share a left edge rather than jostling around a centre line. */
   .board-ctrl__text {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     line-height: 1.15;
   }
-  /* 14px, matching the button's own label rather than dropping to 12px: the
-     aria-disabled fade below takes these controls to 40% opacity a large part of
-     the time, and small text at 40% is the hardest thing in the app to read.
-     Full-strength inherited colour for the same reason — small text has to clear
-     4.5:1 (WCAG 1.4.3), which a 60% tint of the body colour would not.
+  /* 13px — a step below the button's own 14px label, so the shortcut reads as
+     secondary to it without becoming the hardest thing in the app to read (these
+     controls sit at 40% opacity whenever they are unavailable).
+
+     80% of the text colour. Small text has to clear 4.5:1 against the button
+     surface (WCAG 1.4.3), and 80% lands at 7.90:1 in light and 9.20:1 in dark —
+     roughly half the distance from full strength to the point where each theme
+     would touch that floor (63% light, 50% dark), so it is quieter than the
+     label while still clearing AAA. It is a single value rather than a per-theme
+     pair because the difference is invisible and one number is easier to keep
+     honest. 13px is still "normal" text for WCAG, so the 4.5:1 bar applies
+     whichever size we land on.
      rem, not px, so browser zoom and text-only resize both work (WCAG 1.4.4).
 
      Revealed by animating `height` between two explicit values: the content is
@@ -645,15 +654,18 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      below the controls moves — what the transition smooths is the label shifting
      up inside the button as the column grows under it. */
   .board-ctrl__key {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
+    color: color-mix(in srgb, currentColor 80%, transparent);
     height: 0;
     opacity: 0;
     overflow: hidden;
     white-space: nowrap;
     transition: height 200ms ease, opacity 200ms ease;
   }
-  :root[data-keyboard="true"] .board-ctrl__key { height: 1.05rem; opacity: 1; }
+  /* 0.95rem = 15.2px, just clear of the 13px line box (13 × 1.15 = 14.95px), so
+     `overflow: hidden` never clips a descender. */
+  :root[data-keyboard="true"] .board-ctrl__key { height: 0.95rem; opacity: 1; }
 
   @media (prefers-reduced-motion: reduce) {
     .board-ctrl__key { transition: none; }
