@@ -620,6 +620,44 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     cursor: pointer;
   }
   .board-ctrl svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+  /* Label and shortcut stack in a column beside the icon, centred against it —
+     so with no shortcut the label sits alone in the middle, and with one the
+     pair shares the same space. The icon never moves. */
+  .board-ctrl__text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.15;
+  }
+  /* 14px, matching the button's own label rather than dropping to 12px: the
+     aria-disabled fade below takes these controls to 40% opacity a large part of
+     the time, and small text at 40% is the hardest thing in the app to read.
+     Full-strength inherited colour for the same reason — small text has to clear
+     4.5:1 (WCAG 1.4.3), which a 60% tint of the body colour would not.
+     rem, not px, so browser zoom and text-only resize both work (WCAG 1.4.4).
+
+     Revealed by animating `height` between two explicit values: the content is
+     exactly one line of known size (white-space: nowrap guarantees it), so this
+     transitions identically in every engine, where grid-template-rows 0fr→1fr has
+     patchier support and max-height eases against a value that isn't the real
+     height. The button's min-height of 2.75rem absorbs the extra line, so nothing
+     below the controls moves — what the transition smooths is the label shifting
+     up inside the button as the column grows under it. */
+  .board-ctrl__key {
+    font-size: 0.875rem;
+    font-weight: 500;
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: height 200ms ease, opacity 200ms ease;
+  }
+  :root[data-keyboard="true"] .board-ctrl__key { height: 1.05rem; opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .board-ctrl__key { transition: none; }
+  }
   /* Faded, not hidden: the controls stay in place so the row never reflows,
      and the player can see the affordance exists before it's usable. Keyed on
      aria-disabled — these buttons are never natively disabled, so they stay
