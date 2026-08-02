@@ -915,6 +915,27 @@ rather than a new regression.
   WebKit. The precondition now carries an explicit message so a failure reads as "this
   project reports a fine pointer" rather than as a detection bug.
 
+### da-build round 5 — 2026-08-02 — CLEAN
+
+Zero findings at every severity. Round 5 re-derived the focus function's behaviour across all
+eleven reachable cases (keypad key with the board staying unresolved / resolving /
+un-resolving, digit box, Undo, Reset, save-score checkbox, Submit, off-board, nothing
+focused, synthetic document dispatch, dead press) and confirmed: no case moves focus that
+item 59 forbids, and no case loses it. The `getClientRects()` approach is timing-independent
+in all three engines, and survives Blink's *deferred* focus fixup specifically because
+nothing reads `activeElement` — by the time Blink's timer re-checks, focus is on Undo, which
+is focusable, so it is not stolen back.
+
+Five rounds: 2M+6L → 2M+6L → 1M+3L → 1M+2L → clean.
+
+**Carried, not findings:**
+- The recovery path announces and then moves focus, and a focus change can interrupt a
+  pending polite region in some screen readers. No cheap alternative — the recovery is
+  required by #251. **One to listen for in the manual screen-reader pass**, not a code change.
+- Two limits accepted by this plan remain live: the 200ms `getCurrentScreen()` lag
+  mid-transition, and a keypad *click* still dropping focus to `<body>` (pre-existing, out
+  of scope).
+
 **Still outstanding before merge:**
 - Human review (Jamie and Dave), then `da-build`.
 - Manual passes from Task 9 on the branch preview — screen reader, contrast in both
