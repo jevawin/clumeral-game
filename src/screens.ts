@@ -87,6 +87,20 @@ const FADE_OUT_MS = 200;
 // the new transition completes and stomps the correct state.
 let pendingTransition: { timer: ReturnType<typeof setTimeout>; target: ScreenId } | null = null;
 
+// Which screen is live. A getter rather than the screens:enter event because a
+// subscriber that registers after the first showScreen() would have missed it,
+// and sniffing the DOM is wrong mid-transition — the outgoing screen already
+// carries aria-hidden="true" before the incoming one is displayed.
+//
+// Known limit: this lags the visible screen by one FADE_OUT_MS. showScreen()
+// assigns currentScreen inside the fade timer, so for 200ms after the call the
+// getter still names the outgoing screen. Callers gating a keyboard action on it
+// accept a 200ms window mid-transition; the alternative is wrong for the whole
+// 200ms rather than exact outside it.
+export function getCurrentScreen(): ScreenId | null {
+  return currentScreen;
+}
+
 export function showScreen(next: ScreenId): void {
   // If a transition is in flight to this same target, no-op.
   if (pendingTransition && pendingTransition.target === next) return;

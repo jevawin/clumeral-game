@@ -68,6 +68,14 @@ let pendingGateHit = false;
 let brandOriginalClass: string | null = null; // captured before the first style swap
 const timers: ReturnType<typeof setTimeout>[] = [];
 
+// Is the first-play walkthrough currently driving the player? It steps them
+// through real board actions and waits on real gate events, so an undo landing
+// mid-step would desync it from the board it is describing. The exact flag,
+// rather than a DOM guess at whether the coach marks are up.
+export function isWalkthroughActive(): boolean {
+  return active;
+}
+
 function later(fn: () => void, ms: number): void {
   timers.push(setTimeout(fn, ms));
 }
