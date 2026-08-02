@@ -4,6 +4,7 @@ import { GamePage } from "../pages/game.page.ts";
 import { gotoPlayableGame } from "../helpers/game-setup.ts";
 import { solvePuzzle, readAnswer, setBoxes } from "../helpers/solve.ts";
 import { expectActiveScreen } from "../helpers/screens.ts";
+import { expectedModifier } from "../helpers/modifier.ts";
 import { MenuPage } from "../pages/menu.page.ts";
 import { FeedbackPage } from "../pages/feedback.page.ts";
 
@@ -517,6 +518,26 @@ test.describe("undo and reset keyboard shortcuts", () => {
     await expect(game.keypad).toBeHidden();
   });
 
+  // Item 59: a shortcut never moves focus. A board change rebuilds every keypad
+  // key, so without care a player focused on one is dumped to <body> — the same
+  // class of bug as the natively-disabled Undo that started #251.
+  test("a shortcut keeps focus on the keypad key it was pressed from", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4, 5]);
+
+    await game.key(7).focus();
+    await expect(game.key(7)).toBeFocused();
+
+    await page.keyboard.press("Control+z");
+    await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
+    await expect(game.key(7)).toBeFocused();
+
+    await page.keyboard.press("Control+x");
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
+    await expect(game.key(7)).toBeFocused();
+  });
+
   test("Enter still submits a resolved board", async ({ page }) => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
@@ -651,6 +672,88 @@ test.describe("keyboard shortcut exclusions", () => {
   });
 });
 
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+// The whole reason the worker allowlist was touched is to compare keyboard use
+// against button use. track() posts and swallows every failure, so a wrong
+// source string, a dropped call or a mis-ordered argument records nothing while
+// the dashboard shows a confident zero. Nothing else in the suite would notice.
+//
+// Intercepting at the network layer means workerd is never reached, so this
+// cannot go red because a local writeDataPoint has no binding — the ambiguity
+// that kept the plan from asserting on a real POST. sw.js returns early for
+// /api/ without calling respondWith, so the service worker is not in the path.
+test.describe("undo and reset analytics", () => {
+  test("both routes report their own source, and dead presses report nothing", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "route interception is unreliable on WebKit with an active service worker (see fixtures.ts)",
+    );
+
+    const events: { event: string; source?: string }[] = [];
+    await page.route("**/api/event", async (route) => {
+      const body = route.request().postDataJSON() as { event: string; source?: string };
+      events.push(body);
+      await route.fulfill({ status: 202, body: "" });
+    });
+    const boardEvents = () => events.filter((e) => e.event === "undo_used" || e.event === "reset_used");
+
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    // Button undo.
+    await eliminate(game, [4]);
+    await game.undo.click();
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
+    await expect.poll(boardEvents).toEqual([{ event: "undo_used", source: "button" }]);
+
+    // Keyboard undo.
+    await eliminate(game, [4]);
+    await page.keyboard.press("Control+z");
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
+    await expect.poll(boardEvents).toHaveLength(2);
+    expect(boardEvents()[1]).toEqual({ event: "undo_used", source: "keyboard" });
+
+    // Button reset.
+    await eliminate(game, [5]);
+    await game.reset.click();
+    await expect.poll(boardEvents).toHaveLength(3);
+    expect(boardEvents()[2]).toEqual({ event: "reset_used", source: "button" });
+
+    // Keyboard reset.
+    await eliminate(game, [6]);
+    await page.keyboard.press("Control+x");
+    await expect.poll(boardEvents).toHaveLength(4);
+    expect(boardEvents()[3]).toEqual({ event: "reset_used", source: "keyboard" });
+
+    // A press that changes nothing must send nothing — otherwise the counts
+    // measure frustration rather than use.
+    //
+    // Unwind to the bottom of the stack first. Driven by the control's own state
+    // rather than a hardcoded press count: the resets above each left an extra
+    // entry behind them, and an off-by-one here would silently turn the check
+    // below into "some presses were dead", which is not the claim.
+    for (let i = 0; i < 20 && (await game.undo.getAttribute("aria-disabled")) !== "true"; i++) {
+      await page.keyboard.press("Control+z");
+    }
+    await expectUnavailable(game.undo);
+    await expectUnavailable(game.reset);
+
+    const beforeDeadPresses = boardEvents().length;
+    await page.keyboard.press("Control+z");   // empty stack
+    await page.keyboard.press("Control+x");   // already the starting board
+    await game.undo.click({ force: true });
+    await game.reset.click({ force: true });
+
+    // The announcement proves the presses actually reached the handler, so the
+    // unchanged count below is "did nothing", not "never fired".
+    await expect(game.undoMsg).toHaveText("Board is already clear.");
+    expect(boardEvents(), "dead presses must not be logged").toHaveLength(beforeDeadPresses);
+  });
+});
+
 // ─── The shortcut hint ───────────────────────────────────────────────────────
 
 // Each case names the projects it applies to. This file runs on all five, and an
@@ -665,9 +768,11 @@ test.describe("keyboard shortcut hint", () => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
 
-    // Ctrl, not Cmd: the CI runners are Linux.
-    await expect(game.undoKey).toHaveText("Ctrl + Z");
-    await expect(game.resetKey).toHaveText("Ctrl + X");
+    // Derived, not hardcoded: the hint follows the platform, so "Ctrl" would only
+    // ever be asserting that the runner is not a Mac.
+    const mod = await expectedModifier(page);
+    await expect(game.undoKey).toHaveText(`${mod.visible} + Z`);
+    await expect(game.resetKey).toHaveText(`${mod.visible} + X`);
     await expect(game.undoKey).toBeVisible();
   });
 
@@ -689,7 +794,8 @@ test.describe("keyboard shortcut hint", () => {
     await page.keyboard.press("Tab");
 
     await expect(page.locator("html")).toHaveAttribute("data-keyboard", "true");
-    await expect(game.undoKey).toHaveText("Ctrl + Z");
+    const mod = await expectedModifier(page);
+    await expect(game.undoKey).toHaveText(`${mod.visible} + Z`);
   });
 
   // Regression: an on-screen keyboard is not a keyboard. Typing feedback on an

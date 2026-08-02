@@ -167,6 +167,8 @@
           </svg>
           <span data-brand-text class="text-xl font-bold text-text font-[Comfortaa]">Clumeral</span>
         </button>
+        <!-- INERT while the first-play walkthrough is disabled (#294): nothing writes
+             to this region today. Kept for its replacement. -->
         <span data-walkthrough-live aria-live="polite" class="sr-only"></span>
         <button data-menu-btn class="burger-btn relative h-10 w-10 flex items-center justify-center text-text -mr-[10px]" type="button" aria-expanded="false" aria-controls="app-menu" aria-label="Open menu">
           <span aria-hidden="true" class="burger-bar"></span>
@@ -268,7 +270,7 @@
                   <span data-undo-label>Undo</span>
                   <span data-undo-key class="board-ctrl__key" aria-hidden="true"></span>
                 </span>
-                <span id="undo-shortcut-desc" class="sr-only"></span>
+                <span id="undo-shortcut-desc" data-undo-desc class="sr-only"></span>
               </button>
               <!-- Announcement only: the visible cue for a reset is Undo's own
                    label, but that changes silently for a screen reader unless the
@@ -282,7 +284,7 @@
                   <span data-reset-label>Reset</span>
                   <span data-reset-key class="board-ctrl__key" aria-hidden="true"></span>
                 </span>
-                <span id="reset-shortcut-desc" class="sr-only"></span>
+                <span id="reset-shortcut-desc" data-reset-desc class="sr-only"></span>
               </button>
             </div>
 

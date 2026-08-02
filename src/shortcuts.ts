@@ -74,5 +74,19 @@ export function modifierLabel(platform: string | undefined): 'Cmd' | 'Ctrl' {
  */
 export function isTypingTarget(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
-  return !!el?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+  return !!el?.closest?.(TYPING_SELECTOR);
 }
+
+// Text-entry controls only. A checkbox, radio or button is an <input>, but
+// nothing is being typed into it: the save-score checkbox sits on the game
+// screen and appears exactly when the board is fully resolved — the moment a
+// player is most likely to want an undo — so treating it as "typing" would kill
+// the shortcuts right there. It also raises no on-screen keyboard, so it is not
+// evidence of a physical one either.
+const TYPING_SELECTOR = [
+  'input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=reset])',
+  'textarea',
+  'select',
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+].join(', ');

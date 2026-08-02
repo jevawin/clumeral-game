@@ -4,6 +4,7 @@ import { gotoPlayableGame } from "../helpers/game-setup.ts";
 import { seedHistory, seedLastVisit, seedTheme } from "../helpers/storage.ts";
 import { freezeDate } from "../helpers/clock.ts";
 import { waitForScreenSettled } from "../helpers/screens.ts";
+import { expectedModifier } from "../helpers/modifier.ts";
 import { MenuPage } from "../pages/menu.page.ts";
 import { FeedbackPage } from "../pages/feedback.page.ts";
 
@@ -162,9 +163,12 @@ test.describe("accessibility — board control shortcut hint", () => {
     await gotoPlayableGame(page);
     await waitForScreenSettled(page, "game");
 
+    // Derived rather than hardcoded — the spoken form follows the platform too,
+    // so "Control" alone would go red on any Mac.
+    const mod = await expectedModifier(page);
     for (const [ctrl, name, spoken] of [
-      ["[data-undo]", "Undo last change", "Keyboard shortcut: Control Z"],
-      ["[data-reset]", "Reset all boxes", "Keyboard shortcut: Control X"],
+      ["[data-undo]", "Undo last change", `Keyboard shortcut: ${mod.spoken} Z`],
+      ["[data-reset]", "Reset all boxes", `Keyboard shortcut: ${mod.spoken} X`],
     ] as const) {
       const button = page.locator(ctrl);
       await expect(button).toHaveAttribute("aria-label", name);

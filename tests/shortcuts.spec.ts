@@ -114,6 +114,22 @@ describe('isTypingTarget', () => {
     }
   });
 
+  // An input you cannot type into is not typing. The save-score checkbox lives on
+  // the game screen and appears exactly when the board is fully resolved, so
+  // treating it as a typing target would kill the shortcuts at the moment a
+  // player most wants them.
+  it('is false for non-text inputs', () => {
+    for (const type of ['checkbox', 'radio', 'button', 'submit', 'reset']) {
+      expect(isTypingTarget(mount(`<input type="${type}">`)), type).toBe(false);
+    }
+  });
+
+  it('is true for text-entry input types', () => {
+    for (const type of ['text', 'email', 'search', 'password', 'number', 'url', 'tel']) {
+      expect(isTypingTarget(mount(`<input type="${type}">`)), type).toBe(true);
+    }
+  });
+
   it('is false for a null target', () => {
     expect(isTypingTarget(null)).toBe(false);
   });

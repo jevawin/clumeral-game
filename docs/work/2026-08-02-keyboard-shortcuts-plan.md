@@ -774,6 +774,48 @@ Knock-ons:
 - Bundle drops 65.8 kB → 62.3 kB, since the walkthrough runtime tree-shakes out behind the
   `const false`.
 
+### da-build review — 2026-08-02
+
+Fresh-context pass after Jamie's preview review: **0 High, 2 Medium, 6 Low**. All eight
+fixed; nothing deferred.
+
+- **M1 — the hint e2e hardcoded `Ctrl`.** The app derives the modifier from the platform, so
+  those five assertions were really asserting "the runner is not a Mac". Green on Linux CI,
+  red the first time Jamie or Dave ran e2e locally — a red suite on a *correct* build.
+  Fixed: `e2e/helpers/modifier.ts` derives the expected string from the page using the app's
+  own `modifierLabel`, so the two cannot drift. `tests/shortcuts.spec.ts` still pins the
+  label logic itself, which is what stops this becoming a tautology.
+- **M2 — nothing tested that the analytics fire, or with which `source`.** The entire
+  justification for the authorised worker change, and the only coverage was that the two
+  names sit in `VALID_EVENTS`. `track()` swallows every failure, so a wrong source string
+  recorded nothing while the dashboard showed a confident zero. The plan declined an e2e
+  because a local `writeDataPoint` failure would 400 indistinguishably — but `page.route`
+  intercepts *before* workerd, which sidesteps that entirely, and `sw.js` returns early for
+  `/api/` without `respondWith`, so the service worker is not in the path either. Fixed: one
+  `chromium-desktop` case asserting all four event/source combinations and that dead presses
+  and force-clicks log nothing.
+- **L3 — the reveal height was `rem`.** A browser minimum-font-size setting (a low-vision
+  preference in both Chrome and Firefox) raises the computed font-size without touching
+  `rem`, so `overflow: hidden` would slice the bottom off the shortcut for exactly the
+  readers who set it. Now `1.25em`, which tracks the element's own font-size.
+- **L8 — `isTypingTarget` matched bare `input`,** so the save-score checkbox killed the
+  shortcuts. It sits on the game screen and appears when the board is fully resolved — the
+  moment a player most wants an undo. Narrowed to text-entry types, with unit cases both
+  ways. Safe for detection too: a checkbox raises no on-screen keyboard.
+- **L7 — item 59 did not hold.** `buildKeypad()` wipes and rebuilds all ten keys, so a
+  shortcut pressed while focused on one dumped focus to `<body>`. Fixed in the shortcut
+  branch only (the new route), with an e2e. The identical pre-existing behaviour on a keypad
+  *click* is left alone — out of scope, and changing it risks the #251 focus assertions.
+- **L4 — two new IDs against CONVENTIONS.md.** `aria-describedby` needs an IDREF so the ids
+  are unavoidable; the DOM lookups now use `data-*` like everything else, and CONVENTIONS.md
+  records the exception explicitly rather than leaving it undocumented.
+- **L5 —** `#294` pointers added to the three now-inert walkthrough hooks (both CustomEvent
+  dispatches and `[data-walkthrough-live]`), whose comments still described live behaviour.
+- **L6 —** the blanket skip on `octopus-walkthrough.spec.ts` covered the one case that still
+  passes: "returning player sees no walkthrough" asserts *absence*, which is now true for
+  everyone and is the only live check that the disable took effect. Skip moved to the other
+  five.
+
 **Still outstanding before merge:**
 - Human review (Jamie and Dave), then `da-build`.
 - Manual passes from Task 9 on the branch preview — screen reader, contrast in both
