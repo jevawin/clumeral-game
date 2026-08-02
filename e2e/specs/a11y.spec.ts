@@ -152,10 +152,15 @@ for (const scheme of ["light", "dark"] as const) {
 test.describe("accessibility — board control shortcut hint", () => {
   test.use({ colorScheme: "light" });
 
+  // All three desktop projects, not just Chromium: they all have a fine pointer
+  // so they all render the hint, and name/description exposure is exactly the
+  // thing most likely to differ between engines. Matches the hint test's own gate
+  // in undo-reset.spec.ts. Mobile projects are excluded because the hint never
+  // renders there without a keypress.
   test.beforeEach(({}, testInfo) => {
     test.skip(
-      testInfo.project.name !== "chromium-desktop",
-      "the hint only renders where a fine pointer is detected; ARIA wiring is engine-independent",
+      !testInfo.project.name.endsWith("-desktop"),
+      "the hint only renders where a fine pointer is detected",
     );
   });
 
