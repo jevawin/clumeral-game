@@ -1147,6 +1147,11 @@ document.addEventListener("keydown", (e) => {
     if (getCurrentScreen() !== 'game') return;
     if (isTypingTarget(e.target)) return;
     if (isOverlayOpen()) return;
+    // Always false today — the walkthrough is disabled (#294) precisely because
+    // this guard, plus its indefinite gated steps, left first-time players with
+    // no shortcuts at all. Kept for its replacement, which will want it: an undo
+    // landing mid-step desyncs a tutorial narrating real board actions. Whatever
+    // replaces it must end, or this is a trap all over again.
     if (isWalkthroughActive()) return;
 
     // AFTER every guard, never before — a shortcut that eats Cut inside a

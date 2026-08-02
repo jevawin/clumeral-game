@@ -12,6 +12,19 @@ import { test, expect, type Page } from "@playwright/test";
 // "remove it"; the final timed step = "submit"; then it restores to "Clumeral".
 // While talking the header is pinned (position: sticky) and reverts on finish.
 
+// SKIPPED — the walkthrough is disabled (#294). It broke the Undo/Reset keyboard
+// shortcuts for first-time players: the shortcut handler stands down while the
+// walkthrough is active, and this sequence holds that flag indefinitely on its
+// gated steps. Five of the six tests below assert it runs, so they would fail
+// against the disabled build.
+//
+// Skipped rather than deleted, deliberately: it is the executable description of
+// what the current sequence does, and the replacement first-play tutorial is
+// easier to design with it than without. It goes when the code goes, per #294.
+test.beforeEach(() => {
+  test.skip(true, "First-play walkthrough disabled pending its replacement — see #294");
+});
+
 const brand = (p: Page) => p.locator("[data-brand-text]");
 const live = (p: Page) => p.locator("[data-walkthrough-live]");
 const headerPosition = (p: Page) =>
