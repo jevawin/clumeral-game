@@ -538,6 +538,29 @@ test.describe("undo and reset keyboard shortcuts", () => {
     await expect(game.key(7)).toBeFocused();
   });
 
+  // The other half of item 59, and the easier one to get wrong: if nothing had
+  // focus, the shortcut must not GIVE it any. That is the normal state for a
+  // mouse user — macOS Safari and Firefox don't focus a button on click — so a
+  // naive "focus is on <body>, therefore it was lost" recovery hands every mouse
+  // player an unrequested focus ring, and pre-empts the pending announcement.
+  test("a shortcut gives no focus when the player had none", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4, 5]);
+
+    // Drop focus without putting it anywhere: blur whatever the clicks left.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.tagName ?? null))
+      .toBe("BODY");
+
+    await page.keyboard.press("Control+z");
+    await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
+
+    await expect(game.undo).not.toBeFocused();
+    expect(await page.evaluate(() => document.activeElement?.tagName ?? null)).toBe("BODY");
+  });
+
   test("Enter still submits a resolved board", async ({ page }) => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);

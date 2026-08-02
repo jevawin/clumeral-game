@@ -1149,13 +1149,19 @@ function isOverlayOpen(): boolean {
 // Both land focus on <body>. Try to put it back where it was, then check whether
 // that actually took: .focus() on a display:none element silently no-ops, so the
 // result has to be read rather than assumed.
-function restoreFocusAfterBoardChange(key: string | null): void {
+function restoreFocusAfterBoardChange(key: string | null, hadFocus: boolean): void {
   if (key !== null) {
     (document.querySelector(`[data-key="${key}"]`) as HTMLElement | null)?.focus();
   }
+  // Nothing had focus to begin with, so there is nothing to restore. This is the
+  // NORMAL state for a mouse user — macOS Safari and Firefox don't focus a button
+  // on click — and giving them a focus ring they never asked for would break item
+  // 59 in the other direction, as well as pre-empting the pending announcement.
+  if (!hadFocus) return;
   if (document.activeElement !== document.body && document.activeElement !== null) return;
-  // Focus was lost. Undo is always present on the game screen and is aria-disabled
-  // rather than disabled, so it stays focusable even with nothing left to undo.
+  // Focus WAS somewhere and has been lost. Undo is always present on the game
+  // screen and is aria-disabled rather than disabled, so it stays focusable even
+  // with nothing left to undo.
   dom.undoBtn?.focus();
 }
 
@@ -1184,11 +1190,12 @@ document.addEventListener("keydown", (e) => {
     // textarea is a bug, not a feature.
     e.preventDefault();
 
-    // Note which keypad key had focus, if any, so it can be restored after the
-    // board changes under it. e.target IS the focused element on a keydown, so no
-    // activeElement read is needed here. See restoreFocusAfterBoardChange.
-    const focusedKey = (e.target as HTMLElement | null)?.closest?.('[data-key]')
-      ?.getAttribute('data-key') ?? null;
+    // Where focus was, if anywhere. e.target IS the focused element on a keydown
+    // — and it is <body> when nothing is focused at all, which is what a mouse
+    // user looks like. See restoreFocusAfterBoardChange.
+    const focusedBefore =
+      e.target instanceof HTMLElement && e.target !== document.body ? e.target : null;
+    const focusedKey = focusedBefore?.closest?.('[data-key]')?.getAttribute('data-key') ?? null;
 
     // Holding the key unwinds repeatedly until the stack is empty, the same as a
     // native undo. e.repeat suppresses only the announcement and the analytics
@@ -1209,7 +1216,7 @@ document.addEventListener("keydown", (e) => {
     }
     // Only on a press that actually acted — the dead-press paths above return
     // early, and nothing was rebuilt or hidden for them.
-    restoreFocusAfterBoardChange(focusedKey);
+    restoreFocusAfterBoardChange(focusedKey, focusedBefore !== null);
     return;
   }
 

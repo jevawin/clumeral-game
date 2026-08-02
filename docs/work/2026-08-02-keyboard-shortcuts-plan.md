@@ -856,6 +856,38 @@ Second fresh-context pass over the fixes plus the whole diff again. **0 High, 2 
   here, cross-referenced to #293 since both are the digit branch acting on keystrokes it
   should ignore.
 
+### da-build round 3 — 2026-08-02
+
+**0 High, 1 Medium, 3 Low.** Converging (2M+6L → 2M+6L → 1M+3L), and round 3 confirmed
+round 2's fixes all worked. The one Medium was the same shape of error as the two rounds
+before it: a fix that is right about the failure it names and wrong about the case next door.
+
+- **M1 — the focus fallback moved focus when nothing had been lost.** `activeElement ===
+  body` after the action was read as proof the board change stole focus. It is also simply
+  what a mouse user looks like: macOS Safari and Firefox do not focus a `<button>` on click,
+  and Firefox on macOS is the browser Jamie reviews in. So a mouse player's first Ctrl+Z
+  would have yanked focus onto Undo with a focus ring they never asked for — item 59 broken
+  by the fix for item 59 — and pre-empted the polite announcement item 56 requires. Fixed by
+  reading `e.target` (which *is* the focused element on a keydown, and is `<body>` when
+  nothing is focused) to decide whether there was any focus to restore. New e2e covers it;
+  the existing focus case could not, because it starts by focusing a key.
+- **L2 — the pinned contrast figure was wrong and nearly failing.** `blend()` rounds to
+  8-bit, giving 7.9465, while the pin was `toBeCloseTo(7.9, 1)` — a tolerance of 0.05
+  against a 0.0465 diff, passing on 7% of its budget. Any one-channel token nudge would have
+  flipped it red and read as a contrast regression rather than a mis-pinned constant. Now
+  pinned at the exact 8-bit values to 3dp (deterministic arithmetic, so a tight tolerance is
+  correct — it moves only if a token moves). Prose corrected from a false-precise "7.90:1"
+  to "about 7.9:1"; higher-precision compositing gives 7.902.
+- **L3 — none of the new e2e has been executed, and `tsc` does not cover `e2e/`.** True and
+  unchanged: Playwright cannot run in this environment. Worth being plain that this is the
+  structural reason rounds 1 and 2 each shipped an unrunnable test. A `tsconfig.test.json`
+  was suggested — it would **not** have caught either, since neither was a type error
+  (`toEqual` with extra keys type-checks fine). **CI is the first real execution of these
+  specs.**
+- **L4 — SUSPECTED, unverifiable here:** the a11y hint gate now covers `webkit-desktop` and
+  `firefox-desktop`, which should report `(hover: hover) and (pointer: fine)` but have never
+  been exercised against a pointer media query in this suite. If CI goes red, look here first.
+
 **Still outstanding before merge:**
 - Human review (Jamie and Dave), then `da-build`.
 - Manual passes from Task 9 on the branch preview — screen reader, contrast in both

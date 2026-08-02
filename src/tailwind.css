@@ -637,7 +637,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      controls sit at 40% opacity whenever they are unavailable).
 
      80% of the text colour. Small text has to clear 4.5:1 against the button
-     surface (WCAG 1.4.3), and 80% lands at 7.90:1 in light and 9.20:1 in dark —
+     surface (WCAG 1.4.3), and 80% lands at about 7.9:1 in light and 9.2:1 in dark —
      roughly half the distance from full strength to the point where each theme
      would touch that floor (63% light, 50% dark), so it is quieter than the
      label while still clearing AAA. It is a single value rather than a per-theme
