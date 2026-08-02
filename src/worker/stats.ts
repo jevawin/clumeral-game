@@ -37,7 +37,7 @@ function whereClause(days: number, hostname: string): string {
 export async function getStats(env: Env, days: number, hostname: string) {
   const where = whereClause(days, hostname);
 
-  const [events, daily, uniqueUsers, newUsers, guessDistribution] = await Promise.all([
+  const [events, daily, uniqueUsers, newUsers, guessDistribution, sourceSplit] = await Promise.all([
     // Event totals by type
     query(
       env,
@@ -63,9 +63,16 @@ export async function getStats(env: Env, days: number, hostname: string) {
       env,
       `SELECT double1 AS guesses, COUNT() AS count FROM clumeral ${where} AND blob1 = 'puzzle_complete' GROUP BY guesses ORDER BY guesses ASC`,
     ),
+    // Undo / Reset split by how they were triggered. The events query above
+    // groups by blob1 alone, so blob3 (source) is written and never read — and
+    // comparing keyboard against button is the whole reason these events exist.
+    query(
+      env,
+      `SELECT blob1 AS event, blob3 AS source, COUNT() AS count FROM clumeral ${where} AND blob1 IN ('undo_used', 'reset_used') GROUP BY event, source ORDER BY count DESC`,
+    ),
   ]);
 
-  return { events, daily, uniqueUsers, newUsers, guessDistribution };
+  return { events, daily, uniqueUsers, newUsers, guessDistribution, sourceSplit };
 }
 
 export function renderDashboard(
@@ -123,6 +130,13 @@ export function renderDashboard(
     })
     .join("");
 
+  // Undo / Reset by trigger. Split rather than combined: a total alongside its
+  // own two components would be a third number that is just their sum.
+  const sourceMap = new Map<string, number>();
+  for (const row of stats.sourceSplit.data) {
+    sourceMap.set(`${row.event}|${row.source}`, Number(row.count));
+  }
+
   // Interaction events
   const interactions = [
     ["htp_opened", "How to Play opened"],
@@ -135,6 +149,17 @@ export function renderDashboard(
     .map(
       ([key, label]) =>
         `<tr><td>${label}</td><td>${eventMap.get(key) ?? 0}</td></tr>`,
+    )
+    .concat(
+      [
+        ["undo_used|keyboard", "Undo used (keyboard)"],
+        ["undo_used|button", "Undo used (button)"],
+        ["reset_used|keyboard", "Reset used (keyboard)"],
+        ["reset_used|button", "Reset used (button)"],
+      ].map(
+        ([key, label]) =>
+          `<tr><td>${label}</td><td>${sourceMap.get(key) ?? 0}</td></tr>`,
+      ),
     )
     .join("");
 
