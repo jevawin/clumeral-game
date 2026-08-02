@@ -1,0 +1,78 @@
+import { describe, it, expect } from 'vitest';
+import { matchShortcut, modifierLabel } from '../src/shortcuts.ts';
+import type { ShortcutKeyEvent } from '../src/shortcuts.ts';
+
+// Build a key event with every modifier off unless overridden — the tests below
+// are about which combinations DON'T match as much as which do.
+function key(over: Partial<ShortcutKeyEvent> & { key: string }): ShortcutKeyEvent {
+  return { ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...over };
+}
+
+describe('matchShortcut', () => {
+  it('maps Ctrl+Z and Cmd+Z to undo', () => {
+    expect(matchShortcut(key({ key: 'z', ctrlKey: true }))).toBe('undo');
+    expect(matchShortcut(key({ key: 'z', metaKey: true }))).toBe('undo');
+  });
+
+  it('maps Ctrl+X and Cmd+X to reset', () => {
+    expect(matchShortcut(key({ key: 'x', ctrlKey: true }))).toBe('reset');
+    expect(matchShortcut(key({ key: 'x', metaKey: true }))).toBe('reset');
+  });
+
+  // Caps lock reports an uppercase key with shiftKey false. Matching lowercased
+  // means caps lock still works, while the shiftKey flag below still vetoes.
+  it('matches with caps lock on', () => {
+    expect(matchShortcut(key({ key: 'Z', ctrlKey: true }))).toBe('undo');
+    expect(matchShortcut(key({ key: 'X', metaKey: true }))).toBe('reset');
+  });
+
+  // Ctrl+Shift+Z is Redo everywhere. We have no redo — doing an undo instead
+  // would be worse than doing nothing.
+  it('ignores Shift, so the redo idiom is left alone', () => {
+    expect(matchShortcut(key({ key: 'z', ctrlKey: true, shiftKey: true }))).toBeNull();
+    expect(matchShortcut(key({ key: 'Z', ctrlKey: true, shiftKey: true }))).toBeNull();
+    expect(matchShortcut(key({ key: 'x', metaKey: true, shiftKey: true }))).toBeNull();
+  });
+
+  // AltGr reports ctrlKey && altKey on Windows, so a European-layout AltGr+Z
+  // would otherwise fire Undo.
+  it('ignores Alt, so AltGr combinations are left alone', () => {
+    expect(matchShortcut(key({ key: 'z', ctrlKey: true, altKey: true }))).toBeNull();
+    expect(matchShortcut(key({ key: 'z', metaKey: true, altKey: true }))).toBeNull();
+    expect(matchShortcut(key({ key: 'x', ctrlKey: true, altKey: true }))).toBeNull();
+  });
+
+  // Both bindings take a modifier, so a bare letter never means a board action —
+  // which is also why WCAG 2.1.4 (character key shortcuts) doesn't apply.
+  it('ignores bare letters', () => {
+    expect(matchShortcut(key({ key: 'z' }))).toBeNull();
+    expect(matchShortcut(key({ key: 'x' }))).toBeNull();
+  });
+
+  it('ignores other modified keys', () => {
+    expect(matchShortcut(key({ key: 'y', ctrlKey: true }))).toBeNull();
+    expect(matchShortcut(key({ key: 'Enter', ctrlKey: true }))).toBeNull();
+    expect(matchShortcut(key({ key: 'c', metaKey: true }))).toBeNull();
+  });
+});
+
+describe('modifierLabel', () => {
+  it('returns Cmd for Apple platforms', () => {
+    expect(modifierLabel('MacIntel')).toBe('Cmd');
+    expect(modifierLabel('macOS')).toBe('Cmd');
+    expect(modifierLabel('iPad')).toBe('Cmd');
+    expect(modifierLabel('iPhone')).toBe('Cmd');
+  });
+
+  it('returns Ctrl for everything else', () => {
+    expect(modifierLabel('Win32')).toBe('Ctrl');
+    expect(modifierLabel('Linux x86_64')).toBe('Ctrl');
+  });
+
+  // Ctrl is the default whenever detection is inconclusive. Both modifiers work
+  // regardless, so the worst case is a cosmetically wrong hint.
+  it('defaults to Ctrl when the platform is unknown', () => {
+    expect(modifierLabel(undefined)).toBe('Ctrl');
+    expect(modifierLabel('')).toBe('Ctrl');
+  });
+});
