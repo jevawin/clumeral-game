@@ -117,12 +117,18 @@ describe('shortcut hint tint (.board-ctrl__key)', () => {
   // The figures Jamie signed off, pinned so a drift is visible rather than merely
   // still-passing. 80% was chosen as roughly half the distance from full strength
   // to the point where each theme would touch 4.5:1 (63% light, 50% dark).
+  //
+  // These are the 8-bit values — blend() rounds to whole channels, as a rasteriser
+  // ultimately does. Compositing color-mix at higher precision gives 7.902 / 9.197,
+  // which is why the prose elsewhere says "about 7.9" rather than a false-precise
+  // figure. The arithmetic here is exact for fixed tokens, so a tight tolerance is
+  // safe: it can only move if a token moves, which is the point.
   it('holds the agreed ratios', () => {
     expect(
       contrastRatio(blend(PALETTE.light.text, PALETTE.light.surface, KEY_ALPHA), PALETTE.light.surface),
-    ).toBeCloseTo(7.9, 1);
+    ).toBeCloseTo(7.9465, 3);
     expect(
       contrastRatio(blend(PALETTE.dark.text, PALETTE.dark.surface, KEY_ALPHA), PALETTE.dark.surface),
-    ).toBeCloseTo(9.2, 1);
+    ).toBeCloseTo(9.2037, 3);
   });
 });
