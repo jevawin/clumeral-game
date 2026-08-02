@@ -5,14 +5,14 @@ import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
-import { modifierLabel } from './shortcuts.ts';
+import { matchShortcut, modifierLabel } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto, bounceBrand } from './octo.ts';
-import './walkthrough.ts';
-import { showScreen } from './screens.ts';
+import { isWalkthroughActive } from './walkthrough.ts';
+import { showScreen, getCurrentScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
@@ -1086,8 +1086,14 @@ dom.submitBtn?.addEventListener("click", () => { handleGuess(); });
 // A click that acted clears any stale reset message and says nothing new: focus
 // is already on the button and the action is self-evident. Only the keyboard
 // path announces what it did.
-dom.undoBtn?.addEventListener("click", () => { if (undoLast()) announceReset(false); });
-dom.resetBtn?.addEventListener("click", () => { resetBoard(); });
+// Both routes are tracked, not just the keyboard — a keyboard-only count is a
+// number with no denominator. A press that did nothing sends no event.
+dom.undoBtn?.addEventListener("click", () => {
+  if (undoLast()) { announceReset(false); track("undo_used", undefined, "button"); }
+});
+dom.resetBtn?.addEventListener("click", () => {
+  if (resetBoard()) track("reset_used", undefined, "button");
+});
 
 // Save checkbox
 if (dom.saveCheck) {
@@ -1097,9 +1103,65 @@ if (dom.saveCheck) {
   });
 }
 
-// Keyboard: digit keys toggle active box; Tab/arrows navigate; Enter submits; Escape closes
+// Is the player typing into something? Cmd+X has to keep cutting inside the
+// feedback textarea, and Cmd+Z has to keep undoing their typing.
+function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  return !!el?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+}
+
+// The native `open` property, NEVER the `.open` class: modals.ts removes that
+// class before the dialog actually closes on transitionend, so a class check
+// reports "closed" while the dialog is still up with focus inside it.
+//
+// How to Play is not listed here — it navigates to /welcome, so it is a screen
+// and the getCurrentScreen() gate already covers it.
+function isOverlayOpen(): boolean {
+  const fb = document.querySelector('[data-fb-modal]') as HTMLDialogElement | null;
+  if (fb?.open) return true;
+  const menu = document.querySelector('[data-menu]');
+  return !!menu && !menu.classList.contains('hidden');
+}
+
+// Keyboard: Ctrl/Cmd+Z undoes and Ctrl/Cmd+X resets; digit keys toggle active box;
+// Tab/arrows navigate; Enter submits; Escape closes
 document.addEventListener("keydown", (e) => {
   if (gameState.solved) return;
+
+  // First, where a reader expects a modifier branch and where it is robust to
+  // the digit branch changing. The solved guard above is also what makes a
+  // shortcut on a solved board free: it never reaches here, so there is nothing
+  // to announce and no second guard to keep in step.
+  const action = matchShortcut(e);
+  if (action) {
+    if (getCurrentScreen() !== 'game') return;
+    if (isTypingTarget(e.target)) return;
+    if (isOverlayOpen()) return;
+    if (isWalkthroughActive()) return;
+
+    // AFTER every guard, never before — a shortcut that eats Cut inside a
+    // textarea is a bug, not a feature.
+    e.preventDefault();
+
+    // Holding the key unwinds repeatedly until the stack is empty, the same as a
+    // native undo. e.repeat suppresses only the announcement and the analytics
+    // event, never the action: otherwise a one-second hold writes to a polite
+    // region at the OS repeat rate and posts thirty identical rows.
+    if (action === 'undo') {
+      const kind = undoLast();
+      // Silence on a keypress is indistinguishable from a broken key, so a dead
+      // press says so rather than saying nothing.
+      if (!kind) { if (!e.repeat) announce("Nothing to undo."); return; }
+      if (!e.repeat) {
+        announce(kind === 'reset' ? "Undo reset." : "Undone.");
+        track("undo_used", undefined, "keyboard");
+      }
+    } else {
+      if (!resetBoard()) { if (!e.repeat) announce("Board is already clear."); return; }
+      if (!e.repeat) track("reset_used", undefined, "keyboard");
+    }
+    return;
+  }
 
   const digit = parseInt(e.key, 10);
   if (!isNaN(digit) && e.key.length === 1) {
