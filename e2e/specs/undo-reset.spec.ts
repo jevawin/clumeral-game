@@ -2,8 +2,10 @@ import { test, expect } from "../fixtures.ts";
 import type { Locator } from "@playwright/test";
 import { GamePage } from "../pages/game.page.ts";
 import { gotoPlayableGame } from "../helpers/game-setup.ts";
-import { solvePuzzle } from "../helpers/solve.ts";
+import { solvePuzzle, readAnswer, setBoxes } from "../helpers/solve.ts";
 import { expectActiveScreen } from "../helpers/screens.ts";
+import { MenuPage } from "../pages/menu.page.ts";
+import { FeedbackPage } from "../pages/feedback.page.ts";
 
 // Undo / Reset controls above the digit boxes (#251). One acceptance criterion
 // per test, driven through the real keypad rather than by poking state.
@@ -399,5 +401,304 @@ test.describe("undo and reset controls", () => {
     // side on the left, which is the layout this replaced.
     expect(undo!.x).toBeCloseTo(row!.x, 0);
     expect(reset!.x + reset!.width).toBeCloseTo(row!.x + row!.width, 0);
+  });
+});
+
+// ─── Keyboard shortcuts ──────────────────────────────────────────────────────
+
+// Every case below presses Control, never Meta. CI runs on Linux, where Meta is
+// not the platform modifier and Meta+X does not cut — a harness that depended on
+// the Mac modifier would be testing the runner, not the app. The matcher accepts
+// either modifier on either platform, which is what makes Control sufficient.
+test.describe("undo and reset keyboard shortcuts", () => {
+  test("Ctrl+Z steps back over an elimination", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4, 5]);
+
+    await page.keyboard.press("Control+z");
+
+    await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+  });
+
+  test("Ctrl+X clears the board and Ctrl+Z brings the whole thing back", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4, 5, 6]);
+
+    await page.keyboard.press("Control+x");
+
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 6)).not.toHaveClass(/elim/);
+    await expect(game.undoLabel).toHaveText("Undo reset");
+
+    // One press, not three — the reset is a single entry on the stack.
+    await page.keyboard.press("Control+z");
+
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 5)).toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 6)).toHaveClass(/elim/);
+  });
+
+  test("pressing Ctrl+Z past the bottom of the stack unwinds and then stops", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4, 5, 6]);
+
+    // Five presses for three entries — the two extra must be inert, not errors.
+    // The console guard in fixtures.ts fails the test on any pageerror.
+    for (let i = 0; i < 5; i++) await page.keyboard.press("Control+z");
+
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 6)).not.toHaveClass(/elim/);
+    await expectUnavailable(game.undo);
+    await expectUnavailable(game.reset);
+  });
+
+  test("neither shortcut does anything on a solved board", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    const answer = await solvePuzzle(page);
+
+    await expectActiveScreen(page, "completion");
+    await page.locator("[data-completion-show-puzzle]").click();
+    await expectActiveScreen(page, "game");
+
+    await page.keyboard.press("Control+z");
+    await page.keyboard.press("Control+x");
+
+    // The revealed answer is still in the boxes and the controls are still gone.
+    await expect(game.boardControls).toBeHidden();
+    for (let box = 0; box < 3; box++) {
+      await expect(game.digit(box)).toContainText(String(answer[box]));
+    }
+  });
+
+  // Ctrl+Shift+Z is Redo. We have no redo, so it has to do nothing at all
+  // rather than quietly perform an undo.
+  test("Ctrl+Shift+Z does nothing", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4]);
+
+    await page.keyboard.press("Control+Shift+z");
+
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+    await expectAvailable(game.undo);
+  });
+
+  // Regression: the shortcut branch sits ahead of every other binding in the
+  // same keydown handler, so all of them have to still work.
+  test("the existing key bindings still work with the shortcut branch ahead of them", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    // Digits still toggle.
+    await game.openBox(1);
+    await expect(page.locator("[data-keypad] [data-key]").first()).toBeVisible();
+    await page.keyboard.press("4");
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+
+    // Arrows still move between boxes.
+    await page.keyboard.press("ArrowRight");
+    await expect(game.digit(2)).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("ArrowLeft");
+    await expect(game.digit(1)).toHaveAttribute("aria-expanded", "true");
+
+    // Tab still moves between boxes.
+    await page.keyboard.press("Tab");
+    await expect(game.digit(2)).toHaveAttribute("aria-expanded", "true");
+
+    // Escape still closes the keypad.
+    await page.keyboard.press("Escape");
+    await expect(game.keypad).toBeHidden();
+  });
+
+  test("Enter still submits a resolved board", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    const digits = await readAnswer(page);
+    await setBoxes(page, digits);
+
+    await page.keyboard.press("Enter");
+    await expectActiveScreen(page, "completion");
+  });
+});
+
+// ─── Shortcut announcements ──────────────────────────────────────────────────
+
+// Whether these strings are WRITTEN is what a spec can assert. Whether they are
+// SPOKEN is a manual screen-reader check and no substitute for one.
+test.describe("keyboard shortcut announcements", () => {
+  test("undoing a toggle announces Undone", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4]);
+
+    await page.keyboard.press("Control+z");
+    await expect(game.undoMsg).toHaveText("Undone.");
+  });
+
+  test("undoing a reset announces Undo reset", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4]);
+
+    await page.keyboard.press("Control+x");
+    await page.keyboard.press("Control+z");
+    await expect(game.undoMsg).toHaveText("Undo reset.");
+  });
+
+  // A dead press has to say so. Silence is indistinguishable from a broken key.
+  test("undo on an untouched board announces that there is nothing to undo", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    await page.keyboard.press("Control+z");
+    await expect(game.undoMsg).toHaveText("Nothing to undo.");
+  });
+
+  test("reset on an untouched board announces that the board is already clear", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    await page.keyboard.press("Control+x");
+    await expect(game.undoMsg).toHaveText("Board is already clear.");
+  });
+
+  // Unchanged wording — the reset announcement is shared with the button path.
+  test("reset on a touched board keeps its existing announcement", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4]);
+
+    await page.keyboard.press("Control+x");
+    await expect(game.undoMsg).toHaveText("Board reset. Undo reset available.");
+  });
+});
+
+// ─── Shortcut exclusions ─────────────────────────────────────────────────────
+
+test.describe("keyboard shortcut exclusions", () => {
+  // A shortcut that eats Cut inside a textarea is a bug, not a feature.
+  test("Ctrl+X cuts inside the feedback textarea and leaves the board alone", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4]);
+
+    const menu = new MenuPage(page);
+    await menu.open();
+    await menu.fbBtn.click();
+    const feedback = new FeedbackPage(page);
+    await expect(feedback.modal).toBeVisible();
+
+    await feedback.msg.fill("cut me");
+    await feedback.msg.selectText();
+    await page.keyboard.press("Control+x");
+
+    await expect(feedback.msg).toHaveValue("");
+    // The board is untouched: 4 is still eliminated and nothing was reset.
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+  });
+
+  test("neither shortcut reaches the board while the menu is open", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4]);
+
+    const menu = new MenuPage(page);
+    await menu.open();
+    await expect(menu.menu).toBeVisible();
+
+    await page.keyboard.press("Control+z");
+    await page.keyboard.press("Control+x");
+
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+    await expectAvailable(game.undo);
+  });
+
+  // The walkthrough steps the player through real board actions and waits on
+  // real gate events, so an undo landing mid-step would desync it.
+  test("the shortcut is inert while the first-play walkthrough is running", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "walkthrough timing is engine-independent — one project is enough",
+    );
+
+    // The walkthrough holds on the logo for START_DELAY_MS before it starts
+    // talking, and the script itself runs for the best part of a minute.
+    test.slow();
+
+    const game = new GamePage(page);
+    // NOT gotoPlayableGame: the walkthrough auto-starts only when dlng_history is
+    // absent, and that helper seeds it. A player with no history is redirected off
+    // /play, so reach the board the way a first-time player does.
+    await page.goto("/welcome");
+    await page.locator("[data-play-btn]").click();
+    await expectActiveScreen(page, "game");
+
+    // Put one entry on the undo stack first, so a failure of the guard would be
+    // visible rather than indistinguishable from an empty stack.
+    await game.openBox(1);
+    await expect(page.locator("[data-keypad] [data-key]").first()).toBeVisible();
+    await game.tapKey(4);
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+
+    // The walkthrough hides the brand wordmark from the a11y tree while it talks.
+    // Waiting for that is what makes this a test of the guard rather than of
+    // whatever the walkthrough happened to be doing — the flag is set on entering
+    // the screen, but this is the first externally visible proof of it.
+    const brand = page.locator("[data-brand-text]");
+    await expect(brand).toHaveAttribute("aria-hidden", "true", { timeout: 15_000 });
+
+    await page.keyboard.press("Control+z");
+
+    // Still running, and the elimination is still there: the guard held.
+    await expect(brand).toHaveAttribute("aria-hidden", "true");
+    await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+  });
+});
+
+// ─── The shortcut hint ───────────────────────────────────────────────────────
+
+// Each case names the projects it applies to. This file runs on all five, and an
+// ungated hint assertion would fail on the four it doesn't describe.
+test.describe("keyboard shortcut hint", () => {
+  test("desktop shows the hint on load, before any keypress", async ({ page }, testInfo) => {
+    test.skip(
+      !testInfo.project.name.endsWith("-desktop"),
+      "the pointer-based reveal only applies to desktop projects",
+    );
+
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    // Ctrl, not Cmd: the CI runners are Linux.
+    await expect(game.undoKey).toHaveText("Ctrl + Z");
+    await expect(game.resetKey).toHaveText("Ctrl + X");
+    await expect(game.undoKey).toBeVisible();
+  });
+
+  test("touch-only shows no hint until a key is pressed", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "mobile-chromium",
+      "the touch case needs a project with no fine pointer",
+    );
+
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    // Empty and collapsed — a touch player's layout is untouched.
+    await expect(game.undoKey).toHaveText("");
+    await expect(page.locator("html")).not.toHaveAttribute("data-keyboard", "true");
+
+    // One keypress is enough: this is the iPad-with-a-keyboard case.
+    await page.keyboard.press("a");
+
+    await expect(page.locator("html")).toHaveAttribute("data-keyboard", "true");
+    await expect(game.undoKey).toHaveText("Ctrl + Z");
   });
 });

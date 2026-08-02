@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isFuturePuzzleDate } from '../src/worker/date-guard.ts';
+import { VALID_EVENTS } from '../src/worker/index.ts';
 
 describe('isFuturePuzzleDate (Phase 5 D-04, #205 server gate fix)', () => {
   beforeEach(() => { vi.useFakeTimers(); });
@@ -35,5 +36,25 @@ describe('isFuturePuzzleDate (Phase 5 D-04, #205 server gate fix)', () => {
     it('rejects 2026-06-02 (today+2 across month rollover)', () => {
       expect(isFuturePuzzleDate('2026-06-02')).toBe(true);
     });
+  });
+});
+
+// The frontend cannot tell whether an event name is accepted: track() posts and
+// swallows the failure, so a name missing from the allowlist records nothing
+// while the feature looks perfectly healthy. This is the only automated proof.
+describe('VALID_EVENTS allowlist', () => {
+  it('accepts the board-control events', () => {
+    expect(VALID_EVENTS.has('undo_used')).toBe(true);
+    expect(VALID_EVENTS.has('reset_used')).toBe(true);
+  });
+
+  it('still accepts the events that were already there', () => {
+    for (const name of ['puzzle_start', 'puzzle_complete', 'incorrect_guess', 'route_change']) {
+      expect(VALID_EVENTS.has(name), name).toBe(true);
+    }
+  });
+
+  it('is still an allowlist', () => {
+    expect(VALID_EVENTS.has('made_up_event')).toBe(false);
   });
 });
