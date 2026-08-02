@@ -22,10 +22,10 @@ import { test, expect, type Page } from "@playwright/test";
 // what the current sequence does, and the replacement first-play tutorial is
 // easier to design with it than without. It goes when the code goes, per #294.
 //
-// The skip is applied per-test rather than in a blanket beforeEach, because the
-// last case asserts the walkthrough is ABSENT — which is now true for everyone,
-// and is the only live check that the disable actually took effect. Blanket-
-// skipping it would leave nothing at all guarding #294.
+// The skip is applied per-test rather than in a blanket beforeEach, because one
+// case asserts the walkthrough is ABSENT and so still passes — skipping it would
+// buy nothing. It is NOT the guard on the disable (see the note on it); that job
+// belongs to the first-time-player case in specs/undo-reset.spec.ts.
 const walkthroughDisabled = () =>
   test.skip(true, "First-play walkthrough disabled pending its replacement — see #294");
 
@@ -102,10 +102,14 @@ test("returning player sees no walkthrough — wordmark from the start", async (
   await page.goto("/play");
   // Brand never leaves "Clumeral" for a returning player (well past the 5s start delay).
   //
-  // Left RUNNING while the rest of this file is skipped: with the walkthrough
-  // disabled (#294) this is true for every player, not just returning ones, so it
-  // is now the live check that the disable actually took effect. If someone
-  // re-enables the walkthrough without meaning to, this is what goes red.
+  // Left RUNNING while the rest of this file is skipped — it is the one case here
+  // that still passes against the disabled build (#294), so skipping it would buy
+  // nothing.
+  //
+  // It is NOT a guard on the disable: it seeds dlng_history, and the walkthrough
+  // never ran for a player who has that, so re-enabling WALKTHROUGH_ENABLED leaves
+  // it green. The actual guard is "the shortcuts work for a first-time player with
+  // no history" in specs/undo-reset.spec.ts, which seeds nothing and would go red.
   await page.waitForTimeout(7000);
   await expect(brand(page)).toHaveText("Clumeral");
 });

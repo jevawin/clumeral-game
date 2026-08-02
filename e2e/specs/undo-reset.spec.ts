@@ -538,6 +538,35 @@ test.describe("undo and reset keyboard shortcuts", () => {
     await expect(game.key(7)).toBeFocused();
   });
 
+  // The save-score checkbox exists only while the board is fully resolved, and an
+  // undo un-resolves it — so the element holding focus is hidden by the very
+  // press. This is the case the narrowed isTypingTarget deliberately opened up
+  // ("the moment a player most wants an undo"), and it loses focus differently
+  // from the keypad: hiding by CLASS defers the browser's focus fixup, so an
+  // activeElement read straight afterwards is too early to see it.
+  test("a shortcut recovers focus when the press hides the focused control", async ({ page }) => {
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    // Resolve the whole board so the submit row — and the save-score checkbox
+    // inside it — are on screen.
+    const digits = await readAnswer(page);
+    await setBoxes(page, digits);
+    const saveCheck = page.locator("[data-save-check]");
+    await expect(saveCheck).toBeVisible();
+
+    await saveCheck.focus();
+    await expect(saveCheck).toBeFocused();
+
+    // Undoing un-resolves the board, which hides the row the checkbox lives in.
+    await page.keyboard.press("Control+z");
+    await expect(saveCheck).toBeHidden();
+
+    // Focus must not have been dumped on the document — that is the #251 failure
+    // mode, where the next Tab restarts from the top of the page.
+    await expect(game.undo).toBeFocused();
+  });
+
   // The other half of item 59, and the easier one to get wrong: if nothing had
   // focus, the shortcut must not GIVE it any. That is the normal state for a
   // mouse user — macOS Safari and Firefox don't focus a button on click — so a
@@ -901,7 +930,15 @@ test.describe("keyboard shortcut hint", () => {
     await feedback.msg.click();
     await feedback.msg.pressSequentially("mashing the keys");
 
-    await expect(page.locator("html")).not.toHaveAttribute("data-keyboard", "true");
+    // Precondition, and the one assumption in this case that the suite has never
+    // exercised: mobile-webkit must report a coarse pointer, or the hint is
+    // already showing and the real assertion below proves nothing. Called out so
+    // a failure here reads as "the project reports a fine pointer" rather than as
+    // a detection bug.
+    await expect(
+      page.locator("html"),
+      "mobile-webkit should report a coarse pointer, so no hint on load",
+    ).not.toHaveAttribute("data-keyboard", "true");
     await expect(game.undoKey).toHaveText("");
 
     // ...and the detection still works afterwards. The listener has to survive
