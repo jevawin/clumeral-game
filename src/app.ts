@@ -518,13 +518,42 @@ function toggleDigit(digit: number): void {
 
 // ─── Undo / Reset controls (#251) ────────────────────────────────────────────
 
-// Screen-reader announcement for a reset. The visible cue is the Undo button's
-// own label, but a sighted-only cue would leave the one signal that Reset is
-// recoverable unannounced. Driven by text content, not display:none — a live
-// region toggled in and out of the layout is unreliably announced (VoiceOver in
-// particular often stays silent).
+// Screen-reader announcements for the board controls. Driven by text content,
+// not display:none — a live region toggled in and out of the layout is
+// unreliably announced (VoiceOver in particular often stays silent).
+let announceTimer: number | undefined;
+let lastAnnounced = "";
+
+function announce(message: string): void {
+  if (!dom.undoMsg) return;
+  clearTimeout(announceTimer);
+  // Clearing is not an announcement, so it never needs the repeat dance below —
+  // and it happens on every digit tap, which would otherwise queue a timer per tap.
+  if (message === "") {
+    dom.undoMsg.textContent = "";
+    lastAnnounced = "";
+    return;
+  }
+  if (message !== lastAnnounced) {
+    // Normal path — a changed message IS re-announced, so write it synchronously.
+    // Every pre-existing call site takes this branch, unchanged.
+    dom.undoMsg.textContent = message;
+    lastAnnounced = message;
+    return;
+  }
+  // Repeat path: two consecutive undos produce identical text, and a polite
+  // region whose content does not change is not re-announced at all. Clear now,
+  // rewrite after a beat, so the second undo is audible. 100ms is under the
+  // polite-region settle time and well above a microtask, which AT coalesces away.
+  dom.undoMsg.textContent = "";
+  announceTimer = window.setTimeout(() => { dom.undoMsg!.textContent = message; }, 100);
+}
+
+// Reset's own announcement. The visible cue is the Undo button's label, but a
+// sighted-only cue would leave the one signal that Reset is recoverable
+// unannounced. Signature and wording unchanged, so its six call sites are too.
 function announceReset(on: boolean): void {
-  if (dom.undoMsg) dom.undoMsg.textContent = on ? "Board reset. Undo reset available." : "";
+  announce(on ? "Board reset. Undo reset available." : "");
 }
 
 // Undo and Reset don't share a condition. Straight after a Reset the board IS
@@ -578,21 +607,32 @@ function applyBoard(next: Set<number>[]): void {
   checkSubmit();
 }
 
-function undoLast(): void {
-  if (gameState.solved) return;
+// Returns the kind of change stepped back over, or null if nothing happened.
+// Callers need to tell the two apart: the keyboard path announces "Undone." or
+// "Undo reset." for a real step and "Nothing to undo." for a dead press, and
+// neither route should log an analytics event for a press that did nothing.
+//
+// Deliberately does NOT announce. The clear moves out to the callers so the
+// keyboard path can write its own message instead of having it wiped.
+function undoLast(): EntryKind | null {
+  if (gameState.solved) return null;
+  const kind = boardHistory.nextKind();   // read BEFORE the pop
   const previous = boardHistory.undo();
-  if (previous === null) return;
-  announceReset(false);
+  if (previous === null) return null;
   applyBoard(previous);   // persists the popped stack against the restored board
+  // Non-null whenever undo() was: nextKind() and undo() share the empty-stack guard.
+  return kind;
 }
 
-function resetBoard(): void {
-  if (gameState.solved || isStartingBoard(possibles)) return;
+// Returns true if the board was actually reset.
+function resetBoard(): boolean {
+  if (gameState.solved || isStartingBoard(possibles)) return false;
   // One entry, tagged so the Undo control can label itself "Undo reset". A
   // single press restores the whole pre-reset board.
   pushHistory('reset');
   applyBoard(startingBoard());
   announceReset(true);
+  return true;
 }
 
 function openBox(i: number): void {
@@ -999,7 +1039,10 @@ dom.submitBtn?.addEventListener("click", () => { handleGuess(); });
 // disabled, so a press still reaches the handler when the control is unavailable.
 // Both handlers re-derive live state and return early, which is what makes that
 // safe — see setUnavailable.
-dom.undoBtn?.addEventListener("click", () => { undoLast(); });
+// A click that acted clears any stale reset message and says nothing new: focus
+// is already on the button and the action is self-evident. Only the keyboard
+// path announces what it did.
+dom.undoBtn?.addEventListener("click", () => { if (undoLast()) announceReset(false); });
 dom.resetBtn?.addEventListener("click", () => { resetBoard(); });
 
 // Save checkbox
