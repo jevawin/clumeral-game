@@ -179,9 +179,10 @@ Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new 
     `undo-stack.ts` was split from `app.ts` in #251)
 
 ## 7. How it looks
-Settled: REOPENED 2026-08-01 by Jamie — placement moved inside the buttons. Dave's earlier ack
-covered the between-the-buttons version and does NOT carry over; re-ask him.
-See items 48-52 below, which supersede 35, 37, 38 and 39.
+Settled: pending (Jamie — items 64-66 unconfirmed) · Ack: Dave 2026-08-01, re-given after the
+reopening ("I'm happy with all sections", 2026-08-01)
+Reopened 2026-08-01 by Jamie — placement moved inside the buttons. Items 48-52 and 62-66 supersede
+35, 37, 38, 39 and 41.
 
 35. Placement: inline in the existing `[data-board-controls]` row, centred between Undo and
     Reset. That row is `flex items-center justify-between` with a button pinned at each end, so
@@ -253,7 +254,7 @@ lands here. Items 48-52 supersede 35, 37, 38 and 39.
     Accepted — the 200ms transition is what stops that reading as a glitch. (assumed — item 63)
 
 ## 8. Copy & wording
-Settled: pending · Ack: pending
+Settled: pending (Jamie — item 45, the lowercase call, is a type decision) · Ack: Dave 2026-08-01
 
 43. The hint names the key AND the action, rather than keys alone:
     - Mac: `⌘Z undo · ⌘X reset`
@@ -279,7 +280,8 @@ Settled: pending · Ack: pending
     keeps "Board reset. Undo reset available." (assumed — item 9)
 
 ## 9. Accessibility
-Settled: pending (Jamie — owner, blocking) · Ack: n/a (Jamie owns it outright)
+Settled: pending — BLOCKING, Jamie only. He asked the question in item 53 and has not yet signed
+off the answer or items 54-57. · Ack: n/a (owned section)
 
 Jamie asked directly: "rare size rule break but contrast is good and screen read picks up, okay
 for accessibility?" Answer: yes on the size, with three conditions — and one correction, because
@@ -327,7 +329,7 @@ the screen reader will NOT pick it up as things stand.
 
 ## 10. Analytics
 Settled: Jamie 2026-08-01 (chose option 1 — both routes tracked with a `source` split) ·
-Ack: pending (Dave)
+Ack: Dave 2026-08-01
 
 Context: Undo and Reset ship with **no analytics at all** today — #251 added none because nobody
 asked. So this is not "add a keyboard property to the existing event"; the events do not exist.
@@ -352,7 +354,7 @@ asked. So this is not "add a keyboard property to the existing event"; the event
 72. No worker change — `/api/event` takes arbitrary event names already. (assumed — item 30)
 
 ## 11. Done / test plan
-Settled: pending · Ack: pending
+Settled: pending (Jamie) · Ack: Dave 2026-08-01
 
 Existing coverage to extend rather than duplicate: `tests/undo-stack.spec.ts`,
 `tests/storage-undo.spec.ts` (vitest) and `e2e/specs/undo-reset.spec.ts` (Playwright).
