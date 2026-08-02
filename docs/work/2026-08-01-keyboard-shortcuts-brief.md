@@ -141,7 +141,9 @@ Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: Dave 2026-08-01
     rather it survive a refresh on an iPad.)
 
 ## 6. How it fits
-Settled: Jamie 2026-08-01 ("6 approved" — items 32 and 33 both go ahead) · Ack: Dave 2026-08-01
+Settled: REOPENED by da-brief 2026-08-01 — see items 84-88. Jamie's "6 approved" of items 32/33
+stands; the module list and the "no duplicated logic" claim did not survive review.
+Prior: Settled Jamie 2026-08-01 · Ack: Dave 2026-08-01
 
 Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new export),
 `src/walkthrough.ts` (one new export). NOT touched: `src/undo-stack.ts`, `src/storage.ts`,
@@ -254,8 +256,9 @@ lands here. Items 48-52 supersede 35, 37, 38 and 39.
     Accepted — the 200ms transition is what stops that reading as a glitch. (assumed — item 63)
 
 ## 8. Copy & wording
-Settled: Jamie 2026-08-01 (accepted all recommendations; item 45 lowercase confirmed as his type
-call) · Ack: Dave 2026-08-01
+Settled: REOPENED by da-brief 2026-08-01 — items 43/44 describe the superseded shared-label
+design. Replacement in items 89-91, needs Jamie (type/copy) and a fresh ack from Dave.
+Prior: Settled Jamie 2026-08-01 · Ack: Dave 2026-08-01
 
 43. The hint names the key AND the action, rather than keys alone:
     - Mac: `⌘Z undo · ⌘X reset`
@@ -329,8 +332,10 @@ the screen reader will NOT pick it up as things stand.
 61. The hint is not a live region and never announces itself. It is static description. (assumed)
 
 ## 10. Analytics
-Settled: Jamie 2026-08-01 (chose option 1 — both routes tracked with a `source` split) ·
-Ack: Dave 2026-08-01
+Settled: REOPENED by da-brief 2026-08-01 — as written §10 cannot ship. `/api/event` rejects any
+event not on a worker allowlist, and the dashboard cannot read the `source` split. See items
+81-83; needs a decision from Jamie.
+Prior: Settled Jamie 2026-08-01 (option 1) · Ack: Dave 2026-08-01
 
 Context: Undo and Reset ship with **no analytics at all** today — #251 added none because nobody
 asked. So this is not "add a keyboard property to the existing event"; the events do not exist.
@@ -397,3 +402,129 @@ Existing coverage to extend rather than duplicate: `tests/undo-stack.spec.ts`,
     both of you eyeball the layout on the preview before the PR is raised.
 80. Done means: all of the above green, the CI smoke suite passing cross-engine, `da-build`
     clean, and the brief plus plan committed on the branch. (assumed — house rules)
+
+
+---
+
+# da-brief review — 2026-08-01
+
+Fresh-context devil's-advocate pass over the whole brief, checked against the source. Verdict was
+**not closeable**: 4 High, 9 Medium, 7 Low. Resolutions below, numbered from 81. Nothing was
+silently dropped.
+
+## Blocking — needs Jamie (§10 reopened)
+
+81. **H1. The analytics in §10 cannot ship as agreed.** `src/worker/index.ts:25` defines
+    `VALID_EVENTS`, an allowlist of eight event names, and line 404 returns 400 for anything
+    else. `undo_used` and `reset_used` would be rejected — and `track()` swallows the failure
+    (`app.ts:50`, `.catch(() => {})`), so the feature would look fine and record nothing.
+    Adding the two names is a one-line worker change, which item 30, §6's "NOT touched: anything
+    under `src/worker/`" and CLAUDE.md's "Backend: No worker/API changes" all forbid.
+82. **H2. Even allowlisted, the `source` split is unreadable.** `source` is written to blob3
+    (`worker/index.ts:409`) but `worker/stats.ts` never queries it — `getStats` groups by blob1
+    only, and the dashboard's interactions table (`stats.ts:127`) is a hardcoded key/label list
+    that does not include the new events. Item 67's entire justification — comparing keyboard
+    against button — needs a second worker change and a new query to be visible at all.
+83. So the real choice is:
+    (a) allow the worker change: two names in `VALID_EVENTS`, two rows in the dashboard list, and
+        a `source`-aware query. Delivers what item 67 asked for; breaks the frontend-only
+        constraint for this task.
+    (b) keep §10 but split it: ship the shortcuts frontend-only now with NO analytics, and log a
+        separate issue for the events plus their dashboard support.
+    (c) drop §10 entirely and go back to no undo/reset analytics.
+    My rec: (b). Why: the constraint is Jamie's own and worth keeping intact for a UI task, the
+    dashboard work is the larger half of (a) and does not belong in a keyboard-shortcut PR, and
+    (c) throws away a decision he has already made. (b) keeps it, just not here.
+
+## §6 corrections — resolved
+
+84. **H4. Items 14 and 29 are wrong: `undoLast()` and `resetBoard()` do have to change.**
+    `undoLast()` returns `void`, so a caller cannot tell whether it acted — which items 57 and 70
+    both depend on — and it calls `announceReset(false)`, which blanks the very live region item
+    56 wants to write "Undone." into. Corrected: both functions gain a return value (or a small
+    wrapper) reporting whether they acted, and the announcement is moved so it is not immediately
+    cleared. The *behaviour* parity in item 9 stands; the "not one line changes" claim does not.
+85. **M1. `src/tailwind.css` joins the module list.** `.board-ctrl` lives at
+    `src/tailwind.css:609-631`, including the `opacity: 0.4` rule item 53 leans on. Item 31's
+    "Tailwind utilities only, no new colour token" is corrected to: the token claim stands, the
+    utilities-only claim does not — this is a rewrite of the `.board-ctrl` rule.
+86. **M2. Two hint elements, and Reset's markup needs work.** Item 31's "one small function"
+    becomes two hint spans rendered together. Also `index.html:259` wraps Undo's label in
+    `<span data-undo-label>` but Reset's label at line 269 is a bare text node — item 62's
+    text-column layout needs it wrapped to match.
+87. **M8. `matchShortcut()` needs its own file.** Item 34 offered "beside the handler", i.e.
+    `app.ts` — which vitest cannot import, because it runs `document.querySelector` at module
+    scope and registers listeners on import. Corrected: a new `src/shortcuts.ts`, pure and
+    DOM-free, same pattern as `undo-stack.ts`.
+88. **L2. Item 32's reasoning was incomplete** — `screens.ts:39` already dispatches a
+    `screens:enter` event that `app.ts` subscribes to twice. The `getCurrentScreen()`
+    recommendation stands and is still better (a getter cannot miss an event fired before
+    subscription), and `tests/router.spec.ts:7` already mocks a `getCurrentScreen` that does not
+    exist — so adding it fixes a latent lie in the test suite too.
+
+## §8 respecified — needs Jamie, then a fresh ack from Dave
+
+89. **H3. Items 43 and 44 describe the shared label that no longer exists.** One string with a
+    middle-dot separator only made sense between the two buttons. Inside each button there is no
+    separator, and repeating the action word duplicates the label sitting next to it.
+    Replacement: the hint is the key alone — `⌘Z` in Undo, `⌘X` in Reset, or `Ctrl+Z` / `Ctrl+X`
+    off the Mac. Item 44's separator is dropped. Item 45's lowercase call is moot — there is no
+    action word left to case. Item 36 (left/right ordering) and item 37 (plain text vs `<kbd>`)
+    are also moot or superseded; see 90.
+90. **M3. Styling of the in-button hint, undecided since §7 reopened.**
+    My rec: plain text, 0.875rem, full-strength colour, same Quicksand face, no border or pill.
+    Why: it sits inside a button that already has a border, an icon and a label — a pill inside a
+    button reads as a second control.
+91. **M7. One spoken string, not two.** Items 46 and 54 gave different wordings.
+    My rec: item 54's per-button form wins — "Keyboard shortcut: Command Z" on Undo, "Keyboard
+    shortcut: Command X" on Reset. Item 46's combined sentence described the shared label and is
+    withdrawn.
+
+## §9 corrections — inside Jamie's signed section, so his to confirm
+
+92. **M6. Item 54 as written would announce the glyph anyway.** It puts the visible `⌘Z` and the
+    spelled-out text in the same span and points `aria-describedby` at that span — so a screen
+    reader reads both, "place of interest sign Z, Keyboard shortcut Command Z", the exact failure
+    items 46 and 55 exist to prevent. Corrected: the glyph carries `aria-hidden="true"` and
+    `aria-describedby` targets a separate visually-hidden element.
+93. **M4. The live region needs a repeat rule.** Item 69 suppresses analytics on `e.repeat` but
+    nothing suppresses the announcement, so holding Ctrl+Z writes to `aria-live="polite"` at the
+    OS repeat rate; and two consecutive single undos write identical text, which screen readers
+    do not re-announce, so the second is silent. Corrected: no announcement while `e.repeat` is
+    true, and single undos clear the region before writing so repeated identical messages are
+    still spoken.
+94. **M5. How to Play is not a modal, and the modal guard was aimed at the wrong property.**
+    `[data-htp-btn]` calls `navigate('/welcome')` (`app.ts:1265`) — it is a screen, already
+    covered by item 32's screen gate. The only real modal is the feedback `<dialog>`, and
+    `modals.ts` toggles a `.open` **class** which `closeFeedback()` removes *before* the dialog
+    actually closes on `transitionend` — so a class check reports "closed" while the dialog is
+    still up with focus inside it. Corrected: guard on the native `dialog.open` property or
+    `:modal`, never the class.
+95. **M9. Item 40 named no way to detect the platform.** Corrected: prefer
+    `navigator.userAgentData?.platform`, fall back to `navigator.platform`, default to Ctrl when
+    neither is conclusive. iPadOS reporting "Macintosh" is harmless — an iPad keyboard does have
+    a Command key — and item 12 accepts either modifier, so a wrong guess is only ever cosmetic.
+
+## §11 corrections — resolved
+
+96. **L3. Item 76's cut test must use `Control+X`, not `Cmd+X`.** CI runs Linux, where `Meta+X`
+    does not cut in any engine.
+97. **L4. Items 77's hint cases must be project-gated.** `undo-reset.spec.ts` runs on all five
+    Playwright projects, so "hint absent on touch" fails on the three desktop projects and vice
+    versa unless each case names the projects it applies to.
+
+## Noted, not fixed here
+
+98. **L1. Item 28's reason was wrong** — `parseInt('z')` is `NaN`, so `Ctrl+Z` could never have
+    been read as a digit. Putting the modifier branch first is still right (it is where a reader
+    expects it, and it is robust to the digit branch changing); the stated justification is
+    withdrawn.
+99. **L5. A pre-existing bug, deliberately left alone.** The digit branch has no target check and
+    `activeBox` is not cleared when the feedback modal opens, so typing a digit into the feedback
+    textarea toggles a board digit today and `preventDefault()` eats the character. Item 7 keeps
+    it out of scope, which is right for this task — but it should be logged as its own issue
+    rather than left unrecorded, since item 76 tests one keystroke away from it.
+100. **L7. Event volume, if §10 survives item 83.** Undo is a repeated action; `undo_used` could
+     fire far more often than any current event (the busiest today is one `puzzle_start` per
+     load). Item 69's repeat suppression helps. Worth a glance at the Analytics Engine write
+     budget before shipping, not a blocker.
