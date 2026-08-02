@@ -672,6 +672,34 @@ plus this plan committed on the branch [80].
 
 ---
 
+## Build record — 2026-08-02
+
+Built from this plan on `dev/keyboard-shortcuts`, eight commits in the order above.
+`npm run build` clean, `npx tsc --noEmit` clean, vitest 317 passing (22 files, up from 309/21).
+Playwright is CI-only — nothing in the e2e additions has been run locally.
+
+Two deviations from the plan text, both small and both deliberate:
+
+1. **`announce('')` short-circuits.** The plan's two branches would have sent every
+   clear down the repeat path, because `lastAnnounced` starts `''` and `announceReset(false)`
+   fires on every digit tap — queueing a 100ms timer per tap to write `''` over `''`.
+   Clearing is not an announcement, so it now returns synchronously before the repeat
+   branch. This makes M3's "every existing call site stays synchronous" true of the clears
+   as well as the writes, which is what M3 was actually after.
+2. **`game.page.ts` gained `undoKey` and `resetKey` as well as `undoLabel`.** The hint
+   assertions in Task 9 need locators for the two key spans; the plan named only `undoLabel`.
+
+Everything else landed as written, including the ten repointed assertions in the same
+commit as the markup (H1), the four-row dashboard split, and the exported `VALID_EVENTS`.
+
+**Still outstanding before merge:**
+- Human review (Jamie and Dave), then `da-build`.
+- Manual passes from Task 9 on the branch preview — screen reader, contrast in both
+  themes, `prefers-reduced-motion`, and a real tablet with a keyboard. Jamie takes the
+  screen-reader and contrast checks.
+- Item 100's write-budget glance before the PR merges.
+- Item 99 still needs logging as its own issue, on Jamie's go-ahead.
+
 ## da-plan review — 2026-08-02
 
 Fresh-context devil's-advocate pass: 1 High, 4 Medium, 7 Low. All twelve resolved in this file;
