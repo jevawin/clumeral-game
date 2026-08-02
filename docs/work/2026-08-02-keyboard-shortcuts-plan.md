@@ -692,6 +692,46 @@ Two deviations from the plan text, both small and both deliberate:
 Everything else landed as written, including the ten repointed assertions in the same
 commit as the markup (H1), the four-row dashboard split, and the exported `VALID_EVENTS`.
 
+### Jamie's preview review — 2026-08-02, four changes
+
+Reviewed on the branch preview. All four agreed in chat and built; recorded here because
+chat is not the memory.
+
+1. **Shortcut text 14px → 13px** (`0.8125rem`). A step below the button's own 14px label so
+   the shortcut reads as secondary. The reveal height drops 1.05rem → 0.95rem to match the
+   smaller line box. Still "normal" text for WCAG either way, so the 4.5:1 bar is unchanged.
+2. **Label and shortcut left-aligned to each other** — `.board-ctrl__text` goes
+   `align-items: center` → `flex-start`. The column stays vertically centred against the
+   icon, so [62] and Jamie's Saturday note both still hold; only the two lines' shared edge
+   changes.
+3. **Keyboard detection no longer trusts any keydown.** Jamie revealed the hint on an
+   iPhone by typing feedback — an on-screen keyboard firing keydown is not evidence of a
+   physical one, and it advertised shortcuts that phone can never send. A keydown now only
+   counts when `isTypingTarget(e.target)` is false: iOS cannot raise its keyboard without a
+   focused text field, so a keypress anywhere else means real keys. **Any** key qualifies
+   rather than a hand-picked Tab/digit list — Tab, digits, arrows and Escape are all real
+   board bindings, and a list would be one more thing to keep in step with the keydown
+   handler. `isTypingTarget` moved from `app.ts` to `shortcuts.ts` so both the shortcut
+   guard and the detector share one definition and it can be unit-tested.
+   **Consequence, accepted by Jamie:** the listener can no longer be `once` — the first
+   keydown of a session is often a character typed into feedback, so it has to survive that
+   and keep watching. It removes itself once it fires for real. A tablet-with-keyboard
+   player who *only* ever types in the feedback box now never sees the hint; one Tab or
+   digit anywhere else brings it back, and Jamie's call is that this is the right trade for
+   what is mostly an accessibility affordance.
+4. **Shortcut colour to 80% of the text colour.** Measured against the real tokens on
+   `--color-surface`: full strength is 15.16:1 light / 13.52:1 dark, and each theme would
+   touch the 4.5:1 floor at 63% / 50%. 80% gives **7.90:1 light and 9.20:1 dark** — about
+   half the distance to the floor, clearing AAA in both. A single value rather than the
+   exact per-theme pair (81% / 75%), because the difference is invisible and one number is
+   easier to keep honest. Applied as `color-mix(in srgb, currentColor 80%, transparent)`, so
+   it still inherits and the disabled fade still multiplies over it.
+
+New coverage for 3: `isTypingTarget` unit tests in `tests/shortcuts.spec.ts`, and an e2e
+regression on `mobile-webkit` proving that typing into the feedback box reveals nothing and
+that detection still works afterwards. The `mobile-chromium` reveal case now presses Tab
+rather than a letter, which is what a keyboard player actually presses first.
+
 **Still outstanding before merge:**
 - Human review (Jamie and Dave), then `da-build`.
 - Manual passes from Task 9 on the branch preview — screen reader, contrast in both
