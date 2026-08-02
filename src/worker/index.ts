@@ -22,11 +22,16 @@ interface Env {
   CF_API_TOKEN: string;
 }
 
-const VALID_EVENTS = new Set([
+// Exported so a unit test can assert an event name is actually accepted. The
+// frontend cannot tell: track() swallows the POST failure, so a name missing
+// from this set records nothing while the feature looks perfectly fine.
+export const VALID_EVENTS = new Set([
   'puzzle_start', 'puzzle_complete', 'incorrect_guess',
   'htp_opened', 'feedback_submitted',
   'theme_toggle', 'tooltip_opened',
   'route_change',
+  // Both carry a source of 'keyboard' or 'button' in blob3.
+  'undo_used', 'reset_used',
 ]);
 
 function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
