@@ -256,9 +256,19 @@
               <!-- aria-disabled, not the native disabled attribute: the controls stay
                    focusable so pressing one that has just become unavailable can't
                    throw the user's focus away. See setUnavailable in app.ts. -->
-              <button type="button" data-undo class="key-face board-ctrl" aria-disabled="true" aria-label="Undo last change">
+              <!-- The key spans start EMPTY and are filled at runtime: the string is
+                   platform-dependent (Ctrl vs Cmd) and only shown once a keyboard
+                   has been detected. See showKeyboardHint in app.ts.
+                   The visible span is aria-hidden and the spoken form lives in a
+                   separate sr-only element, so "Ctrl + Z" is never read as glyphs
+                   and neither string can leak into the accessible name. -->
+              <button type="button" data-undo class="key-face board-ctrl" aria-disabled="true" aria-label="Undo last change" aria-describedby="undo-shortcut-desc">
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-undo"/></svg>
-                <span data-undo-label>Undo</span>
+                <span class="board-ctrl__text">
+                  <span data-undo-label>Undo</span>
+                  <span data-undo-key class="board-ctrl__key" aria-hidden="true"></span>
+                </span>
+                <span id="undo-shortcut-desc" class="sr-only"></span>
               </button>
               <!-- Announcement only: the visible cue for a reset is Undo's own
                    label, but that changes silently for a screen reader unless the
@@ -266,9 +276,13 @@
                    display — a live region toggled in and out of the layout is
                    unreliably announced. -->
               <p data-undo-msg class="sr-only" role="status" aria-live="polite"></p>
-              <button type="button" data-reset class="key-face board-ctrl" aria-disabled="true" aria-label="Reset all boxes">
+              <button type="button" data-reset class="key-face board-ctrl" aria-disabled="true" aria-label="Reset all boxes" aria-describedby="reset-shortcut-desc">
                 <svg aria-hidden="true"><use href="/sprites.svg#icon-reset"/></svg>
-                Reset
+                <span class="board-ctrl__text">
+                  <span data-reset-label>Reset</span>
+                  <span data-reset-key class="board-ctrl__key" aria-hidden="true"></span>
+                </span>
+                <span id="reset-shortcut-desc" class="sr-only"></span>
               </button>
             </div>
 
