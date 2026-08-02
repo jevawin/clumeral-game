@@ -179,8 +179,8 @@ Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new 
     `undo-stack.ts` was split from `app.ts` in #251)
 
 ## 7. How it looks
-Settled: pending (Jamie — items 64-66 unconfirmed) · Ack: Dave 2026-08-01, re-given after the
-reopening ("I'm happy with all sections", 2026-08-01)
+Settled: Jamie 2026-08-01 (layout per his sketch; "your recs" on items 64-66) · Ack: Dave
+2026-08-01, re-given after the reopening ("I'm happy with all sections", 2026-08-01)
 Reopened 2026-08-01 by Jamie — placement moved inside the buttons. Items 48-52 and 62-66 supersede
 35, 37, 38, 39 and 41.
 
@@ -254,7 +254,8 @@ lands here. Items 48-52 supersede 35, 37, 38 and 39.
     Accepted — the 200ms transition is what stops that reading as a glitch. (assumed — item 63)
 
 ## 8. Copy & wording
-Settled: pending (Jamie — item 45, the lowercase call, is a type decision) · Ack: Dave 2026-08-01
+Settled: Jamie 2026-08-01 (accepted all recommendations; item 45 lowercase confirmed as his type
+call) · Ack: Dave 2026-08-01
 
 43. The hint names the key AND the action, rather than keys alone:
     - Mac: `⌘Z undo · ⌘X reset`
@@ -280,8 +281,8 @@ Settled: pending (Jamie — item 45, the lowercase call, is a type decision) · 
     keeps "Board reset. Undo reset available." (assumed — item 9)
 
 ## 9. Accessibility
-Settled: pending — BLOCKING, Jamie only. He asked the question in item 53 and has not yet signed
-off the answer or items 54-57. · Ack: n/a (owned section)
+Settled: Jamie 2026-08-01 — blocking sign-off given ("your recs"), covering the 14px answer in
+53, the aria-describedby fix in 54, and the new announcements in 56 and 57. · Ack: n/a (owned)
 
 Jamie asked directly: "rare size rule break but contrast is good and screen read picks up, okay
 for accessibility?" Answer: yes on the size, with three conditions — and one correction, because
@@ -354,7 +355,7 @@ asked. So this is not "add a keyboard property to the existing event"; the event
 72. No worker change — `/api/event` takes arbitrary event names already. (assumed — item 30)
 
 ## 11. Done / test plan
-Settled: pending (Jamie) · Ack: Dave 2026-08-01
+Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: Dave 2026-08-01
 
 Existing coverage to extend rather than duplicate: `tests/undo-stack.spec.ts`,
 `tests/storage-undo.spec.ts` (vitest) and `e2e/specs/undo-reset.spec.ts` (Playwright).
