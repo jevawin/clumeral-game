@@ -141,9 +141,9 @@ Settled: Jamie 2026-08-01 (accepted all recommendations) · Ack: Dave 2026-08-01
     rather it survive a refresh on an iPad.)
 
 ## 6. How it fits
-Settled: REOPENED by da-brief 2026-08-01 — see items 84-88. Jamie's "6 approved" of items 32/33
-stands; the module list and the "no duplicated logic" claim did not survive review.
-Prior: Settled Jamie 2026-08-01 · Ack: Dave 2026-08-01
+Settled: Jamie 2026-08-01, as corrected by da-brief items 84-88 (module list now includes
+`src/tailwind.css`, `src/shortcuts.ts` and — per item 101 — `src/worker/index.ts` and
+`src/worker/stats.ts`) · Ack: Dave 2026-08-01, plus Override: Jamie 2026-08-01 for the corrections
 
 Modules actually touched: `src/app.ts`, `index.html`, `src/screens.ts` (one new export),
 `src/walkthrough.ts` (one new export). NOT touched: `src/undo-stack.ts`, `src/storage.ts`,
@@ -256,9 +256,8 @@ lands here. Items 48-52 supersede 35, 37, 38 and 39.
     Accepted — the 200ms transition is what stops that reading as a glitch. (assumed — item 63)
 
 ## 8. Copy & wording
-Settled: REOPENED by da-brief 2026-08-01 — items 43/44 describe the superseded shared-label
-design. Replacement in items 89-91, needs Jamie (type/copy) and a fresh ack from Dave.
-Prior: Settled Jamie 2026-08-01 · Ack: Dave 2026-08-01
+Settled: Jamie 2026-08-01 — words not symbols, shortcut below the label. See items 103-104. ·
+Ack: Override: Jamie 2026-08-01 ("no need to wait for Dave")
 
 43. The hint names the key AND the action, rather than keys alone:
     - Mac: `⌘Z undo · ⌘X reset`
@@ -332,10 +331,8 @@ the screen reader will NOT pick it up as things stand.
 61. The hint is not a live region and never announces itself. It is static description. (assumed)
 
 ## 10. Analytics
-Settled: REOPENED by da-brief 2026-08-01 — as written §10 cannot ship. `/api/event` rejects any
-event not on a worker allowlist, and the dashboard cannot read the `source` split. See items
-81-83; needs a decision from Jamie.
-Prior: Settled Jamie 2026-08-01 (option 1) · Ack: Dave 2026-08-01
+Settled: Jamie 2026-08-01 — "Add analytics", i.e. option (a) in item 83: the worker change is
+authorised. See items 101-102. · Ack: Override: Jamie 2026-08-01 ("no need to wait for Dave")
 
 Context: Undo and Reset ship with **no analytics at all** today — #251 added none because nobody
 asked. So this is not "add a keyboard property to the existing event"; the events do not exist.
@@ -528,3 +525,48 @@ silently dropped.
      fire far more often than any current event (the busiest today is one `puzzle_start` per
      load). Item 69's repeat suppression helps. Worth a glance at the Analytics Engine write
      budget before shipping, not a blocker.
+
+
+---
+
+# Post-review decisions — Jamie, 2026-08-01
+
+101. **Item 83 answered: (a). "Add analytics."** The worker change is authorised, so §10 ships
+     with this task rather than being split out. Scope, all in this PR:
+     - `undo_used` and `reset_used` added to `VALID_EVENTS` in `src/worker/index.ts:25`
+     - both events added to the interactions list in `src/worker/stats.ts:127`
+     - the dashboard reads the `source` blob so keyboard and button appear as separate figures —
+       without this, item 67's justification is not delivered (item 82)
+102. **This is an explicit, deliberate exception to a project constraint.** CLAUDE.md's Clumeral
+     Redesign constraints say "Backend: No worker/API changes — frontend-only rebuild", and item
+     30 said the same. Jamie is dev lead and has overridden it knowingly, with the reason on
+     record: the events are worthless without the allowlist entry, and the split is invisible
+     without the dashboard read. Item 30 and §6's "NOT touched: anything under `src/worker/`" are
+     withdrawn. The plan must call the worker files out explicitly so this is not mistaken for
+     scope creep at build or `da-build`.
+103. **Item 89 revised — words, not symbols.** "Cmd and Ctrl not the symbol as Windows has no
+     symbol." So the hint reads `Cmd + Z` / `Cmd + X` on a Mac and `Ctrl + Z` / `Ctrl + X`
+     elsewhere. No `⌘`, anywhere.
+     This retires most of item 92: with no glyph there is nothing that reads as "place of interest
+     sign". The spelled-out accessible description in items 91 and 54 still stands — a screen
+     reader would otherwise announce "Cmd" as a word — and `aria-describedby` still points at a
+     separate visually-hidden element rather than the visible text.
+     Item 95's platform detection still applies: it now chooses between the words "Cmd" and
+     "Ctrl" instead of between a glyph and a word.
+104. **Layout confirmed: the shortcut sits BELOW the button label**, both in the text column
+     beside the icon, per items 62 and 63. Reading order in each button is therefore icon, then
+     label, then shortcut.
+105. **§9 confirmed unchanged** — "9 fine". Items 92, 93, 94 and 95 stand as written, with 92
+     narrowed by item 103.
+
+## Acks
+
+Jamie, as dev lead: "No need to wait for Dave on these." Recorded as **Override: Jamie
+2026-08-01** on §6, §8 and §10, NOT as an ack from Dave. Dave acked every section before the
+da-brief pass; he has not seen items 81-105. If he objects to any of it, the affected section
+reopens.
+
+## Brief status
+
+**Closed 2026-08-01.** All 11 sections settled, every da-brief finding resolved or explicitly
+deferred with a reason (items 98-100). Next: clear context, then `planning` from this file.
