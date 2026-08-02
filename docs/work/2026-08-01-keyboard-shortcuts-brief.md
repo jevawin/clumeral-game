@@ -326,7 +326,8 @@ the screen reader will NOT pick it up as things stand.
 61. The hint is not a live region and never announces itself. It is static description. (assumed)
 
 ## 10. Analytics
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-01 (chose option 1 — both routes tracked with a `source` split) ·
+Ack: pending (Dave)
 
 Context: Undo and Reset ship with **no analytics at all** today — #251 added none because nobody
 asked. So this is not "add a keyboard property to the existing event"; the events do not exist.
@@ -352,3 +353,44 @@ asked. So this is not "add a keyboard property to the existing event"; the event
 
 ## 11. Done / test plan
 Settled: pending · Ack: pending
+
+Existing coverage to extend rather than duplicate: `tests/undo-stack.spec.ts`,
+`tests/storage-undo.spec.ts` (vitest) and `e2e/specs/undo-reset.spec.ts` (Playwright).
+
+73. **QA level: targeted, not the full battering.** New e2e cases go into the existing
+    `undo-reset.spec.ts`, plus the a11y spec; the full cross-engine suite runs in CI as usual but
+    nothing new is built for it.
+    My rec: proportional as above. Why: the change is one keydown branch, one CSS rewrite of
+    `.board-ctrl`, and two events — but it touches keyboard handling, layout and accessibility at
+    once, so "no tests" is wrong too.
+74. Unit (vitest), on the pure `matchShortcut()` from item 34: `Ctrl+Z`/`Cmd+Z` → `undo`,
+    `Ctrl+X`/`Cmd+X` → `reset`, `Ctrl+Shift+Z` → null, `Alt+Ctrl+Z` → null, bare `z`/`x` → null,
+    `Z` uppercase (caps lock / shift-less matching) handled deliberately either way.
+75. E2E, added to `e2e/specs/undo-reset.spec.ts`:
+    - eliminate a digit, `Ctrl+Z`, digit is back and the board matches the pre-toggle state
+    - eliminate several, `Ctrl+X`, board is clear, Undo reads "Undo reset", `Ctrl+Z` restores the
+      whole pre-reset board in one press
+    - hold `Ctrl+Z` (auto-repeat) unwinds to empty and then stops, with no error
+    - `Ctrl+Z` and `Ctrl+X` on a solved board do nothing
+    - `Ctrl+Shift+Z` does nothing
+    - the existing keyboard bindings still work: digits toggle, Tab/arrows move between boxes,
+      Enter submits a resolved board, Escape closes the keypad (item 28 puts the new branch ahead
+      of the digit branch, so this is the regression to watch)
+76. E2E for the exclusions in item 16: with the feedback modal open and text typed into the
+    textarea, `Cmd+X` cuts the text and the board is untouched; with the menu open, neither key
+    changes the board.
+77. E2E for the hint: present on a desktop project, absent on a touch project with no keyboard,
+    and appearing after a first keypress on a touch project that then sends one.
+78. E2E in `a11y.spec.ts`: axe passes on the game screen with the hint shown; the buttons expose
+    both their name and their description ("Undo last change" + "Keyboard shortcut: Command Z" /
+    "Control Z").
+79. Manual, on the branch preview, because automation is poor at these:
+    - VoiceOver or NVDA actually reads the description and the new live-region messages (items
+      54, 56, 57)
+    - contrast of the shortcut line in both light and dark themes
+    - `prefers-reduced-motion: reduce` kills the 200ms transition (item 64)
+    - the reveal on a real tablet with a keyboard
+    My rec: Jamie takes the screen-reader and contrast checks since accessibility is his, and
+    both of you eyeball the layout on the preview before the PR is raised.
+80. Done means: all of the above green, the CI smoke suite passing cross-engine, `da-build`
+    clean, and the brief plus plan committed on the branch. (assumed — house rules)
