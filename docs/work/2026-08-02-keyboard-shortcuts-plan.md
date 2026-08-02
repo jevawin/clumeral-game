@@ -888,6 +888,33 @@ before it: a fix that is right about the failure it names and wrong about the ca
   `firefox-desktop`, which should report `(hover: hover) and (pointer: fine)` but have never
   been exercised against a pointer media query in this suite. If CI goes red, look here first.
 
+### da-build round 4 — 2026-08-02
+
+**0 High, 1 Medium, 2 Low.** Round 4 confirmed round 3's focus fix held — right about the
+mouse-user case and *not* wrong about the keypad case next door, which breaks the pattern
+the three previous rounds had established. The Medium was an older gap in the same function
+rather than a new regression.
+
+- **M1 — the checkbox recovery never actually fired.** `checkSubmit()` hides
+  `[data-submit-wrap]` by CLASS, and a browser defers its focus fixup for a style-hidden
+  element to the next style update — so reading `document.activeElement` immediately after
+  the change still returned the checkbox, concluded "nothing was lost", and let focus drop a
+  frame later anyway. The case the narrowed `isTypingTarget` deliberately opened up was
+  therefore still broken. Rewritten to decide from the **elements' own rendered state**
+  (`isConnected` + `getClientRects()`, which forces the pending flush) rather than from
+  `activeElement`, so it is timing-independent: detaching a node and hiding one by class
+  lose focus at different moments, and neither is now raced. New e2e resolves the board,
+  focuses the save-score checkbox, presses Ctrl+Z and asserts focus lands on Undo.
+- **L1 — a comment overclaimed.** The one un-skipped walkthrough case was described as the
+  live guard on the disable; it seeds `dlng_history`, so the walkthrough would not have run
+  for it anyway and re-enabling `WALKTHROUGH_ENABLED` leaves it green. The real guard is the
+  first-time-player shortcut case in `undo-reset.spec.ts`. Both comments corrected.
+- **L2 — SUSPECTED, unverifiable here:** the `mobile-webkit` regression opens by asserting
+  the hint is absent, which assumes that project reports a coarse pointer. The sibling touch
+  case was deliberately pinned to `mobile-chromium`, so this has never been exercised on
+  WebKit. The precondition now carries an explicit message so a failure reads as "this
+  project reports a fine pointer" rather than as a detection bug.
+
 **Still outstanding before merge:**
 - Human review (Jamie and Dave), then `da-build`.
 - Manual passes from Task 9 on the branch preview — screen reader, contrast in both

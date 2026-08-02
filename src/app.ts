@@ -1139,29 +1139,47 @@ function isOverlayOpen(): boolean {
   return !!menu && !menu.classList.contains('hidden');
 }
 
+// Is this element still on the page AND still rendered? getClientRects() is empty
+// for anything in a display:none subtree, and forces the pending style flush on
+// the way, so this answers the question rather than racing it.
+function isRendered(el: Element): boolean {
+  return el.isConnected && el.getClientRects().length > 0;
+}
+
 // Item 59: a shortcut never moves focus. A board change can take the focused
-// element out from under the player in two different ways —
+// element out from under the player two different ways —
 //   - buildKeypad() wipes innerHTML and rebuilds all ten keys, so a focused key
-//     is a different element afterwards;
-//   - un-resolving the board hides [data-submit-wrap], and the save-score
-//     checkbox goes display:none with it (see tailwind.css) — which is reachable
-//     precisely when a player most wants an undo.
-// Both land focus on <body>. Try to put it back where it was, then check whether
-// that actually took: .focus() on a display:none element silently no-ops, so the
-// result has to be read rather than assumed.
-function restoreFocusAfterBoardChange(key: string | null, hadFocus: boolean): void {
-  if (key !== null) {
-    (document.querySelector(`[data-key="${key}"]`) as HTMLElement | null)?.focus();
-  }
+//     is a different element afterwards (the old one is detached);
+//   - un-resolving the board re-hides [data-submit-wrap], and the save-score
+//     checkbox goes display:none with it (see tailwind.css) — reachable precisely
+//     when a player most wants an undo, which is why the checkbox is deliberately
+//     NOT treated as a typing target.
+//
+// Decided from the elements' own rendered state, never from document.activeElement.
+// The two cases lose focus at different moments: detaching a node resets focus
+// synchronously, but hiding one by CLASS defers the browser's focus fixup to the
+// next style update — so an activeElement read straight after the change still
+// reports the checkbox, returns "nothing was lost", and the focus is dropped a
+// frame later anyway. Reading the element instead is timing-independent.
+function restoreFocusAfterBoardChange(before: HTMLElement | null, key: string | null): void {
   // Nothing had focus to begin with, so there is nothing to restore. This is the
   // NORMAL state for a mouse user — macOS Safari and Firefox don't focus a button
   // on click — and giving them a focus ring they never asked for would break item
   // 59 in the other direction, as well as pre-empting the pending announcement.
-  if (!hadFocus) return;
-  if (document.activeElement !== document.body && document.activeElement !== null) return;
-  // Focus WAS somewhere and has been lost. Undo is always present on the game
-  // screen and is aria-disabled rather than disabled, so it stays focusable even
-  // with nothing left to undo.
+  if (before === null) return;
+
+  // The keypad key it was on, rebuilt as a new node with the same digit.
+  if (key !== null) {
+    const rebuilt = document.querySelector(`[data-key="${key}"]`) as HTMLElement | null;
+    if (rebuilt && isRendered(rebuilt)) { rebuilt.focus(); return; }
+  }
+
+  // Still there and still visible — it kept focus, or will. Leave it alone.
+  if (isRendered(before)) return;
+
+  // It has gone. Undo is always present on the game screen and is aria-disabled
+  // rather than natively disabled, so it stays focusable even with nothing left
+  // to undo — the same reasoning that kept focus safe in #251.
   dom.undoBtn?.focus();
 }
 
@@ -1216,7 +1234,7 @@ document.addEventListener("keydown", (e) => {
     }
     // Only on a press that actually acted — the dead-press paths above return
     // early, and nothing was rebuilt or hidden for them.
-    restoreFocusAfterBoardChange(focusedKey, focusedBefore !== null);
+    restoreFocusAfterBoardChange(focusedBefore, focusedKey);
     return;
   }
 
