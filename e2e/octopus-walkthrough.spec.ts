@@ -21,9 +21,13 @@ import { test, expect, type Page } from "@playwright/test";
 // Skipped rather than deleted, deliberately: it is the executable description of
 // what the current sequence does, and the replacement first-play tutorial is
 // easier to design with it than without. It goes when the code goes, per #294.
-test.beforeEach(() => {
+//
+// The skip is applied per-test rather than in a blanket beforeEach, because the
+// last case asserts the walkthrough is ABSENT — which is now true for everyone,
+// and is the only live check that the disable actually took effect. Blanket-
+// skipping it would leave nothing at all guarding #294.
+const walkthroughDisabled = () =>
   test.skip(true, "First-play walkthrough disabled pending its replacement — see #294");
-});
 
 const brand = (p: Page) => p.locator("[data-brand-text]");
 const live = (p: Page) => p.locator("[data-walkthrough-live]");
@@ -40,6 +44,7 @@ async function gotoPlayAsNewUser(page: Page): Promise<void> {
 }
 
 test("walkthrough types into the header on a first visit", async ({ page }) => {
+  walkthroughDisabled();
   await gotoPlayAsNewUser(page);
   // After the ~5s hold the wordmark leaves "Clumeral" and types the intro.
   await expect(brand(page)).not.toHaveText("Clumeral", { timeout: 12_000 });
@@ -47,11 +52,13 @@ test("walkthrough types into the header on a first visit", async ({ page }) => {
 });
 
 test("aria-live announces the full sentence per step", async ({ page }) => {
+  walkthroughDisabled();
   await gotoPlayAsNewUser(page);
   await expect(live(page)).toContainText("first time", { timeout: 12_000 });
 });
 
 test("gated step holds until a digit box is opened", async ({ page }) => {
+  walkthroughDisabled();
   test.setTimeout(60_000); // two timed intro steps precede the gated prompt
   await gotoPlayAsNewUser(page);
   // Intro steps auto-advance to the first gated prompt.
@@ -69,6 +76,7 @@ test("gated step holds until a digit box is opened", async ({ page }) => {
 });
 
 test("gated step holds for elimination, then restores the wordmark at the end", async ({ page }) => {
+  walkthroughDisabled();
   test.setTimeout(90_000); // full run-through: ~5s hold + 7 scripted steps
   await gotoPlayAsNewUser(page);
   await expect(brand(page)).toContainText("number box", { timeout: 30_000 });
@@ -93,11 +101,17 @@ test("returning player sees no walkthrough — wordmark from the start", async (
   );
   await page.goto("/play");
   // Brand never leaves "Clumeral" for a returning player (well past the 5s start delay).
+  //
+  // Left RUNNING while the rest of this file is skipped: with the walkthrough
+  // disabled (#294) this is true for every player, not just returning ones, so it
+  // is now the live check that the disable actually took effect. If someone
+  // re-enables the walkthrough without meaning to, this is what goes red.
   await page.waitForTimeout(7000);
   await expect(brand(page)).toHaveText("Clumeral");
 });
 
 test("prefers-reduced-motion: text appears instantly and still advances", async ({ page }) => {
+  walkthroughDisabled();
   test.setTimeout(60_000); // two timed intro steps precede the gated prompt
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => localStorage.removeItem("dlng_history"));

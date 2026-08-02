@@ -82,8 +82,10 @@ const dom = {
   undoLabel: $('[data-undo-label]') as HTMLElement | null,
   undoKey: $('[data-undo-key]') as HTMLElement | null,
   resetKey: $('[data-reset-key]') as HTMLElement | null,
-  undoDesc: $('#undo-shortcut-desc') as HTMLElement | null,
-  resetDesc: $('#reset-shortcut-desc') as HTMLElement | null,
+  // Queried by data-*, like everything else here. The elements also carry ids,
+  // which aria-describedby needs as IDREF targets — see CONVENTIONS.md.
+  undoDesc: $('[data-undo-desc]') as HTMLElement | null,
+  resetDesc: $('[data-reset-desc]') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -501,7 +503,9 @@ function toggleDigit(digit: number): void {
     // here would leave a no-op on the stack that makes one Undo press look dead.
     pushHistory();
     s.delete(digit);
-    // First-play walkthrough hook (issue #214). Fires only on elimination. No-op once dlng_history exists.
+    // First-play walkthrough hook (issue #214). Fires only on elimination.
+    // INERT while the walkthrough is disabled (#294) — nothing listens today. Kept
+    // because its replacement will almost certainly want the same two gates.
     document.dispatchEvent(new CustomEvent("game:digit-eliminated"));
   } else {
     pushHistory();
@@ -703,7 +707,9 @@ function openBox(i: number): void {
   renderAllBoxes();
   buildKeypad();
   openKeypad();
-  // First-play walkthrough hook (issue #214). No-op once dlng_history exists.
+  // First-play walkthrough hook (issue #214).
+  // INERT while the walkthrough is disabled (#294) — see the note on the sibling
+  // game:digit-eliminated dispatch.
   document.dispatchEvent(new CustomEvent("game:box-opened"));
 }
 
@@ -1133,6 +1139,14 @@ function isOverlayOpen(): boolean {
   return !!menu && !menu.classList.contains('hidden');
 }
 
+// Put focus back on the keypad key it was on before the board changed under it.
+// A no-op when focus was elsewhere, and when the keypad has since closed (a
+// fully-resolved board hides it) the key is simply gone and nothing is focused.
+function restoreKeypadFocus(key: string | null): void {
+  if (key === null) return;
+  (document.querySelector(`[data-key="${key}"]`) as HTMLElement | null)?.focus();
+}
+
 // Keyboard: Ctrl/Cmd+Z undoes and Ctrl/Cmd+X resets; digit keys toggle active box;
 // Tab/arrows navigate; Enter submits; Escape closes
 document.addEventListener("keydown", (e) => {
@@ -1158,6 +1172,14 @@ document.addEventListener("keydown", (e) => {
     // textarea is a bug, not a feature.
     e.preventDefault();
 
+    // A board change runs buildKeypad(), which wipes innerHTML and rebuilds all
+    // ten keys — so a player who tabbed onto a key and pressed the shortcut has
+    // their focus dropped to <body>. Item 59 says a shortcut never moves focus,
+    // so note where it was and put it back. e.target IS the focused element on a
+    // keydown, so no activeElement read is needed.
+    const focusedKey = (e.target as HTMLElement | null)?.closest?.('[data-key]')
+      ?.getAttribute('data-key') ?? null;
+
     // Holding the key unwinds repeatedly until the stack is empty, the same as a
     // native undo. e.repeat suppresses only the announcement and the analytics
     // event, never the action: otherwise a one-second hold writes to a polite
@@ -1175,6 +1197,9 @@ document.addEventListener("keydown", (e) => {
       if (!resetBoard()) { if (!e.repeat) announce("Board is already clear."); return; }
       if (!e.repeat) track("reset_used", undefined, "keyboard");
     }
+    // Only on a press that actually acted — the dead-press paths above return
+    // early, and nothing was rebuilt for them.
+    restoreKeypadFocus(focusedKey);
     return;
   }
 

@@ -663,9 +663,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     white-space: nowrap;
     transition: height 200ms ease, opacity 200ms ease;
   }
-  /* 0.95rem = 15.2px, just clear of the 13px line box (13 × 1.15 = 14.95px), so
-     `overflow: hidden` never clips a descender. */
-  :root[data-keyboard="true"] .board-ctrl__key { height: 0.95rem; opacity: 1; }
+  /* em, NOT rem: em resolves against this element's own computed font-size, so
+     the revealed height tracks the text whatever that turns out to be. A rem
+     value is fixed against the root, and a browser "minimum font size" setting
+     (a low-vision preference, in both Chrome and Firefox) raises the computed
+     font-size without touching rem — which would leave `overflow: hidden`
+     slicing the bottom off the shortcut for exactly the readers who set it.
+     1.25em clears the 1.15 line box with a little slack for rounding. */
+  :root[data-keyboard="true"] .board-ctrl__key { height: 1.25em; opacity: 1; }
 
   @media (prefers-reduced-motion: reduce) {
     .board-ctrl__key { transition: none; }
