@@ -5,6 +5,7 @@ import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
+import { modifierLabel } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
@@ -79,6 +80,10 @@ const dom = {
   resetBtn: $('[data-reset]') as HTMLButtonElement | null,
   undoMsg: $('[data-undo-msg]') as HTMLElement | null,
   undoLabel: $('[data-undo-label]') as HTMLElement | null,
+  undoKey: $('[data-undo-key]') as HTMLElement | null,
+  resetKey: $('[data-reset-key]') as HTMLElement | null,
+  undoDesc: $('#undo-shortcut-desc') as HTMLElement | null,
+  resetDesc: $('#reset-shortcut-desc') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -634,6 +639,45 @@ function resetBoard(): boolean {
   announceReset(true);
   return true;
 }
+
+// ─── Keyboard shortcut hint ──────────────────────────────────────────────────
+
+// Platform is read ONCE at load. userAgentData.platform is preferred where the
+// browser has it; navigator.platform is the fallback; anything inconclusive gets
+// Ctrl. iPadOS reporting "Macintosh" is harmless — an iPad keyboard has a Command
+// key, and matchShortcut accepts either modifier on either platform anyway, so a
+// wrong guess is only ever cosmetic.
+const MODIFIER = modifierLabel(
+  (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
+    ?? navigator.platform,
+);
+const SPOKEN = MODIFIER === 'Cmd' ? 'Command' : 'Control';
+
+let keyboardSeen = false;
+
+// Fills in the shortcut hints and reveals them. Not a live region and never
+// announces itself — it is static description reached via aria-describedby.
+function showKeyboardHint(): void {
+  if (keyboardSeen) return;
+  keyboardSeen = true;
+  if (dom.undoKey) dom.undoKey.textContent = `${MODIFIER} + Z`;
+  if (dom.resetKey) dom.resetKey.textContent = `${MODIFIER} + X`;
+  if (dom.undoDesc) dom.undoDesc.textContent = `Keyboard shortcut: ${SPOKEN} Z`;
+  if (dom.resetDesc) dom.resetDesc.textContent = `Keyboard shortcut: ${SPOKEN} X`;
+  document.documentElement.setAttribute('data-keyboard', 'true');
+}
+
+// Two triggers, either one is enough. A pure-touch player never sees the hint;
+// a desktop player sees it before first paint, so never sees the transition; a
+// hybrid player (iPad with a Magic Keyboard, where the pointer test fails) gets
+// it the moment they touch the keyboard.
+//
+// The keydown listener is deliberately SEPARATE from the game's own: that one
+// returns early on a solved board, and a character typed into the feedback
+// textarea still proves a keyboard exists. Registered with once + capture, so it
+// costs exactly one keydown for the life of the page.
+if (window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) showKeyboardHint();
+document.addEventListener('keydown', showKeyboardHint, { once: true, capture: true });
 
 function openBox(i: number): void {
   activeBox = i;
