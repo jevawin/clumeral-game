@@ -1139,12 +1139,24 @@ function isOverlayOpen(): boolean {
   return !!menu && !menu.classList.contains('hidden');
 }
 
-// Put focus back on the keypad key it was on before the board changed under it.
-// A no-op when focus was elsewhere, and when the keypad has since closed (a
-// fully-resolved board hides it) the key is simply gone and nothing is focused.
-function restoreKeypadFocus(key: string | null): void {
-  if (key === null) return;
-  (document.querySelector(`[data-key="${key}"]`) as HTMLElement | null)?.focus();
+// Item 59: a shortcut never moves focus. A board change can take the focused
+// element out from under the player in two different ways —
+//   - buildKeypad() wipes innerHTML and rebuilds all ten keys, so a focused key
+//     is a different element afterwards;
+//   - un-resolving the board hides [data-submit-wrap], and the save-score
+//     checkbox goes display:none with it (see tailwind.css) — which is reachable
+//     precisely when a player most wants an undo.
+// Both land focus on <body>. Try to put it back where it was, then check whether
+// that actually took: .focus() on a display:none element silently no-ops, so the
+// result has to be read rather than assumed.
+function restoreFocusAfterBoardChange(key: string | null): void {
+  if (key !== null) {
+    (document.querySelector(`[data-key="${key}"]`) as HTMLElement | null)?.focus();
+  }
+  if (document.activeElement !== document.body && document.activeElement !== null) return;
+  // Focus was lost. Undo is always present on the game screen and is aria-disabled
+  // rather than disabled, so it stays focusable even with nothing left to undo.
+  dom.undoBtn?.focus();
 }
 
 // Keyboard: Ctrl/Cmd+Z undoes and Ctrl/Cmd+X resets; digit keys toggle active box;
@@ -1172,11 +1184,9 @@ document.addEventListener("keydown", (e) => {
     // textarea is a bug, not a feature.
     e.preventDefault();
 
-    // A board change runs buildKeypad(), which wipes innerHTML and rebuilds all
-    // ten keys — so a player who tabbed onto a key and pressed the shortcut has
-    // their focus dropped to <body>. Item 59 says a shortcut never moves focus,
-    // so note where it was and put it back. e.target IS the focused element on a
-    // keydown, so no activeElement read is needed.
+    // Note which keypad key had focus, if any, so it can be restored after the
+    // board changes under it. e.target IS the focused element on a keydown, so no
+    // activeElement read is needed here. See restoreFocusAfterBoardChange.
     const focusedKey = (e.target as HTMLElement | null)?.closest?.('[data-key]')
       ?.getAttribute('data-key') ?? null;
 
@@ -1198,8 +1208,8 @@ document.addEventListener("keydown", (e) => {
       if (!e.repeat) track("reset_used", undefined, "keyboard");
     }
     // Only on a press that actually acted — the dead-press paths above return
-    // early, and nothing was rebuilt for them.
-    restoreKeypadFocus(focusedKey);
+    // early, and nothing was rebuilt or hidden for them.
+    restoreFocusAfterBoardChange(focusedKey);
     return;
   }
 

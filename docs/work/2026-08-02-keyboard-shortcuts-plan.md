@@ -816,6 +816,46 @@ fixed; nothing deferred.
   everyone and is the only live check that the disable took effect. Skip moved to the other
   five.
 
+### da-build re-review — 2026-08-02
+
+Second fresh-context pass over the fixes plus the whole diff again. **0 High, 2 Medium,
+6 Low.** All eight fixed; nothing deferred except one logged as its own issue.
+
+- **M1 — the M2 fix from the first pass could not have passed.** The analytics e2e pushed
+  the whole POST body and asserted `toEqual({event, source})`, but every payload also
+  carries `uid` and `newUser`, and `toEqual` is exact deep equality. The headline
+  remediation was a test that was guaranteed red. Fixed: the captured body is projected to
+  the two fields under test.
+- **M2 — the L8 fix traded a dead shortcut for a lost focus at the same moment.** Narrowing
+  `isTypingTarget` let the shortcuts fire while the save-score checkbox has focus — but that
+  checkbox only exists while the board is fully resolved, and either shortcut un-resolves
+  it, so `[data-submit-wrap]` hides, `[data-save]` goes `display: none` with it, and focus
+  falls to `<body>`. Item 59 again, in the exact scenario the L8 fix was justified by.
+  Fixed by generalising `restoreKeypadFocus` into `restoreFocusAfterBoardChange`: it tries
+  the remembered key, then *reads back* whether focus took (a `.focus()` on a hidden element
+  silently no-ops) and falls back to Undo, which is always present and stays focusable
+  because it is `aria-disabled` rather than disabled.
+- **L3 (was also flagged)** — the same fix covers the keypad-closes case, where the key
+  still exists but is inside a hidden wrapper. The old comment claiming "the key is simply
+  gone" was wrong and is corrected.
+- **L4 — `page.route` is the suite's first, against a caveat `fixtures.ts` records.** Now
+  asserts interception attached separately from the payload, so a miss reads as a harness
+  failure rather than "the app sent nothing".
+- **L5 — the 80% contrast figures were asserted nowhere.** `tests/palette-contrast.spec.ts`
+  now computes the tint over `--color-surface` in both schemes, checks 4.5:1, and pins
+  7.90 / 9.20 so a token change shows up as a drift rather than a still-passing number.
+- **L6 — the ARIA-wiring e2e was gated to `chromium-desktop`** while the plan said otherwise.
+  Widened to all three desktop projects, which is where name/description exposure is most
+  likely to differ between engines.
+- **L7 — `e.repeat` suppression had no coverage.** Playwright's keyboard API always sends
+  `repeat: false`, so the case synthesises the repeats via `dispatchEvent` and asserts the
+  board still unwinds while the announcement and the analytics stay at one apiece.
+- **L8 — `Cmd`/`Ctrl`+digit eliminates a board digit and swallows the browser's tab
+  shortcut.** Pre-existing, not caused by this branch: the digit branch parses `e.key` with
+  no modifier check. Item 7 keeps it out of scope, so **logged as #295** rather than fixed
+  here, cross-referenced to #293 since both are the digit branch acting on keystrokes it
+  should ignore.
+
 **Still outstanding before merge:**
 - Human review (Jamie and Dave), then `da-build`.
 - Manual passes from Task 9 on the branch preview — screen reader, contrast in both

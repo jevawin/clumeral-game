@@ -695,7 +695,10 @@ test.describe("undo and reset analytics", () => {
     const events: { event: string; source?: string }[] = [];
     await page.route("**/api/event", async (route) => {
       const body = route.request().postDataJSON() as { event: string; source?: string };
-      events.push(body);
+      // Projected to the two fields under test, NOT pushed whole: every payload
+      // also carries uid and newUser, which would defeat the exact toEqual
+      // matches below.
+      events.push({ event: body.event, source: body.source });
       await route.fulfill({ status: 202, body: "" });
     });
     const boardEvents = () => events.filter((e) => e.event === "undo_used" || e.event === "reset_used");
@@ -703,10 +706,16 @@ test.describe("undo and reset analytics", () => {
     const game = new GamePage(page);
     await gotoPlayableGame(page);
 
-    // Button undo.
+    // Button undo. Interception is asserted separately from the payload so that
+    // a route that never attached reads as "the harness missed it", not as "the
+    // app sent nothing" — fixtures.ts records that page.route can be unreliable
+    // with a service worker active, which is why this case is Chromium-only.
     await eliminate(game, [4]);
     await game.undo.click();
     await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
+    await expect
+      .poll(() => events.length, { message: "page.route never intercepted /api/event" })
+      .toBeGreaterThan(0);
     await expect.poll(boardEvents).toEqual([{ event: "undo_used", source: "button" }]);
 
     // Keyboard undo.
@@ -751,6 +760,55 @@ test.describe("undo and reset analytics", () => {
     // unchanged count below is "did nothing", not "never fired".
     await expect(game.undoMsg).toHaveText("Board is already clear.");
     expect(boardEvents(), "dead presses must not be logged").toHaveLength(beforeDeadPresses);
+  });
+
+  // Items 69 and 93: auto-repeat unwinds the board but must not announce or log
+  // per step — a one-second hold would otherwise write to a polite live region at
+  // the OS repeat rate and post thirty identical rows. Playwright's keyboard API
+  // always sends repeat: false, so the repeat has to be synthesised.
+  test("a held key unwinds the board without announcing or logging per step", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "route interception is unreliable on WebKit with an active service worker (see fixtures.ts)",
+    );
+
+    const events: { event: string; source?: string }[] = [];
+    await page.route("**/api/event", async (route) => {
+      const body = route.request().postDataJSON() as { event: string; source?: string };
+      events.push({ event: body.event, source: body.source });
+      await route.fulfill({ status: 202, body: "" });
+    });
+    const undoEvents = () => events.filter((e) => e.event === "undo_used");
+
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+    await eliminate(game, [4, 5, 6]);
+
+    // One real press, then two repeats — the shape of a held key.
+    await page.keyboard.press("Control+z");
+    await expect(game.boxDigit(1, 6)).not.toHaveClass(/elim/);
+    await expect.poll(undoEvents).toHaveLength(1);
+    await expect(game.undoMsg).toHaveText("Undone.");
+
+    await page.evaluate(() => {
+      for (let i = 0; i < 2; i++) {
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "z", ctrlKey: true, repeat: true, bubbles: true }),
+        );
+      }
+    });
+
+    // The action still happens on every repeat — that is what makes holding the
+    // key feel like a native undo.
+    await expect(game.boxDigit(1, 5)).not.toHaveClass(/elim/);
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
+    await expectUnavailable(game.undo);
+
+    // But the announcement and the analytics stay at one apiece.
+    await expect(game.undoMsg).toHaveText("Undone.");
+    expect(undoEvents(), "a repeat must not log its own event").toHaveLength(1);
   });
 });
 
