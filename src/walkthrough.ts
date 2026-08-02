@@ -290,7 +290,25 @@ function begin(): void {
   fadeOutWordmark(() => runStep(0));
 }
 
+// DISABLED (#294). The walkthrough no longer auto-starts.
+//
+// It broke the Undo/Reset keyboard shortcuts on a first-play load: the shortcut
+// handler returns early while isWalkthroughActive() is true, so an undo cannot
+// land mid-step and desync a tutorial narrating real board actions. That guard
+// is right, but this walkthrough's lifetime makes it toxic — `active` is set on
+// entering the game screen, steps 3 and 6 wait indefinitely on their gates, and
+// finish() only runs on the last step or on leaving the screen. A first-time
+// player who never opens a box leaves it active forever, with the shortcuts
+// dead the whole time.
+//
+// Jamie's call is to disable rather than patch the lifetime: this sequence is
+// being replaced with a proper first-play tutorial, and it was already getting
+// in the way of other work. One constant, so re-enabling is a one-line revert if
+// the replacement slips. #294 tracks removing the code once that lands.
+const WALKTHROUGH_ENABLED = false;
+
 export function initWalkthrough(): void {
+  if (!WALKTHROUGH_ENABLED) return;
   document.addEventListener('screens:enter', (e) => {
     const screen = (e as CustomEvent).detail?.screen;
     if (screen !== 'game') {

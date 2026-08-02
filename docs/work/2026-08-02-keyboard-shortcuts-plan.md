@@ -732,6 +732,48 @@ regression on `mobile-webkit` proving that typing into the feedback box reveals 
 that detection still works afterwards. The `mobile-chromium` reveal case now presses Tab
 rather than a letter, which is what a keyboard player actually presses first.
 
+### The walkthrough broke the shortcuts outright — disabled (#294)
+
+Jamie, macOS Firefox on the branch preview: **the shortcuts did nothing**, in every focus
+state he tried. His diagnosis was right, and it is this plan's own Task 7 guard.
+
+`isWalkthroughActive()` returns early in the shortcut branch [33] so an undo cannot land
+mid-step and desync a tutorial narrating real board actions. Correct in principle. What
+makes it fatal is the walkthrough's lifetime:
+
+- `start()` sets `active = true` on entering the game screen, before the 5s hold elapses.
+- Steps 3 and 6 are **gated** — they wait indefinitely on `game:box-opened` and
+  `game:digit-eliminated`.
+- `finish()` only runs on the final step or on leaving the game screen.
+
+So a first-time player who never opens a box holds the flag forever, and the shortcuts
+never work at all. Anyone else has them dead for the length of the script. Every e2e case
+in Task 9 seeds history via `gotoPlayableGame`, which is exactly why the suite would have
+stayed green.
+
+**Jamie's call: disable the walkthrough rather than patch its lifetime.** It is being
+replaced with a proper first-play tutorial and was already getting in the way. One
+`WALKTHROUGH_ENABLED` constant in `src/walkthrough.ts`, so re-enabling is a one-line revert.
+**#294** tracks removing the code once the replacement lands.
+
+Knock-ons:
+
+- **Correction to this plan's `da-plan` M1 note, which was wrong.** It states
+  "`e2e/octopus-walkthrough.spec.ts` — that file does not exist; the walkthrough has no e2e
+  spec at all". It does exist, in the `e2e/` root, and runs under the `legacy-chromium`
+  project (`playwright.config.ts` LEGACY pattern). Five of its six cases assert the
+  walkthrough runs, so they are skipped with a pointer to #294 — skipped, not deleted,
+  because it is the executable description of the sequence the replacement has to better.
+- Task 9's walkthrough-guard e2e case is **replaced** by its inverse: a first-time player
+  with no seeded history can use both shortcuts. That is the regression Jamie hit, it runs
+  on the full matrix rather than one project, and it will catch a replacement tutorial
+  making the same mistake.
+- The `isWalkthroughActive()` guard **stays** in `app.ts`, always false for now, commented
+  with the trap. The replacement will want it — and must actually terminate.
+- Stale comment in `e2e/specs/restore.spec.ts` corrected.
+- Bundle drops 65.8 kB → 62.3 kB, since the walkthrough runtime tree-shakes out behind the
+  `const false`.
+
 **Still outstanding before merge:**
 - Human review (Jamie and Dave), then `da-build`.
 - Manual passes from Task 9 on the branch preview — screen reader, contrast in both

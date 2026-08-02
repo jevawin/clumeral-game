@@ -620,45 +620,34 @@ test.describe("keyboard shortcut exclusions", () => {
     await expectAvailable(game.undo);
   });
 
-  // The walkthrough steps the player through real board actions and waits on
-  // real gate events, so an undo landing mid-step would desync it.
-  test("the shortcut is inert while the first-play walkthrough is running", async ({ page }, testInfo) => {
-    test.skip(
-      testInfo.project.name !== "chromium-desktop",
-      "walkthrough timing is engine-independent — one project is enough",
-    );
-
-    // The walkthrough holds on the logo for START_DELAY_MS before it starts
-    // talking, and the script itself runs for the best part of a minute.
-    test.slow();
-
+  // Regression: the shortcuts were completely dead for a first-time player
+  // (reported by Jamie, macOS Firefox, 2026-08-02). The handler returns early
+  // while isWalkthroughActive() is true, and the walkthrough set that flag on
+  // entering the game screen and held it indefinitely on its gated steps — so a
+  // player with no history had no shortcuts at all, in any focus state. The
+  // walkthrough is now disabled (#294); this is the test that would have caught
+  // it, and that will catch its replacement making the same mistake.
+  test("the shortcuts work for a first-time player with no history", async ({ page }) => {
     const game = new GamePage(page);
-    // NOT gotoPlayableGame: the walkthrough auto-starts only when dlng_history is
-    // absent, and that helper seeds it. A player with no history is redirected off
-    // /play, so reach the board the way a first-time player does.
+    // NOT gotoPlayableGame — that seeds history, which is exactly what hid this.
+    // Reach the board the way a first-time player does.
     await page.goto("/welcome");
     await page.locator("[data-play-btn]").click();
     await expectActiveScreen(page, "game");
 
-    // Put one entry on the undo stack first, so a failure of the guard would be
-    // visible rather than indistinguishable from an empty stack.
     await game.openBox(1);
     await expect(page.locator("[data-keypad] [data-key]").first()).toBeVisible();
     await game.tapKey(4);
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
 
-    // The walkthrough hides the brand wordmark from the a11y tree while it talks.
-    // Waiting for that is what makes this a test of the guard rather than of
-    // whatever the walkthrough happened to be doing — the flag is set on entering
-    // the screen, but this is the first externally visible proof of it.
-    const brand = page.locator("[data-brand-text]");
-    await expect(brand).toHaveAttribute("aria-hidden", "true", { timeout: 15_000 });
-
     await page.keyboard.press("Control+z");
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
 
-    // Still running, and the elimination is still there: the guard held.
-    await expect(brand).toHaveAttribute("aria-hidden", "true");
+    // And reset, which was equally dead.
+    await game.tapKey(4);
     await expect(game.boxDigit(1, 4)).toHaveClass(/elim/);
+    await page.keyboard.press("Control+x");
+    await expect(game.boxDigit(1, 4)).not.toHaveClass(/elim/);
   });
 });
 

@@ -51,9 +51,9 @@ test.describe("mid-game restore", () => {
 // the router's deep-link gate read dlng_history alone, so a first-timer's reload
 // failed it and landed on /welcome with their board still in dlng_active.
 //
-// No seeding here on purpose. That means the first-play walkthrough is live, but
-// it only types into the header and never blocks the board, so it can't affect
-// these assertions.
+// No seeding here on purpose — this has to run as a genuine first-timer. (That
+// used to mean the first-play walkthrough was live alongside it; the walkthrough
+// is disabled now, #294, so there is nothing else in play.)
 test.describe("mid-game restore — first-time player (#284)", () => {
   test("reloading after eliminating a digit resumes the board, not welcome", async ({ page }) => {
     await page.goto("/welcome");
