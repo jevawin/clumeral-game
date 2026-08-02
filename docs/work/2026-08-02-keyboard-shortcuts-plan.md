@@ -35,7 +35,9 @@ be invisible on the dashboard without a `source`-aware query (item 82).
 - `index.html` — shortcut spans inside both buttons; Reset's label wrapped
 - `src/worker/index.ts` — two names in `VALID_EVENTS`
 - `src/worker/stats.ts` — `source`-aware query + four dashboard rows
-- `e2e/specs/undo-reset.spec.ts`, `e2e/specs/a11y.spec.ts`, `e2e/specs/ssr-pages.spec.ts`
+- `e2e/pages/game.page.ts` — one new locator (see Task 3, this is not optional)
+- `e2e/specs/undo-reset.spec.ts`, `e2e/specs/a11y.spec.ts`
+- `tests/worker-guard.spec.ts`
 - `docs/URL-ARCHITECTURE.md` — the analytics event list
 
 **Explicitly NOT touched** — `src/undo-stack.ts`, `src/storage.ts`, `src/router.ts`,
@@ -96,7 +98,7 @@ AltGr+Z on a European layout would fire Undo.
 
 ## Task 2 — the two state getters
 
-Implements [32, 33, 88].
+Implements [32, 88]. (Item 33's guard is *used* in Task 7; this task only adds the getter.)
 
 `src/screens.ts`:
 ```ts
@@ -119,14 +121,27 @@ Test: extend `tests/walkthrough.spec.ts` only if the module's existing import su
 without touching the DOM — it currently imports pure exports only (`STEPS`, `gateMatches`,
 `holdMsFor`). `isWalkthroughActive()` is a one-line getter over module state that only
 `startWalkthrough()`/`finish()` mutate, and both are DOM-driven; covering it in vitest would mean
-building a walkthrough DOM harness for a `return active`. **Covered by e2e instead** — the
-walkthrough guard is asserted in Task 8. No unit test.
+building a walkthrough DOM harness for a `return active`. **Covered by the walkthrough e2e case in
+Task 9 instead.** No unit test.
+
+There is no `e2e/specs/walkthrough.spec.ts` — the walkthrough has unit coverage
+(`tests/walkthrough.spec.ts`, pure exports only) and no e2e at all today. The new case therefore
+goes into `undo-reset.spec.ts` alongside the other exclusion tests, not into a spec that does not
+exist.
+
+**Known limit — `getCurrentScreen()` lags by one fade.** `src/screens.ts:112–128` assigns
+`currentScreen = next` *inside* the `FADE_OUT_MS = 200` timer, so for 200ms after a
+`showScreen('welcome')` the getter still returns `'game'`. A shortcut fired in that window — e.g.
+immediately after tapping How to Play — would still mutate the board. Accepted: it is a 200ms
+window requiring a modifier chord mid-transition, `gameState.solved` does not cover it, and the
+alternative (DOM sniffing) is wrong for the whole 200ms rather than exact outside it. Recorded so
+it is a known limit and not a surprise at `da-build`.
 
 ---
 
 ## Task 3 — markup: shortcut lines inside both buttons
 
-Implements [48, 50, 54, 55, 62, 86, 91, 92, 103, 104]. Markup and CSS land together with Task 4;
+Implements [48, 54, 55, 62, 86, 91, 92, 104]. Markup and CSS land together with Task 4;
 this task is the DOM shape.
 
 `index.html`, inside `[data-board-controls]`:
@@ -163,11 +178,40 @@ Decisions baked in here:
 - The words, never the glyph [103]: visible `Ctrl + Z` / `Cmd + Z`, spoken `Control Z` /
   `Command Z`. No `⌘` anywhere.
 
+### Required in the same commit — ten existing e2e assertions break otherwise
+
+`e2e/pages/game.page.ts:33` defines `undo = page.locator("[data-undo]")` — the **button**, not its
+label — and ten assertions match its whole text:
+
+```
+e2e/specs/undo-reset.spec.ts:137,164,176,191,203  toHaveText("Undo")
+e2e/specs/undo-reset.spec.ts:145,173,187,195,279  toHaveText("Undo reset")
+```
+
+`toHaveText` is a whole-string match over `textContent` with `useInnerText: false`, so `sr-only`
+content counts. Once Task 5 fills the spans, the button's textContent on a desktop project reads
+`Undo Ctrl + Z Keyboard shortcut: Control Z` and all ten fail — on `chromium-desktop`,
+`firefox-desktop` and `webkit-desktop` only, because the spans stay empty on the two mobile
+projects. A half-red matrix reads like an engine bug rather than an expected consequence.
+
+**Fix, landing in the same commit as the markup:**
+- add `readonly undoLabel: Locator` to `e2e/pages/game.page.ts`, as
+  `page.locator("[data-undo-label]")`
+- repoint all ten assertions from `game.undo` to `game.undoLabel`
+
+This is also the more honest assertion: `renderBoardControls()` (`src/app.ts:546`) writes
+`dom.undoLabel.textContent`, so the label span is what the relabel regression suite from #251 is
+actually about. **Do not weaken these to `toContainText`** — the whole-string match is what proves
+"Undo" has become "Undo reset" and not merely gained it.
+
 ---
 
 ## Task 4 — CSS: `.board-ctrl` becomes icon + text column
 
-Implements [49, 51, 52, 62, 63, 64, 66, 85, 90]. `src/tailwind.css:609–631`.
+Implements [49, 50, 51, 52, 63, 64, 66, 85, 90]. `src/tailwind.css:609–631`.
+
+All of the new rules go in **`@layer utilities`** (opened at `src/tailwind.css:489`), the same layer
+`.board-ctrl` already lives in — otherwise the cascade differs from what this task assumes.
 
 `.board-ctrl` keeps `display: inline-flex; align-items: center` — the icon stays on one side and
 the new `.board-ctrl__text` column sits beside it, vertically centred against the icon, so with no
@@ -208,15 +252,27 @@ shortcut the label is centred alone and with one the pair shares the space [62].
 - The existing `opacity: 0.4` disabled fade is left exactly as it is: the shortcut line is inside
   the button now, so it greys with its control automatically [51, 53]. WCAG 1.4.3 exempts inactive
   components.
-- The reveal makes the button taller and nudges the digit boxes down a few pixels; the 200ms
-  transition is what stops that reading as a glitch [66]. Touch layout is untouched — the attribute
-  never gets set on a pure-touch device [52].
+- **Correction to item 66: the button does not actually get taller, and nothing below it moves.**
+  `.board-ctrl` already carries `min-height: 2.75rem` (44px, the touch target, `tailwind.css:614`).
+  The revealed two-line column computes to roughly `0.875rem × 1.15` (label) `+ 1.05rem` (key)
+  ≈ **2.06rem / 33px**, comfortably inside that floor. So the reveal is absorbed entirely by the
+  existing button height: the digit boxes do not shift, and item 66's "nudges the boxes down a few
+  pixels" cannot occur. The 200ms transition is still worth having and is still what [63] asked
+  for — it smooths the **label shifting up inside the button** as the column grows under it, plus
+  the key text fading in. This is a factual correction to a consequence, not a change to any
+  decision: [63] (there is a transition), [64] (it honours reduced motion) and [66] (the shift is
+  accepted) all stand.
+  **Do not write an e2e assertion on a `boundingBox` delta for the digit boxes** — it can only ever
+  be zero, and a builder chasing item 66 literally will either write a test that cannot pass or add
+  height the design does not need.
+- Touch layout is untouched — the attribute never gets set on a pure-touch device [52].
 
 ---
 
 ## Task 5 — keyboard detection and hint rendering
 
-Implements [21, 27, 40, 65, 95, 103]. `src/app.ts`.
+Implements [21, 27, 61, 65]. `src/app.ts`. Consumes the platform rules [40, 95, 103] built in
+Task 1.
 
 ```ts
 let keyboardSeen = false;
@@ -266,7 +322,7 @@ Four new entries in the `dom` cache: `undoKey`, `resetKey`, `undoDesc`, `resetDe
 
 ## Task 6 — `undoLast()` / `resetBoard()` report whether they acted
 
-Implements [14-corrected, 56, 57, 58, 84, 93]. `src/app.ts`. **This is the correction from
+Implements [14, 56, 57, 58, 84, 93]. `src/app.ts`. **This is the correction from
 da-brief item 84** — the brief's original "not one line of `undoLast()` changes" was wrong.
 Behaviour parity [9] stands; the no-change claim does not.
 
@@ -278,16 +334,23 @@ Two problems to fix at once: `undoLast()` returns `void`, so no caller can tell 
 
 ```ts
 let announceTimer: number | undefined;
+let lastAnnounced = '';
 
 function announce(message: string): void {
   if (!dom.undoMsg) return;
   clearTimeout(announceTimer);
-  dom.undoMsg.textContent = '';          // clear synchronously
-  if (!message) return;
-  // Two consecutive undos produce identical text, and a polite region whose content
-  // does not change is not re-announced. Clearing then rewriting after a beat makes
-  // the second undo audible. 100ms is under the polite-region settle time and well
-  // above a same-task microtask, which AT would coalesce away.
+  if (message !== lastAnnounced) {
+    // Normal path — a changed message IS re-announced, so write it synchronously.
+    // Every existing call site takes this branch, unchanged.
+    dom.undoMsg.textContent = message;
+    lastAnnounced = message;
+    return;
+  }
+  // Repeat path: two consecutive undos produce identical text, and a polite region
+  // whose content does not change is not re-announced at all. Clear now, rewrite
+  // after a beat, so the second undo is audible. 100ms is under the polite-region
+  // settle time and well above a microtask, which AT would coalesce away.
+  dom.undoMsg.textContent = '';
   announceTimer = window.setTimeout(() => { dom.undoMsg!.textContent = message; }, 100);
 }
 
@@ -299,6 +362,19 @@ function announceReset(on: boolean): void {
 `announceReset` keeps its signature and its exact string [58, 47], so all six existing call sites
 are untouched.
 
+**Why the two branches rather than always deferring.** `announceReset(true)` writes
+`dom.undoMsg.textContent` synchronously today (`src/app.ts:527`). Deferring every write by 100ms
+would make commit-order step 3 a real behaviour change, quietly invalidate any synchronous read of
+`[data-undo-msg]`, and only Playwright's auto-retry would hide it. Branching on
+`message !== lastAnnounced` means **every existing path stays exactly synchronous** and only the
+genuinely-identical repeat — which is new in this PR — pays the 100ms. That is what makes step 3
+behaviour-neutral rather than merely looking it.
+
+One consequence worth naming: on a held-key unwind, the single non-repeat announcement is the
+**first** keydown's, and `e.repeat` suppresses the rest [93]. A twenty-step unwind therefore speaks
+"Undone." once, at the start, not once per step. Deliberate — the alternative is a polite region
+written at the OS repeat rate.
+
 **Return values:**
 
 ```ts
@@ -309,7 +385,7 @@ function undoLast(): EntryKind | null {
   const previous = boardHistory.undo();
   if (previous === null) return null;
   applyBoard(previous);
-  return kind ?? 'toggle';
+  return kind;   // non-null whenever undo() was: nextKind() and undo() share the empty-stack guard
 }
 
 // Returns true if the board was actually reset.
@@ -347,7 +423,7 @@ silence is indistinguishable from a broken key [57].
 
 ## Task 7 — the keydown branch
 
-Implements [15, 16, 17, 18, 19, 28, 33, 59, 69, 70, 94, 98]. `src/app.ts`, the existing `document`
+Implements [15, 16, 17, 18, 19, 28, 29, 33, 59, 69, 70, 94, 98]. `src/app.ts`, the existing `document`
 keydown listener at ~line 1014.
 
 Placed **immediately after `if (gameState.solved) return;` and before the digit branch** [28]. That
@@ -426,9 +502,12 @@ keyboard-only count is a number with no denominator [67].
 
 ## Task 8 — worker: allowlist and the `source` split
 
-Implements [67, 71, 81, 82, 101, 102]. Authorised exception, see the scope note.
+Implements [67, 68, 71, 81, 82, 100, 101, 102]. Authorised exception, see the scope note.
 
-**`src/worker/index.ts:25`** — add `'undo_used', 'reset_used'` to `VALID_EVENTS`. Without this the
+**`src/worker/index.ts:25`** — add `'undo_used', 'reset_used'` to `VALID_EVENTS`, and change the
+`const` to `export const` so the allowlist is unit-testable (the module has only a default export
+today, and its body is definitions only — importing it in vitest runs no side effects). Without the
+two names the
 POST 400s and `track()`'s `.catch(() => {})` swallows it, so the feature looks fine and records
 nothing [81]. One line. `source` already rides in blob3 (`index.ts:409`) and anonymity is unchanged
 — the same anonymous `uid` and `newUser` flag, no new field, no key-by-key logging [71].
@@ -449,6 +528,12 @@ never queried [82]. Two changes:
 
 Without step 2 item 67's entire justification — comparing keyboard against button — is not
 delivered [82].
+
+**Small re-scope of item 101, stated rather than implied.** Item 101 says "both events added to the
+interactions list", which reads as two rows. This delivers **four** — the split — and no combined
+total, because a combined `undo_used` row alongside its own two components would be a third number
+that is just their sum. The split is what item 67 asked the events for; if Jamie wants the totals
+too, that is two more `eventMap` rows and a one-line change.
 
 No impression event for the hint [68]: it would fire on essentially every desktop game load, a lot
 of noise to answer a question the `source` split answers better.
@@ -471,10 +556,24 @@ at once, so "no tests" is wrong too.
 
 **Unit — `tests/shortcuts.spec.ts`** (Task 1, written first) [74].
 
-**Unit — `tests/stats-dashboard.spec.ts`**: call the exported `renderDashboard()` with a fake
-`getStats` shape carrying `undo_used`/`keyboard` = 7 and `undo_used`/`button` = 3, assert all four
-split rows render with the right figures and that a missing combination renders `0`. Pure string
-builder, no network [82].
+**Unit — `tests/stats-dashboard.spec.ts`**: call the exported `renderDashboard()` with a fake stats
+object carrying `undo_used`/`keyboard` = 7 and `undo_used`/`button` = 3, assert all four split rows
+render with the right figures and that a missing combination renders `0`. Pure string builder, no
+network [82]. Note the parameter is typed `Awaited<ReturnType<typeof getStats>>`
+(`src/worker/stats.ts:72`), so the fake must construct **all six** query shapes — `events`, `daily`,
+`uniqueUsers`, `newUsers`, `guessDistribution` and the new `sourceSplit` — each as
+`{ data: [...], rows: n }`, not just the new one.
+
+**Unit — `tests/worker-guard.spec.ts`**, extended: import the newly-exported `VALID_EVENTS` from
+`src/worker/index.ts` and assert it contains `undo_used` and `reset_used`. This is the automated
+proof that H1 (item 81) is fixed — the frontend cannot tell, because `track()` swallows the 400.
+
+Deliberately **not** an e2e POST to `/api/event`. E2E runs against `vite preview` with the Cloudflare
+plugin (workerd, local bindings), so a `writeDataPoint` that throws locally would be caught by the
+handler's own `try/catch` and returned as a **400** — indistinguishable from an allowlist rejection,
+i.e. red on a correct implementation. The unit test tests the thing that was actually broken without
+that ambiguity. Residual gap, accepted: nothing automated proves the full browser → worker →
+Analytics Engine round trip. Item 100's write-budget glance is the manual pass over that ground.
 
 **E2E — `e2e/specs/undo-reset.spec.ts`**, appended to the existing describe [75]:
 - eliminate a digit, `Control+Z`, the digit is back and the board matches the pre-toggle state
@@ -492,9 +591,30 @@ builder, no network [82].
 All of these use `Control`, not `Meta` — CI runs Linux and the harness must not depend on the Mac
 modifier [96].
 
+**E2E — the ten repointed label assertions** — see Task 3. They move from `game.undo` to
+`game.undoLabel` in the markup commit, and they are the regression that proves the "Undo reset"
+relabel still works with a second line inside the button.
+
+**E2E — the new announcements** [56, 57], asserted on `[data-undo-msg]` via the existing
+`game.undoMsg` locator (`e2e/pages/game.page.ts:35`, already used at `undo-reset.spec.ts:149`).
+These are five specific strings, and whether they are *written* is plain text assertion — manual
+screen-reader checking covers whether they are *spoken*, which is a different question and no
+substitute:
+- eliminate, `Control+Z` → `Undone.`
+- eliminate, `Control+X`, `Control+Z` → `Undo reset.`
+- `Control+Z` on an untouched board → `Nothing to undo.`
+- `Control+X` on an untouched board → `Board is already clear.`
+- `Control+X` on a touched board → `Board reset. Undo reset available.` (unchanged [58])
+
 **E2E — exclusions** [16, 76]: with the feedback modal open and text typed into the textarea,
 `Control+X` cuts the text and the board is untouched; with the menu open, neither key changes the
 board. `Control+X`, not `Cmd+X` — `Meta+X` does not cut in any engine on Linux [96].
+
+**E2E — the walkthrough guard** [33], one case, one project (`chromium-desktop`): the walkthrough
+auto-starts only when `localStorage.dlng_history` is absent (`src/walkthrough.ts:296`), so load a
+playable game with history unseeded, wait for it to be running, press `Control+Z`, and assert the
+board is unchanged. This is the only coverage `isWalkthroughActive()` gets — Task 2 declines a unit
+test for it, and the walkthrough has no other e2e today.
 
 **E2E — the hint** [77], each case naming the projects it applies to, because `undo-reset.spec.ts`
 runs on all five Playwright projects and an ungated case fails on the other four [97]:
@@ -508,12 +628,6 @@ runs on all five Playwright projects and an ungated case fails on the other four
 - Undo exposes **both** its name and its description: `aria-label` "Undo last change" *and*
   `aria-describedby` resolving to "Keyboard shortcut: Control Z"; same for Reset with "Control X"
 - the visible key span carries `aria-hidden="true"` [92]
-
-**E2E — the worker allowlist — `e2e/specs/ssr-pages.spec.ts`** [81]: `request.post('/api/event')`
-with `{event:'undo_used', uid:'e2e', source:'keyboard'}` expects **202**, and a bogus event name
-expects **400**. This is the only automated proof that H1 is actually fixed — the frontend cannot
-tell, because `track()` swallows the failure. It writes a datapoint against the preview hostname;
-`whereClause` filters on `blob4 = hostname`, so production figures are unaffected.
 
 **Manual, on the branch preview** [79] — automation is poor at these:
 - VoiceOver or NVDA actually reads the description and the new live-region messages [54, 56, 57]
@@ -532,11 +646,13 @@ the layout on the preview before the PR is raised [79].
 2. `getCurrentScreen()` + `isWalkthroughActive()` (Task 2)
 3. `undoLast()`/`resetBoard()` return values + `announce()` (Task 6) — behaviour-neutral, existing
    e2e must stay green on its own
-4. markup + CSS (Tasks 3, 4)
+4. markup + CSS (Tasks 3, 4) — **including the `game.page.ts` locator and the ten repointed
+   assertions**, which are not a follow-up: without them the suite goes red at step 5, on three
+   projects out of five
 5. keyboard detection + hint rendering (Task 5)
 6. the keydown branch + click-handler sources (Task 7)
 7. worker allowlist + dashboard split + doc update (Task 8)
-8. e2e and the stats unit test (Task 9)
+8. remaining e2e and the two unit tests (Task 9)
 
 Each is independently testable. Step 3 lands before anything calls the new return values so a
 regression there is isolated from the feature.
@@ -556,17 +672,47 @@ plus this plan committed on the branch [80].
 
 ---
 
+## da-plan review — 2026-08-02
+
+Fresh-context devil's-advocate pass: 1 High, 4 Medium, 7 Low. All twelve resolved in this file;
+nothing deferred.
+
+- **H1** — Task 3's markup breaks ten existing `toHaveText` assertions on three of five projects,
+  because `game.page.ts:33` locates the button, not the label. Fixed: `undoLabel` locator and the
+  ten repoints now land in the same commit. See Task 3.
+- **M1** — `isWalkthroughActive()` had no coverage and Task 2 pointed at the wrong task for it.
+  Fixed: a walkthrough guard e2e case added to Task 9. (The review suggested
+  `e2e/octopus-walkthrough.spec.ts` as its home — that file does not exist; the walkthrough has no
+  e2e spec at all, so the case goes in `undo-reset.spec.ts`.)
+- **M2** — the five new announcements were routed entirely to manual screen-reader checking. Fixed:
+  e2e text assertions on `[data-undo-msg]` in Task 9, with manual checking kept for whether they are
+  *spoken*.
+- **M3** — `announce()` made the existing synchronous reset announcement async, so commit-order
+  step 3 was not the "behaviour-neutral" it claimed. Fixed: the 100ms defer now applies only to a
+  genuinely identical repeat; every existing call site stays synchronous.
+- **M4** — Task 4 claimed the reveal grows the button and pushes the digit boxes down. It cannot:
+  `min-height: 2.75rem` absorbs the extra line. Corrected in Task 4, with an explicit warning not to
+  write a `boundingBox` assertion that can only ever be zero.
+- **L1** `getCurrentScreen()`'s 200ms lag, **L2** item 105, **L3** header/table mismatches,
+  **L4** `@layer utilities`, **L5** the `/api/event` e2e that could go red on a correct
+  implementation (replaced with a unit test on an exported `VALID_EVENTS`), **L6** the unreachable
+  `?? 'toggle'`, **L7** the four-rows re-scope of item 101 and the six-shape stats fake — all fixed
+  in place.
+
 ## Traceability
 
 Every numbered brief item, accounted for.
 
+Each task's header cites the same numbers as this table — they were reconciled after the `da-plan`
+pass, and this table is the one that survives the context clear.
+
 - **Task 1** — 12, 13, 34, 40, 74, 87, 95, 103
-- **Task 2** — 32, 33, 88
+- **Task 2** — 32, 88
 - **Task 3** — 48, 54, 55, 62, 86, 91, 92, 104
 - **Task 4** — 49, 50, 51, 52, 63, 64, 66, 85, 90
 - **Task 5** — 21, 27, 61, 65
-- **Task 6** — 56, 57, 58, 84, 93
-- **Task 7** — 14, 15, 16, 17, 18, 19, 28, 29, 59, 69, 70, 94, 98
+- **Task 6** — 14, 56, 57, 58, 84, 93
+- **Task 7** — 15, 16, 17, 18, 19, 28, 29, 33, 59, 69, 70, 94, 98
 - **Task 8** — 67, 68, 71, 81, 82, 100, 101, 102
 - **Task 9** — 73, 75, 76, 77, 78, 79, 80, 96, 97
 - **No code needed** — 1, 2, 3, 4, 5 (framing and direction, carried into the sections that own
@@ -582,6 +728,7 @@ Every numbered brief item, accounted for.
   extra code); 47 (no wording change elsewhere); 53 (the size answer, delivered by 49 + 50 + 52);
   60 (WCAG 2.1.4 does not apply — both bindings take a modifier, which is why bare U/R were never
   proposed); 72 (**withdrawn** by 101); 83 (answered (a) by 101); 89 (implemented via 103); 99
-  (logged as a follow-up above)
+  (logged as a follow-up above); 105 (Jamie's "§9 fine" — a confirmation that 92, 93, 94 and 95
+  stand as written, all of which are built in Tasks 3, 6 and 7)
 
 Nothing in the brief is unhandled.
