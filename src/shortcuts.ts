@@ -58,3 +58,21 @@ export function matchShortcut(e: ShortcutKeyEvent): ShortcutAction | null {
 export function modifierLabel(platform: string | undefined): 'Cmd' | 'Ctrl' {
   return platform && /mac|iphone|ipad/i.test(platform) ? 'Cmd' : 'Ctrl';
 }
+
+/**
+ * Is this event's target something the player types into?
+ *
+ * Used for two different jobs, which is why it lives here rather than in app.ts:
+ *
+ *  1. The shortcut guard — Cmd+X has to keep cutting inside the feedback
+ *     textarea, and Cmd+Z has to keep undoing their typing.
+ *  2. Keyboard DETECTION. A keydown is only evidence of a physical keyboard if
+ *     it did not come from a text field: on iOS the on-screen keyboard cannot
+ *     appear unless one is focused, so a keypress anywhere else means real keys.
+ *     Without this, typing feedback on an iPhone revealed a hint for shortcuts
+ *     that phone can never send (reported by Jamie, 2026-08-02).
+ */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  return !!el?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+}

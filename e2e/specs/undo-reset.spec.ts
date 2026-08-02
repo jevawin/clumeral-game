@@ -695,10 +695,44 @@ test.describe("keyboard shortcut hint", () => {
     await expect(game.undoKey).toHaveText("");
     await expect(page.locator("html")).not.toHaveAttribute("data-keyboard", "true");
 
-    // One keypress is enough: this is the iPad-with-a-keyboard case.
-    await page.keyboard.press("a");
+    // One keypress outside a text field is enough: this is the tablet-with-a-
+    // keyboard case, and Tab or a digit is what a keyboard player presses first.
+    await page.keyboard.press("Tab");
 
     await expect(page.locator("html")).toHaveAttribute("data-keyboard", "true");
     await expect(game.undoKey).toHaveText("Ctrl + Z");
+  });
+
+  // Regression: an on-screen keyboard is not a keyboard. Typing feedback on an
+  // iPhone used to reveal a hint for shortcuts that phone can never send
+  // (reported by Jamie, 2026-08-02). iOS cannot raise its keyboard without a
+  // focused text field, so ignoring keydowns from one is what closes it.
+  test("typing into the feedback box does not reveal the hint", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "mobile-webkit",
+      "the false positive is an on-screen-keyboard case — assert it on the iPhone project",
+    );
+
+    const game = new GamePage(page);
+    await gotoPlayableGame(page);
+
+    const menu = new MenuPage(page);
+    await menu.open();
+    await menu.fbBtn.click();
+    const feedback = new FeedbackPage(page);
+    await expect(feedback.modal).toBeVisible();
+
+    await feedback.msg.click();
+    await feedback.msg.pressSequentially("mashing the keys");
+
+    await expect(page.locator("html")).not.toHaveAttribute("data-keyboard", "true");
+    await expect(game.undoKey).toHaveText("");
+
+    // ...and the detection still works afterwards. The listener has to survive
+    // the typing rather than being spent by it.
+    await feedback.close.click();
+    await expect(feedback.modal).toBeHidden();
+    await page.keyboard.press("Tab");
+    await expect(page.locator("html")).toHaveAttribute("data-keyboard", "true");
   });
 });

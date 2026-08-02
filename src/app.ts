@@ -5,7 +5,7 @@ import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
-import { matchShortcut, modifierLabel } from './shortcuts.ts';
+import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
@@ -670,14 +670,31 @@ function showKeyboardHint(): void {
 // Two triggers, either one is enough. A pure-touch player never sees the hint;
 // a desktop player sees it before first paint, so never sees the transition; a
 // hybrid player (iPad with a Magic Keyboard, where the pointer test fails) gets
-// it the moment they touch the keyboard.
-//
-// The keydown listener is deliberately SEPARATE from the game's own: that one
-// returns early on a solved board, and a character typed into the feedback
-// textarea still proves a keyboard exists. Registered with once + capture, so it
-// costs exactly one keydown for the life of the page.
+// it as soon as they use the keyboard on the board.
 if (window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) showKeyboardHint();
-document.addEventListener('keydown', showKeyboardHint, { once: true, capture: true });
+
+// A keydown only counts as evidence of a physical keyboard when it did NOT come
+// from a text field. On iOS the on-screen keyboard cannot appear unless one is
+// focused, so a keypress anywhere else means real keys — while typing feedback
+// on an iPhone, which used to reveal a hint for shortcuts that phone can never
+// send, now proves nothing.
+//
+// Any key qualifies rather than a hand-picked list: Tab, a digit, an arrow and
+// Escape are all real board bindings, and enumerating them would be a list to
+// keep in step with the keydown handler for no benefit.
+//
+// Not `once`, because the first keydown of a page session is often a character
+// typed into feedback; the listener has to survive that and keep watching. It
+// removes itself the moment it fires for real.
+//
+// Deliberately separate from the game's own keydown handler, which returns early
+// on a solved board — a solved-board player pressing keys still has a keyboard.
+function detectKeyboard(e: KeyboardEvent): void {
+  if (isTypingTarget(e.target)) return;
+  showKeyboardHint();
+  document.removeEventListener('keydown', detectKeyboard, true);
+}
+document.addEventListener('keydown', detectKeyboard, { capture: true });
 
 function openBox(i: number): void {
   activeBox = i;
@@ -1101,13 +1118,6 @@ if (dom.saveCheck) {
     saveScore = dom.saveCheck!.checked;
     persistPrefs(saveScore);
   });
-}
-
-// Is the player typing into something? Cmd+X has to keep cutting inside the
-// feedback textarea, and Cmd+Z has to keep undoing their typing.
-function isTypingTarget(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-  return !!el?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
 }
 
 // The native `open` property, NEVER the `.open` class: modals.ts removes that
