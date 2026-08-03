@@ -617,3 +617,28 @@ the backfill safely from it.
     the record: every joint section was acked "deferred to Jamie", so this brief had one
     reviewer — legitimate under the non-blocking rule, and the reason this DA pass caught
     as much as it did.
+
+## Decisions on the da-brief open questions, Jamie 2026-08-03
+
+82. **Item 65 settled: a separate `clumeral-analytics` database** with its own `ANALYTICS_DB`
+    binding. `FEEDBACK_DB` is not reused.
+83. **Item 67 settled: (b) `ctx.waitUntil`.** Jamie asked how long it gets before timing out.
+    Answer, from Cloudflare's limits page: work passed to `ctx.waitUntil()` may continue for
+    **up to 30 seconds** after the response is sent or the client disconnects. A single D1
+    insert is single-digit to low-tens of milliseconds, so the headroom is roughly three
+    orders of magnitude. Network wait does not count toward CPU time either, so the insert
+    costs almost nothing against the CPU budget. Source:
+    https://developers.cloudflare.com/workers/platform/limits/
+    Confirmed: (b) with a logging `.catch()`, and `ctx: ExecutionContext` added to the fetch
+    signature.
+84. **New risk surfaced while checking item 83 — the backfill may not fit in one cron run.**
+    Cron-triggered Workers get 15 minutes of wall clock, but **CPU time is 10 ms on the free
+    plan** against 30 s on paid. Item 66 puts the backfill inside `scheduled()`, and pulling
+    ~7,300+ rows from the Analytics Engine SQL API and inserting them into D1 will not fit
+    in 10 ms of CPU if this account is on the free plan.
+    My rec: the Plan confirms the account's Workers plan tier first, and the backfill is
+    written to **batch regardless** — process N days per cron run and advance a cursor in the
+    sentinel row, so it completes over several nights and is safe on either tier. Why: the
+    batched version is barely more code than the one-shot, and it removes a dependency on a
+    billing fact that could change. This also supersedes the "one-shot" wording in items 24
+    and 66: the guard becomes "resumable and idempotent" rather than "runs exactly once".
