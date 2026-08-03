@@ -257,6 +257,13 @@ Settled: pending · Ack: pending
     count labels only at 7 and 30 day ranges where the bars are wide enough to carry them.
     Why: it answers Jamie's "counts as labels OR on y" as *both, whichever fits*, and
     degrades sanely to 365+ days.
+    → **REVISED 2026-08-03 after checking the `dataviz` skill.** "A number on every bar"
+    is a named anti-pattern — flooding the chart with values is chaos and they go unread;
+    direct labels work *because* they are sparing. Revised rec: y axis at every range,
+    plus direct labels on **only the highest bar and the most recent bar**, at every range
+    rather than just short ones. Why: those are the two a reader actually looks for
+    ("best day", "yesterday"), it reads the same at 7 days and at 365, and the axis plus
+    the item 34 tooltip carry everything else.
 33. **X-axis dates thin out as the range grows.** Every day at 7d; roughly weekly at 30d;
     monthly at 90d and above. Rec: pick the step from the day count so labels never collide.
     (assumed)
@@ -265,8 +272,57 @@ Settled: pending · Ack: pending
 35. **Empty state.** If the range contains no data at all, render the axes with a "No plays
     in this range" message rather than an empty box. (assumed)
 
+### §6 addendum — decisions, Jamie 2026-08-03
+
+36. **Item 27 settled: scoped read-only token on the Pi, no `/stats/compare` route.**
+    Jamie asked whether a new stats-only token on the machine is simple and safe. It is,
+    with two conditions. Cloudflare API tokens are permission-scoped, so this one needs
+    **Account · Account Analytics · Read** and nothing else — it cannot deploy, cannot read
+    or write KV, D1 or R2, cannot touch DNS, and cannot read Worker secrets. That is a much
+    smaller blast radius than reusing the existing `CF_API_TOKEN`, whose scope is wider.
+    Conditions: (a) **set a TTL on it** — it is only needed until the AE call is removed, so
+    an expiry ~60 days out means it self-destructs rather than lingering; (b) it lives in
+    `.dev.vars`, which is already in `.gitignore` (line 45), never in a tracked file.
+    **Jamie has to create it** — it needs the Cloudflare dashboard, which I have no access
+    to. Consequence: item 27's `/stats/compare` route is **dropped**, which is the better
+    outcome anyway — no temporary route to build and then remember to delete.
+37. **Future idea to log as a GitHub issue** (Jamie's, 2026-08-03): custom date range —
+    pick start and end — plus period comparison. Likely reshapes the nav into two date
+    pickers with 7/30/90 as presets "within", and a compare control offering previous
+    period, previous year, and a custom window. Out of scope here; wording to be confirmed
+    with Jamie before the issue is filed.
+
 ## 7. How it looks
 Settled: pending · Ack: pending
+
+38. **The chart grows a bottom band and a left gutter, and the container grows with it.**
+    A fixed-height container that excludes the axis band is a named anti-pattern — the plot
+    fits, the labels do not, and the card sprouts a tiny nested scrollbar. Rec: plot area
+    stays 200px, total SVG becomes ~240px tall with ~32px left gutter for y ticks and ~24px
+    bottom band for dates.
+39. **Fit to width, drop the horizontal scroll.** Rec: `viewBox="0 0 600 240"` with
+    `width: 100%`. Why: at "All" the whole point is the shape of the trend, and a scrolling
+    chart hides it — worse, the y axis scrolls out of view. It also renders better on a
+    phone than today's fixed 600px, which currently forces a sideways scroll on mobile.
+    The `.chart-wrap { overflow-x: auto }` rule goes.
+40. **Gridlines and axes: solid 1px hairlines, one step off the surface, never dashed.**
+    Dashed grid reads as "threshold" or "projection" when it is just a grid. (assumed —
+    `dataviz` mark spec)
+41. **Bars keep `var(--acc)`, capped at 24px wide, with a 2px gap between neighbours.**
+    Current code already spaces bars by 2px; it also uses `rx="1"` which rounds all four
+    corners. Rec: round the top only (4px) and keep the baseline square, so bars sit on the
+    axis rather than floating. Why: matches the mark spec and reads as measured-from-zero.
+42. **All axis text and direct labels use the existing muted ink tokens, never `var(--acc)`.**
+    Text never wears the data colour. The dashboard already has the tokens
+    (`rgba(38,38,36,0.7)` / `rgba(246,240,232,0.6)`). (assumed)
+43. **Palette check — run, not eyeballed.** `scripts/validate_palette.js` passes the light
+    accent `#bc3c2c` on the `#f5edd8` surface on every check. In dark, `#ff8070` on
+    `#262624` **passes contrast** but sits just outside the recommended lightness band
+    (L 0.741). It is the site-wide brand accent, so I am **not** proposing to change a brand
+    token for one chart — flagging it, not acting on it. Jamie's call if he wants it looked
+    at separately.
+44. **Range nav needs no restyling** — the existing pill styling takes a fourth item as is.
+    (assumed)
 
 ## 8. Copy & wording
 Settled: pending · Ack: pending
