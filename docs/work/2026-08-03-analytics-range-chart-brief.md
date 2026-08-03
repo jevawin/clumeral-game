@@ -674,3 +674,42 @@ the backfill safely from it.
     `.gitignore` now ignores `.env` and `.env.*`, with `!.env.example` kept unignored so a
     documented template can still be committed later. This was a live footgun independent of
     this brief — anyone adding a `.env` for any reason would have hit it.
+
+## Backfill strategy REOPENED — Jamie, 2026-08-03
+
+91. **Item 86 is REVISED. Do not lock in "1 day per run over ~90 nights".** Jamie's
+    objection is correct and the reasoning behind it matters: 10 ms is a **per-invocation
+    CPU** budget, not a rate limit. Ninety invocations of 10 ms is under a second of CPU in
+    total. My "~90 nights" figure silently assumed the only thing that can invoke the
+    backfill is the nightly cron — that was an unexamined assumption, not a platform
+    constraint, and I stated it as though it were settled.
+92. **What is actually fixed, and is the only thing Build must not compromise:** the backfill
+    is **resumable and idempotent** — a cursor in a sentinel row, a hard cutoff at the
+    instant D1 writes went live (item 24), and safe to re-run at any point without
+    double-counting. Every strategy below satisfies that; it is what makes experimenting
+    with batch size safe.
+93. **Batch size and drive mechanism are Plan's to determine, by research and measurement,
+    not by my estimate.** Plan must answer:
+    - **What does it actually cost?** Measure real CPU for parsing N Analytics Engine rows
+      and inserting them, via `wrangler tail`. My "~81 rows is comfortable, 7,300 is not"
+      was a guess with no measurement behind it. The whole backfill may well fit in one or
+      two invocations.
+    - **Is free-tier cron CPU really 10 ms?** That is what the limits page states today, but
+      Cloudflare has revised free-plan Worker limits before. Verify against current docs
+      rather than inheriting my reading of them.
+    - **If many invocations are needed, what can drive them fast?** Options to weigh:
+      temporarily tightening the cron expression for the duration of the backfill; a
+      secret-guarded fetch route driven from the Pi in a loop (note this one *does*
+      introduce a mutating endpoint, so item 19's "no auth needed" does not extend to it —
+      it would need a guard); Queues or Durable Object alarms, subject to confirming
+      free-plan availability.
+    - **D1 free-tier write ceiling** is 100 k rows/day, so ~7,300 rows is not a constraint
+      even if the whole thing runs in one day.
+    - **AE SQL API row limits and paging** (already open as finding L1) feed directly into
+      the viable batch size.
+94. **Decision criterion for Plan:** pick the simplest mechanism that completes the backfill
+    quickly without risking a CPU kill mid-write. Prefer fewer moving parts over speed where
+    they conflict — but do not accept ~90 nights if a measured batch shows it can be done in
+    minutes, and do not accept a design that cannot be resumed if it dies halfway.
+95. `.env` created by Jamie with the scoped Analytics Read token, 2026-08-03. Verified
+    untracked and ignored via `.gitignore:46`.
