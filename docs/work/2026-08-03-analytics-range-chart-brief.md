@@ -10,13 +10,21 @@ Branch: `dev/analytics-range-chart`
 Short form: sections 1, 2, 3, 6, 7, 8, 9, 11 — approved by Jamie 2026-08-03.
 Sections 4 (maths), 5 (state & persistence) and 10 (analytics) marked n/a.
 
-**Scope status: REOPENED at §1/§2 on 2026-08-03.** Item 4's retention risk is confirmed
-real, which changes what this piece of work is. See §2. Awaiting Jamie's scope decision.
+**Status: all sections settled and acked, 2026-08-03.** Ready for `da-brief`.
+
+The request arrived as "add an all-time option and label the chart". §1 established that
+Analytics Engine deletes data after ~90 days, so "all time" could not be built at all; §2
+widened the scope on Jamie's decision; §6 replaced Analytics Engine with D1 entirely after
+Jamie challenged the two-system design and measured volume (~81 events/day) showed it was
+unnecessary. The chart work is now the smaller half of this brief.
+
+Related: GitHub issue #297 (custom date range and period comparison) — logged as a future
+idea, out of scope here.
 
 ---
 
 ## 1. What it is
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-03 · Ack: Dave 2026-08-03 (deferred to Jamie)
 
 1. The problem is two things in one request: `/stats` hard-caps the range at 90 days
    (`Math.min(Number(period), 90)` in `src/worker/index.ts:430,449`), and the daily plays
@@ -68,7 +76,7 @@ Settled: pending · Ack: pending
    impossible to correct retrospectively.
 
 ## 2. Out of scope
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-03 (chose (b), widen to cover both) · Ack: Dave 2026-08-03 (deferred to Jamie)
 
 10. **Question — the scope decision, and it is Jamie's.** Three ways to take this:
     - **(a) Split, archive first.** Pause this brief, brief the archiver, come back to the
@@ -89,17 +97,18 @@ Settled: pending · Ack: pending
 11. Out either way: retrieving pre-2026-05-05 data (gone), per-event raw row archival
     (aggregates only), and any player-facing analytics surface. (assumed)
 
-## 3. How it works
-Settled: pending · Ack: pending
+*(§3 is written out in full after §6 — the two-systems challenge in §6 had to be settled
+before "how it works" could be described, so the sections were filled in that order.)*
 
 ## 4. Maths
 n/a — no puzzle generation or filtering involved.
 
 ## 5. State & persistence
-Settled: pending · Ack: pending
+n/a — the range already lives in the URL as `?period=`, and nothing new is stored client-side.
+Server-side persistence is covered in §6, not here. Approved as n/a under short form, Jamie 2026-08-03.
 
 ## 6. How it fits
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-03 (D1 only, raw rows; dual write (a); scoped read-only token) · Ack: Dave 2026-08-03 (deferred to Jamie)
 
 ### Jamie's challenge, 2026-08-03: is two systems the right shape at all?
 
@@ -236,7 +245,7 @@ Settled: pending · Ack: pending
     the removal checklist. Both written during Build, not now.
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-03 (accepted all recommendations) · Ack: Dave 2026-08-03 (deferred to Jamie)
 
 29. **Range options become unbounded once D1 holds the history.** Current nav is 30/60/90.
     My rec: **7 · 30 · 90 · All**. Why: drop 60 (little to read between 30 and 90 that 90
@@ -293,7 +302,7 @@ Settled: pending · Ack: pending
     with Jamie before the issue is filed.
 
 ## 7. How it looks
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-03 (accepted all recommendations) · Ack: Dave 2026-08-03 (deferred to Jamie)
 
 38. **The chart grows a bottom band and a left gutter, and the container grows with it.**
     A fixed-height container that excludes the axis band is a named anti-pattern — the plot
@@ -325,7 +334,7 @@ Settled: pending · Ack: pending
     (assumed)
 
 ## 8. Copy & wording
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-03 (accepted all recommendations) · Ack: Dave 2026-08-03 (deferred to Jamie)
 
 45. Range nav labels: **7d · 30d · 90d · All**. (assumed — matches the existing terse pill
     style)
@@ -339,7 +348,7 @@ Settled: pending · Ack: pending
 49. Empty range: "No plays in this range". Section heading stays "Daily plays". (assumed)
 
 ## 9. Accessibility
-Settled: pending · Ack: pending — **BLOCKING, Jamie's call**
+Settled: **Jamie 2026-08-03 (owner sign-off — accepted 51(a)+(c) and all recommendations)** · Ack: n/a (owned section)
 
 50. **The real problem: the chart is currently invisible to a screen reader.** Today it is
     one `<svg role="img" aria-label="Daily plays chart">` — that announces the *existence*
@@ -369,7 +378,7 @@ Settled: pending · Ack: pending — **BLOCKING, Jamie's call**
     `prefers-reduced-motion` work. (assumed)
 
 ## 11. Done / test plan
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-03 (confirmed CI-only Playwright, no local runs) · Ack: Dave 2026-08-03 (deferred to Jamie)
 
 55. **QA level: moderate, and weighted towards the data layer rather than the UI.** The
     dashboard is internal, but `/api/event` sits on the player path, so the write change is
@@ -396,7 +405,6 @@ Settled: pending · Ack: pending
     the item 60 check, not done in this PR.
 
 ## 10. Analytics
-Settled: pending · Ack: pending
-
-## 11. Done / test plan
-Settled: pending · Ack: pending
+n/a — this work *is* the analytics system; it adds no new tracked events and changes no
+event shape. The existing 8 events and their blobs/doubles carry over to D1 unchanged.
+Approved as n/a under short form, Jamie 2026-08-03.
