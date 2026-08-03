@@ -327,8 +327,73 @@ Settled: pending · Ack: pending
 ## 8. Copy & wording
 Settled: pending · Ack: pending
 
+45. Range nav labels: **7d · 30d · 90d · All**. (assumed — matches the existing terse pill
+    style)
+46. **The period label always states the real span**, not just the preset name:
+    "Last 30 days · 5 Jul – 3 Aug 2026", and for All, "All time · 5 Apr – 3 Aug 2026 ·
+    120 days". Why: this was item 4's honesty fix, and it stays useful after the D1 move —
+    "All" should show you where the data actually begins.
+47. Dates: **UK format, day first** — "5 Jul" on the axis, "5 Jul 2026" in the tooltip.
+    (assumed — UK project, matches "colour" elsewhere in the codebase)
+48. Tooltip text: "5 Jul 2026: 13 plays", singular "1 play". (assumed)
+49. Empty range: "No plays in this range". Section heading stays "Daily plays". (assumed)
+
 ## 9. Accessibility
+Settled: pending · Ack: pending — **BLOCKING, Jamie's call**
+
+50. **The real problem: the chart is currently invisible to a screen reader.** Today it is
+    one `<svg role="img" aria-label="Daily plays chart">` — that announces the *existence*
+    of a chart and not one number in it. Adding dates and counts visually makes that gap
+    wider, because sighted readers gain information a screen reader user still cannot get.
+51. **Question — how do we expose the values?**
+    - (a) A **visually-hidden data table** rendered alongside the chart, same numbers.
+    - (b) A visible "show as table" toggle.
+    - (c) Just a richer `aria-label` summarising the series.
+
+    My rec: **(a), plus (c)**. The hidden table makes every value reachable with no
+    interaction, and the summary label gives the shape up front — "Daily plays, 5 Apr to
+    3 Aug 2026. Average 8.1 per day, highest 27 on 12 July." Why not (b): a toggle is more
+    UI to build and maintain on an internal page, and it makes the accessible route
+    opt-in rather than always present. Why not (c) alone: a summary is not the data, and
+    the `dataviz` guidance is explicit that a tooltip must never be the only way to a
+    value.
+52. **Bars will not be individually focusable.** At "All" that is 120+ tab stops today and
+    growing indefinitely — hostile to keyboard users, for data the table already carries.
+    The `<title>` in item 34 is a mouse affordance and a nicety, not the access route.
+    (assumed)
+53. **Axis and label text must clear WCAG AA against both surfaces.** The dashboard's
+    existing muted tokens go as low as `rgba(38,38,36,0.5)` on the domain label, which I
+    have not verified as passing. Rec: check every text token used by the chart at build
+    time and lift any that fails. Jamie owns this call.
+54. Single series, so nothing is encoded by colour alone. No animation, so no
+    `prefers-reduced-motion` work. (assumed)
+
+## 11. Done / test plan
 Settled: pending · Ack: pending
+
+55. **QA level: moderate, and weighted towards the data layer rather than the UI.** The
+    dashboard is internal, but `/api/event` sits on the player path, so the write change is
+    the part that can hurt. Rec: unit tests plus a narrow Playwright smoke — not the full
+    suite. Why: proportional to a change that is mostly server-side with one internal page.
+56. **Unit tests** on the pure functions, which is where the bugs will be: day-series
+    zero-fill across a range (item 31), x-label thinning by day count (item 33), max/latest
+    label selection (item 32), and `?period=` parsing including `all` and junk values.
+57. **Playwright smoke**: `/stats` renders at all four ranges without error, the chart has
+    the expected bar count for a known fixture, and the nav marks the right pill active.
+    Runs in CI, never locally.
+58. **Gameplay must be unaffected** — `/api/event` still returns 202, and a D1 failure must
+    not surface to the player or block the response. Explicit test: force the D1 insert to
+    throw and confirm the endpoint still answers 202.
+59. **Migration verification, before the AE call is removed**: row counts per day from the
+    AE query and from D1 match exactly across the backfilled window, and no day is doubled
+    (item 24's cutoff working).
+60. **The dual-write comparison** per item 23: AE and D1 daily counts equal for 3
+    consecutive full days including a weekend day. Recorded in `docs/ANALYTICS.md` with the
+    cutover date, per item 28.
+61. **Done means**: all four ranges work; the chart carries dates, a y axis and the two
+    direct labels; zero-play days appear as gaps; the hidden table matches the chart;
+    `/stats` reads D1 only; the backfill has run once; and the AE removal is queued behind
+    the item 60 check, not done in this PR.
 
 ## 10. Analytics
 Settled: pending · Ack: pending
