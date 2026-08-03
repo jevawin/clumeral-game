@@ -713,3 +713,114 @@ the backfill safely from it.
     minutes, and do not accept a design that cannot be resumed if it dies halfway.
 95. `.env` created by Jamie with the scoped Analytics Read token, 2026-08-03. Verified
     untracked and ignored via `.gitignore:46`.
+
+## Assumption audit — everything asserted without measurement, Jamie 2026-08-03
+
+Jamie asked for the rest of the unmeasured assumptions after item 91 caught one. This is a
+deliberate sweep of the whole brief for claims I stated with more confidence than the
+evidence behind them. **Everything below is unverified unless marked otherwise, and Plan
+must resolve each before it is relied on.** Grouped by area.
+
+### Platform limits I quoted from memory rather than from a document
+
+96. **D1 free-tier daily row limits.** I stated "100 k rows written/day" and "5 M rows
+    read/day" in items 12 and 89. The limits page I actually fetched gave storage, query and
+    database-count limits — **it did not give daily row limits**, and I filled those in from
+    memory without saying so. Plan must verify both against current docs. Everything in item
+    12's "0.08% of the daily write budget" rests on the first number.
+97. **Whether the token scope Jamie has already created is sufficient.** Item 36 asserted
+    that **Account · Account Analytics · Read** grants access to the Analytics Engine SQL
+    API. I never verified that this specific permission is the one the SQL API checks. This
+    matters more than the others because Jamie has already created the token on my say-so —
+    **Plan must test it against the real API early**, and if it fails, say so rather than
+    quietly widening the scope.
+98. **Cloudflare token TTLs.** Item 36 recommended a ~60 day expiry. Token expiry exists;
+    that it applies to this token type was assumed.
+99. Verified and needing no rework: AE retention (item 5), `waitUntil`'s 30 s (item 83), and
+    the light/dark palette figures (item 43) all came from a fetched document or a run
+    script.
+
+### The Analytics Engine side of the backfill
+
+100. **That the AE SQL API returns raw rows at all.** Item 16's entire "no granularity seam"
+     argument depends on `SELECT`ing individual rows rather than aggregates. Already open as
+     finding L1; restating it here because item 16 is load-bearing — if raw row access is
+     limited or absent, the backfill degrades to daily aggregates and item 16's conclusion
+     is wrong.
+101. **That `_sample_interval` is selectable per row.** Item 63's fix assumes we can read it
+     alongside the row. If it is only available in aggregate form, the sampling correction
+     needs a different shape.
+102. **Row limits and paging.** AE SQL has a row cap and no `OFFSET`; I asserted "paged by
+     day" works without checking that day-sized pages stay under the cap.
+103. **The ~7,300 row estimate** is extrapolated from a hostname-filtered 30-day query.
+     Preview and staging deployments write to the same dataset, so the true all-hostname row
+     count is higher — possibly much higher. Plan should get the real count before sizing
+     anything.
+
+### Cost and performance claims I asserted rather than measured
+
+104. **Row size and storage growth.** Item 12's "~30 k rows/year ≈ 3 MB" used a ~100 byte
+     row I never measured. Directionally safe against a 500 MB ceiling, but it is an
+     estimate wearing the clothes of a calculation.
+105. **"A single D1 insert is dominated by network wait, so CPU cost is negligible"**
+     (item 88) and **"`/stats` reads are fine because D1 aggregates server-side"** (item 89).
+     Both are unmeasured, and both are exactly the reasoning that produced the mistake in
+     item 91. Plan measures them with `wrangler tail` rather than reasoning about them.
+106. **"The six queries port with small edits"** (item 14). Already downgraded by finding L2
+     — `toStartOfDay()` and `NOW() - INTERVAL` are ClickHouse-only. Plan should draft all six
+     against D1 in full rather than assuming the shape survives.
+107. **The index choice in item 64** was reasoned, not tested. Plan confirms with
+     `EXPLAIN QUERY PLAN` against a realistic row count.
+
+### Chart and layout arithmetic done in my head
+
+108. **Bar widths at long ranges.** Item 39's "365 days in a 600px viewBox" gives ~1.6 px
+     bars. Whether that is a legible trend or visual mush is a judgement I made without
+     rendering it. Plan/Build should look at it before committing to fit-to-width, and item
+     39's rejection of horizontal scrolling should be revisited if it reads badly.
+109. **X-label density.** Item 33's "daily at 7d, weekly at 30d, monthly at 90d+" was never
+     checked against the rendered width of a "5 Jul" label at the chosen font size. The
+     thinning rule should be derived from measured text width, not from my guess at a step.
+110. **The two direct labels can collide.** Item 32's revision labels the highest bar and the
+     most recent bar — I never considered the case where they are the **same bar**, or
+     adjacent, or where the max sits at the right edge. Needs a stated rule for all three.
+111. **Item 41's 24 px bar cap** interacts with fit-to-width at short ranges: at 7 days a
+     600 px viewBox gives ~85 px slots, so the cap does real work and the bars will be
+     narrow marks in wide slots. Intended per the mark spec, but I never described what it
+     looks like, and it is the range Jamie will look at most.
+
+### Accessibility claims
+
+112. **Screen reader behaviour of SVG `<title>`** (item 34) is inconsistent across
+     reader/browser combinations — I wrote it as though it reliably announces. The hidden
+     table (item 51) is the actual access route and does not depend on this, so the design
+     holds, but the claim as written is overstated.
+113. **That a visually-hidden table is the right pattern here** (item 51) is a reasoned
+     choice, not a tested one. Jamie owns accessibility and item 53 is already an open build
+     gate; worth testing with a real screen reader before it ships. Dave mentioned having
+     TalkBack, so there is a route to a real check if either of them wants it.
+
+### Process and correctness gaps the audit surfaced
+
+114. **Schema column types are a TYPE decision, and Jamie owns types.** Item 64 picked
+     `ts INTEGER` (epoch ms), `value REAL`, `new_user INTEGER` as 0/1 and
+     `sample_interval INTEGER` on my own judgement, inside a section signed off before the
+     schema existed. `value` as `REAL` is the questionable one — guess counts are integers,
+     and it is only `REAL` because AE's `double1` is. **Jamie should sign off item 64's
+     types explicitly**; that has not happened yet and I should not have let it pass as
+     settled.
+115. **Overlapping cron invocations were never considered.** Item 66's sentinel-row guard
+     assumes runs do not overlap. If a backfill batch runs long and the next scheduled
+     invocation fires, two runs could read the same cursor and write the same rows. Plan
+     needs a stated position — a lock column, a compare-and-set on the cursor, or a
+     demonstration that overlap cannot occur.
+116. **"AE and D1 counts match exactly" may be an unrealistic gate.** Items 23, 59 and 60 all
+     require exact equality. Sampling, a midnight boundary, and requests that reach one write
+     path but not the other could all produce small legitimate differences. Plan defines an
+     acceptable tolerance and what a mismatch means, rather than leaving Build with a gate
+     that may never go green.
+117. **Item 2's audience claim.** "Jamie and Dave only" describes who it is *for*, not who
+     can *reach* it — `/stats` is unauthenticated (item 19, won't fix). Not a defect given
+     that decision, but the two were written as if the same thing.
+118. **`e2e:db` extension** (item 75) assumes a second local D1 database works cleanly under
+     `wrangler --local` in CI. Unverified.
