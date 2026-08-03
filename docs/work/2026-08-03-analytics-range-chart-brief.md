@@ -377,6 +377,11 @@ Settled: **Jamie 2026-08-03 (owner sign-off — accepted 51(a)+(c) and all recom
 54. Single series, so nothing is encoded by colour alone. No animation, so no
     `prefers-reduced-motion` work. (assumed)
 
+## 10. Analytics
+n/a — this work *is* the analytics system; it adds no new tracked events and changes no
+event shape. The existing 8 events and their blobs/doubles carry over to D1 unchanged.
+Approved as n/a under short form, Jamie 2026-08-03.
+
 ## 11. Done / test plan
 Settled: Jamie 2026-08-03 (confirmed CI-only Playwright, no local runs) · Ack: Dave 2026-08-03 (deferred to Jamie)
 
@@ -403,8 +408,3 @@ Settled: Jamie 2026-08-03 (confirmed CI-only Playwright, no local runs) · Ack: 
     direct labels; zero-play days appear as gaps; the hidden table matches the chart;
     `/stats` reads D1 only; the backfill has run once; and the AE removal is queued behind
     the item 60 check, not done in this PR.
-
-## 10. Analytics
-n/a — this work *is* the analytics system; it adds no new tracked events and changes no
-event shape. The existing 8 events and their blobs/doubles carry over to D1 unchanged.
-Approved as n/a under short form, Jamie 2026-08-03.
