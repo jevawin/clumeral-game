@@ -642,3 +642,35 @@ the backfill safely from it.
     batched version is barely more code than the one-shot, and it removes a dependency on a
     billing fact that could change. This also supersedes the "one-shot" wording in items 24
     and 66: the guard becomes "resumable and idempotent" rather than "runs exactly once".
+
+## Free-tier confirmation and its consequences, Jamie 2026-08-03
+
+85. **Confirmed: the account is on the Cloudflare Workers FREE plan.** Item 84's risk is
+    therefore real, not hypothetical, and several things in this brief harden from
+    recommendations into requirements.
+86. **The backfill MUST batch, and the batch unit is one day.** Free-plan cron invocations
+    get **10 ms of CPU**. Network wait does not count, but `JSON.parse` of the Analytics
+    Engine response does — parsing ~7,300 rows in one invocation would blow the budget
+    outright. One day is ~81 rows, which parses and inserts comfortably, and it makes the
+    cursor trivially simple (the sentinel row stores the last completed date).
+    Consequence: the backfill completes over ~90 nights at one day per run, or fewer with a
+    small multi-day batch. My rec: **start at 1 day per run, measure actual CPU with
+    `wrangler tail`, and raise the batch only if there is clear headroom.** Why: 90 nights
+    sounds slow but costs nothing and finishes long before AE's retention window closes on
+    the newest of those rows; over-batching risks a silent CPU kill mid-write.
+87. **Item 84's "confirm the tier during Plan" is now closed** — no need, it is free. The
+    Plan should still measure real CPU per batch rather than trusting the estimate above.
+88. **The `/api/event` insert is fine on free tier.** A single D1 insert is dominated by
+    network wait, which is excluded from CPU time; the CPU cost is serialising one small
+    statement. Item 83's `ctx.waitUntil` decision stands unchanged.
+89. **`/stats` reads are fine too.** D1 aggregates server-side, so the Worker only pays to
+    receive a small result set. Free-tier D1 allows 5 M row-reads/day; an all-time query
+    scanning ~30 k rows is well inside it even at high refresh rates. The item 64 indexes
+    matter here — an unindexed scan is what would eventually bite.
+90. **Item 36 REVISED: the token goes in `.env`, not `.dev.vars`** (Jamie's call). Scope and
+    TTL are unchanged — Account · Account Analytics · Read, ~60 day expiry.
+    **`.env` was not in `.gitignore`.** Only `.dev.vars` was (line 45), so a token dropped
+    into `.env` would have been committable. Fixed in the same commit as this item:
+    `.gitignore` now ignores `.env` and `.env.*`, with `!.env.example` kept unignored so a
+    documented template can still be committed later. This was a live footgun independent of
+    this brief — anyone adding a `.env` for any reason would have hit it.
