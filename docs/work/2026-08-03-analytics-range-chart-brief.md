@@ -101,6 +101,65 @@ Settled: pending · Ack: pending
 ## 6. How it fits
 Settled: pending · Ack: pending
 
+### Jamie's challenge, 2026-08-03: is two systems the right shape at all?
+
+> "That creates two systems: capture into A, archive into B. We'd need to report from B OR
+> a mix and are immediately introducing real-time vs archived. Is there a better tracking
+> solution all in one?"
+
+12. **Measured volume, and it reframes everything.** Live production `/api/stats?period=30`
+    returns **2,440 events across 30 days — ~81 events/day**, across 8 event types
+    (`route_change` 1289, `puzzle_start` 638, `puzzle_complete` 239, `tooltip_opened` 185,
+    `incorrect_guess` 60, `theme_toggle` 16, `htp_opened` 12, `feedback_submitted` 1).
+    At that rate a raw row per event is ~30k rows/year. D1's free tier allows 500 MB and
+    100k row-writes/day; we would use roughly 3 MB/year and 0.08% of the daily write
+    budget. Even 100× growth stays comfortably inside the free tier. (measured)
+13. **Therefore the two-system design is not required.** It exists to protect a write path
+    that, at 81 events/day, needs no protection. Options considered:
+
+    - **(1) AE live + D1 nightly rollup** — the original proposal. Two query paths, a seam
+      at the 90-day boundary, today's data missing from the archive until the cron fires,
+      and the rollup's dimensions frozen at design time. Jamie's objection is correct.
+    - **(2) D1 only, raw rows** — replace `writeDataPoint` with a D1 insert. One system,
+      unlimited retention, exact counts, arbitrary re-slicing of history later.
+    - **(3) D1 only, counter upserts** — ~10 rows/day, but history can never be re-sliced
+      by a dimension not stored up front. No reason to accept that at this volume.
+    - **(4) Third-party (Plausible / Umami / PostHog / Fathom)** — retention and dashboards
+      included, but a monthly cost, a third-party script on the page, a privacy/consent
+      posture change, and custom events (guess distribution, undo source) need rebuilding.
+      Poor value for 81 events/day.
+    - **(5) Durable Object with SQLite storage** — no advantage over D1 here; more moving
+      parts.
+    - **(6) Do nothing, accept 90 days** — free, but Jamie has ruled it out.
+
+14. **My rec: option (2), D1 only, raw rows.** Why: it is the one-system answer to the
+    challenge; measured volume makes the scale objection theoretical; D1 is already bound
+    (`FEEDBACK_DB`); keeping raw rows means future questions are answerable without a
+    schema change; and the six queries in `stats.ts` are already plain aggregate SQL, so
+    they port to D1 with small edits rather than a rewrite. `/api/event` keeps returning
+    202 immediately by doing the insert in `ctx.waitUntil`.
+15. **The `SUM(_sample_interval)` problem disappears** under option 2 — D1 rows are exact
+    and unsampled. Item 9 becomes moot rather than needing a fix. (assumed)
+16. **The backfill can be raw, so there is no granularity seam either.** AE's SQL API will
+    return raw rows, not just aggregates — ~7,300 rows for the surviving ~90 days, paged by
+    day. So the imported history is the same shape as what we collect afterwards, and
+    "unique users over June–July" stays computable. This was the strongest argument for
+    option 1 and it does not survive contact with the row count.
+17. **Question — retention of `uid`.** Raw rows keep the anonymous user id forever, where
+    AE would have aged it out at 90 days. Not a regulatory problem (no personal data, it is
+    a random local id), but it is a deliberate change of posture.
+    My rec: keep raw rows, and add a prune step to the existing nightly cron that nulls
+    `uid` on rows older than 12 months while leaving the row countable. Why: preserves the
+    ability to answer unique-user questions across a year, without keeping identifiers
+    indefinitely for no purpose.
+18. **Migration safety.** Keep `writeDataPoint` running alongside the D1 insert for one
+    release, compare the two on `/stats`, then remove the AE call. Why: a silent analytics
+    outage is invisible by definition — a dual-write overlap is the only cheap way to prove
+    the new path works before the old one is gone. (assumed)
+19. Noted in passing, not proposed as scope: `/stats` and `/api/stats` have no
+    authentication — only `noindex`. Worth a separate issue; flagging it, not widening
+    this brief.
+
 ## 7. How it looks
 Settled: pending · Ack: pending
 
