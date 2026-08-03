@@ -10,7 +10,12 @@ Branch: `dev/analytics-range-chart`
 Short form: sections 1, 2, 3, 6, 7, 8, 9, 11 — approved by Jamie 2026-08-03.
 Sections 4 (maths), 5 (state & persistence) and 10 (analytics) marked n/a.
 
-**Status: all sections settled and acked, 2026-08-03.** Ready for `da-brief`.
+**Status: settled, acked, and `da-brief` review closed, 2026-08-03.** Ready for Plan.
+
+**Read the da-brief section at the end of this file before planning.** It reverses item 15,
+reinstates item 9, and adds the schema, the backfill mechanism and the durability question
+that the body of the brief was missing. Where the body and that section disagree, that
+section wins.
 
 The request arrived as "add an all-time option and label the chart". §1 established that
 Analytics Engine deletes data after ~90 days, so "all time" could not be built at all; §2
@@ -104,8 +109,11 @@ before "how it works" could be described, so the sections were filled in that or
 n/a — no puzzle generation or filtering involved.
 
 ## 5. State & persistence
-n/a — the range already lives in the URL as `?period=`, and nothing new is stored client-side.
-Server-side persistence is covered in §6, not here. Approved as n/a under short form, Jamie 2026-08-03.
+~~n/a~~ — **REOPENED by da-brief finding M9, see item 77.** Marking this n/a was wrong: the
+substance of this brief *is* persistence, and §6 turned out to carry no schema. Client-side
+state genuinely is n/a (the range lives in the URL as `?period=`, nothing new is stored in
+the browser). Server-side storage design lives in **items 64, 65 and 17**: the
+`analytics_events` table, the database choice, and indefinite `uid` retention.
 
 ## 6. How it fits
 Settled: Jamie 2026-08-03 (D1 only, raw rows; dual write (a); scoped read-only token) · Ack: Dave 2026-08-03 (deferred to Jamie)
@@ -147,8 +155,11 @@ Settled: Jamie 2026-08-03 (D1 only, raw rows; dual write (a); scoped read-only t
     schema change; and the six queries in `stats.ts` are already plain aggregate SQL, so
     they port to D1 with small edits rather than a rewrite. `/api/event` keeps returning
     202 immediately by doing the insert in `ctx.waitUntil`.
-15. **The `SUM(_sample_interval)` problem disappears** under option 2 — D1 rows are exact
-    and unsampled. Item 9 becomes moot rather than needing a fix. (assumed)
+15. ~~**The `SUM(_sample_interval)` problem disappears** under option 2 — D1 rows are exact
+    and unsampled. Item 9 becomes moot rather than needing a fix. (assumed)~~
+    **WRONG — REVERSED by da-brief finding H1, see items 62–63.** True only of rows written
+    after cutover; the backfill imports raw AE rows that carry `_sample_interval`. Item 9
+    is live again and the schema gains a `sample_interval` column.
 16. **The backfill can be raw, so there is no granularity seam either.** AE's SQL API will
     return raw rows, not just aggregates — ~7,300 rows for the surviving ~90 days, paged by
     day. So the imported history is the same shape as what we collect afterwards, and
@@ -324,7 +335,8 @@ Settled: Jamie 2026-08-03 (accepted all recommendations) · Ack: Dave 2026-08-03
 42. **All axis text and direct labels use the existing muted ink tokens, never `var(--acc)`.**
     Text never wears the data colour. The dashboard already has the tokens
     (`rgba(38,38,36,0.7)` / `rgba(246,240,232,0.6)`). (assumed)
-43. **Palette check — run, not eyeballed.** `scripts/validate_palette.js` passes the light
+43. **Palette check — run, not eyeballed.** (The validator ships inside the `dataviz` skill
+    bundle, not this repo — clarified by da-brief finding M2, see item 70.) It passes the light
     accent `#bc3c2c` on the `#f5edd8` surface on every check. In dark, `#ff8070` on
     `#262624` **passes contrast** but sits just outside the recommended lightness band
     (L 0.741). It is the site-wide brand accent, so I am **not** proposing to change a brand
@@ -379,8 +391,12 @@ Settled: **Jamie 2026-08-03 (owner sign-off — accepted 51(a)+(c) and all recom
 
 ## 10. Analytics
 n/a — this work *is* the analytics system; it adds no new tracked events and changes no
-event shape. The existing 8 events and their blobs/doubles carry over to D1 unchanged.
-Approved as n/a under short form, Jamie 2026-08-03.
+event shape. The existing **10** events in `VALID_EVENTS` and their blobs/doubles carry
+over to D1 unchanged. Approved as n/a under short form, Jamie 2026-08-03.
+
+*(Corrected from "8" by da-brief finding M1 — see item 69. The missing two are `undo_used`
+and `reset_used`, which are also the only events carrying `blob3`/`source`, so they are the
+schema's hardest case rather than an afterthought.)*
 
 ## 11. Done / test plan
 Settled: Jamie 2026-08-03 (confirmed CI-only Playwright, no local runs) · Ack: Dave 2026-08-03 (deferred to Jamie)
@@ -396,8 +412,11 @@ Settled: Jamie 2026-08-03 (confirmed CI-only Playwright, no local runs) · Ack: 
     the expected bar count for a known fixture, and the nav marks the right pill active.
     Runs in CI, never locally.
 58. **Gameplay must be unaffected** — `/api/event` still returns 202, and a D1 failure must
-    not surface to the player or block the response. Explicit test: force the D1 insert to
-    throw and confirm the endpoint still answers 202.
+    not surface to the player or block the response. ~~Explicit test: force the D1 insert to
+    throw and confirm the endpoint still answers 202.~~
+    **REVISED by da-brief finding H5, see item 68** — that test passes however broken the
+    write path is. Reframed as "a D1 outage does not change the response and raises no
+    unhandled rejection", and joined by a real integration test asserting row contents.
 59. **Migration verification, before the AE call is removed**: row counts per day from the
     AE query and from D1 match exactly across the backfilled window, and no day is doubled
     (item 24's cutoff working).
@@ -405,7 +424,9 @@ Settled: Jamie 2026-08-03 (confirmed CI-only Playwright, no local runs) · Ack: 
     consecutive full days including a weekend day. Recorded in `docs/ANALYTICS.md` with the
     cutover date, per item 28.
 61. **Done means**: all four ranges work; the chart carries dates, a y axis and the two
-    direct labels; zero-play days appear as gaps; the hidden table matches the chart;
+    direct labels; zero-play days are **zero-filled and render a 1px baseline stub** (was
+    "appear as gaps" — corrected by da-brief finding M5, see item 73; item 31 is the
+    settled behaviour); the hidden table matches the chart;
     `/stats` reads D1 only; the backfill has run once; and the AE removal is queued behind
     the item 60 check, not done in this PR.
 
