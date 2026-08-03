@@ -211,6 +211,59 @@ Settled: pending · Ack: pending
       either way, so this is defensible if he wants a permanent belt-and-braces.
 26. **Question for Jamie: (a), (b) or (c)?** My rec is (a), with the item 23 exit criterion
     and the item 24 cutoff.
+    → **Settled: (a), Jamie 2026-08-03.** Dual write, then remove. Item 24 cutoff stands.
+    Item 23's side-by-side row on `/stats` is **rejected** — Jamie will read D1 numbers only
+    and ask for the AE comparison in a few days.
+
+27. **Consequence of rejecting the side-by-side: I need some way to read AE after cutover,
+    or the comparison cannot happen.** Once `/stats` reads D1 only, there is no route that
+    returns AE numbers, and the `CF_API_TOKEN` needed to query AE directly is a Worker
+    secret — it is not available to me locally. So "compare vs AE in a few days" has no
+    mechanism behind it unless we build one.
+    My rec: a temporary, unlinked `/stats/compare` route that prints the two daily-count
+    tables side by side, deleted in the same PR that removes `writeDataPoint`. Why: keeps
+    `/stats` itself clean as Jamie asked, while making the comparison a single URL fetch
+    rather than a credentials exercise. Alternative if he would rather not add a route:
+    put `CF_API_TOKEN` on the Pi so I can query the AE SQL API directly — fewer moving
+    parts in the app, but a production credential sitting on a dev machine.
+28. **The reminder mechanism — and an honest limit on it.** Jamie asked for a note so I
+    "remind us". I cannot send an unprompted message; the next message is always a human's.
+    What *does* work: `CLAUDE.md` is loaded into context at the start of every session in
+    this repo, so a dated outstanding-action line there surfaces automatically whenever we
+    next talk. It is not a timer — it fires on conversation, not on a date.
+    My rec: one line in `CLAUDE.md` under a new "Outstanding actions" heading, pointing at
+    a fuller `docs/ANALYTICS.md` holding the cutover date, the exact comparison queries and
+    the removal checklist. Both written during Build, not now.
+
+## 3. How it works
+Settled: pending · Ack: pending
+
+29. **Range options become unbounded once D1 holds the history.** Current nav is 30/60/90.
+    My rec: **7 · 30 · 90 · All**. Why: drop 60 (little to read between 30 and 90 that 90
+    does not already show), add 7 for a recent-trend view, add All as requested. `All`
+    resolves to the earliest row in D1 rather than a fixed number.
+30. **`?period=` keeps working and gains `all`.** `/stats?period=all`. Unrecognised or
+    out-of-range values fall back to 30. Why: the range already lives in the URL, so it
+    stays shareable and bookmarkable with no new state. (assumed — this is why §5 is n/a)
+31. **Zero-play days must be filled in, and this only becomes visible now.** Today the chart
+    packs bars with no gaps: a day with no events simply has no row, and the bars sit
+    shoulder to shoulder. That is invisible while the x axis is unlabelled — the moment we
+    put dates on it, a missing day silently shifts every later bar and the axis lies.
+    My rec: generate a continuous day series across the range and zero-fill absent days.
+    Why: it is a correctness fix, not a cosmetic one, and the labels are what expose it.
+32. **Counts: y axis, not per-bar labels — with one exception.** Per-bar numbers are
+    unreadable once bars are a few pixels wide, which is every range above ~30 days.
+    My rec: a y axis with three gridlines (0, mid, max) at all ranges, **plus** per-bar
+    count labels only at 7 and 30 day ranges where the bars are wide enough to carry them.
+    Why: it answers Jamie's "counts as labels OR on y" as *both, whichever fits*, and
+    degrades sanely to 365+ days.
+33. **X-axis dates thin out as the range grows.** Every day at 7d; roughly weekly at 30d;
+    monthly at 90d and above. Rec: pick the step from the day count so labels never collide.
+    (assumed)
+34. **Every bar carries an SVG `<title>`** — "5 Jul 2026: 13 plays". Free native tooltip on
+    hover, and it is what a screen reader announces. (assumed — cheap, no library)
+35. **Empty state.** If the range contains no data at all, render the axes with a "No plays
+    in this range" message rather than an empty box. (assumed)
 
 ## 7. How it looks
 Settled: pending · Ack: pending
