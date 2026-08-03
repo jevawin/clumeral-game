@@ -408,3 +408,191 @@ Settled: Jamie 2026-08-03 (confirmed CI-only Playwright, no local runs) · Ack: 
     direct labels; zero-play days appear as gaps; the hidden table matches the chart;
     `/stats` reads D1 only; the backfill has run once; and the AE removal is queued behind
     the item 60 check, not done in this PR.
+
+---
+
+# da-brief review — findings and fixes, 2026-08-03
+
+Fresh-context review run after the brief was signed off. It returned 5 High, 10 Medium and
+9 Low findings and judged the brief **not ready for planning**. Every High and Medium is
+addressed below. Numbering continues from 61 (append-only); where a fix reverses an earlier
+item, the earlier item is marked REVISED and points here.
+
+The headline: the chart half of this brief was fine. The migration half was not
+self-sufficient — a cleared-context builder could not have produced the right table or run
+the backfill safely from it.
+
+## H1 — Sampling does not disappear. Item 15 was wrong. (data loss, irreversible)
+
+62. **Item 15 is REVISED and item 9 is REINSTATED as live.** I wrote that
+    `SUM(_sample_interval)` became moot under D1 because D1 rows are exact. That is true
+    only of rows written *after* cutover. Item 16's backfill imports **raw Analytics Engine
+    rows**, and every AE row carries `_sample_interval` — where AE sampled, one stored row
+    stands for *n* real events. Importing those rows and later counting them with
+    `COUNT(*)` undercounts the imported ~90 days permanently, and the source is deleted
+    before anyone could notice. That is exactly the failure item 9 raised; option (2) moved
+    it rather than removing it.
+63. **Fix, and it is a schema change:** the D1 table carries a `sample_interval INTEGER NOT
+    NULL DEFAULT 1` column — 1 for live writes, the AE value for backfilled rows — and
+    **every aggregate in `stats.ts` becomes `SUM(sample_interval)`, never `COUNT(*)`**.
+    Items 59 and 60 must also state the exact query on each side, because comparing AE
+    `COUNT()` against D1 `COUNT(*)` compares two different quantities the moment sampling
+    is not 1. The Plan must record the `_sample_interval` values actually observed in AE at
+    backfill time rather than assuming 1.
+
+## H2 — §6 settled an architecture with no schema
+
+64. **The table, stated explicitly so Build does not have to invent it.**
+
+    ```sql
+    CREATE TABLE analytics_events (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts              INTEGER NOT NULL,   -- UTC epoch milliseconds
+      event           TEXT    NOT NULL,   -- blob1
+      uid             TEXT    NOT NULL,   -- blob2, retained indefinitely per item 17
+      source          TEXT,               -- blob3, 'keyboard' | 'button', NULL otherwise
+      hostname        TEXT    NOT NULL,   -- blob4
+      value           REAL    NOT NULL DEFAULT 0,  -- double1 (guess count)
+      new_user        INTEGER NOT NULL DEFAULT 0,  -- double2, 0 or 1
+      sample_interval INTEGER NOT NULL DEFAULT 1   -- per item 63
+    );
+    CREATE INDEX idx_analytics_host_ts    ON analytics_events (hostname, ts);
+    CREATE INDEX idx_analytics_host_ev_ts ON analytics_events (hostname, event, ts);
+    ```
+
+    **`hostname` is the one that would have bitten us.** `whereClause` filters
+    `blob4 = '<hostname>'` (`stats.ts:34`), so every figure on `/stats` today is per-domain.
+    Drop that column and staging and preview traffic silently merges into production
+    numbers — with no error, and no way to unpick it afterwards. The indexes matter for the
+    same reason the change exists: an unindexed scan by day degrades as history grows.
+65. **Question — which database?** Item 14 reached for `FEEDBACK_DB` because it was already
+    bound, which is a reason to look, not a reason to decide.
+    My rec: a **separate `clumeral-analytics` database** with its own `ANALYTICS_DB`
+    binding. Why: independent lifecycle from user feedback; `npm run e2e:db` drops tables
+    in `clumeral-feedback` and would need to know not to touch analytics; and D1's free
+    tier allows 10 databases, so it costs a binding and nothing else. Moving a table
+    between D1 databases later is a migration; choosing now is free.
+    Note for Build: the next migration in `migrations/` is **0005**, not 0002 —
+    `0002_import_legacy_feedback.sql` is gitignored, so the directory listing misleads.
+
+## H3 — The backfill had no mechanism, and every obvious one collided with item 19
+
+66. Item 24 specified a *property* ("one-shot, guarded"), not a design. The backfill needs
+    AE read (`CF_API_TOKEN`, a Worker secret) **and** D1 write — only the Worker holds both.
+    But a backfill route on a Worker whose `/stats` is deliberately unauthenticated (item
+    19) is an internet-reachable endpoint that doubles the archive if hit twice. Running it
+    from the Pi is blocked by item 36, which grants Analytics Read only and no D1 write.
+    **Fix: the backfill is a one-shot inside the existing `scheduled()` handler**, gated on
+    a sentinel row in D1 (`backfill_complete`). It needs no route, so it cannot be triggered
+    externally at all, it already has both bindings, and the guard is a row read. Item 19's
+    won't-fix stands untouched — no new surface is exposed.
+
+## H4 — Durability of the write is a behaviour decision, not an implementation detail
+
+67. **Question for Jamie.** `src/worker/index.ts:221` is `async fetch(request, env)` — there
+    is no `ctx` parameter, so item 14's `ctx.waitUntil` does not currently exist. More than
+    a signature: today's `writeDataPoint` is synchronous fire-and-forget and costs the
+    player nothing. A D1 insert is async, and the choice is observable behaviour:
+    - **(a) await the insert** before responding — the write is confirmed, but D1 latency
+      lands inside the request. The client's `track()` already swallows the response, so no
+      player waits on it; it costs Worker duration only.
+    - **(b) `ctx.waitUntil(insert)`** — respond 202 at once, runtime keeps the isolate alive
+      until the write settles.
+    - **(c) bare fire-and-forget** — may be torn down mid-write. Silent loss, which is
+      precisely item 21's fear.
+
+    My rec: **(b)**, with a `.catch()` that logs, so a failure is at least visible in
+    `wrangler tail` rather than absolutely silent. Why: it is what `waitUntil` exists for —
+    no added response latency and a completion guarantee — and (c) reintroduces the risk
+    dual write is there to cover. Requires adding `ctx: ExecutionContext` to the fetch
+    signature.
+
+## H5 — The test plan did not test the failure the brief calls existential
+
+68. **Item 58 is REVISED.** As written — "force the D1 insert to throw and confirm the
+    endpoint still answers 202" — it is the inverse of the real risk: under (b) or (c) a
+    throw *cannot* affect the 202, so it passes no matter how broken the write path is.
+    Nothing in §11 asserted that a valid event produces a correctly-shaped **row**.
+    Fix: (i) an integration test that POSTs each of the 10 valid events and asserts the
+    resulting D1 row column by column — `uid`, `new_user` as 0/1, `source` on undo/reset,
+    `hostname`, `value`, `sample_interval` = 1; (ii) item 58 reframed as "a D1 outage does
+    not change the response and raises no unhandled rejection".
+
+## Medium findings
+
+69. **M1 — there are 10 valid events, not 8.** `VALID_EVENTS` (`index.ts:28-35`) also holds
+    `undo_used` and `reset_used`. Item 12 measured 30 days of *traffic*; those two happened
+    to have zero volume in the window, and I wrote the traffic list into §10 as if it were
+    the vocabulary. They are also the only two carrying `blob3` (source) — the exact
+    dimension a naive schema drops, and the one the sixth query in `getStats` depends on.
+    §10 corrected; the schema in item 64 covers them.
+70. **M2 — item 43's palette check, clarified.** The review reported the script does not
+    exist in this repo, and that is correct — but the check *was* run: `validate_palette.js`
+    ships inside the `dataviz` skill bundle, not the repo, and the L 0.741 figure is its
+    real output. Item 43 stands on its facts; the wording implied a repo script and is
+    corrected here. Worth recording separately: `/stats` **hardcodes** its colours at
+    `stats.ts:184` and does not use `src/palette.ts`, so `tests/palette-contrast.spec.ts`
+    does not cover the dashboard at all. That gap is pre-existing, not created here.
+71. **M3 — the port uses bound parameters, not string interpolation.** `whereClause`
+    interpolates `days` and `hostname` straight into SQL. Today that points at a read-only
+    external API; after migration the identical pattern points at our own D1 database, from
+    an endpoint item 19 leaves unauthenticated, with `hostname` derived from the request
+    Host header. All ported queries use `.bind()`. Added to §11 as a checked item.
+72. **M4 — `/api/stats` comes into scope too.** It calls the same `getStats` and parses
+    `period` differently from `/stats` (line 430 has no `|| 90` fallback, so `?period=all`
+    already yields `NaN` → `whereClause` → `1=1` → an unintended all-time query *today*).
+    Item 30's parsing rule applies to both endpoints, and §11 asserts
+    `/api/stats?period=all|7|junk`.
+73. **M5 — items 31 and 61 contradicted each other, and item 61 is the one Build would
+    test against.** Item 31 settled zero-*fill* (the day keeps its x position); item 61 said
+    zero days "appear as gaps". Item 31 wins. Item 61 is corrected. Additionally neither
+    said how a zero day is *visible* — a zero-height `<rect>` renders as nothing, so a zero
+    day and a rendering bug look identical. Fix: a zero day renders a **1px baseline stub**,
+    so it is distinguishable and assertable.
+74. **M6 — all day bucketing is UTC**, matching `toStartOfDay()` in AE and the game's own
+    `todayUTC` rollover. That covers the chart, the D1 bucketing, item 46's date label and
+    item 24's cutoff. The cutoff is recorded as an exact UTC instant in `docs/ANALYTICS.md`.
+75. **M7 — item 57's smoke test could not have run.** `/stats` returns 503 unless
+    `CF_ACCOUNT_ID` and `CF_API_TOKEN` are set (`index.ts:443`); after the D1 move that
+    guard is wrong and must be removed. And there is no fixture mechanism — `npm run e2e:db`
+    drops and recreates only the `feedback` table, so CI would hit an empty analytics table
+    and render item 35's empty state rather than bars. Fix: `e2e:db` is extended to apply
+    the analytics migration and load a fixture SQL file; the secrets guard removal is
+    recorded in §6.
+76. **M8 — the AE comparison needs an artefact, not just a token.** A token in `.dev.vars`
+    is read by `wrangler dev`, but local `/stats` reads the *local* D1, which is empty — so
+    item 36 alone still leaves nothing that puts AE and D1 counts side by side. Item 60
+    gates the removal of `writeDataPoint`, so it has to be runnable. Fix: a committed script
+    that runs both queries and prints them side by side, executed from the Pi with the
+    scoped token, documented in `docs/ANALYTICS.md` per item 28.
+77. **M9 — §5 is un-n/a'd.** Marking "state & persistence" n/a on a brief whose substance
+    is persistence was wrong once §6 turned out to carry no schema. §5 now holds the
+    storage design: item 64's table, item 65's database choice, and item 17's decision that
+    `uid` is retained indefinitely.
+78. **M10 — modules §6 omitted:** `tests/stats-dashboard.spec.ts` (its `fakeStats()` is
+    shaped to the six AE `QueryResult` objects and breaks with the data layer), `migrations/`,
+    `wrangler.jsonc` (new binding per item 65), and `package.json` (`e2e:db` per item 75).
+
+## Low findings — accepted, with two deferred
+
+79. Accepted and folded in: **L2** `toStartOfDay()` and `NOW() - INTERVAL` are ClickHouse-only
+    and have no SQLite equivalent — both need rewriting, so item 14's "small edits" was
+    optimistic. **L3** `renderDashboard` renders `htp_dismissed` and `colour_change`, neither
+    of which is in `VALID_EVENTS`; they are permanently zero and get dropped rather than
+    ported. **L7** item 3's "collecting since 2026-04-05" is the add-date of `stats.ts` per
+    git, not of the `writeDataPoint` call — inference, not fact; the Plan takes the true
+    start from the earliest AE row. **L8** noted in item 65. **L1** item 12's volume came
+    from a hostname-filtered query, so total AE row volume across preview and staging
+    deploys is higher and item 16's ~7,300-row estimate is a floor; item 16's claim that
+    the AE SQL API pages raw rows cleanly is unverified and the Plan must confirm it (AE
+    SQL has row limits and no `OFFSET`).
+80. **L5 deferred, with justification.** Item 53 leaves an accessibility decision open
+    ("check every text token at build and lift any that fails") inside a section Jamie has
+    signed. That is deliberate: the check needs rendered output to run against, so it
+    cannot be settled on paper. It is recorded in §11 as a build gate rather than a
+    resolved decision. Jamie retains the call when the numbers exist.
+81. **L6 deferred.** The hidden accessibility table is 120 rows today and grows one row per
+    day. It needs revisiting past a few hundred days; not a launch blocker. **L9** noted for
+    the record: every joint section was acked "deferred to Jamie", so this brief had one
+    reviewer — legitimate under the non-blocking rule, and the reason this DA pass caught
+    as much as it did.
