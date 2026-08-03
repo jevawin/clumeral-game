@@ -160,6 +160,58 @@ Settled: pending · Ack: pending
     authentication — only `noindex`. Worth a separate issue; flagging it, not widening
     this brief.
 
+### Decisions, Jamie 2026-08-03
+
+- **Item 13/14 — option (2), D1 only, raw rows: ACCEPTED.** This is the architecture.
+- **Item 17 — REJECTED, and my reasoning was wrong.** No `uid` prune, no anonymisation.
+  Jamie: the 90-day expiry was a Cloudflare limitation we inherited, never a design
+  decision, so preserving it in the new system would be cargo-culting a constraint. `uid`
+  is retained indefinitely.
+- **Item 19 — WON'T FIX.** Jamie: no auth needed, `/stats` being public is not a problem.
+  No separate issue.
+
+### Dual write — Jamie asked for detail, 2026-08-03
+
+20. **What it is.** For one release, `/api/event` writes the event to **both** Analytics
+    Engine (`writeDataPoint`, as today) and the new D1 table. Nothing else changes. `/stats`
+    reads from D1. A follow-up PR then deletes the `writeDataPoint` call and the AE binding.
+21. **Why it is worth doing: analytics failure is silent.** If the D1 insert breaks — wrong
+    binding, schema mismatch, a throw inside `ctx.waitUntil`, a column that rejects a null
+    — nobody gets an error. No player complains that their `puzzle_start` did not record.
+    We would find out weeks later looking at a chart with a hole in it, by which point the
+    events are unrecoverable. Dual write means AE still holds everything while we confirm
+    the D1 path is real. (assumed)
+22. **This is the whole argument, and it is worth being precise about it: AE is its own
+    safety net, but only while we keep writing to it.** If we cut over and D1 silently
+    fails, we lose nothing permanently *provided* we notice inside 90 days — because the
+    backfill can simply be re-run from AE. The moment `writeDataPoint` is removed, that net
+    is gone. So the cost of dual write is a few lines for one release; the cost of skipping
+    it is an unrecoverable gap if anything goes wrong.
+23. **Exit criterion — a date, not a vibe.** "One release" is too vague to act on. Concretely:
+    hold the overlap until **AE and D1 daily counts match exactly for 3 consecutive full
+    days** (covering at least one weekend day, since traffic shape differs). At ~81
+    events/day that is a real sample, not a smoke test. Then open the removal PR.
+    My rec: render both numbers side by side in a small temporary row on `/stats` during
+    the overlap, so the check is a glance rather than a manual query.
+24. **The trap: backfill and dual write overlap, and will double-count if we are careless.**
+    The AE→D1 backfill covers the surviving ~90 days; dual write is inserting live rows at
+    the same time. Run naively, the window between D1 going live and the backfill running
+    gets written twice, and every number in it is doubled.
+    My rec: the backfill takes a hard cutoff — `WHERE timestamp < <the instant D1 writes
+    went live>` — and is a one-shot guarded operation, not something that can be triggered
+    twice. Why: a duplicate-detection scheme is more machinery than a cutoff timestamp, and
+    AE rows carry no natural unique id to dedupe on.
+25. **Alternatives considered, since this is a judgement call:**
+    - **(a) Dual write, then remove** — my rec. Cheap net, clear exit.
+    - **(b) Hard cutover** — simplest code, no net, per item 22 an unnoticed D1 failure is
+      unrecoverable. Not recommended.
+    - **(c) Keep AE writing permanently** as a silent 90-day cross-check. Costs nothing —
+      `writeDataPoint` is fire-and-forget and free. But it leaves a write path nobody reads,
+      which is exactly the two-systems cruft Jamie objected to. Reporting stays single-source
+      either way, so this is defensible if he wants a permanent belt-and-braces.
+26. **Question for Jamie: (a), (b) or (c)?** My rec is (a), with the item 23 exit criterion
+    and the item 24 cutoff.
+
 ## 7. How it looks
 Settled: pending · Ack: pending
 
