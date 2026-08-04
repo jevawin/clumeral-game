@@ -1,25 +1,34 @@
 import { describe, it, expect } from 'vitest';
-import { getStats, renderDashboard } from '../src/worker/stats.ts';
+import { renderDashboard } from '../src/worker/stats.ts';
+import type { StatsResult } from '../src/worker/analytics-db.ts';
 
-type Stats = Awaited<ReturnType<typeof getStats>>;
-type Row = Record<string, string | number>;
+// 2026-08-04T12:00:00Z. Fixed so day bucketing and the period label are assertable.
+const NOW = Date.UTC(2026, 7, 4, 12, 0, 0);
+const DAY = 86_400_000;
+const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
-function result(data: Row[]) {
-  return { data, rows: data.length };
-}
-
-// renderDashboard is typed against the full getStats return, so every one of the
-// six queries has to be present even when a test only cares about one of them.
-function fakeStats(over: Partial<Stats> = {}): Stats {
+function fakeStats(over: Partial<StatsResult> = {}): StatsResult {
   return {
-    events: result([]),
-    daily: result([]),
-    uniqueUsers: result([]),
-    newUsers: result([]),
-    guessDistribution: result([]),
-    sourceSplit: result([]),
+    events: [],
+    daily: [],
+    uniqueUsers: 0,
+    newUsers: 0,
+    guessDistribution: [],
+    sourceSplit: [],
+    firstTs: NOW - 6 * DAY,
     ...over,
   };
+}
+
+const parse = (html: string) => new DOMParser().parseFromString(html, 'text/html');
+
+/** Daily puzzle_start rows for the last `n` days, most recent last. */
+function plays(counts: number[]): StatsResult['daily'] {
+  return counts.map((count, i) => ({
+    day: iso(NOW - (counts.length - 1 - i) * DAY),
+    event: 'puzzle_start',
+    count,
+  }));
 }
 
 // Pull the count out of a dashboard row by its label. The table cells are
@@ -33,15 +42,16 @@ describe('renderDashboard — undo/reset source split', () => {
   it('renders all four rows with their own figures', () => {
     const html = renderDashboard(
       fakeStats({
-        sourceSplit: result([
+        sourceSplit: [
           { event: 'undo_used', source: 'keyboard', count: 7 },
           { event: 'undo_used', source: 'button', count: 3 },
           { event: 'reset_used', source: 'keyboard', count: 2 },
           { event: 'reset_used', source: 'button', count: 11 },
-        ]),
+        ],
       }),
-      30,
+      { days: 30 },
       'clumeral.com',
+      NOW,
     );
 
     expect(rowCount(html, 'Undo used (keyboard)')).toBe('7');
@@ -55,13 +65,14 @@ describe('renderDashboard — undo/reset source split', () => {
   it('keeps the two triggers apart rather than summing them', () => {
     const html = renderDashboard(
       fakeStats({
-        sourceSplit: result([
+        sourceSplit: [
           { event: 'undo_used', source: 'keyboard', count: 7 },
           { event: 'undo_used', source: 'button', count: 3 },
-        ]),
+        ],
       }),
-      30,
+      { days: 30 },
       'clumeral.com',
+      NOW,
     );
 
     expect(rowCount(html, 'Undo used (keyboard)')).toBe('7');
@@ -69,15 +80,12 @@ describe('renderDashboard — undo/reset source split', () => {
     expect(html).not.toContain('<td>Undo used</td>');
   });
 
-  // Matching the existing interactions behaviour: an absent combination is 0,
-  // not a missing row.
   it('renders a missing combination as zero', () => {
     const html = renderDashboard(
-      fakeStats({
-        sourceSplit: result([{ event: 'undo_used', source: 'keyboard', count: 4 }]),
-      }),
-      30,
+      fakeStats({ sourceSplit: [{ event: 'undo_used', source: 'keyboard', count: 4 }] }),
+      { days: 30 },
       'clumeral.com',
+      NOW,
     );
 
     expect(rowCount(html, 'Undo used (keyboard)')).toBe('4');
@@ -87,8 +95,7 @@ describe('renderDashboard — undo/reset source split', () => {
   });
 
   it('renders all four rows as zero when there is no data at all', () => {
-    const html = renderDashboard(fakeStats(), 30, 'clumeral.com');
-
+    const html = renderDashboard(fakeStats(), { days: 30 }, 'clumeral.com', NOW);
     for (const label of [
       'Undo used (keyboard)', 'Undo used (button)',
       'Reset used (keyboard)', 'Reset used (button)',
@@ -97,21 +104,227 @@ describe('renderDashboard — undo/reset source split', () => {
     }
   });
 
-  // The four rows are appended to the existing interactions list, so the rows
-  // that were already there must still render from the events query.
   it('leaves the existing interaction rows alone', () => {
     const html = renderDashboard(
       fakeStats({
-        events: result([
+        events: [
           { event: 'theme_toggle', count: 5 },
           { event: 'tooltip_opened', count: 9 },
-        ]),
+        ],
       }),
-      30,
+      { days: 30 },
       'clumeral.com',
+      NOW,
     );
 
     expect(rowCount(html, 'Theme toggled')).toBe('5');
     expect(rowCount(html, 'Tooltip opened')).toBe('9');
+  });
+
+  // Neither event is in VALID_EVENTS, so the Worker rejects them and both rows
+  // could only ever read 0 — which looks like a feature nobody uses.
+  it('drops the two rows that could only ever be zero', () => {
+    const html = renderDashboard(fakeStats(), { days: 30 }, 'clumeral.com', NOW);
+    expect(html).not.toContain('How to Play dismissed');
+    expect(html).not.toContain('Colour changed');
+    expect(html).toContain('How to Play opened');
+  });
+});
+
+describe('renderDashboard — chart', () => {
+  it('draws one mark per day in the range, including empty days', () => {
+    const html = renderDashboard(
+      fakeStats({ daily: plays([3, 0, 5, 0, 0, 2, 8]) }),
+      { days: 7 },
+      'clumeral.com',
+      NOW,
+    );
+    const svg = parse(html).querySelector('svg')!;
+    expect(svg.querySelectorAll('path.bar, rect.zero')).toHaveLength(7);
+  });
+
+  it('zero-fills days the query returned no row for', () => {
+    // Only two days have data; the range is seven, so five must be filled.
+    const html = renderDashboard(
+      fakeStats({
+        daily: [
+          { day: iso(NOW - 6 * DAY), event: 'puzzle_start', count: 4 },
+          { day: iso(NOW), event: 'puzzle_start', count: 2 },
+        ],
+      }),
+      { days: 7 },
+      'clumeral.com',
+      NOW,
+    );
+    const svg = parse(html).querySelector('svg')!;
+    expect(svg.querySelectorAll('rect.zero')).toHaveLength(5);
+    expect(svg.querySelectorAll('path.bar')).toHaveLength(2);
+  });
+
+  // A zero day and a rendering bug must not look the same. The stub sits below
+  // the baseline so it survives the gap collapsing at long ranges.
+  it('marks a zero day with a stub below the baseline', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([5, 0]) }), { days: 2 }, 'clumeral.com', NOW);
+    const stub = parse(html).querySelector('rect.zero')!;
+    expect(Number(stub.getAttribute('y'))).toBe(200);
+    // Tall enough to survive the ~0.55 scale factor on a phone, where a 1-unit
+    // stub renders at half a pixel.
+    expect(Number(stub.getAttribute('height'))).toBe(3);
+  });
+
+  it('keeps the zero stub visible at a range where bars touch', () => {
+    const counts = Array.from({ length: 365 }, (_, i) => (i === 100 ? 0 : 5));
+    const html = renderDashboard(
+      fakeStats({ daily: plays(counts), firstTs: NOW - 364 * DAY }),
+      { all: true },
+      'clumeral.com',
+      NOW,
+    );
+    const doc = parse(html);
+    expect(doc.querySelectorAll('rect.zero')).toHaveLength(1);
+    // Still a real, positive-width mark even with no gap between neighbours.
+    expect(Number(doc.querySelector('rect.zero')!.getAttribute('width'))).toBeGreaterThan(0);
+  });
+
+  it('gives every bar a title with the date and a correctly pluralised count', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([1, 13, 0]) }), { days: 3 }, 'clumeral.com', NOW);
+    const titles = [...parse(html).querySelectorAll('svg title')].map((t) => t.textContent);
+    expect(titles).toEqual(['2 Aug 2026: 1 play', '3 Aug 2026: 13 plays', '4 Aug 2026: 0 plays']);
+  });
+
+  it('renders the empty state when the range holds no days at all', () => {
+    const html = renderDashboard(fakeStats({ firstTs: null }), { all: true }, 'clumeral.com', NOW);
+    expect(html).toContain('No plays in this range');
+    expect(parse(html).querySelector('svg')).toBeNull();
+  });
+
+  it('renders axes and bars, not the empty state, for an all-zero range', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([0, 0, 0, 0, 0, 0, 0]) }), { days: 7 }, 'clumeral.com', NOW);
+    const doc = parse(html);
+    expect(doc.querySelector('svg')).not.toBeNull();
+    expect(doc.querySelectorAll('rect.zero')).toHaveLength(7);
+    expect(html).not.toContain('No plays in this range</p>');
+  });
+
+  // Colour is the bars' job. Accent-coloured axis text makes furniture look like
+  // data, and the accent is the one token not chosen for small-text contrast.
+  it('never paints axis or label text with the accent colour', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([3, 7, 1]) }), { days: 3 }, 'clumeral.com', NOW);
+    for (const text of parse(html).querySelectorAll('svg text')) {
+      expect(text.getAttribute('fill')).toBeNull();
+      expect(['axis', 'direct']).toContain(text.getAttribute('class'));
+    }
+    expect(html).toContain('.bar { fill: var(--acc); }');
+  });
+
+  it('labels the highest bar', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([2, 19, 3, 4, 1, 2, 5]) }), { days: 7 }, 'clumeral.com', NOW);
+    const direct = [...parse(html).querySelectorAll('text.direct')].map((t) => t.textContent);
+    expect(direct).toContain('19');
+  });
+
+  it('states the real span in the period label', () => {
+    const bounded = renderDashboard(fakeStats(), { days: 7 }, 'clumeral.com', NOW);
+    expect(bounded).toContain('Last 7 days · 29 Jul 2026 – 4 Aug 2026');
+
+    const all = renderDashboard(fakeStats({ firstTs: NOW - 119 * DAY }), { all: true }, 'clumeral.com', NOW);
+    expect(all).toContain('All time · 7 Apr 2026 – 4 Aug 2026 · 120 days');
+  });
+
+  it('says so rather than inventing a span when there is no data at all', () => {
+    const html = renderDashboard(fakeStats({ firstTs: null }), { all: true }, 'clumeral.com', NOW);
+    expect(html).toContain('All time · no data yet');
+  });
+
+  it('escapes the hostname it echoes back', () => {
+    const html = renderDashboard(fakeStats(), { days: 7 }, '<script>alert(1)</script>', NOW);
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(parse(html).querySelectorAll('script')).toHaveLength(1); // the theme script only
+  });
+});
+
+describe('renderDashboard — accessibility', () => {
+  it('carries every date and count in a visually-hidden table', () => {
+    const counts = [3, 0, 5, 0, 0, 2, 8];
+    const html = renderDashboard(fakeStats({ daily: plays(counts) }), { days: 7 }, 'clumeral.com', NOW);
+    const table = parse(html).querySelector('table.visually-hidden')!;
+    const rows = [...table.querySelectorAll('tr')].slice(1); // drop the header row
+    expect(rows).toHaveLength(counts.length);
+    expect(rows.map((r) => r.querySelectorAll('td')[1].textContent)).toEqual(counts.map(String));
+  });
+
+  // The one assertion that catches the accessible route drifting from the visual
+  // one — nothing else compares them.
+  it('matches the hidden table to the chart, cell for bar', () => {
+    const html = renderDashboard(
+      fakeStats({ daily: plays([3, 0, 5, 11, 0, 2, 8]) }),
+      { days: 7 },
+      'clumeral.com',
+      NOW,
+    );
+    const doc = parse(html);
+    const fromChart = [...doc.querySelectorAll('svg title')].map((t) => {
+      const [date, count] = t.textContent!.split(': ');
+      return [date, count.replace(/ plays?$/, '')];
+    });
+    const fromTable = [...doc.querySelectorAll('table.visually-hidden tr')].slice(1).map((r) => {
+      const cells = r.querySelectorAll('td');
+      return [cells[0].textContent, cells[1].textContent];
+    });
+    expect(fromTable).toEqual(fromChart);
+  });
+
+  it('summarises the chart in its aria-label', () => {
+    const html = renderDashboard(
+      fakeStats({ daily: plays([2, 4, 0, 10, 4, 1, 7]) }),
+      { days: 7 },
+      'clumeral.com',
+      NOW,
+    );
+    const label = parse(html).querySelector('svg')!.getAttribute('aria-label');
+    // 28 plays over 7 days = 4 average; highest 10 on the fourth day.
+    expect(label).toBe('Daily plays, 29 Jul 2026 to 4 Aug 2026. Average 4 per day, highest 10 on 1 Aug 2026.');
+  });
+
+  it('says there were no plays rather than claiming a highest of zero', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([0, 0, 0]) }), { days: 3 }, 'clumeral.com', NOW);
+    const label = parse(html).querySelector('svg')!.getAttribute('aria-label');
+    expect(label).toBe('Daily plays, 2 Aug 2026 to 4 Aug 2026. No plays in this range.');
+  });
+
+  // 365 tab stops to cross one chart is worse than no chart at all. The figures
+  // are reachable through the hidden table instead.
+  it('makes no part of the chart focusable', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([3, 7, 1]) }), { days: 3 }, 'clumeral.com', NOW);
+    const svg = parse(html).querySelector('svg')!;
+    expect(svg.getAttribute('focusable')).toBe('false');
+    expect(svg.querySelectorAll('[tabindex]')).toHaveLength(0);
+    expect(svg.querySelectorAll('a, button')).toHaveLength(0);
+  });
+});
+
+describe('renderDashboard — range nav', () => {
+  it('offers exactly the four ranges', () => {
+    const html = renderDashboard(fakeStats(), { days: 30 }, 'clumeral.com', NOW);
+    const links = [...parse(html).querySelectorAll('.period-nav a')];
+    expect(links.map((a) => a.textContent)).toEqual(['7d', '30d', '90d', 'All']);
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      '/stats?period=7',
+      '/stats?period=30',
+      '/stats?period=90',
+      '/stats?period=all',
+    ]);
+  });
+
+  it.each([
+    [{ days: 7 }, '7d'],
+    [{ days: 30 }, '30d'],
+    [{ days: 90 }, '90d'],
+    [{ all: true }, 'All'],
+  ] as const)('marks the selected range active', (range, label) => {
+    const html = renderDashboard(fakeStats(), range, 'clumeral.com', NOW);
+    const active = [...parse(html).querySelectorAll('.period-nav a.active')];
+    expect(active).toHaveLength(1);
+    expect(active[0].textContent).toBe(label);
   });
 });
