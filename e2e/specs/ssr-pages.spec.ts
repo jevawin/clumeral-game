@@ -2,12 +2,12 @@ import { test, expect } from "../fixtures.ts";
 import { expectActiveScreen } from "../helpers/screens.ts";
 
 test.describe("SSR / shell routes", () => {
-  test("/stats serves the dashboard or the documented 503", async ({ request }) => {
+  // Was "200 or the documented 503". The 503 branch is gone: stats read D1, so
+  // there are no API secrets left to be missing and 200 is the only right answer.
+  test("/stats serves the dashboard", async ({ request }) => {
     const res = await request.get("/stats");
-    expect([200, 503]).toContain(res.status());
-    if (res.status() === 503) {
-      expect(await res.text()).toContain("Analytics secrets not configured");
-    }
+    expect(res.status()).toBe(200);
+    expect(await res.text()).toContain("Clumeral Stats");
   });
 
   test("/puzzles/<date> redirects to /archive/<date>", async ({ page }) => {

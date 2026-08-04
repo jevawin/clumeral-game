@@ -27,7 +27,9 @@ src/
     puzzle.ts        Puzzle generation (server-only)
     crypto.ts        AES-GCM token signing for random puzzles
     puzzles.ts       Worker-rendered /puzzles archive page
-    stats.ts         Analytics Engine queries for /stats dashboard
+    stats.ts         /stats dashboard renderer (chart, tables, range nav)
+    analytics-db.ts  Analytics event storage and queries (D1)
+    chart.ts         Daily-plays chart geometry (pure functions)
     feedback.ts      /feedback admin dashboard renderer (reads D1)
     date-guard.ts    Worker-side future-puzzle date guard (+1 day tolerance)
   app.ts             Client UI — fetches puzzle, renders clues, handles guesses

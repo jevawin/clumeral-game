@@ -892,3 +892,85 @@ already precise because of the column. Not enough to carry the migration cost.
 one-line chooser in `recordEvent`, both migrations applied to both databases, `e2e:db` seeding
 both, and the backfill writing pre-prod rows to the pre-prod database. Say the word and it goes
 in before Build starts, not after.
+
+---
+
+## 14. Build notes — PR 1, 2026-08-04
+
+Built from this plan. Tasks 0–5 and 7–12 are done; Tasks 13–15 are PR 2 and are not
+started. What follows is every place Build departed from, or resolved, what the plan said.
+Nothing here is a product decision.
+
+### Risks the plan flagged that turned out fine
+
+- **P38 / Task 0 pool-workers version clash — no fallback needed.**
+  `@cloudflare/vitest-pool-workers` 0.12.x peers `vitest 2.0.x - 3.2.x`, which covers the
+  repo's 2.1.9. The `execSync('wrangler d1 execute')` fallback was not used.
+- **Task 11 / item 118, a second local D1 under `wrangler --local` — works.** `npm run e2e:db`
+  applies 0005 and 0006 to a local `clumeral-analytics` and loads the fixture. Verified by
+  reading the rows back. The POST-loop fallback was not needed.
+- **Item 107, both indexes are used.** `EXPLAIN QUERY PLAN` measured against a seeded table;
+  the four plans are recorded in `migrations/0005_...sql` and asserted in
+  `tests/worker/schema.spec.ts`. No full scan on any read.
+
+### Departures from the plan, with reasons
+
+- **P38: the D1 binding is declared in `vitest.workers.config.ts`, not read from
+  `wrangler.jsonc`.** Task 0 said to take it from `wrangler.jsonc`; pool-workers cannot parse
+  that file — it throws "the `assets` property is missing the required `directory`
+  property", and `@cloudflare/vite-plugin` forbids setting `directory` in source. The binding
+  name therefore exists twice, so `tests/wrangler-bindings.spec.ts` guards against drift.
+- **P37: the zero-day stub is 3 viewBox units tall, not 1.** At the mobile scale of ~0.55 a
+  1-unit stub renders at half a pixel — invisible at exactly the range "All time" exists for,
+  which is the failure P37 was written to prevent. 3 units renders ~1.7px on a phone and 3px
+  on desktop.
+- **P36 did not cover font size, and it needed to.** SVG text is drawn in viewBox units and
+  scales with the container, so the plan's 11px axis text would render at ~6px on a 375px
+  phone. `.axis` and `.direct` now carry breakpoints at 640/480/380px that hold axis text at
+  roughly 10–14 real pixels across the range. This is the same mistake M-8 caught in the
+  geometry, one level down.
+- **P25's label rule was not sufficient on its own.** Stepping by `ceil(days / 6)` and always
+  labelling the last day puts a label 4 slots from the end at 30 days — **76 viewBox units**,
+  inside the 87 a label occupies on a phone. `xLabelIndexes` now drops any stepped label
+  within `LABEL_W` units of the last one, measured in units rather than days.
+- **P25's "6 labels" is an off-by-one.** `floor(568 / 87) = 6` counts gaps, not labels: seven
+  labels need six gaps, 522 units, which fits. 90 days legitimately renders 7. The separation
+  rule above is the real guarantee; the count is not.
+- **Ranges cover whole UTC days including today.** §3.1 said "a JS-computed epoch-ms cutoff"
+  without fixing the boundary. A rolling 168-hour window would render an eighth, partial bar
+  that always reads as a slump, so `rangeCutoff` snaps to `startOfUTCDay`.
+
+### Additions beyond the plan
+
+- **`tests/stats-contrast.spec.ts`.** M2/70 recorded that `/stats` hardcodes its colours and
+  is not covered by `tests/palette-contrast.spec.ts`, and left it as a note. It is cheap to
+  close, so it is closed: the test reads the tokens out of the rendered stylesheet and
+  checks them against all four surfaces.
+- **HTML escaping on the interpolated hostname.** Pre-existing, unrelated to this work, but
+  the file was being rewritten and the fix is one function.
+
+### Task 9 contrast gate — measured, not asserted
+
+Full table in `docs/ANALYTICS.md`. The headline: item 53's suspicion was right —
+`.domain-label` at `rgba(38,38,36,0.5)` measured **2.97:1** against the light page, below AA
+and below even the 3:1 graphics threshold. Replaced by `--ink-muted`, 5.58:1 light and
+6.98:1 dark, 5.99/6.44 against the card surfaces. Bars are 4.71:1 / 6.19:1 against a 3:1
+requirement. Gridlines are supplementary and sit at 1.75:1, lifted from 1.41:1 for
+legibility rather than compliance.
+
+### Task 8 visual check — outstanding
+
+[108] asks for rendered output at 7/30/90/All at 592px and 327px. Verified numerically
+against the running preview — mark counts are 7/30/90/101, label sets are collision-free at
+every range, and the sampled fixture row is summed rather than counted. **The eyes-on pass
+at both widths is Jamie's, on the preview URL**; this agent has no browser and may not run
+Playwright locally.
+
+### Still blocked on Jamie
+
+`wrangler.jsonc` carries `"database_id": "REPLACE_WITH_CLUMERAL_ANALYTICS_DATABASE_ID"`.
+§8 questions 3 and 4 are unchanged and both must happen before PR 1 merges: create the
+`clumeral-analytics` database, and apply 0005 and 0006 to it remotely with
+`npm run analytics:migrate:remote -- migrations/0005_create_analytics_events.sql` (and 0006).
+The placeholder is deliberate — an invalid uuid fails the deploy loudly, where a missing
+binding would fail silently into a swallowed `console.error` and show zero on `/stats`.

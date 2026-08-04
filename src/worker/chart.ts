@@ -93,10 +93,14 @@ export function xLabelIndexes(days: number): number[] {
   if (days <= 0) return [];
   const step = xLabelStep(days);
   const last = days - 1;
+  const pitch = PLOT_W / days;
   const out: number[] = [];
   for (let i = 0; i < last; i += step) {
-    // Leave room so the stepped label cannot collide with the always-present last.
-    if (last - i >= step / 2) out.push(i);
+    // Drop a stepped label that would land within one label-width of the
+    // always-present last one. The step alone is not enough: at 30 days it puts a
+    // label 4 slots from the end, which is 76 units — inside the 87 a label needs
+    // on a phone, so the two would overlap there while looking fine on desktop.
+    if ((last - i) * pitch >= LABEL_W) out.push(i);
   }
   out.push(last);
   return out;
