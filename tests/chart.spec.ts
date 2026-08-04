@@ -117,11 +117,25 @@ describe('xLabelIndexes', () => {
     expect(xLabelIndexes(7)).toEqual([0, 2, 4, 6]);
   });
 
-  it('never places a label adjacent to the always-labelled last one', () => {
-    for (const d of [7, 13, 30, 31, 90, 91, 365]) {
+  // The rule that matters is distance in viewBox units, not in days. At 30 days
+  // the plain step lands a label 4 slots from the end — 76 units, inside the 87 a
+  // label occupies on a phone — so it reads fine on desktop and collides on mobile.
+  it('keeps every label at least one label-width from its neighbours', () => {
+    for (const d of [1, 7, 13, 30, 31, 90, 91, 101, 120, 365]) {
       const idx = xLabelIndexes(d);
-      const gapToLast = idx[idx.length - 1] - idx[idx.length - 2];
-      expect(gapToLast).toBeGreaterThanOrEqual(xLabelStep(d) / 2);
+      const geo = barGeometry(d);
+      for (let i = 1; i < idx.length; i++) {
+        const apart = barCentre(idx[i], geo) - barCentre(idx[i - 1], geo);
+        expect(apart, `${d} days, labels ${idx[i - 1]}->${idx[i]}`).toBeGreaterThanOrEqual(LABEL_W);
+      }
+    }
+  });
+
+  // 568 / 87 = 6 is a count of GAPS, so seven labels fit (six gaps, 522 units).
+  // The separation test above is the real guarantee; this just pins the ceiling.
+  it('never asks for more labels than the narrowest viewport fits', () => {
+    for (const d of [1, 7, 30, 90, 101, 365]) {
+      expect(xLabelIndexes(d).length, `${d} days`).toBeLessThanOrEqual(7);
     }
   });
 

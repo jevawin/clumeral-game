@@ -20,7 +20,9 @@ src/
     index.ts     Entry — API routes + HTML serving
     puzzle.ts    Filter/compute logic, RNG, seeding (server-only)
     puzzles.ts   /puzzles history page (SSR)
-    stats.ts     /stats dashboard, Analytics Engine queries
+    stats.ts     /stats dashboard renderer (chart, tables, nav)
+    analytics-db.ts  Analytics storage + queries (D1)
+    chart.ts     Daily-plays chart geometry (pure)
     feedback.ts  /feedback admin dashboard renderer (reads D1)
     crypto.ts    AES-GCM token signing for random puzzles
 public/          Static (icons, manifest, sw.js)
@@ -43,6 +45,14 @@ index.html       Shell
 - `GET /`, `/index.html`, `/random` — app shell
 
 Client fetches puzzle data on load. Never has the answer — validation is server-side (`POST /api/guess`). Daily puzzles are served from KV, write-once (see [Puzzle storage & archive integrity](#puzzle-storage--archive-integrity-kv--write-once)).
+
+## Analytics
+
+Events are stored in **Cloudflare D1** (`clumeral-analytics`, binding `ANALYTICS_DB`), written by
+`POST /api/event` and read by the private `/stats` dashboard. Analytics Engine is dual-written
+during the migration and is being retired — it retains only ~90 days, which is why the move
+happened. Full reference — schema, sampling caveat, cutover and comparison gate:
+[ANALYTICS.md](ANALYTICS.md).
 
 ## Feedback
 

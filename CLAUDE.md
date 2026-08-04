@@ -73,8 +73,19 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Pre-PR line-level review | [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md) |
 | Adding a roadmap item as a GitHub issue | [docs/ROADMAP-ISSUES.md](docs/ROADMAP-ISSUES.md) |
 | Feedback — storage (D1), reading it, triage process | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
+| Analytics — event storage (D1), `/stats`, the chart, the Analytics Engine migration | [docs/ANALYTICS.md](docs/ANALYTICS.md) |
 
 Update the respective doc if it's incorrect or your work makes it outdated.
+
+## Outstanding actions
+
+Things owed that no test or CI job will remind anyone about. Surfaced when the topic comes
+up in conversation — **there is no scheduled reminder and Claude cannot send one unprompted.**
+
+- **2026-08-04 — compare D1 analytics against Analytics Engine before retiring AE.** Jamie:
+  "we'll look at d1, ask you to compare vs ae in a few days." Run
+  `node scripts/compare-ae-d1.mjs`; the pass condition and the PR 3 removal checklist are in
+  [docs/ANALYTICS.md](docs/ANALYTICS.md).
 
 ## Project
 

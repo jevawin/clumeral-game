@@ -46,6 +46,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Neither workflow ran vitest before: Playwright was the entire gate. The
+      # chart maths, the period parser, the D1 row-shape assertions and the /stats
+      # contrast check all live in vitest, so without this they gate nothing.
+      # Runs before Playwright because it is seconds rather than minutes — a
+      # broken unit test should not wait on a browser install to be reported.
+      - name: Run unit tests
+        run: npm test
+
       # Only the engine the gate runs. --with-deps pulls the OS libraries the
       # browser needs on the runner.
       - name: Install Playwright chromium
