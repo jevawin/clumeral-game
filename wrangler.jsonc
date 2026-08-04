@@ -41,6 +41,20 @@
 			"binding": "FEEDBACK_DB",
 			"database_name": "clumeral-feedback",
 			"database_id": "4ecc6c31-c26c-4652-a1ae-7d1746bd816d"
+		},
+		{
+			// Analytics events, migrated off Analytics Engine. One database for all
+			// hostnames: every row carries `hostname`, and /stats is locked to the
+			// host it is called from, so prod and pre-prod stay separate without a
+			// second database to migrate by hand.
+			//
+			// TODO(jamie): replace with the real id from `wrangler d1 create
+			// clumeral-analytics`. Left as a placeholder deliberately — a wrong uuid
+			// fails the deploy loudly, where a missing binding would fail silently
+			// into a swallowed console.error and show zero on /stats.
+			"binding": "ANALYTICS_DB",
+			"database_name": "clumeral-analytics",
+			"database_id": "REPLACE_WITH_CLUMERAL_ANALYTICS_DATABASE_ID"
 		}
 	],
 	"triggers": {

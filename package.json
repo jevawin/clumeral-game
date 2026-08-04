@@ -12,9 +12,12 @@
     "test:e2e:smoke": "playwright test --project=chromium-desktop",
     "build": "vite build",
     "preview": "vite build && vite preview --host --port 4173",
-    "e2e:db": "wrangler d1 execute clumeral-feedback --local --command=\"DROP TABLE IF EXISTS feedback;\" && wrangler d1 execute clumeral-feedback --local --file=migrations/0001_create_feedback.sql",
+    "e2e:db": "npm run e2e:db:feedback && npm run e2e:db:analytics",
+    "e2e:db:feedback": "wrangler d1 execute clumeral-feedback --local --command=\"DROP TABLE IF EXISTS feedback;\" && wrangler d1 execute clumeral-feedback --local --file=migrations/0001_create_feedback.sql",
+    "e2e:db:analytics": "wrangler d1 execute clumeral-analytics --local --command=\"DROP TABLE IF EXISTS analytics_events; DROP TABLE IF EXISTS backfill_state;\" && wrangler d1 execute clumeral-analytics --local --file=migrations/0005_create_analytics_events.sql && wrangler d1 execute clumeral-analytics --local --file=migrations/0006_create_backfill_state.sql && wrangler d1 execute clumeral-analytics --local --file=tests/fixtures/analytics-seed.sql",
     "e2e:serve": "npm run e2e:db && npm run preview",
     "db:migrate:remote": "wrangler d1 execute clumeral-feedback --remote --file",
+    "analytics:migrate:remote": "wrangler d1 execute clumeral-analytics --remote --file",
     "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
   },
   "repository": {
@@ -29,6 +32,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
     "@cloudflare/vite-plugin": "^1.31.0",
+    "@cloudflare/vitest-pool-workers": "^0.12.21",
     "@cloudflare/workers-types": "^4.20260403.1",
     "@playwright/test": "~1.60",
     "@types/jsdom": "^28.0.1",
