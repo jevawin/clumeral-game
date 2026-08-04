@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS analytics_events (
 -- Both indexes lead with hostname because every read filters on it first.
 -- EXPLAIN QUERY PLAN against a seeded table, measured 2026-08-04 and asserted in
 -- tests/worker/schema.spec.ts:
---   daily counts  -> SEARCH USING INDEX idx_analytics_host_ev_ts (hostname=? AND event=? AND ts>?)
+--   daily counts  -> SEARCH USING INDEX idx_analytics_host_ts (hostname=? AND ts>?)
+--                    (groups by day AND event, so it carries no event predicate)
 --   unique users  -> SEARCH USING INDEX idx_analytics_host_ev_ts (hostname=? AND event=? AND ts>?)
 --   event totals  -> SEARCH USING INDEX idx_analytics_host_ts (hostname=? AND ts>?)
 --   MIN(ts)       -> SEARCH USING COVERING INDEX idx_analytics_host_ts (hostname=?)

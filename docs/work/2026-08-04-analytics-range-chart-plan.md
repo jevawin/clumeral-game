@@ -1043,3 +1043,38 @@ edge while the bar sat centred (only pinned when there is more than one label).
 the message"; it renders the message alone. It is reachable only at `?period=all` with zero
 rows — 7/30/90 render a full axis of zero stubs — and axes with no days have no scale to
 draw. Recorded rather than silently dropped.
+
+### `da-build` re-review — 2026-08-05
+
+Fresh context, second pass. Confirmed all 14 earlier fixes hold and found **1 Medium, 4 Low**
+the first round missed. Verdict READY TO PUSH with the Medium fixed. All five are fixed.
+
+Explicitly re-verified as clean, and worth recording because each was a plausible failure:
+the `db.batch()` binding is correct for all 7 statements in **both** the bounded and
+all-time branches (placeholder count matches bound args either way); `npm test` genuinely
+runs both vitest projects and **fails the run** when a worker test fails — checked by
+planting a failing test; the −200-day fixture row breaks no other assertion; and no real
+`uid` (a 36-char UUID) or `source` (a short path, or `'manual'`) comes near the new caps.
+
+- **B-15, Medium — I introduced this with the B-11 fix, and it made the y axis lie.** The mid
+  gridline was drawn at exactly half height but labelled `Math.round(scaleMax / 2)`. Those
+  agree only when `scaleMax` is even. With a busiest day of 3, the line labelled "2" sat at
+  half height while the bar actually worth 2 topped out a sixth of the plot higher. **This is
+  the regime PR 1 lands in** — post-cutover maxima are single digits for days. The position is
+  now derived from the value rather than the value from the position. Verified live at max 5:
+  the gridline labelled 3 sits at y=80, exactly where a bar worth 3 ends; it was at y=100.
+- **B-16, Low.** Pinning the outermost x labels to the plot edges is necessary at 30+ days to
+  stop them overflowing the viewBox, but at 2–5 days it threw a label ~106 units from the bar
+  it names — again exactly what `/stats` shows in the week after merge. Now pinned only when
+  centring would actually overflow.
+- **B-17, Low.** `All time · … · 1 days` on the first day of collection. Now singular.
+- **B-18, Low — a test that proved a query nobody runs.** `schema.spec.ts` asserted the
+  daily-counts plan using SQL carrying an `event = ?` predicate; the real query groups by day
+  **and** event and has no such predicate. It uses `idx_analytics_host_ts`, not
+  `idx_analytics_host_ev_ts`. Still no scan, so nothing was slow — but the test would have
+  kept passing if the real query regressed. Test and migration comment both corrected.
+- **B-19, Low.** `docs/ANALYTICS.md` now documents the truncation caps under Known
+  limitations, and says plainly that production `/stats` will look wrong for a few days
+  after merge without being an outage: until PR 2 lands, every pre-cutover day renders as a
+  zero stub and "Avg daily plays" divides by the full window. "All time" is the honest view
+  in that period.

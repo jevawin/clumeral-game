@@ -31,14 +31,17 @@ async function seed(rows: number): Promise<void> {
 describe('analytics_events schema', () => {
   beforeEach(() => seed(50));
 
+  // The exact SQL getStats builds, not an approximation of it. The first version
+  // of this test carried an `event = ?` predicate the real daily query does not
+  // have — it groups by day AND event — so it proved a plan for a query nobody
+  // runs, and would have kept passing if the real one regressed to a scan.
   it('uses an index for the daily-counts query', async () => {
     const detail = await plan(
-      "SELECT strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, SUM(sample_interval) AS count FROM analytics_events WHERE hostname = ? AND event = ? AND ts >= ? GROUP BY day",
+      "SELECT strftime('%Y-%m-%d', ts / 1000, 'unixepoch') AS day, event, SUM(sample_interval) AS count FROM analytics_events WHERE hostname = ? AND ts >= ? GROUP BY day, event ORDER BY day ASC",
       'clumeral.com',
-      'puzzle_start',
       0,
     );
-    expect(detail).toContain('idx_analytics_host_ev_ts');
+    expect(detail).toContain('idx_analytics_host_ts');
     expect(detail).not.toContain('SCAN analytics_events');
   });
 

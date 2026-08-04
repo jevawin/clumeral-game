@@ -4,6 +4,7 @@
 
 import {
   GUTTER,
+  LABEL_W,
   PLOT_H,
   PLOT_W,
   VIEW_H,
@@ -91,10 +92,19 @@ function renderChart(series: DayPoint[]): string {
     .join('');
 
   // 0, mid, max. Solid hairlines — a dashed gridline at this weight reads as a
-  // dotted data series. The mid line is dropped when it would round to a value
-  // already on the axis: a busiest day of 1 play would otherwise label the axis
-  // "0 / 1 / 1".
-  const fractions = Math.round(0.5 * scaleMax) === 0 || Math.round(0.5 * scaleMax) === scaleMax ? [0, 1] : [0, 0.5, 1];
+  // dotted data series.
+  //
+  // The mid line's POSITION is derived from its value, not the other way round.
+  // Drawing it at exactly half height and labelling it Math.round(scaleMax / 2)
+  // makes the axis lie whenever scaleMax is odd: with a busiest day of 3, the
+  // line labelled "2" sits at half height while the bar actually worth 2 tops out
+  // a sixth of the plot higher. Single-digit maxima are precisely what PR 1 shows
+  // until the backfill lands.
+  //
+  // It is dropped entirely when it would duplicate a value already on the axis —
+  // a busiest day of 1 would otherwise label the axis "0 / 1 / 1".
+  const mid = Math.round(scaleMax / 2);
+  const fractions = mid === 0 || mid === scaleMax ? [0, 1] : [0, mid / scaleMax, 1];
   const gridlines = fractions
     .map((f) => {
       const y = BASELINE - f * PLOT_H;
@@ -109,15 +119,16 @@ function renderChart(series: DayPoint[]): string {
   const labelIdx = xLabelIndexes(series.length);
   const xLabels = labelIdx
     .map((i) => {
-      // First and last are pinned to the plot edges so they cannot overflow the
-      // viewBox — but only when there is more than one. A single-day range has
-      // one label, and pinning it right would put it at the far edge while its
-      // bar sits in the middle.
-      const pinnable = labelIdx.length > 1;
-      const isLast = pinnable && i === series.length - 1;
-      const isFirst = pinnable && i === labelIdx[0];
+      // Pin a label to the plot edge only when centring it would push it out of
+      // the viewBox. At 30+ days the outermost bars sit close enough to the edges
+      // that the pin is necessary; at 2-5 days they do not, and pinning
+      // unconditionally throws the label ~100 units away from the bar it names —
+      // which is exactly the range /stats shows in the days after this merges.
+      const centre = barCentre(i, geo);
+      const isFirst = centre - LABEL_W / 2 < 0;
+      const isLast = centre + LABEL_W / 2 > VIEW_W;
       const anchor = isLast ? 'end' : isFirst ? 'start' : 'middle';
-      const px = isLast ? VIEW_W : isFirst ? GUTTER : barCentre(i, geo);
+      const px = isLast ? VIEW_W : isFirst ? GUTTER : centre;
       return `<text class="axis" x="${round(px)}" y="${LABEL_Y}" text-anchor="${anchor}">${formatDay(series[i].day, { year: false })}</text>`;
     })
     .join('');
@@ -165,7 +176,7 @@ function periodLabel(range: StatsRange, window: { from: string; to: string } | n
   const span = `${formatDay(window.from)} – ${formatDay(window.to)}`;
   if ('all' in range) {
     const days = Math.round((Date.parse(`${window.to}T00:00:00Z`) - Date.parse(`${window.from}T00:00:00Z`)) / 86_400_000) + 1;
-    return `All time · ${span} · ${days} days`;
+    return `All time · ${span} · ${days} ${days === 1 ? 'day' : 'days'}`;
   }
   return `Last ${range.days} days · ${span}`;
 }

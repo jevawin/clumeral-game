@@ -217,6 +217,79 @@ describe('renderDashboard — chart', () => {
     expect(html).toContain('.bar { fill: var(--acc); }');
   });
 
+  // The y axis must not lie. Drawing the mid gridline at exactly half height and
+  // labelling it round(max/2) puts the "2" line a sixth of the plot below the bar
+  // actually worth 2 whenever the max is odd — and single-digit maxima are what
+  // /stats shows until the backfill lands.
+  it.each([3, 5, 7, 9])('places the mid gridline at the value it claims, max %i', (max) => {
+    const html = renderDashboard(
+      fakeStats({ daily: plays([max, Math.round(max / 2), 0]) }),
+      { days: 3 },
+      'clumeral.com',
+      NOW,
+    );
+    const doc = parse(html);
+    const mid = Math.round(max / 2);
+    const midLine = [...doc.querySelectorAll('text.axis')].find((t) => t.textContent === String(mid))!;
+    const gridY = Number(midLine.getAttribute('y')) - 4;
+    // The bar of that exact value tops out at the same height as its gridline.
+    const barTop = 200 - (mid / max) * 200;
+    expect(gridY).toBeCloseTo(barTop, 1);
+  });
+
+  it('drops the mid gridline rather than labelling the axis 0 / 1 / 1', () => {
+    const html = renderDashboard(fakeStats({ daily: plays([1, 0, 1]) }), { days: 3 }, 'clumeral.com', NOW);
+    const axis = [...parse(html).querySelectorAll('text.axis')].map((t) => t.textContent);
+    expect(axis.filter((t) => t === '1')).toHaveLength(1);
+  });
+
+  // Pinning x labels to the plot edges is needed at 30+ days to stop them
+  // overflowing the viewBox, but at 2-5 days it throws the label ~100 units away
+  // from the bar it names — the exact range /stats shows the week after merge.
+  it('keeps short-range x labels with their bars', () => {
+    const html = renderDashboard(
+      fakeStats({ daily: plays([4, 7]), firstTs: NOW - DAY }),
+      { all: true },
+      'clumeral.com',
+      NOW,
+    );
+    const labels = [...parse(html).querySelectorAll('text.axis')].filter((t) => /[A-Z]/.test(t.textContent!));
+    expect(labels).toHaveLength(2);
+    for (const l of labels) {
+      expect(l.getAttribute('text-anchor')).toBe('middle');
+    }
+    // Centres of a 2-bar chart: 32 + 0.5*284 and 32 + 1.5*284.
+    expect(Number(labels[0].getAttribute('x'))).toBeCloseTo(174, 0);
+    expect(Number(labels[1].getAttribute('x'))).toBeCloseTo(458, 0);
+  });
+
+  it('still pins the outermost labels inside the viewBox at long ranges', () => {
+    const html = renderDashboard(
+      fakeStats({ daily: plays(Array(90).fill(3)) }),
+      { days: 90 },
+      'clumeral.com',
+      NOW,
+    );
+    const labels = [...parse(html).querySelectorAll('text.axis')].filter((t) => /[A-Z]/.test(t.textContent!));
+    expect(labels[0].getAttribute('text-anchor')).toBe('start');
+    expect(labels[labels.length - 1].getAttribute('text-anchor')).toBe('end');
+    for (const l of labels) {
+      const x = Number(l.getAttribute('x'));
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThanOrEqual(600);
+    }
+  });
+
+  it('says "1 day" rather than "1 days" on the first day of collection', () => {
+    const html = renderDashboard(
+      fakeStats({ daily: plays([2]), firstTs: NOW }),
+      { all: true },
+      'clumeral.com',
+      NOW,
+    );
+    expect(html).toContain('· 1 day<');
+  });
+
   it('labels the highest bar', () => {
     const html = renderDashboard(fakeStats({ daily: plays([2, 19, 3, 4, 1, 2, 5]) }), { days: 7 }, 'clumeral.com', NOW);
     const direct = [...parse(html).querySelectorAll('text.direct')].map((t) => t.textContent);
