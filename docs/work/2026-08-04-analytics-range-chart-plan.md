@@ -162,18 +162,24 @@ Per [83]: `ctx: ExecutionContext` added to the `fetch` signature (`index.ts:221`
 
 **Schema.** [64] plus two columns this plan adds:
 
+**P41. Types signed off by Jamie, 2026-08-04** — closing item 114, which the brief flagged
+should never have passed as settled. `AUTOINCREMENT` dropped on his call: plain
+`INTEGER PRIMARY KEY` is the rowid alias, and we never need ids that are never reused.
+`value` is `INTEGER`, and the two 0/1 columns carry `CHECK` constraints so a bad insert
+fails at the source rather than quietly skewing the new-user count.
+
 ```sql
 CREATE TABLE analytics_events (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  id              INTEGER PRIMARY KEY,                  -- rowid alias; no AUTOINCREMENT [P41]
   ts              INTEGER NOT NULL,                     -- UTC epoch ms
   event           TEXT    NOT NULL,                     -- blob1
   uid             TEXT    NOT NULL,                     -- blob2, retained indefinitely [17]
   source          TEXT,                                 -- blob3, NULL when not undo/reset
   hostname        TEXT    NOT NULL,                     -- blob4
-  value           INTEGER NOT NULL DEFAULT 0,           -- double1; INTEGER per §8 q2
-  new_user        INTEGER NOT NULL DEFAULT 0,           -- double2, 0 or 1
+  value           INTEGER NOT NULL DEFAULT 0,           -- double1; INTEGER, not REAL [P41]
+  new_user        INTEGER NOT NULL DEFAULT 0 CHECK (new_user   IN (0, 1)),  -- double2
   sample_interval INTEGER NOT NULL DEFAULT 1,           -- [63]
-  backfilled      INTEGER NOT NULL DEFAULT 0            -- P19
+  backfilled      INTEGER NOT NULL DEFAULT 0 CHECK (backfilled IN (0, 1))   -- P19
 );
 CREATE INDEX idx_analytics_host_ts    ON analytics_events (hostname, ts);
 CREATE INDEX idx_analytics_host_ev_ts ON analytics_events (hostname, event, ts);
@@ -583,20 +589,26 @@ tolerance. Checklist in `docs/ANALYTICS.md` [61].
 
 ## 8. Open questions for Jamie — these block Build
 
-1. **`.env` is gone (P12).** Item 95 records you creating it with the scoped token on
-   2026-08-03; it is not in the working tree now. Can you recreate it? I also need
-   `CF_ACCOUNT_ID` in it — it is a Worker secret, so I have no local copy. Until then Task 6
-   cannot run, and item 97's warning stands: nobody has yet confirmed that
+1. **`.env` exists, but in the wrong user's home (P12, P42).**
+   **P42, diagnosed 2026-08-04.** Jamie SSH'd into the Pi, `cd developer/clumeral-game` and
+   created `.env` there — and it is genuinely not visible to this agent. The Pi has **two
+   user accounts, `clumeral-bot` and `jevawin`**. This agent runs as `clumeral-bot` and works
+   in `/home/clumeral-bot/developer/clumeral-game`. Jamie's session was almost certainly
+   `jevawin`, so the same relative path resolved to `/home/jevawin/developer/clumeral-game` —
+   a separate checkout. The guard hook blocks this agent from so much as listing
+   `/home/jevawin`, by design, so it cannot be confirmed from here or read if found.
+   **Resolution: the file must exist at
+   `/home/clumeral-bot/developer/clumeral-game/.env`.** That exact path is readable — the
+   guard permits it; the first attempt failed with "no such file", not with a refusal.
+   Needs `CF_ACCOUNT_ID` as well as the token: it is a Worker secret with no local copy.
+   Until then Task 6 cannot run, and item 97's warning stands — nobody has yet confirmed that
    **Account · Account Analytics · Read** is the permission the AE SQL API actually checks.
-   If it turns out to be the wrong scope I will report that rather than widening it. While
-   you are there — item 98 flagged that token TTLs applying to this token type was assumed;
-   if the dashboard offered you an expiry when you created it, that closes it.
-2. **Schema column types — yours to sign (P13, item 114).** The columns are §3.3. One is
-   questionable: **`value`**. It holds guess counts, which are integers; [64] made it `REAL`
-   only because AE's `double1` is. **My rec: `value INTEGER NOT NULL DEFAULT 0`**, converting
-   on insert — nothing reads it as a fraction, and `REAL` invites a `4.0` in the guess
-   distribution. §3.3 is written with `INTEGER`; say if you want `REAL`. The two columns this
-   plan added beyond [64] are `backfilled INTEGER` (P19) and the `backfill_state` table (P17).
+   If it turns out to be the wrong scope I report that rather than widening it. Item 98
+   (token TTLs applying to this token type) is still unverified and closes when Jamie
+   confirms the dashboard offered an expiry.
+2. **Schema column types — SIGNED OFF by Jamie 2026-08-04. See P41.** `value` is `INTEGER`
+   not `REAL`; `AUTOINCREMENT` dropped; `CHECK (x IN (0,1))` on both flag columns; `source`
+   nullable with `NULLIF` normalisation on import (P31). Closes item 114 and P13.
 3. **You need to create the `clumeral-analytics` D1 database** [82] and give me the
    `database_id` for `wrangler.jsonc`. Needs your Cloudflare account; I have no access.
 4. **You need to apply migrations 0005 and 0006 to it remotely, before PR 1 merges** (P29) —
