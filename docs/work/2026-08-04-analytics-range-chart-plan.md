@@ -835,3 +835,60 @@ it before merge.
 **Open for Jamie:** P53 part 2 is a behaviour change to `/stats` (a preview's dashboard would
 default to prod figures, needing `?all=1` to see its own). Say if you would rather keep the
 current per-host default, which is also defensible and is strictly less work.
+
+### Decision — Jamie, 2026-08-04
+
+**P54. Settled: import all hostnames; `/stats` stays locked to the hostname it is called
+from.** P53 part 1 accepted. **P53 parts 2 and 3 are REJECTED** — no prod-default, no
+`?all=1`. A preview's `/stats` shows that preview's own data and nothing else, which is what
+it is for; staging shows staging, for testing. The per-host lock *is* the separation, and it
+needs no new UI. This is also strictly less code than my recommendation, and the `?all=1`
+toggle I argued for would have existed only to display rows nobody asked to see.
+Consequence for §4/§5: no `all` parameter on `/stats`, and Task 5's `parsePeriod` is the only
+query-string change. The imported pre-prod rows are reachable by direct SQL if ever needed.
+
+## 13. Two databases, prod and pre-prod? — Jamie, 2026-08-04
+
+**P55. Recommendation: no, one database. But the reasoning that makes it safe is not the
+reasoning I would have given before checking.**
+
+**It is buildable.** The obvious route — a Wrangler environment per branch — does not fit:
+Workers Builds deploys non-production branches with `npx wrangler versions upload`, one build
+command for every branch, so there is no per-branch binding override without reconfiguring
+the build. The route that *does* work is binding both databases in the one config and choosing
+at runtime by hostname (`ANALYTICS_DB` / `ANALYTICS_DB_PREPROD`). So this is a real option,
+not a blocked one.
+
+**Why one database anyway, in order of weight:**
+
+1. **The migration surface doubles, permanently, and that is the failure this plan already
+   identified as silent.** P29 exists because an unapplied migration deploys perfectly happily
+   and loses every event into a swallowed `console.error`. Two databases means every future
+   schema change must be applied twice, remotely, by hand — and the second one is the easy one
+   to forget, on the environment nobody watches. That risk outlives this project.
+2. **The blast-radius argument is much weaker than it looks, because the destructive code
+   cannot run on pre-prod.** The only dangerous statement here is the backfill's
+   `DELETE FROM analytics_events WHERE backfilled = 1 AND ...`. It runs from `scheduled()`, and
+   non-production branches are uploaded as **preview versions rather than deployments**, so
+   they serve no cron traffic — the backfill only ever runs on the live production deployment.
+   A preview can insert its own rows; it cannot delete anything.
+   *(Confirmed from the Workers Builds docs for `versions upload`; the cron-triggers page does
+   not state the preview case explicitly, so Task 13 asserts it rather than assuming it — if a
+   preview version ever did fire the cron, P20's CAS lock already makes it safe, just wasteful.)*
+3. **Volume makes isolation pointless.** Pre-prod is 2,631 rows over 92 days — **~29/day**
+   against a 100k/day write ceiling. There is no capacity, cost or performance case.
+4. **Separation is already achieved by the column plus P54's per-host lock.** A second database
+   would enforce the same property twice.
+5. **It stays reversible, cheaply.** Because `hostname` tags every row, splitting later is one
+   `INSERT ... SELECT` plus one `DELETE`. Choosing one database now does not lock the decision;
+   choosing two now imposes the duplicated migration path immediately and forever.
+
+**The honest case for two, so it is on the record:** if pre-prod analytics ever want wiping
+wholesale, a separate database makes it a drop rather than a targeted delete. With one database
+that is `DELETE FROM analytics_events WHERE hostname != 'clumeral.com'` — a single statement,
+already precise because of the column. Not enough to carry the migration cost.
+
+**P56.** If Jamie prefers two regardless, the change is small and additive: a second binding, a
+one-line chooser in `recordEvent`, both migrations applied to both databases, `e2e:db` seeding
+both, and the backfill writing pre-prod rows to the pre-prod database. Say the word and it goes
+in before Build starts, not after.
