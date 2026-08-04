@@ -104,8 +104,13 @@ and below even the 3:1 graphics threshold. That is what `--ink-muted` replaced.
 ## Migration status
 
 **PR 1 (this one).** Schema, dual write, D1 reads, the rebuilt chart, test harness, docs.
-After it merges, D1 collects and `/stats` shows post-merge data only. The chart will look
-sparse on the preview URL — that is expected, not a defect.
+After it merges, D1 collects and `/stats` shows post-merge data only.
+
+**Expect production `/stats` to look wrong for a few days, and it will not be an outage.**
+Until PR 2 backfills, every pre-cutover day in the 7/30/90 ranges renders as a zero-day stub
+— indistinguishable from a genuine no-plays day — and "Avg daily plays" divides real plays by
+the full window, so it reads far too low. "All time" is the honest view during this period,
+because it starts at the first row we actually hold.
 
 **PR 2.** The backfill: imports everything from before the dual-write cutover out of AE,
 all hostnames, idempotent per UTC day, driven by a temporary per-minute cron.
@@ -180,6 +185,13 @@ here. Revoked as part of the PR 3 checklist regardless.
 - **The hidden table grows with the range.** At "all time" it is one row per day since
   collection began. Fine at a few hundred days; worth revisiting past that.
 - **`uid` is retained indefinitely.** A prune step was considered and rejected.
+- **`uid` is truncated to 64 characters and `source` to 128, silently.** `POST /api/event` is
+  public and unauthenticated, and these rows are permanent with no prune step, so an
+  unbounded string would be permanent storage handed to anyone. Real values are nowhere near
+  the caps — `uid` is a 36-character UUID and `source` is a short path or one of two literals
+  — so nothing legitimate is affected. Truncating rather than rejecting is deliberate: an
+  over-long value is far more likely a client bug than an attack, and dropping the event
+  would lose a real play.
 
 ## Outstanding actions
 
