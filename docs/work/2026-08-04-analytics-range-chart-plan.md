@@ -474,9 +474,9 @@ accept 503 to require 200.
 `/api/stats?period=all` returns all-time rather than today's `NaN → 1=1` accident; `/stats`
 renders with no CF secrets present.
 
-**Task 6 — the AE-side research, and the answers get written into this file.**
-[P11, P12, 63, 103, L7/79]
-*Blocked on:* §8 question 1.
+**Task 6 — DONE, 2026-08-04. Results in §11 (P43–P49).** [P11, P12, 63, 103, L7/79]
+Token scope confirmed [97]; sampling found to be real, not theoretical [63]; true row count,
+window and per-day peak measured. The peak-day finding (P48) forced the sizing rule in P49.
 Query the AE SQL API from the Pi and record, in a new §11 appended here: (a) the true
 all-hostname row count [103] — the ~7,300 figure is a hostname-filtered extrapolation and a
 floor; (b) the actual `_sample_interval` values present [63], which decides whether P16 is
@@ -698,3 +698,84 @@ design change rather than argued away.
 **P38 / P39 / P40** are the three plan-local decisions the review forced: the test harness,
 `getStats` living in `analytics-db.ts` with `stats.ts` keeping `renderDashboard`, and vitest
 joining the CI gate.
+
+---
+
+## 11. Task 6 results — measured against the live Analytics Engine, 2026-08-04
+
+Run from the Pi with the scoped token once `.env` reached
+`/home/clumeral-bot/developer/clumeral-game/.env` (P42). **Account id
+`06ff16a35fdefa6cae9e3463116086aa`**, discovered via `GET /client/v4/accounts` with the same
+token rather than asked for.
+
+**P43. Item 97 CONFIRMED — the token scope is correct and sufficient.**
+**Account · Account Analytics · Read** reaches the Analytics Engine SQL API. `POST
+/accounts/{id}/analytics_engine/sql` returns HTTP 200 with data. Jamie created that token on
+an unverified claim; the claim was right. No widening needed, and P12 is closed.
+
+**P44. Sampling is REAL, not theoretical — and this is the finding that justifies the whole
+of [63].** The brief assumed the sample interval "is almost certainly 1 today" [9]. It is not:
+
+- `_sample_interval = 1` → 7,240 rows
+- `= 2` → 96 rows
+- `= 3` → 11 rows
+- `= 10` → 1 row
+
+`COUNT()` = **7,348**. `SUM(_sample_interval)` = **7,475**. So **every figure on `/stats`
+today undercounts by 127 events, 1.70%**, and had we imported with `COUNT(*)` semantics that
+error would have been baked into the archive permanently, with the source deleted behind it.
+Consequences: the `sample_interval` column and the `SUM(sample_interval)` rule are load-bearing,
+not precautionary; **P16 is a live limitation, not a hypothetical** — unique-user counts over
+the backfilled window really are a floor; and item 12's "2,440 events in 30 days" was itself a
+`COUNT()` undercount.
+
+**P45. P11 resolved — there is no default row-limit problem.** A raw-row `SELECT` of all eight
+columns with no `LIMIT` returned **all 7,348 rows in one response**, with
+`rows_before_limit_at_least` equal to the row count. `OFFSET` paging is confirmed working
+against a deterministic `ORDER BY timestamp ASC`. **Note: results are unordered by default** —
+the first row of an unordered query came back as the most recent — so every backfill query must
+carry an explicit `ORDER BY` or paging silently repeats and skips rows.
+
+**P46. The true all-hostname row count is 7,348 across 12 hostnames** — [103] feared the
+hostname-filtered ~7,300 estimate was a floor that could be "possibly much higher"; it is
+1.56× the `clumeral.com`-only figure, not the 3×+ P32 defended against. `clumeral.com` is
+4,717 (64%), the old `new-design` preview 2,108, `staging` 272, and nine other preview
+deployments under 60 each. P35's decision to import every hostname stands and costs little.
+
+**P47. The surviving window is 2026-05-04 00:09:18 → now** — closing [L7/79]. Item 3's
+"collecting since 2026-04-05" was inferred from a git log; the true first *surviving* row is
+2026-05-04, which is ~92 days back and confirms AE's three-month retention [5] empirically.
+Anything earlier is already deleted. **This does not become a constant** — the window rolls
+forward daily, so by the time PR 2 runs the earliest row will be later. P33's runtime discovery
+is what the code uses; 2026-05-04 is a sanity check, never a hardcoded value.
+
+**P48. The per-day distribution is severely skewed, and the da-plan H-4 finding was right in a
+way even it understated.** Busiest days, all hostnames:
+
+- 2026-08-03 → **677 rows**
+- 2026-05-04 → 523
+- 2026-08-04 → 466
+- 2026-05-10 → 369
+- 2026-05-31 → 204
+
+Mean is ~80/day, so the brief's "~81 events/day" [12] was a *correct average* — and sizing on
+it would still have broken the backfill, because **the peak is 8× the mean**. At P8's 10 rows
+per bound `INSERT`, 2026-08-03 alone needs 68 statements against P7's cap of 50. **A day that
+cannot be imported in a single invocation already exists in the data.** So P32's sub-day
+fallback is not a safeguard against a hypothetical, it is required on day one, and the fixed
+3-day batch of the first draft would have wedged permanently on the first run that reached
+2026-08-03.
+
+**P49. Consequent sizing rule, replacing P21's day-count cap.** The batch is measured in
+**rows, not days**: target **≤ 450 rows per invocation** (45 `INSERT` statements at 10 rows
+each, leaving 5 of the 50 for the CAS, state read, cursor write, lock release and the AE
+fetch). Whole days are taken while they fit; a day exceeding 450 rows on its own is imported in
+`LIMIT/OFFSET` sub-windows of 450 with an explicit `ORDER BY timestamp ASC` (P45), its `DELETE`
+running only on the first sub-window. At 7,348 rows that is **~17 invocations, so ~17 minutes**
+on the P22 per-minute cron. CPU per invocation remains the one unmeasured quantity and is
+Task 15's job; if 450 rows will not parse inside 10 ms, the constant drops and the run takes
+proportionally longer, which P19 makes safe.
+
+**Still open after this run:** P9 (whether `db.batch()` statements count individually against
+the 50-query cap) and CPU per batch — both need a deployed Worker, both are Task 15, and P32's
+adaptive sizing means neither blocks Build.
