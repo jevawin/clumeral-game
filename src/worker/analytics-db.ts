@@ -45,6 +45,22 @@ export interface StatsResult {
 
 const DAY_MS = 86_400_000;
 
+/** The ranges the dashboard offers. */
+export const DEFAULT_RANGE: StatsRange = { days: 30 };
+
+/**
+ * Parse `?period=` for both /stats and /api/stats — one parser, because two
+ * drifted: /api/stats clamped with Math.min(Number(raw), 90) and /stats added a
+ * `|| 90` on top, so `?period=all` became NaN, failed the clamp, and fell through
+ * to a query the page then labelled "Last 90 days" while actually returning
+ * all-time. Anything unrecognised is 30 days.
+ */
+export function parsePeriod(raw: string | null): StatsRange {
+  if (raw === 'all') return { all: true };
+  if (raw === '7' || raw === '30' || raw === '90') return { days: Number(raw) };
+  return DEFAULT_RANGE;
+}
+
 /** Midnight UTC at the start of the day containing `ms`. */
 export function startOfUTCDay(ms: number): number {
   return Math.floor(ms / DAY_MS) * DAY_MS;

@@ -5,9 +5,12 @@
 // drifting: rename the binding in wrangler.jsonc alone and every worker test would
 // keep passing against a binding production does not have.
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const raw = readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
+// Resolved from the vitest root rather than import.meta.url: under the jsdom
+// environment import.meta.url is not a file: URL and readFileSync rejects it.
+const raw = readFileSync(join(process.cwd(), 'wrangler.jsonc'), 'utf8');
 // Strip // comments — JSONC. Crude but sufficient: no string in this file contains "//".
 const config = JSON.parse(raw.replace(/^\s*\/\/.*$/gm, ''));
 
