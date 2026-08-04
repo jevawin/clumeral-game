@@ -50,7 +50,10 @@ INSERT INTO analytics_events (ts, event, uid, source, hostname, value, new_user,
   ((unixepoch(date('now', '-45 days'))  + 43200) * 1000, 'puzzle_start', 'e2e-i', NULL, 'localhost', 0, 1, 1, 1),
   ((unixepoch(date('now', '-100 days')) + 43200) * 1000, 'puzzle_start', 'e2e-j', NULL, 'localhost', 0, 1, 1, 1);
 
--- Another hostname. /stats is locked to the host it is called from, so this row
--- exists purely to prove it never leaks into the localhost figures.
+-- Another hostname, deliberately 200 days back — well beyond the earliest
+-- localhost row. /stats is locked to the host it is called from, so if the filter
+-- ever broke, this row would drag the "All time" window back to 201 days and the
+-- mark-count assertion would fail. Dating it today would have made the leak
+-- invisible to every count the suite checks.
 INSERT INTO analytics_events (ts, event, uid, source, hostname, value, new_user, sample_interval) VALUES
-  ((unixepoch(date('now')) + 43200) * 1000, 'puzzle_start', 'e2e-other', NULL, 'staging-clumeral-game.jevawin.workers.dev', 0, 1, 1);
+  ((unixepoch(date('now', '-200 days')) + 43200) * 1000, 'puzzle_start', 'e2e-other', NULL, 'staging-clumeral-game.jevawin.workers.dev', 0, 1, 1);

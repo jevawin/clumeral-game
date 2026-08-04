@@ -14,7 +14,8 @@
 **Analytics Engine (Cloudflare):**
 - Purpose: Query analytics data for /stats dashboard
 - SDK/Client: Native fetch to Cloudflare API
-- Auth: `CF_API_TOKEN` (Bearer token)
+- Auth: `CF_ANALYTICS_TOKEN` in local `.env` (Bearer token). No longer a Worker secret —
+  only scripts/compare-ae-d1.mjs reads AE now.
 - Endpoint: `https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/analytics_engine/sql`
 - Integration point: `src/worker/stats.ts`
 - Use case: SQL queries on puzzle_start, puzzle_complete, incorrect_guess, and other events
@@ -95,8 +96,9 @@
 
 **Required env vars (Worker Secrets):**
 - `HMAC_SECRET` - Secret key for HMAC token signing (random puzzle authentication)
-- `CF_ACCOUNT_ID` - Cloudflare Account ID for Analytics Engine queries
-- `CF_API_TOKEN` - Cloudflare API token (with analytics read permission)
+- (removed as Worker secrets) `CF_ACCOUNT_ID` / `CF_API_TOKEN` — /stats reads D1. The
+  Analytics Read token lives in local `.env` as `CF_ANALYTICS_TOKEN`, used only by
+  scripts/compare-ae-d1.mjs. See docs/ANALYTICS.md.
 
 **Note:** Environment variables are not stored in .env files. Secrets are managed via Cloudflare Workers Secret management in the dashboard or wrangler CLI.
 
@@ -109,7 +111,8 @@
 
 **Outgoing:**
 - GET requests to Google Forms API (one-way feedback submission)
-- GET requests to Cloudflare Analytics Engine API (dashboard queries only)
+- GET requests to Cloudflare Analytics Engine API (comparison script only, run from the Pi —
+  the dashboard reads D1)
 
 ## Cron Jobs
 

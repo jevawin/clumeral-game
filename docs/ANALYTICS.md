@@ -155,10 +155,16 @@ silently passed.
 
 A scoped **Account · Account Analytics · Read** token, created by Jamie on 2026-08-03 and
 confirmed 2026-08-04 to be sufficient for the AE SQL API — no wider scope is needed. It
-lives in `.env` at the repo root (gitignored) and is used only from the Pi, by
-`scripts/compare-ae-d1.mjs`. It is **not** a Worker secret and the Worker does not need it.
+lives in `.env` at the repo root (gitignored) as **`CF_ANALYTICS_TOKEN`** and is used only
+from the Pi, by `scripts/compare-ae-d1.mjs`. It is **not** a Worker secret and the Worker
+does not need it.
 
-Account id: `06ff16a35fdefa6cae9e3463116086aa`.
+Account id: `06ff16a35fdefa6cae9e3463116086aa` — the script defaults to this, so `.env`
+needs the token alone.
+
+The D1 half of the comparison goes through `wrangler --remote`, which needs its own
+credentials: run `npx wrangler login` interactively, or export `CLOUDFLARE_API_TOKEN`. The
+script names both failures rather than dumping a stack trace.
 
 **Expiry: unconfirmed.** Jamie to check whether the dashboard offered a TTL and record it
 here. Revoked as part of the PR 3 checklist regardless.

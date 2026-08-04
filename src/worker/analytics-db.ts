@@ -78,21 +78,52 @@ export function rangeCutoff(range: StatsRange, now: number): number | null {
   return startOfUTCDay(now) - (range.days - 1) * DAY_MS;
 }
 
+// POST /api/event is public and unauthenticated, and D1 keeps rows for good with
+// no prune step — so an unbounded string here is permanent storage handed to
+// anyone. AE was self-expiring and free, which is why item 19 was comfortable
+// leaving the endpoint open; that reasoning does not carry over. Truncate rather
+// than reject: a client sending an over-long uid is far more likely to be a bug
+// than an attack, and dropping the event would lose a real play.
+const MAX_UID = 64;
+const MAX_SOURCE = 128;
+
 /**
  * Store one event.
  *
- * `source` is normalised to NULL when absent or empty. AE wrote '' for the
- * not-applicable case and the backfill applies NULLIF on import; without the same
- * normalisation here, live and imported rows would carry different values for the
- * same meaning and the undo/reset split would read differently either side of the
- * cutover, permanently.
+ * `source` is normalised to NULL when absent or empty, matching the NULLIF the
+ * backfill applies on import — AE wrote '' for the absent case, and without the
+ * same normalisation live and imported rows would carry different values for the
+ * same meaning.
+ *
+ * It is NOT undo/reset-only. `route_change` sends the path and `htp_opened` sends
+ * 'manual' (src/router.ts:79, src/app.ts:1489), and route_change is the highest
+ * volume event we record — so most rows carry a source. Only the undo/reset split
+ * is read back today.
+ *
+ * async so that a synchronous throw — an unbound ANALYTICS_DB, say — comes back as
+ * a rejected promise. The caller's .catch() is what keeps the event POST at 202;
+ * a sync throw would blow past it into the route's own catch and turn every event
+ * into a 400.
  */
-export function recordEvent(db: D1Database, e: AnalyticsEvent, now: number = Date.now()) {
+export async function recordEvent(db: D1Database, e: AnalyticsEvent, now: number = Date.now()) {
+  // The body is cast, never validated, so value can be anything JSON allows.
+  // NaN binds as NULL and trips the NOT NULL constraint — which would drop the
+  // row into a swallowed console.error while writeDataPoint kept it, putting a
+  // divergence into the very comparison that gates AE removal.
+  const value = Number(e.value);
   return db
     .prepare(
       'INSERT INTO analytics_events (ts, event, uid, source, hostname, value, new_user) VALUES (?, ?, ?, ?, ?, ?, ?)',
     )
-    .bind(now, e.event, e.uid, e.source || null, e.hostname, Math.trunc(e.value ?? 0), e.newUser ? 1 : 0)
+    .bind(
+      now,
+      e.event,
+      String(e.uid).slice(0, MAX_UID),
+      e.source ? String(e.source).slice(0, MAX_SOURCE) : null,
+      e.hostname,
+      Number.isFinite(value) ? Math.trunc(value) : 0,
+      e.newUser ? 1 : 0,
+    )
     .run();
 }
 
@@ -124,7 +155,7 @@ export async function getStats(
   const args: unknown[] = cutoff === null ? [hostname] : [hostname, cutoff];
   const where = `WHERE hostname = ?${timeSQL}`;
 
-  const q = (sql: string, extra: unknown[] = []) => db.prepare(sql).bind(...args, ...extra);
+  const q = (sql: string) => db.prepare(sql).bind(...args);
 
   const [events, daily, uniqueUsers, newUsers, guessDistribution, sourceSplit, first] = await db.batch([
     q(`SELECT event, SUM(sample_interval) AS count FROM analytics_events ${where} GROUP BY event ORDER BY count DESC`),

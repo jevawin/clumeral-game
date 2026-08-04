@@ -14,9 +14,13 @@ CREATE TABLE IF NOT EXISTS analytics_events (
   ts              INTEGER NOT NULL,           -- UTC epoch ms
   event           TEXT    NOT NULL,           -- AE blob1; one of VALID_EVENTS
   uid             TEXT    NOT NULL,           -- AE blob2; retained indefinitely
-  -- AE blob3. 'keyboard' or 'button' on undo_used/reset_used, NULL otherwise.
-  -- AE stored '' for the not-applicable case; the backfill applies NULLIF(blob3,'')
-  -- on import so live and backfilled rows mean the same thing (plan P31).
+  -- AE blob3. Whatever the client sent alongside the event, NULL when it sent
+  -- nothing. NOT undo/reset-only: undo_used and reset_used carry 'keyboard' or
+  -- 'button', htp_opened carries 'manual', and route_change carries the path —
+  -- and route_change is the highest-volume event we record, so most rows have a
+  -- value here. Only the undo/reset split is read back today.
+  -- AE stored '' for the absent case; the backfill applies NULLIF(blob3, '') on
+  -- import so live and backfilled rows mean the same thing.
   source          TEXT,
   -- AE blob4. Load-bearing: without it staging and preview traffic merges into
   -- production numbers. /stats filters on it, locked to the requesting host.

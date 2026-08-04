@@ -63,7 +63,7 @@ function round(n: number): string {
 /**
  * The daily-plays chart.
  *
- * A zero day renders a 1-unit stub *below* the baseline rather than a sliver above
+ * A zero day renders a short stub *below* the baseline rather than a sliver above
  * it. Above the line, the stub is invisible once bars touch — which happens past
  * ~95 days, i.e. at exactly the range "All time" exists for — and a zero day would
  * then look identical to a rendering bug. Below the line it reads as a tick on the
@@ -91,8 +91,11 @@ function renderChart(series: DayPoint[]): string {
     .join('');
 
   // 0, mid, max. Solid hairlines — a dashed gridline at this weight reads as a
-  // dotted data series.
-  const gridlines = [0, 0.5, 1]
+  // dotted data series. The mid line is dropped when it would round to a value
+  // already on the axis: a busiest day of 1 play would otherwise label the axis
+  // "0 / 1 / 1".
+  const fractions = Math.round(0.5 * scaleMax) === 0 || Math.round(0.5 * scaleMax) === scaleMax ? [0, 1] : [0, 0.5, 1];
+  const gridlines = fractions
     .map((f) => {
       const y = BASELINE - f * PLOT_H;
       const value = Math.round(f * scaleMax);
@@ -103,12 +106,18 @@ function renderChart(series: DayPoint[]): string {
     })
     .join('');
 
-  const xLabels = xLabelIndexes(series.length)
+  const labelIdx = xLabelIndexes(series.length);
+  const xLabels = labelIdx
     .map((i) => {
-      const x = barCentre(i, geo);
-      // Keep the first and last labels inside the viewBox.
-      const anchor = i === series.length - 1 ? 'end' : i === 0 ? 'start' : 'middle';
-      const px = i === series.length - 1 ? VIEW_W : i === 0 ? GUTTER : x;
+      // First and last are pinned to the plot edges so they cannot overflow the
+      // viewBox — but only when there is more than one. A single-day range has
+      // one label, and pinning it right would put it at the far edge while its
+      // bar sits in the middle.
+      const pinnable = labelIdx.length > 1;
+      const isLast = pinnable && i === series.length - 1;
+      const isFirst = pinnable && i === labelIdx[0];
+      const anchor = isLast ? 'end' : isFirst ? 'start' : 'middle';
+      const px = isLast ? VIEW_W : isFirst ? GUTTER : barCentre(i, geo);
       return `<text class="axis" x="${round(px)}" y="${LABEL_Y}" text-anchor="${anchor}">${formatDay(series[i].day, { year: false })}</text>`;
     })
     .join('');
@@ -198,6 +207,9 @@ export function renderDashboard(
     .map((row) => `<tr><td>${row.guesses}</td><td>${row.count}</td></tr>`)
     .join('');
 
+  // Keyed on event|source, so an undo/reset row with a NULL source lands in no
+  // row at all rather than being counted twice. Every such event carries one of
+  // the two triggers today; if that ever changes the total will quietly shrink.
   const sourceMap = new Map(stats.sourceSplit.map((r) => [`${r.event}|${r.source}`, r.count]));
 
   // htp_dismissed and colour_change are deliberately absent: neither is in
@@ -298,7 +310,7 @@ export function renderDashboard(
      which is the only thing giving the bars a scale. */
   .chart-wrap svg { display: block; width: 100%; height: auto; }
   .bar { fill: var(--acc); }
-  /* A zero day: a 1-unit tick below the baseline, in ink rather than the accent,
+  /* A zero day: a short tick below the baseline, in ink rather than the accent,
      so it stays visible when neighbouring bars touch at long ranges. */
   .zero { fill: var(--ink-muted); }
   .grid { stroke: var(--grid); stroke-width: 1; }

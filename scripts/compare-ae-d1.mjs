@@ -4,8 +4,10 @@
 //
 // Run from the Pi:  node scripts/compare-ae-d1.mjs [--days 30] [--host clumeral.com]
 //
-// Needs CF_ACCOUNT_ID and CF_API_TOKEN in .env at the repo root (gitignored). The
-// token is a scoped Account Analytics Read token; it cannot write anything.
+// Needs an Analytics Read token in .env at the repo root (gitignored), under
+// CF_ANALYTICS_TOKEN or CF_API_TOKEN. The account id defaults to ours and can be
+// overridden with CF_ACCOUNT_ID. The token is a scoped Account Analytics Read
+// token; it cannot write anything.
 //
 // The gate, per docs/ANALYTICS.md: every FULL UTC day within +/-1% or +/-3 events,
 // whichever is larger. Partial days are excluded rather than tolerated — a day
@@ -41,26 +43,35 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
-  console.error('CF_ACCOUNT_ID and CF_API_TOKEN must be set (put them in .env at the repo root).');
+// The .env Jamie created holds CF_ANALYTICS_TOKEN and no account id, so accept
+// that name and default the account. Demanding CF_API_TOKEN and CF_ACCOUNT_ID
+// made this script unrunnable with the only .env that has ever existed.
+const TOKEN = env.CF_ANALYTICS_TOKEN || env.CF_API_TOKEN;
+const ACCOUNT = env.CF_ACCOUNT_ID || '06ff16a35fdefa6cae9e3463116086aa';
+if (!TOKEN) {
+  console.error('No Analytics Read token found. Set CF_ANALYTICS_TOKEN (or CF_API_TOKEN) in .env at the repo root.');
   process.exit(1);
 }
 
 /** Analytics Engine SQL API. Returns per-day summed sample intervals. */
 async function fromAE() {
+  // toStartOfDay on the lower bound, matching the D1 side's UTC-midnight cutoff.
+  // A rolling `NOW() - INTERVAL n DAY` would give AE a partial first day against
+  // D1's whole one, and the oldest day would report out of tolerance on every run
+  // — the exact midnight-boundary artefact this comparison is supposed to exclude.
   const sql = `
     SELECT toStartOfDay(timestamp) AS day, SUM(_sample_interval) AS count
     FROM clumeral
-    WHERE timestamp > NOW() - INTERVAL '${DAYS}' DAY
+    WHERE timestamp >= toStartOfDay(NOW()) - INTERVAL '${DAYS}' DAY
       AND blob4 = '${HOST.replace(/'/g, "''")}'
       AND blob1 = '${EVENT.replace(/'/g, "''")}'
     GROUP BY day ORDER BY day ASC`;
 
   const res = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`,
+    `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT}/analytics_engine/sql`,
     {
       method: 'POST',
-      headers: { Authorization: `Bearer ${env.CF_API_TOKEN}`, 'Content-Type': 'text/plain' },
+      headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'text/plain' },
       body: sql,
     },
   );
@@ -77,11 +88,32 @@ function fromD1() {
       AND ts >= (unixepoch(date('now', '-${DAYS} days')) * 1000)
     GROUP BY day ORDER BY day ASC`;
 
-  const out = execFileSync(
-    'npx',
-    ['wrangler', 'd1', 'execute', 'clumeral-analytics', '--remote', '--json', '--command', sql],
-    { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
-  );
+  let out;
+  try {
+    out = execFileSync(
+      'npx',
+      ['wrangler', 'd1', 'execute', 'clumeral-analytics', '--remote', '--json', '--command', sql],
+      { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch (err) {
+    // Two expected causes, both worth naming rather than dumping a stack: the
+    // database does not exist yet, or wrangler has no credentials in a
+    // non-interactive shell.
+    const detail = `${err.stdout ?? ''}${err.stderr ?? ''}`;
+    console.error('\nCould not read the remote D1.\n');
+    if (detail.includes('CLOUDFLARE_API_TOKEN')) {
+      console.error('wrangler needs credentials here. Either run `npx wrangler login` in an');
+      console.error('interactive shell, or export CLOUDFLARE_API_TOKEN before running this.\n');
+    } else if (/couldn't find|not found/i.test(detail)) {
+      console.error('The clumeral-analytics database does not exist yet, or wrangler.jsonc still');
+      console.error('carries the placeholder database_id. This script is the PR 3 gate — it can');
+      console.error('only run once the database is created and PR 1 has been collecting.\n');
+    } else {
+      console.error(detail.trim() || String(err));
+      console.error('');
+    }
+    process.exit(2);
+  }
   const parsed = JSON.parse(out.slice(out.indexOf('[')));
   return new Map((parsed[0]?.results ?? []).map((r) => [r.day, Number(r.count)]));
 }
@@ -99,6 +131,7 @@ const days = [...new Set([...ae.keys(), ...d1.keys()])].sort();
 
 let failures = 0;
 let withinBand = 0;
+let firstFailure = null;
 
 console.log(`\nAE vs D1 — ${EVENT} on ${HOST}, last ${DAYS} days\n`);
 console.log('day           AE      D1    delta  verdict');
@@ -116,7 +149,10 @@ for (const day of days) {
   }
 
   const ok = withinTolerance(a, d);
-  if (!ok) failures++;
+  if (!ok) {
+    failures++;
+    firstFailure ??= day;
+  }
   else if (delta !== 0) withinBand++;
   console.log(
     `${day}  ${String(a).padStart(5)} ${String(d).padStart(6)} ${String(delta).padStart(8)}  ${ok ? (delta === 0 ? 'exact' : 'within tolerance') : 'OUT OF TOLERANCE'}`,
@@ -126,6 +162,14 @@ for (const day of days) {
 console.log('------------------------------------------');
 if (failures > 0) {
   console.log(`\nFAIL: ${failures} day(s) outside tolerance. PR 3 is blocked.\n`);
+  // AE retains ~90 days and deletes continuously, so the oldest day in a long
+  // window can be half-deleted on the AE side while D1 still holds all of it.
+  // That looks identical to a dual-write defect and is not one.
+  if (failures === 1 && firstFailure === days[0]) {
+    console.log(`Note: the only failure is the oldest day (${days[0]}). If D1 is higher than AE`);
+    console.log(`there, that is AE retention deleting it, not a write defect. Re-run with a`);
+    console.log(`shorter --days to confirm.\n`);
+  }
   process.exit(1);
 }
 console.log(`\nPASS: every full day inside tolerance.`);
