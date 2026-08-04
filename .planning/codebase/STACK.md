@@ -49,12 +49,14 @@
 
 **Environment:**
 - Secrets managed via Cloudflare Workers secrets (environment variables injected at runtime)
-- Required secrets: `HMAC_SECRET`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`
+- Required secrets: `HMAC_SECRET`. (`CF_ACCOUNT_ID` / `CF_API_TOKEN` are no longer read by the
+  Worker — /stats reads D1. The Analytics Read token is now a local-only `.env` value used by
+  scripts/compare-ae-d1.mjs. See docs/ANALYTICS.md.)
 - Environment file: Not detected (secrets injected by platform)
 
 **Build:**
 - `tsconfig.json` - TypeScript configuration (ES2022 target, strict mode, DOM types)
-- `wrangler.jsonc` - Cloudflare Workers configuration including KV bindings, Analytics Engine dataset, cron triggers
+- `wrangler.jsonc` - Cloudflare Workers configuration including KV bindings, D1 bindings (feedback + analytics), Analytics Engine dataset (dual-written, being retired), cron triggers
 - `vite.config.ts` - Vite build configuration with custom cache-busting plugin for Service Worker
 
 ## Platform Requirements
@@ -67,7 +69,8 @@
 - Cloudflare Workers platform (edge computing)
 - Cloudflare Pages (static asset hosting and auto-deployment)
 - Cloudflare KV (global key-value store for puzzle caching)
-- Cloudflare Analytics Engine (analytics dataset)
+- Cloudflare Analytics Engine (analytics dataset — dual-written during the D1 migration, being retired; see docs/ANALYTICS.md)
+- Cloudflare D1 (`clumeral-analytics` — the analytics store /stats reads)
 
 **Deployment:**
 - Git repository at GitHub (jevawin/clumeral-game)

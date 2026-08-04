@@ -77,10 +77,15 @@ test.describe("/stats daily plays chart", () => {
   test("shows only this host's data", async ({ page }) => {
     await page.goto("/stats?period=all");
     await expect(page.locator(".domain-label")).toHaveText("localhost");
-    // Ten distinct localhost uids in the fixture. The other-hostname row would
-    // make it eleven.
+    // Deliberately NOT an exact unique-user count. The dual write means every
+    // other spec in the suite now writes real puzzle_start rows into this same
+    // local D1 — a fresh browser context per test means a fresh uid — and the
+    // suite is fullyParallel, so any exact figure here is a race against 40-odd
+    // other tests. The hostname leak is caught by the 101-mark assertion above
+    // instead: the fixture's other-host row sits 200 days back, so a broken
+    // filter would make the "All" range 201 marks, not 101.
     const unique = page.locator(".card").filter({ hasText: "Unique users" }).locator(".card__val");
-    await expect(unique).toHaveText("10");
+    await expect(unique).not.toHaveText("0");
   });
 
   test("states the real span in the period label", async ({ page }) => {

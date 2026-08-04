@@ -41,6 +41,9 @@ describe('recordEvent', () => {
   // The brief's H5 fix: assert the stored row column by column, for every event
   // the Worker accepts. A write path that stores the wrong column is invisible
   // otherwise — the POST still returns 202 and the dashboard just reads oddly.
+  //
+  // These are hand-made inputs, so they pin the mapping, not what production
+  // sends. The production-shape cases are below.
   it.each([...VALID_EVENTS])('stores %s with every column correct', async (event) => {
     const isSourced = event === 'undo_used' || event === 'reset_used';
     await recordEvent(
@@ -80,6 +83,52 @@ describe('recordEvent', () => {
     await recordEvent(db(), { event: 'undo_used', source: '', uid: 'u', hostname: 'clumeral.com' }, NOW);
     const row = await db().prepare('SELECT source FROM analytics_events').first();
     expect(row?.source).toBeNull();
+  });
+
+  // source is NOT undo/reset-only, whatever the column comment used to say.
+  // router.ts sends route_change with the path and app.ts sends htp_opened with
+  // 'manual', and route_change is the highest-volume event we record. The
+  // per-event test above drives recordEvent with hand-made inputs, so on its own
+  // it would happily "confirm" an invariant production does not hold.
+  it.each([
+    ['route_change', '/archive/2026-05-01?x=1'],
+    ['htp_opened', 'manual'],
+  ])('keeps the source production actually sends for %s', async (event, source) => {
+    await recordEvent(db(), { event, source, uid: 'u', hostname: 'clumeral.com' }, NOW);
+    const row = await db().prepare('SELECT source FROM analytics_events').first();
+    expect(row?.source).toBe(source);
+  });
+
+  // The endpoint is public and unauthenticated, and D1 rows are permanent with no
+  // prune step. Unbounded strings here are permanent storage handed to anyone.
+  it('truncates an over-long uid and source', async () => {
+    await recordEvent(
+      db(),
+      { event: 'route_change', uid: 'u'.repeat(5000), source: 's'.repeat(5000), hostname: 'clumeral.com' },
+      NOW,
+    );
+    const row = await db().prepare('SELECT length(uid) AS u, length(source) AS s FROM analytics_events').first();
+    expect(row).toEqual({ u: 64, s: 128 });
+  });
+
+  // The request body is cast, never validated, so value can be anything JSON
+  // allows. NaN binds as NULL, trips NOT NULL, and drops the row into a swallowed
+  // console.error — while writeDataPoint keeps it. That divergence would land
+  // straight in the comparison that gates switching AE off.
+  it.each([
+    [{}, 0],
+    ['nonsense', 0],
+    [null, 0],
+    [Infinity, 0],
+    [7, 7],
+  ])('stores a usable value for %s', async (value, expected) => {
+    await recordEvent(
+      db(),
+      { event: 'puzzle_complete', uid: 'u', hostname: 'clumeral.com', value: value as number },
+      NOW,
+    );
+    const row = await db().prepare('SELECT value FROM analytics_events').first();
+    expect(row?.value).toBe(expected);
   });
 
   it('defaults value and new_user', async () => {

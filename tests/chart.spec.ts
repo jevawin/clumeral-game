@@ -113,7 +113,11 @@ describe('xLabelIndexes', () => {
     }
   });
 
-  it('labels every day at 7 days', () => {
+  // Brief item 33 and plan P25 both say "every day at 7d". They are wrong, and
+  // could not be right: ceil(7 / 6) = 2. Seven date labels across 568 units is
+  // 81 apart, inside the 87 a label occupies on a phone. Every second day is the
+  // correct behaviour; the documents overstated it.
+  it('labels every second day at 7 days', () => {
     expect(xLabelIndexes(7)).toEqual([0, 2, 4, 6]);
   });
 

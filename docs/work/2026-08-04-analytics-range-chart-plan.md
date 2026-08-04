@@ -974,3 +974,72 @@ Playwright locally.
 `npm run analytics:migrate:remote -- migrations/0005_create_analytics_events.sql` (and 0006).
 The placeholder is deliberate — an invalid uuid fails the deploy loudly, where a missing
 binding would fail silently into a swallowed `console.error` and show zero on `/stats`.
+
+### `da-build` review — findings and fixes, 2026-08-05
+
+Fresh-context review of the PR 1 diff. Returned **1 High, 5 Medium, 8 Low** and judged it
+not ready to push. Every High and Medium is fixed; the Lows are fixed or recorded below.
+All findings were verified against the tree before acting — including by live probes
+against a running preview, which is how three of them were found.
+
+**High**
+
+- **B-1. The new Playwright gate would have gone red in CI, non-deterministically.**
+  `stats-chart.spec.ts` asserted `Unique users` was exactly 10. The dual write this PR adds
+  means every other e2e spec now writes real `puzzle_start` rows into the same local D1 —
+  a fresh browser context per test is a fresh `uid` — and the suite is `fullyParallel`. The
+  count was a race against 40-odd other tests. Fixed by dropping the exact figure and moving
+  the hostname-leak check somewhere a race cannot reach it: the fixture's other-host row now
+  sits **200 days back**, so a broken hostname filter changes the already-asserted "All"
+  mark count from 101 to 201. Dating that row today, as the first version did, made the leak
+  invisible to every count the suite checks.
+
+**Medium**
+
+- **B-2. `compare-ae-d1.mjs` could not run at all.** It demanded `CF_ACCOUNT_ID` and
+  `CF_API_TOKEN`; the `.env` that exists holds `CF_ANALYTICS_TOKEN` and no account id. The
+  script is the only artefact gating PR 3, and `docs/ANALYTICS.md` asserted it worked. Now
+  accepts either token name and defaults the account id. **Verified against the live AE API:
+  HTTP 200 with real per-day data.** The D1 half still needs `wrangler login` and a database
+  that does not exist yet, which it now says in one clean sentence instead of a stack trace.
+- **B-3. The comparison's two windows did not align.** AE used a rolling
+  `NOW() - INTERVAL n DAY` against D1's UTC midnight, so the oldest day compared a partial
+  AE window to a whole D1 one and would have failed on every run — the exact
+  midnight-boundary artefact P27 claims to remove outright. AE now uses
+  `toStartOfDay(NOW()) - INTERVAL n DAY`. A note also distinguishes AE retention clipping the
+  oldest day from a real dual-write defect, because they look identical.
+- **B-4. P31 is wrong about `source`, and so was the schema comment.** `source` is not
+  undo/reset-only: `router.ts:79` sends `route_change` with the **path**, and `app.ts:1489`
+  sends `htp_opened` with `'manual'` — and `route_change` was 53% of all events in the
+  brief's own measurement, so **most rows carry a source**. Nothing breaks today (the
+  `sourceSplit` query filters to undo/reset, and AE stored the same value, so there is no
+  cutover seam) but the comment would have misled PR 2, which builds `NULLIF` on it.
+  Corrected in migration 0005 and `analytics-db.ts`, with tests asserting the real
+  production shapes. The H5 test drives `recordEvent` with hand-made inputs, so on its own it
+  was happily confirming an invariant production does not hold — that is now said in the test.
+- **B-5. No length cap on `uid` or `source`.** `POST /api/event` is public and
+  unauthenticated, and D1 rows are permanent with no prune step. Confirmed live: a 5,000-char
+  uid stored in full. Item 19's "no auth needed" was decided when writes went to a free,
+  self-expiring system; that reasoning does not survive the move to D1. Capped at 64 and 128,
+  truncating rather than rejecting — an over-long uid is far more likely a bug than an attack,
+  and dropping the event would lose a real play.
+- **B-6. A malformed `value` silently dropped the row.** The request body is cast, never
+  validated, so `{"value":{}}` became `NaN`, bound as NULL, and tripped `NOT NULL` — a
+  swallowed `console.error` while `writeDataPoint` kept the event. Confirmed live. That is a
+  new divergence planted directly in the comparison that gates AE removal. Now
+  `Number.isFinite(v) ? Math.trunc(v) : 0`.
+
+**Low** — B-7 stale "1-unit stub" comments (fixed). B-8 `xLabelIndexes` test named "every
+day at 7 days" while asserting every second day — **the behaviour is right and brief item 33
+and P25 are both wrong**, since `ceil(7 / 6) = 2` never could be 1; test renamed and the
+error recorded. B-10 dead `extra` parameter (removed). B-11 a busiest day of 1 play rendered
+the y axis as "0 / 1 / 1" (mid gridline now dropped when it would duplicate). B-12 stale
+`.planning/codebase/STACK.md` and `INTEGRATIONS.md` (updated). B-13 `recordEvent` was not
+`async`, so a synchronous throw would escape the caller's `.catch()` and turn every event
+POST into a 400 (now `async`). B-14 a single-day range pinned its only x label to the right
+edge while the bar sat centred (only pinned when there is more than one label).
+
+**B-9, accepted rather than fixed:** brief item 35 says the empty range renders "axes plus
+the message"; it renders the message alone. It is reachable only at `?period=all` with zero
+rows — 7/30/90 render a full axis of zero stubs — and axes with no days have no scale to
+draw. Recorded rather than silently dropped.
