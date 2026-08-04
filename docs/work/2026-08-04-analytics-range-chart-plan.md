@@ -779,3 +779,59 @@ proportionally longer, which P19 makes safe.
 **Still open after this run:** P9 (whether `db.batch()` statements count individually against
 the 50-query cap) and CPU per batch — both need a deployed Worker, both are Task 15, and P32's
 adaptive sizing means neither blocks Build.
+
+---
+
+## 12. Prod / pre-prod separation — Jamie's challenge, 2026-08-04
+
+> "Prod should be separate from all preprod, is that factored in?"
+
+**P50. Partly, and the gap is real.** Reads are already separated; writes and the archive are
+not, and the plan as written would have left 36% of the permanent archive as pre-prod traffic
+that the dashboard can never display.
+
+**What is already separate — reads.** `whereClause` filters `blob4 = '<hostname>'`
+(`stats.ts:34`) against the *requesting* host, and §3.1 ports that to `WHERE hostname = ?`.
+So `clumeral.com/stats` shows only `clumeral.com`, and a preview's `/stats` shows only that
+preview. Item 64 already called `hostname` the column that "would have bitten us". That much
+was factored in.
+
+**What is not separate — the write path and the archive.** Every deployment shares one
+`ANALYTICS_DB` binding, so preview and staging rows land in the production analytics database.
+That is exactly today's behaviour with the shared AE dataset, so it is not a regression — but
+D1 keeps rows indefinitely where AE aged them out, so the consequence compounds instead of
+expiring. Measured (P46): of 7,348 rows, **4,717 are `clumeral.com` and 2,631 — 36% — are
+pre-prod**, mostly the retired `new-design` preview (2,108).
+
+**P51. The codebase already answers this, and analytics should match it.** `feedback.ts:108`
+sets `REAL_HOST = "clumeral.com"` and treats every other host as test traffic; the dashboard
+defaults to real rows and takes `?all=1` to include the rest (`index.ts:304`), and preview
+deploys bounce to the canonical dashboard rather than serving their own (`index.ts:294`).
+That is a settled prod/pre-prod split for D1 data in this repo, and analytics inventing a
+second convention would be worse than adopting it.
+
+**P52. Measured: production is exactly one hostname.** All 12 hostnames in AE are
+`clumeral.com` plus eleven `*.workers.dev` deploys — **no `www.`, no apex/subdomain split**,
+so prod stats cannot be silently divided across two names. Worth stating because a
+`www` variant appearing later would split the production figures with no error.
+
+**P53. Recommendation — import everything, default the dashboard to prod.** Three parts:
+
+1. **Backfill imports all hostnames** (P35 unchanged). AE deletes this data within days and
+   it can never be re-imported; a row imported and later ignored is reversible, a row not
+   imported is gone. The `hostname` column makes it separable forever.
+2. **`/stats` defaults to production only**, matching `feedback.ts` — not "whatever host you
+   happen to be viewing from". On `clumeral.com` this is identical to today. The change is
+   that the default becomes an explicit prod filter rather than an incidental one.
+3. **`?all=1` includes pre-prod**, exactly as the feedback dashboard does. Without it the
+   2,631 archived pre-prod rows are unreachable dead weight; with it they are a debugging
+   tool, and the preview `/stats` still shows a preview's own writes — which PR 1 needs, since
+   demonstrating the D1 write path on a preview URL is how it gets reviewed.
+
+The alternative — refusing to write from non-prod hosts at all — is rejected: it would make
+the analytics change untestable on a preview deploy, which is the only place Jamie can review
+it before merge.
+
+**Open for Jamie:** P53 part 2 is a behaviour change to `/stats` (a preview's dashboard would
+default to prod figures, needing `?all=1` to see its own). Say if you would rather keep the
+current per-host default, which is also defensible and is strictly less work.
