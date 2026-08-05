@@ -40,26 +40,95 @@
 		{
 			"binding": "FEEDBACK_DB",
 			"database_name": "clumeral-feedback",
-			"database_id": "4ecc6c31-c26c-4652-a1ae-7d1746bd816d"
+			"database_id": "4ecc6c31-c26c-4652-a1ae-7d1746bd816d",
+			"migrations_dir": "migrations/feedback"
 		},
 		{
-			// Analytics events, migrated off Analytics Engine. One database for all
-			// hostnames: every row carries `hostname`, and /stats is locked to the
-			// host it is called from, so prod and pre-prod stay separate without a
-			// second database to migrate by hand.
+			// Analytics events, migrated off Analytics Engine.
 			//
-			// TODO(jamie): replace with the real id from `wrangler d1 create
-			// clumeral-analytics`. Left as a placeholder deliberately — a wrong uuid
-			// fails the deploy loudly, where a missing binding would fail silently
-			// into a swallowed console.error and show zero on /stats.
+			// Prod and pre-prod have SEPARATE databases (see env.preprod below). The
+			// earlier design shared one database across hostnames to avoid maintaining a
+			// second migration target; wrangler's own migrations tooling removed that
+			// cost, so they are now genuinely split and preview traffic can no longer
+			// reach production analytics.
+			//
+			// The `hostname` column stays on analytics_events regardless: /stats filters
+			// on it and it costs nothing. Do not remove it.
 			"binding": "ANALYTICS_DB",
 			"database_name": "clumeral-analytics",
-			"database_id": "REPLACE_WITH_CLUMERAL_ANALYTICS_DATABASE_ID"
+			"database_id": "6e076e77-0937-4e3c-9756-3898a2b48ad6",
+			"migrations_dir": "migrations/analytics"
 		}
 	],
+	"vars": {
+		"ENVIRONMENT": "production"
+	},
 	"triggers": {
 		"crons": [
 			"0 0 * * *"
 		]
+	},
+	"env": {
+		// Pre-prod: every non-production branch build. ONE shared environment, not one
+		// per branch. Spec: docs/superpowers/specs/2026-08-05-clumeral-preprod-split-design.md
+		//
+		// WARNING: `name` is DELIBERATELY the production name. Pre-prod is not a second
+		// Worker — it is the same Worker, reached only by `wrangler versions upload`,
+		// which uploads a version without deploying it. That keeps preview URLs
+		// unchanged and keeps HMAC_SECRET (a per-Worker secret) available.
+		//
+		// WARNING, THE FLIP SIDE: `wrangler deploy --env preprod` would OVERWRITE
+		// PRODUCTION. Nothing in Cloudflare prevents it. Never deploy this environment.
+		//
+		// WARNING: every key below is one wrangler does NOT inherit from the top level
+		// (d1_databases, kv_namespaces, analytics_engine_datasets, vars). Omitting one
+		// gives an undefined binding and only a WARNING — the deploy succeeds and the
+		// Worker throws at runtime. PUZZLES and the AE dataset are repeated here on
+		// purpose: they are SHARED with production, and repeating them is how that is
+		// expressed.
+		"preprod": {
+			"name": "clumeral-game",
+			"vars": {
+				"ENVIRONMENT": "preprod"
+			},
+			"d1_databases": [
+				{
+					"binding": "FEEDBACK_DB",
+					"database_name": "clumeral-feedback-preprod",
+					"database_id": "b46da472-0b93-4d1d-bb2f-a5480830d3aa",
+					"migrations_dir": "migrations/feedback"
+				},
+				{
+					"binding": "ANALYTICS_DB",
+					"database_name": "clumeral-analytics-preprod",
+					"database_id": "789714c9-307b-45cf-baba-b219807d09d8",
+					"migrations_dir": "migrations/analytics"
+				}
+			],
+			// SHARED with production, restated because it is not inherited. Safe because
+			// PUZZLES entries are write-once and src/worker/daily-puzzle.ts (#257) gives
+			// write authority to the cron alone — and a version that is never deployed
+			// never runs scheduled(). Anything that later gives pre-prod a deployment
+			// with a cron must give it its own namespace in the same change.
+			"kv_namespaces": [
+				{
+					"binding": "PUZZLES",
+					"id": "d07cfc9a455943e3839967475925a468"
+				}
+			],
+			// SHARED, restated for the same reason. Not split because the dataset is
+			// being retired by migrations 0005/0006.
+			"analytics_engine_datasets": [
+				{
+					"binding": "ANALYTICS",
+					"dataset": "clumeral"
+				}
+			],
+			// Belt-and-braces only: triggers attach to a DEPLOYMENT, and pre-prod
+			// versions are never deployed.
+			"triggers": {
+				"crons": []
+			}
+		}
 	}
 }
