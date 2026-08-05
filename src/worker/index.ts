@@ -20,6 +20,10 @@ interface Env {
   PUZZLES: KVNamespace;
   FEEDBACK_DB: D1Database;
   HMAC_SECRET: string;
+  // 'production' or 'preprod', from `vars` in wrangler.jsonc. Optional on the type
+  // because an older deployed version predates it — and because the one consumer
+  // that matters (the AE backfill) must treat an unset value as "no".
+  ENVIRONMENT?: string;
 }
 
 // Exported so a unit test can assert an event name is actually accepted. The
