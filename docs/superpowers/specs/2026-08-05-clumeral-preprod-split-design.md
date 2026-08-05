@@ -304,3 +304,65 @@ The common thread: **behaviour was inferred from config files rather than
 confirmed against the tool.** Every claim in v2 that concerns wrangler's
 behaviour cites either its source or a dry-run, or is explicitly marked
 unverified.
+
+---
+
+## 10. Verification results — 2026-08-05, after the Stage A dashboard change
+
+Run by Jamie against the live environment on the evening of 2026-08-05. Recorded here
+because §7 insists every check is a positive assertion, and a passing check nobody wrote
+down is indistinguishable from one nobody ran.
+
+Stage A (non-production branch deploy command) went in at **21:22Z**. Note the field is
+called **"Non-production branch deploy command"** in the dashboard, not "Version command" as
+§4.3 calls it — and the **Build command is shared by both branch types**, so
+`CLOUDFLARE_ENV=preprod` cannot live there. It goes in the non-production command, which
+re-runs the build over the top of the shared one. Confirmed locally that the second build
+cleanly overwrites the generated config in either direction and is not sticky.
+
+**§7.1 — Feedback isolation. PASSED, both halves.** A feedback submission from the preview
+URL at ~21:34Z:
+
+- `clumeral-feedback-preprod` — the row is present.
+- `clumeral-feedback` — `SELECT COUNT(*), MAX(created_at) WHERE created_at >= '2026-08-05
+  21:00:00'` returned **0 and NULL**. Nothing reached production.
+
+The negative half is the one that matters, and it is the half a "looks fine" check would
+have skipped.
+
+**§7.2 — Preview URL and Worker name. PASSED.** The alias is unchanged
+(`dev-analytics-range-chart-clumeral-game.jevawin.workers.dev`) and the resolved Worker name
+is `clumeral-game`, unsuffixed. §4.1 marked this "Not verified — confirm by observation on
+the first pre-prod build"; it was in fact confirmed *before* that build, by reading the
+generated `dist/clumeral_game/wrangler.json` from a local `CLOUDFLARE_ENV=preprod` build.
+That artefact also shows **no `env` key at all**, which is the concrete evidence for §4.3's
+claim that `--env` there is a silent no-op.
+
+**§7.3 — `/stats` reads pre-prod. PASSED.** After clicking around the preview,
+`clumeral-analytics-preprod` held 17 events (route_change 6, undo_used 3, puzzle_start 2,
+theme_toggle 2, feedback_submitted 1, htp_opened 1, incorrect_guess 1, reset_used 1), 1
+unique user, and an undo/reset source split of keyboard ×3 / keyboard ×1. Production
+`/stats` was unaffected.
+
+Worth recording: `/stats` returning **200 with empty data** rather than **500** is itself
+proof that migrations 0005/0006 reached `clumeral-analytics-preprod` — a missing table
+throws and the route returns 500. The build log Jamie pasted showed only the FEEDBACK_DB
+migration, so this was the evidence for the analytics half.
+
+**The feedback baseline worked exactly as designed.** The first pre-prod migration run
+applied **1 migration, `0001` only**. `0003` and `0004` were recorded as applied without
+running, which is what stopped the `duplicate column name` failure §4.7 predicted. The
+pre-prod ledger now reads `0001`, `0003`, `0004`.
+
+**§7.5 / §7.6 — the lint. PASSED**, via `tests/lint-migrations.spec.ts`, which covers the
+opt-in suffix, the `--`-inside-a-string bypass and the quoted-identifier false positive.
+
+**§7.4 — nothing to re-apply. Strongly implied, not directly evidenced.** A branch build was
+re-run at 21:59Z with no new migrations and succeeded. Since `0001` was by then in the
+ledger, wrangler cannot have re-applied it — but the log excerpt available stopped before
+the migration step, so the literal "no migrations to apply" line was not captured.
+
+**§7.7 and §7.8 remain outstanding**, and in this order: production migrations apply on the
+first `main` merge after Stage B, and only after that does the production cleanup
+(`DELETE FROM feedback WHERE host <> 'clumeral.com';`) make sense. Running it earlier is
+pointless — the table would simply refill.
