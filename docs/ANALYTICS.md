@@ -21,8 +21,8 @@ indefinitely.
 |---|---|
 | Database | `clumeral-analytics` (D1) |
 | Binding | `ANALYTICS_DB` |
-| Schema | `migrations/0005_create_analytics_events.sql` |
-| Backfill cursor | `migrations/0006_create_backfill_state.sql` |
+| Schema | `migrations/analytics/0005_create_analytics_events.sql` |
+| Backfill cursor | `migrations/analytics/0006_create_backfill_state.sql` |
 | Write path | `POST /api/event` → `recordEvent()` in `src/worker/analytics-db.ts` |
 | Read path | `GET /stats`, `GET /api/stats` → `getStats()` |
 

@@ -16,13 +16,18 @@ import { defineWorkersConfig, readD1Migrations } from '@cloudflare/vitest-pool-w
 
 export default defineWorkersConfig(async () => {
   // Read at config time, not test time: the pool serialises them into the worker.
-  // Filtered to the analytics pair. The feedback migrations must not run here —
-  // 0003 and 0004 are ALTER TABLE ADD COLUMN against a table that 0001 already
-  // creates with those columns, so on a fresh database they fail with "duplicate
-  // column name". They exist for the remote D1 that predates them. `npm run e2e:db`
-  // applies 0001 alone for exactly the same reason.
-  const all = await readD1Migrations(path.join(__dirname, 'migrations'));
-  const migrations = all.filter((m) => /^000[56]_/.test(m.name));
+  //
+  // Points at migrations/analytics, not migrations/. `readD1Migrations` does NOT
+  // recurse — it is a flat readdir filtered to .sql — so aiming it at the parent
+  // now returns [], no migrations reach the test database, and every spec in
+  // tests/worker/ fails against an empty D1.
+  //
+  // The directory is also what keeps the feedback migrations out: 0003 and 0004
+  // are ALTER TABLE ADD COLUMN against columns 0001 already creates, so on a
+  // fresh database they fail with "duplicate column name". They exist only for
+  // the remote D1 that predates them. That is now expressed by the directory
+  // split rather than by a filename filter here.
+  const migrations = await readD1Migrations(path.join(__dirname, 'migrations/analytics'));
 
   return {
     test: {

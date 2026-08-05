@@ -46,7 +46,7 @@ wrangler d1 execute clumeral-feedback --remote --command \
 
 ## Schema
 
-Table `feedback` ([migrations/0001_create_feedback.sql](../migrations/0001_create_feedback.sql)):
+Table `feedback` ([migrations/feedback/0001_create_feedback.sql](../migrations/feedback/0001_create_feedback.sql)):
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -161,7 +161,8 @@ wrangler d1 execute clumeral-feedback --remote --command \
 
 ## Migrations
 
-`migrations/` — applied in order:
+`migrations/feedback/` — applied in order. The directory is what maps these to the
+`FEEDBACK_DB` binding, via `migrations_dir` in `wrangler.jsonc`:
 
 - `0001_create_feedback.sql` — table + indexes. **Fresh DBs only** — this is the full current
   schema, and it's what `e2e:db` seeds from. New columns get added here *and* in a numbered
@@ -173,7 +174,7 @@ wrangler d1 execute clumeral-feedback --remote --command \
 Commands ([package.json](../package.json)):
 
 - `npm run e2e:db` — reset the **local** DB (drop + recreate from 0001), used by e2e.
-- `npm run db:migrate:remote -- migrations/000N_name.sql` — apply **one** migration to remote production D1.
+- `npm run db:migrate:remote -- migrations/feedback/000N_name.sql` — apply **one** migration to remote production D1.
 
 The remote script takes the file as an argument on purpose. It can't just run every migration
 in order: `0002` is a **one-time legacy import**, and re-running it would duplicate every
@@ -189,7 +190,7 @@ working (the INSERT names no new columns), but triage is dead until you catch up
 So the order is: run the migration against remote, **then** merge.
 
 ```bash
-npm run db:migrate:remote -- migrations/0004_add_triage_columns.sql
+npm run db:migrate:remote -- migrations/feedback/0004_add_triage_columns.sql
 ```
 
 ## The debug payload
