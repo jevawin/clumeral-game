@@ -47,5 +47,10 @@ NEW_IMAGES/
 .env.*
 !.env.example
 
-# One-off data import — real user feedback, never commit to the repo
+# One-off data import — real user feedback, never commit to the repo.
+# Both paths: the file lived at migrations/0002_* before the per-database split,
+# and wrangler now auto-applies everything under migrations/feedback/, so an
+# unignored copy there would be committed AND re-run against production — where
+# the ledger records only 0001, 0003 and 0004, so every imported row would double.
 migrations/0002_import_legacy_feedback.sql
+migrations/**/0002_import_legacy_feedback.sql

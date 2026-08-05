@@ -51,6 +51,13 @@ jobs:
       # contrast check all live in vitest, so without this they gate nothing.
       # Runs before Playwright because it is seconds rather than minutes — a
       # broken unit test should not wait on a browser install to be reported.
+      # Lints the actual migrations/** files. The unit tests exercise the lint
+      # FUNCTION; without this, a committed destructive migration passes the PR
+      # gate green and only turns red inside Cloudflare's builder — after merge,
+      # which is exactly when it is applied to production.
+      - name: Lint migrations
+        run: npm run lint:migrations
+
       - name: Run unit tests
         run: npm test
 

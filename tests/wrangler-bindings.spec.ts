@@ -35,19 +35,39 @@ describe('env.preprod', () => {
   const preprod = config.env?.preprod;
 
   // Keys wrangler does NOT inherit into an env block. Omitting one yields an
-  // undefined binding and only a WARNING, so the deploy succeeds and the Worker
-  // throws at runtime. Verified against wrangler's own `notInheritable` list.
-  const NOT_INHERITED = ['d1_databases', 'kv_namespaces', 'analytics_engine_datasets', 'vars'];
+  // undefined binding and only a WARNING, so the upload succeeds and the Worker
+  // throws at runtime.
+  //
+  // Read out of wrangler's own source rather than hardcoded. A hardcoded list of
+  // the four keys this config uses today would stay green while a newly added
+  // r2_bucket or queue shipped as undefined — a snapshot of today, not the
+  // regression guard the spec asked for. Note `assets` is NOT on this list: it IS
+  // inherited, which the generated preprod config confirms.
+  const cli = readFileSync(join(process.cwd(), 'node_modules/wrangler/wrangler-dist/cli.js'), 'utf8');
+  const NOT_INHERITED = [
+    ...new Set([...cli.matchAll(/^\s*([a-z0-9_]+): notInheritable\($/gm)].map((m) => m[1])),
+  ];
 
   it('exists', () => {
     expect(preprod).toBeDefined();
   });
 
+  // If wrangler's bundle format changes, the extraction above silently returns []
+  // and the next test would pass having checked nothing. This is what stops that.
+  it('actually found wrangler’s non-inheritable list', () => {
+    expect(NOT_INHERITED.length).toBeGreaterThan(20);
+    expect(NOT_INHERITED).toEqual(
+      expect.arrayContaining(['d1_databases', 'kv_namespaces', 'analytics_engine_datasets', 'vars']),
+    );
+  });
+
+  // Iterates the CONFIG's keys against that list, so adding any non-inheritable
+  // binding at the top level and forgetting env.preprod fails here.
   it('restates every non-inheritable key the top level defines', () => {
-    for (const key of NOT_INHERITED) {
-      if (config[key] === undefined) continue;
-      expect(preprod[key], `${key} is not inherited and must be restated`).toBeDefined();
-    }
+    const missed = Object.keys(config).filter(
+      (key) => NOT_INHERITED.includes(key) && config[key] !== undefined && preprod[key] === undefined,
+    );
+    expect(missed, 'not inherited by an env block — must be restated in env.preprod').toEqual([]);
   });
 
   it('keeps the production Worker name, so preview URLs do not change', () => {

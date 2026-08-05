@@ -9,7 +9,13 @@
 // migrations into failed deploys.
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
+// SQLite makes the COLUMN keyword OPTIONAL in both `ALTER TABLE x DROP [COLUMN] y`
+// and `ALTER TABLE x RENAME [COLUMN] y TO z`. Matching only the spelled-out forms
+// left `ALTER TABLE feedback DROP host;` passing the lint — verified against a real
+// D1, which dropped the column happily. So the ALTER TABLE forms are matched on the
+// verb alone, independently of what follows it.
 const DESTRUCTIVE = new RegExp(
   [
     'drop\\s+(?:table|index|view|trigger|column|database)',
@@ -20,6 +26,11 @@ const DESTRUCTIVE = new RegExp(
     'insert\\s+or\\s+replace',
     'pragma\\s+writable_schema',
     'attach\\s+database',
+    // Any DROP or RENAME applied to a table, whatever the object spelling.
+    // `\\S+` is the table name, which strip() may have reduced to the _q_
+    // placeholder if it was quoted.
+    'alter\\s+table\\s+\\S+\\s+drop',
+    'alter\\s+table\\s+\\S+\\s+rename',
   ].map((p) => `\\b(?:${p})\\b`).join('|'),
   'i',
 );
@@ -52,7 +63,15 @@ export function strip(sql) {
       }
       out += ' _q_ ';                  // a placeholder, NOT '' — keeps tokens apart
     } else if (c === '[') {
-      while (i < sql.length && sql[i] !== ']') i++;
+      const close = sql.indexOf(']', i);
+      if (close === -1) {
+        // Unterminated. Blanking to EOF here would swallow the rest of the file
+        // and report it clean, so emit the remainder unchanged and let the regex
+        // judge it.
+        out += sql.slice(i);
+        break;
+      }
+      i = close;
       out += ' _q_ ';
     } else {
       out += c;
@@ -80,7 +99,11 @@ export async function lint(dirs) {
   return offenders;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL, not a template string: import.meta.url is percent-encoded, so a
+// checkout path containing a space (or any character needing escaping) makes the
+// naive comparison false. The script would then exit 0 having linted nothing —
+// failing open, silently, in the one place that matters.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dirs = process.argv.slice(2);
   if (dirs.length === 0) {
     console.error('usage: node scripts/lint-migrations.mjs <dir> [dir...]');
