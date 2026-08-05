@@ -1228,3 +1228,65 @@ Neither is code and neither can be done from here, so they are not in this PR:
   PR 1 (which removed the code that used them, not the secrets), but nobody has verified they
   are still set. If they are gone the cron fires every minute and imports nothing, logging one
   line per run.
+
+### `da-build` review — findings and fixes, 2026-08-06
+
+Fresh-context review of the PR 2 diff. Returned **2 High, 3 Medium, 5 Low**, verdict NOT
+READY. Both Highs were silent, permanent data loss on a source that is being deleted, and
+both were reproduced with probes rather than argued. All Highs and Mediums are fixed; the
+Lows are fixed or recorded.
+
+**High**
+
+- **C-1. One empty response from AE would have ended the import forever, part-way.**
+  `done = 1` is terminal, and `counts.length === 0` was taken as proof of completion — but an
+  empty result is not a failure, so nothing would have retried, and the only trace was a
+  `console.log`. `makeAEQuery`'s `body.data ?? []` widens it: any 200 with an unexpected shape
+  becomes a clean empty array. **Verified by the reviewer: 10 of 30 rows imported, `done = 1`,
+  `consecutive_failures = 0`.** Now three things must agree before it finishes — no days from
+  the grouped query, a row reading zero from a differently shaped `COUNT()` over the same
+  window, and D1's own row count matching `expected_rows`, the total AE reported at discovery.
+  That total needs somewhere to live, hence **migration 0007**. A shortfall past 1%/3 rows
+  refuses to finish, logs and counts as a failure, so five of them halt loudly. The reviewer
+  was also right that the old comment had it backwards: retention deletes from the *old* end,
+  which the cursor has already passed, so "AE deleted it underneath us" was never the
+  explanation for an empty window.
+- **C-2. A short read on a re-run window destroyed already-imported rows.** `importWindow`
+  deleted unconditionally and inserted whatever came back, without checking it against the
+  count the sizing query had just given for the same window. **Verified: 5 rows → 0 rows,
+  cursor advanced, no failure recorded.** Not hypothetical — the import *starts* at AE's
+  retention edge, so the first days it touches are precisely the ones AE is about to delete.
+  Now a window whose row query returns fewer rows than its own count query promised throws
+  before the `DELETE`, and the minute-later retry sees a consistent pair and proceeds.
+
+**Medium**
+
+- **C-3. The discovery invocation issued 51 D1 queries against a free-tier cap of 50.**
+  `MAX_ROWS_PER_RUN = 450` is 45 INSERTs, 46 statements with the DELETE — already over
+  `STATEMENT_BUDGET = 45`, which the single-oversized-day path bypasses because it always
+  takes at least one day, and neither constant accounted for discovery's two extra reads.
+  P48's 523-row first day is exactly that shape. Now 400 rows / 42 statements, worst case 47.
+- **C-4. The statement-cap test was tautological** — it recomputed the implementation's own
+  cost formula from the implementation's own constants and compared it to the implementation's
+  own budget. It stayed green while the real path issued 51. Replaced by a counting
+  `D1Database` wrapper that counts what actually reaches D1 across the discovery path, the
+  oversized-day path and a maxed multi-day batch, asserted against 50 and 100 bound
+  parameters. Mutation-checked: restoring 450 fails it.
+- **C-5. The test file contained a literal NUL byte**, so git treated it as binary and the
+  diff showed nothing — for the one change in this repo that cannot be undone. Fixed, and the
+  fake AE's row ordering now sorts `ts` numerically rather than as text (it only agreed while
+  every timestamp had the same digit count).
+
+**Low** — C-6 backwards clock reached the same terminal `done` (now goes through the same
+verification). C-7 `rows_written` double-counts re-run windows, so the PR 3 checklist now
+checks `COUNT(*)` against `expected_rows` instead. C-8 no behavioural test for the cron
+dispatch (added: the per-minute expression must reach the backfill without touching KV, and
+`0 0 * * *` and an unknown expression must reach the daily job without touching D1). C-9
+"runBackfill never throws" was untrue for the pre-lock state read (now inside its own try).
+C-10 the same-second overflow path still reports success after logging its loss — accepted,
+unreachable at 677 rows across 86,400 seconds.
+
+**Re-verified live after the fixes.** Same harness, same 2026-08-05T00:00Z cutoff: **6,838
+rows imported against 6,838 expected — exact — in 24 invocations, 0 failures, 92 of 92 days
+matching AE on both counts and sampled sums.** Max rows in one invocation 399, inside the new
+400 cap.

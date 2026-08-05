@@ -154,6 +154,16 @@ invocations and is released on every exit; five consecutive failures halt the im
 `console.error` rather than retrying once a minute forever. Clearing
 `backfill_state.consecutive_failures` is what restarts it, deliberately by hand.
 
+**It will not call itself finished on one query's say-so.** `done = 1` is terminal — every
+later invocation returns before touching AE — so a single empty response would otherwise end
+the import part-way, permanently, and an empty response is not an error anywhere. Three
+things have to agree before it finishes: the day-count query returns no days, a differently
+shaped `COUNT()` over the same window returns a row reading zero, and the rows in D1 match
+`expected_rows`, the total AE reported at discovery (migration 0007). A shortfall past 1% (or
+3 rows) refuses to finish, logs, and counts as a failure. Symmetrically, a row query that
+returns fewer rows than the sizing query just promised **aborts before its `DELETE`** — on a
+re-run, delete-then-insert with a short read would destroy the difference.
+
 **Worker secrets.** The backfill queries the AE SQL API over HTTPS and needs `CF_ACCOUNT_ID`
 and `CF_API_TOKEN` set on the Worker — the same pair `/stats` used before PR 1 moved reads to
 D1. If either is missing it logs and does nothing; it never sends an undefined token.
@@ -179,8 +189,9 @@ and would have failed at run time in production:
 The importer was run end-to-end against live Analytics Engine into a local D1 on 2026-08-06,
 with a fixed cutoff of 2026-08-05T00:00Z:
 
-- **6,838 rows over 92 days, in 23 invocations.** Per-invocation row counts 31–449, inside
-  the 450 cap.
+- **6,838 rows over 92 days, in 24 invocations**, which is what AE itself reported held below
+  the cutoff — imported and expected agree exactly, with no failures. Per-invocation row
+  counts 80–399, inside the 400 cap.
 - **Every one of the 92 days matched AE exactly** — both `COUNT()` and
   `SUM(_sample_interval)`. Zero mismatches, so the ±1% tolerance was not needed.
 - The sub-day path was exercised for real: 2026-08-04 imported as 448 + 31 rows.
@@ -221,7 +232,10 @@ silently passed.
 ### PR 3 removal checklist
 
 - [ ] Three consecutive full days, including a weekend day, inside the tolerance
-- [ ] The backfill reported `done = 1`, and `rows_written` matches AE's own count
+- [ ] The backfill reported `done = 1`. Check the total with
+      `SELECT COUNT(*) FROM analytics_events WHERE backfilled = 1` against
+      `backfill_state.expected_rows` — **not** `rows_written`, which counts rows inserted per
+      invocation and so double-counts any window that was legitimately re-run.
 - [ ] Storage measured and recorded here. **Not** via `pragma_page_count()` — D1 refuses it
       over the API with `not authorized: SQLITE_AUTH`, confirmed 2026-08-06. Read it from
       `npx wrangler d1 info clumeral-analytics` or the Cloudflare dashboard instead.

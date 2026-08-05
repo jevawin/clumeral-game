@@ -1,0 +1,13 @@
+-- How many rows Analytics Engine said it held below the cutoff, recorded once at
+-- discovery time (plan §16, da-build finding 1).
+--
+-- Without it, "the day-count query came back empty" is indistinguishable from "the
+-- import is finished" — and `done = 1` is terminal, so a single transient empty
+-- response would end the import permanently, part-way, with nothing louder than a
+-- console.log. The import refuses to finish until what landed in analytics_events
+-- matches this figure.
+--
+-- Nullable on purpose: it is unknown until the first invocation discovers the
+-- bounds, and a state row that predates this column must not fail the check it
+-- has no value for.
+ALTER TABLE backfill_state ADD COLUMN expected_rows INTEGER;

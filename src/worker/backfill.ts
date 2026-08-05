@@ -73,22 +73,35 @@ export interface BackfillResult {
 const DAY_MS = 86_400_000;
 
 /**
- * Rows per invocation (plan P49). 45 INSERTs at 10 rows each, leaving 5 of D1's 50
- * queries for the state read, the CAS, the DELETEs and the final cursor write.
- * Task 15 raises this from measured CPU; a CPU kill is harmless because of (2).
+ * Rows per invocation. 40 INSERTs at 10 rows each, plus that window's DELETE, is
+ * 41 statements — inside STATEMENT_BUDGET even on the single-oversized-day path,
+ * which bypasses the budget check because it always takes at least one day.
+ *
+ * P49 said 450, which is 46 statements with the DELETE: over its own budget, and
+ * 51 D1 queries on the discovery invocation, against a free-tier cap of 50. Task
+ * 15 may raise this from measured CPU — but never above 43 statements' worth.
  */
-export const MAX_ROWS_PER_RUN = 450;
+export const MAX_ROWS_PER_RUN = 400;
 
 /** 100 bound parameters per query ÷ 8 bound columns = 12; 10 leaves headroom (P8). */
 export const INSERT_CHUNK = 10;
 
 /**
- * DELETEs + INSERTs allowed in one invocation. 50 (P7) less the state read, the
- * CAS, the cursor write, and two spare. Deliberately stricter than P49, which
- * budgeted for a single DELETE and then allowed multi-day batches — each extra day
- * is another DELETE.
+ * DELETEs + INSERTs allowed in one invocation, against D1's cap of 50 queries
+ * (P7). Five are reserved for the bookkeeping: the state read, the CAS, the cursor
+ * write, and the two extra the discovery invocation adds. Deliberately stricter
+ * than P49, which budgeted for a single DELETE and then allowed multi-day batches
+ * — each extra day is another DELETE.
  */
-export const STATEMENT_BUDGET = 45;
+export const STATEMENT_BUDGET = 42;
+
+/**
+ * How far below Analytics Engine's own reported total the import may land and
+ * still be called finished: 1%, floor 3 — the same band as the PR 3 comparison
+ * gate. It exists for rows AE's retention deletes mid-run, which are genuinely
+ * gone, not for a defect in the import.
+ */
+const SHORTFALL_TOLERANCE = (expected: number) => Math.max(3, Math.round(expected * 0.01));
 
 /** Backstop for a killed run, not the normal path — every exit releases the lock. */
 export const LOCK_TTL_MS = 180_000;
@@ -153,6 +166,29 @@ export function makeAEQuery(accountId: string, token: string, fetchImpl: typeof 
     const body = (await res.json()) as { data?: Record<string, unknown>[] };
     return body.data ?? [];
   };
+}
+
+/** How many rows AE holds below the cutoff — the total the import must land on. */
+async function countBelowCutoff(ae: AEQuery, cutoffMs: number): Promise<number> {
+  const [row] = await ae(`SELECT COUNT() AS n FROM ${AE_DATASET} WHERE timestamp < toDateTime(${sec(cutoffMs)})`);
+  return num(row?.n);
+}
+
+/**
+ * Rows left in a window, or null when AE answered with no row at all.
+ *
+ * That distinction is the point. A genuinely empty window returns one row reading
+ * zero — verified live — where the grouped day-count query returns an empty list.
+ * So "no days came back" is only evidence of completion if this agrees; a response
+ * carrying no row is a malformed answer, not an empty dataset, and must never end
+ * an import that cannot be restarted.
+ */
+async function countInWindow(ae: AEQuery, fromMs: number, toMs: number): Promise<number | null> {
+  const [row] = await ae(
+    `SELECT COUNT() AS n FROM ${AE_DATASET}
+     WHERE timestamp >= toDateTime(${sec(fromMs)}) AND timestamp < toDateTime(${sec(toMs)})`,
+  );
+  return row === undefined ? null : num(row.n);
 }
 
 /** Epoch ms of the earliest surviving AE row, or null if the dataset is empty. */
@@ -305,8 +341,24 @@ async function importWindow(
   ae: AEQuery,
   fromMs: number,
   toMs: number,
+  expected: number,
 ): Promise<WindowResult> {
   const rows = await fetchRows(ae, fromMs, toMs, MAX_ROWS_PER_RUN);
+
+  // The DELETE below is unconditional, so a short read is destructive: on a
+  // re-run of a window that already imported cleanly, deleting and then
+  // re-inserting fewer rows than were there DESTROYS the difference, silently and
+  // permanently. AE has just told us, in the sizing query, how many rows this
+  // window holds — if the row query disagrees, something changed underneath us
+  // (retention deleting the oldest days, which is exactly where the import starts)
+  // or the API misbehaved. Either way, do not delete.
+  const wanted = Math.min(expected, MAX_ROWS_PER_RUN);
+  if (rows.length < wanted) {
+    throw new Error(
+      `AE returned ${rows.length} rows for ${new Date(fromMs).toISOString()}–${new Date(toMs).toISOString()} ` +
+        `but its own count query said ${expected}; refusing to delete-then-insert a short window`,
+    );
+  }
 
   let end = toMs;
   let batch = rows;
@@ -363,6 +415,8 @@ interface StateRow {
   lock_until: number;
   rows_written: number;
   consecutive_failures: number;
+  /** AE's own row count below the cutoff, frozen at discovery. Null pre-migration 0007. */
+  expected_rows: number | null;
 }
 
 /**
@@ -388,7 +442,16 @@ export async function runBackfill(
   }
 
   const db = env.ANALYTICS_DB;
-  const state = await db.prepare('SELECT * FROM backfill_state WHERE id = 1').first<StateRow>();
+  // Inside its own try: no lock is held yet, so there is nothing to release, but a
+  // D1 error here would otherwise escape and reject the cron invocation — which is
+  // the one thing the caller's comment promises it will not do.
+  let state: StateRow | null;
+  try {
+    state = await db.prepare('SELECT * FROM backfill_state WHERE id = 1').first<StateRow>();
+  } catch (err) {
+    console.error(`[backfill] could not read backfill_state: ${err instanceof Error ? err.message : String(err)}`);
+    return { outcome: 'failed', detail: 'state read failed' };
+  }
   if (!state) {
     console.error('[backfill] no backfill_state row — migration 0006 seeds it; the import cannot run without it');
     return { outcome: 'no-state-row' };
@@ -433,7 +496,7 @@ function makeAEQueryFromEnv(env: BackfillEnv): AEQuery | null {
 
 /** Everything inside the lock. Throws on any failure; the caller counts it. */
 async function importOnce(db: D1Database, ae: AEQuery, state: StateRow, now: number): Promise<BackfillResult> {
-  let { cutoff_ms: cutoffMs, next_day: nextDay } = state;
+  let { cutoff_ms: cutoffMs, next_day: nextDay, expected_rows: expectedRows } = state;
   const subOffset = state.sub_offset;
 
   if (cutoffMs === null || !nextDay) {
@@ -463,14 +526,22 @@ async function importOnce(db: D1Database, ae: AEQuery, state: StateRow, now: num
 
     cutoffMs = live.lo;
     nextDay = dayKey(aeStart);
+    // What the finished import must add up to. Recorded now, from the same source
+    // the rows come from, because "AE returned nothing" is otherwise
+    // indistinguishable from "there is nothing left".
+    expectedRows = await countBelowCutoff(ae, cutoffMs);
     // Committed on its own, before any insert: if this invocation dies during the
     // import, the next one must reuse these bounds rather than rediscover them
     // against a database that now holds imported rows.
     await db
-      .prepare('UPDATE backfill_state SET cutoff_ms = ?, start_day = ?, next_day = ?, sub_offset = 0 WHERE id = 1')
-      .bind(cutoffMs, nextDay, nextDay)
+      .prepare(
+        'UPDATE backfill_state SET cutoff_ms = ?, start_day = ?, next_day = ?, sub_offset = 0, expected_rows = ? WHERE id = 1',
+      )
+      .bind(cutoffMs, nextDay, nextDay, expectedRows)
       .run();
-    console.log(`[backfill] bounds frozen: ${nextDay} → cutoff ${new Date(cutoffMs).toISOString()}`);
+    console.log(
+      `[backfill] bounds frozen: ${nextDay} → cutoff ${new Date(cutoffMs).toISOString()}, ${expectedRows} rows to import`,
+    );
   }
 
   // Every AE bound is exclusive of the cutoff second. Rounding the other way would
@@ -479,14 +550,27 @@ async function importOnce(db: D1Database, ae: AEQuery, state: StateRow, now: num
   const ceiling = Math.min(now, cutoffMs);
   const from = dayStartMs(nextDay) + subOffset;
 
-  if (from >= ceiling) return finish(db, nextDay, subOffset, 0, true);
+  // The cursor has passed the cutoff: nothing is left to read. Still verified,
+  // because a clock running backwards would put `now` below the frozen cutoff and
+  // reach this line part-way through the import.
+  if (from >= ceiling) return finishVerified(db, nextDay, subOffset, 0, expectedRows);
 
   const counts = await dayCounts(ae, from, ceiling);
   if (counts.length === 0) {
-    // Nothing left anywhere below the cutoff — including the case where AE has
-    // deleted the rest of the window out from under us.
-    console.log(`[backfill] complete: no AE rows remain before the cutoff (cursor ${nextDay})`);
-    return finish(db, nextDay, 0, 0, true);
+    // Either the import is genuinely finished, or AE returned nothing while
+    // holding something. Those are indistinguishable here, and getting it wrong
+    // ends the import permanently — `done` is terminal — so it is confirmed with a
+    // second, differently-shaped query before being believed. The cursor stays
+    // where it is either way: a blip simply resumes next minute.
+    const remaining = await countInWindow(ae, from, ceiling);
+    if (remaining === null) {
+      throw new Error('the day-count query returned no days and the count query returned no row — not treating that as finished');
+    }
+    if (remaining > 0) {
+      throw new Error(`the day-count query returned no days, but AE says ${remaining} rows remain below the cutoff`);
+    }
+    console.log(`[backfill] no AE rows left before the cutoff (cursor ${nextDay}) — verifying the total`);
+    return finishVerified(db, nextDay, subOffset, 0, expectedRows);
   }
 
   // Mid-day cursors pin the batch to that day; whole days are batched by budget.
@@ -506,7 +590,10 @@ async function importOnce(db: D1Database, ae: AEQuery, state: StateRow, now: num
     // dayStart is the later bound and the offset is irrelevant.
     const windowFrom = Math.max(dayStart, from);
     const windowTo = Math.min(dayStart + DAY_MS, ceiling);
-    const { inserted: n, nextFromMs } = await importWindow(db, ae, windowFrom, windowTo);
+    // d.rows counts exactly this window: the sizing query used the same `from`
+    // (offset included) and the same ceiling, so for a resumed day it is the rows
+    // remaining, not the whole day.
+    const { inserted: n, nextFromMs } = await importWindow(db, ae, windowFrom, windowTo, d.rows);
     inserted += n;
     imported.push(d.day);
     if (nextFromMs === null) {
@@ -523,9 +610,64 @@ async function importOnce(db: D1Database, ae: AEQuery, state: StateRow, now: num
   const done = dayStartMs(cursorDay) + cursorOffset >= ceiling;
   console.log(
     `[backfill] +${inserted} rows over ${imported.join(', ')} → cursor ${cursorDay}` +
-      `${cursorOffset > 0 ? `+${Math.round(cursorOffset / 1000)}s` : ''}${done ? ' (COMPLETE)' : ''}`,
+      `${cursorOffset > 0 ? `+${Math.round(cursorOffset / 1000)}s` : ''}${done ? ' (end of window)' : ''}`,
   );
-  return { ...(await finish(db, cursorDay, cursorOffset, inserted, done)), days: imported };
+  const result = done
+    ? await finishVerified(db, cursorDay, cursorOffset, inserted, expectedRows)
+    : await finish(db, cursorDay, cursorOffset, inserted, false);
+  return { ...result, days: imported };
+}
+
+/**
+ * Finish only if what landed matches what AE said it held.
+ *
+ * `done = 1` is terminal — every later invocation returns before touching AE — so
+ * it must never be written from a single query's say-so. "The day-count query came
+ * back empty" and "the import is finished" look identical, and an empty result is
+ * not a failure, so nothing else in this file would ever notice: the import would
+ * stop part-way, permanently, with a `console.log` as its only trace.
+ *
+ * On a shortfall the cursor is still committed (the work done is not repeated) but
+ * `done` stays 0 and the failure counter goes up, so five of these halt the import
+ * loudly instead of looping.
+ */
+async function finishVerified(
+  db: D1Database,
+  cursorDay: string,
+  cursorOffset: number,
+  inserted: number,
+  expectedRows: number | null,
+): Promise<BackfillResult> {
+  const held = await db
+    .prepare('SELECT COUNT(*) AS n FROM analytics_events WHERE backfilled = 1')
+    .first<{ n: number }>();
+  const imported = Number(held?.n ?? 0);
+  const shortfall = expectedRows === null ? 0 : expectedRows - imported;
+
+  if (expectedRows !== null && shortfall > SHORTFALL_TOLERANCE(expectedRows)) {
+    const detail =
+      `refusing to finish: Analytics Engine reported ${expectedRows} rows below the cutoff, ` +
+      `D1 holds ${imported} — ${shortfall} missing, tolerance ${SHORTFALL_TOLERANCE(expectedRows)}. ` +
+      `Cursor left at ${cursorDay}.`;
+    console.error(`[backfill] ${detail}`);
+    await db
+      .prepare(
+        `UPDATE backfill_state
+           SET next_day = ?, sub_offset = ?, rows_written = rows_written + ?, done = 0,
+               consecutive_failures = consecutive_failures + 1, lock_until = 0
+         WHERE id = 1`,
+      )
+      .bind(cursorDay, cursorOffset, inserted)
+      .run();
+    return { outcome: 'failed', rows: inserted, detail };
+  }
+
+  if (shortfall > 0) {
+    // Inside the band: AE's retention deleting rows the import had not reached yet
+    // is the expected cause, and those rows are genuinely gone either way.
+    console.warn(`[backfill] finished ${shortfall} rows below AE's reported total — inside tolerance, recording it`);
+  }
+  return finish(db, cursorDay, cursorOffset, inserted, true);
 }
 
 /** Cursor, totals, failure reset and lock release — one statement, the commit point. */
