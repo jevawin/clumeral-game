@@ -111,6 +111,17 @@ describe('env.preprod', () => {
     }
   });
 
+  // The lint is what stands between a bot-authored migration and production data,
+  // and its directory list lives in package.json — a separate file. Add a third D1
+  // binding with a new migrations_dir and, without this, its migrations would be
+  // applied to production by migrate:prod completely unlinted, silently.
+  it('lints every directory that wrangler will apply migrations from', () => {
+    const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
+    const linted = pkg.scripts['lint:migrations'].split(/\s+/).filter((a: string) => a.startsWith('migrations/'));
+    const applied = [...new Set([...config.d1_databases, ...preprod.d1_databases].map((d) => d.migrations_dir))];
+    expect(applied.filter((d) => !linted.includes(d)), 'migrations_dir not covered by lint:migrations').toEqual([]);
+  });
+
   it('labels each environment', () => {
     expect(config.vars.ENVIRONMENT).toBe('production');
     expect(preprod.vars.ENVIRONMENT).toBe('preprod');
