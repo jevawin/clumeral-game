@@ -107,6 +107,18 @@ export const STATEMENT_BUDGET = 41;
  */
 const SHORTFALL_TOLERANCE = (expected: number) => Math.max(3, Math.round(expected * 0.01));
 
+/**
+ * The most Analytics Engine's total may legitimately fall by while one import
+ * runs. Retention deletes whole days from the old end, and a run takes ~30
+ * minutes, so a day's worth is the honest ceiling: 5% of the whole window is
+ * comfortably more than the ~80-row mean day and less than the 677-row peak.
+ *
+ * This is what stops "AE now says it holds fewer" from being an unbounded excuse.
+ * Without a limit, the worse AE's answer, the more readily a broken import would
+ * declare itself finished — and zero would always pass.
+ */
+const RETENTION_DROP_LIMIT = (expected: number) => Math.max(10, Math.round(expected * 0.05));
+
 /** Backstop for a killed run, not the normal path — every exit releases the lock. */
 export const LOCK_TTL_MS = 180_000;
 
@@ -115,7 +127,8 @@ export const MAX_CONSECUTIVE_FAILURES = 5;
 /**
  * Days of AE counts fetched per sizing query — and, because `planDays` can take
  * every day it is shown, the real cap on days per batch and therefore on AE
- * subrequests per invocation (2 at discovery + 1 sizing + up to 10 fetches = 13).
+ * subrequests per invocation (2 at discovery + 1 sizing + up to 10 fetches + 1 for
+ * the verified finish = 14).
  * The statement budget alone would allow ~20 near-empty days. Lowering this is
  * always safe; raising it widens both the batch and the subrequest count.
  */
@@ -212,6 +225,9 @@ async function countInWindow(ae: AEQuery, fromMs: number, toMs: number): Promise
 async function earliestAERow(ae: AEQuery): Promise<number | null> {
   // COUNT(*) is rejected by AE — it must be COUNT() — and MIN(timestamp) returns a
   // 'YYYY-MM-DD HH:MM:SS' string, so it is converted server-side instead of parsed.
+  // A missing row and a zero are conflated here deliberately: both mean "do not
+  // start", both write no state, and the next minute retries. Everywhere the
+  // distinction can affect stored data, it is made.
   const [row] = await ae(`SELECT toUnixTimestamp(MIN(timestamp)) AS lo FROM ${AE_DATASET}`);
   const lo = num(row?.lo);
   return lo > 0 ? lo * 1000 : null;
@@ -371,10 +387,14 @@ async function importWindow(
   // (retention deleting the oldest days, which is exactly where the import starts)
   // or the API misbehaved. Either way, do not delete.
   const wanted = Math.min(expected, MAX_ROWS_PER_RUN);
-  if (rows.length < wanted) {
+  if (rows.length !== wanted) {
+    // Short: see above. Long: these rows are historical and immutable, so AE
+    // returning more than it just counted is equally a sign the two answers cannot
+    // both be trusted — and `planDays` sized this invocation's statement budget
+    // from the count, so an over-return would also overrun it.
     throw new Error(
       `AE returned ${rows.length} rows for ${new Date(fromMs).toISOString()}–${new Date(toMs).toISOString()} ` +
-        `but its own count query said ${expected}; refusing to delete-then-insert a short window`,
+        `but its own count query said ${expected}; refusing to delete-then-insert a window the two disagree about`,
     );
   }
 
@@ -412,10 +432,16 @@ async function importWindow(
     .bind(fromMs, end)
     .first<{ n: number }>();
   if (Number(existing?.n ?? 0) > batch.length) {
-    throw new Error(
-      `D1 already holds ${existing?.n} imported rows for ${new Date(fromMs).toISOString()}–${new Date(end).toISOString()} ` +
-        `but Analytics Engine now offers ${batch.length}; refusing to replace them with fewer`,
+    // We already hold a superset of what AE can still give us for this range, so
+    // there is nothing to gain by rewriting it and everything to lose. Skip the
+    // window and move on — throwing here would stall the import permanently at the
+    // retention edge, which is precisely where this happens, and no amount of
+    // retrying could ever clear it.
+    console.warn(
+      `[backfill] keeping ${existing?.n} imported rows for ${new Date(fromMs).toISOString()}–${new Date(end).toISOString()}; ` +
+        `Analytics Engine now offers only ${batch.length} — skipping rather than replacing them with fewer`,
     );
+    return { inserted: 0, nextFromMs: end >= toMs ? null : end };
   }
 
   const statements: D1PreparedStatement[] = [
@@ -476,17 +502,21 @@ export async function runBackfill(
     return { outcome: 'missing-credentials' };
   }
 
-  const db = env.ANALYTICS_DB;
-  // Inside its own try: no lock is held yet, so there is nothing to release, but a
-  // D1 error here would otherwise escape and reject the cron invocation — which is
-  // the one thing the caller's comment promises it will not do.
-  let state: StateRow | null;
   try {
-    state = await db.prepare('SELECT * FROM backfill_state WHERE id = 1').first<StateRow>();
+    return await runLocked(env.ANALYTICS_DB, ae, now);
   } catch (err) {
-    console.error(`[backfill] could not read backfill_state: ${err instanceof Error ? err.message : String(err)}`);
-    return { outcome: 'failed', detail: 'state read failed' };
+    // The outer net. Everything below the lock has its own handling; this catches
+    // the bookkeeping around it — the state read, the CAS, and the failure-counter
+    // update inside the inner catch — so that no D1 error anywhere can reject the
+    // cron invocation and take the result log down with it.
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[backfill] failed outside the import: ${detail}`);
+    return { outcome: 'failed', detail };
   }
+}
+
+async function runLocked(db: D1Database, ae: AEQuery, now: number): Promise<BackfillResult> {
+  const state = await db.prepare('SELECT * FROM backfill_state WHERE id = 1').first<StateRow>();
   if (!state) {
     console.error('[backfill] no backfill_state row — migration 0006 seeds it; the import cannot run without it');
     return { outcome: 'no-state-row' };
@@ -509,12 +539,12 @@ export async function runBackfill(
   if (lock.meta.changes !== 1) return { outcome: 'locked' };
 
   const started = now;
+  // Re-read inside the lock. The snapshot above was taken before the CAS, so a run
+  // that released between the two would leave this one working from a cursor that
+  // has already moved — at best re-importing a window, at worst re-running
+  // discovery and re-freezing the bounds against a smaller dataset.
+  const current = (await db.prepare('SELECT * FROM backfill_state WHERE id = 1').first<StateRow>()) ?? state;
   try {
-    // Re-read inside the lock. The snapshot above was taken before the CAS, so a
-    // run that released between the two would leave this one working from a cursor
-    // that has already moved — at best re-importing a window, at worst re-running
-    // discovery and re-freezing the bounds against a smaller dataset.
-    const current = (await db.prepare('SELECT * FROM backfill_state WHERE id = 1').first<StateRow>()) ?? state;
     const result = await importOnce(db, ae, current, now);
     return { ...result, ms: Date.now() - started };
   } catch (err) {
@@ -524,7 +554,7 @@ export async function runBackfill(
     await db
       .prepare('UPDATE backfill_state SET consecutive_failures = consecutive_failures + 1, lock_until = 0 WHERE id = 1')
       .run();
-    console.error(`[backfill] failed at ${state.next_day ?? 'discovery'}: ${detail}`);
+    console.error(`[backfill] failed at ${current.next_day ?? 'discovery'}: ${detail}`);
     return { outcome: 'failed', detail, ms: Date.now() - started };
   }
 }
@@ -697,12 +727,28 @@ async function finishVerified(
     // the halt is a one-way door: the cursor is past the ceiling, so every retry
     // re-fails identically and only a hand-edited state row can ever release it.
     const nowHolds = await countBelowCutoff(ae, cutoffMs);
-    if (nowHolds !== null && imported >= nowHolds - SHORTFALL_TOLERANCE(nowHolds)) {
+    const drop = nowHolds === null ? Infinity : expectedRows - nowHolds;
+    const retentionExplains =
+      nowHolds !== null &&
+      // A zero would satisfy every inequality below it. Whatever it means, it is
+      // not evidence that an import which is provably short has finished.
+      nowHolds > 0 &&
+      // Bounded: retention removes days, not the archive.
+      drop <= RETENTION_DROP_LIMIT(expectedRows) &&
+      // And we must hold what AE still has, not merely less than it once had.
+      imported >= nowHolds - SHORTFALL_TOLERANCE(nowHolds);
+
+    if (retentionExplains) {
       console.warn(
         `[backfill] Analytics Engine held ${expectedRows} rows at discovery and holds ${nowHolds} now; ` +
           `D1 has ${imported}. The difference is retention deleting rows during the import, not a lost import.`,
       );
       shortfall = 0;
+    } else if (nowHolds !== null && nowHolds < expectedRows) {
+      console.error(
+        `[backfill] Analytics Engine now reports ${nowHolds} rows below the cutoff against ${expectedRows} at ` +
+          `discovery, and D1 holds ${imported}. That drop is too large to be retention during one run — not finishing on it.`,
+      );
     }
   }
 
@@ -756,7 +802,9 @@ async function finish(
     )
     .bind(nextDay, subOffset, inserted, done ? 1 : 0)
     .run();
-  return { outcome: done && inserted === 0 ? 'done' : 'imported', rows: inserted };
+  // Reported by the invocation that actually finishes, not a minute later by the
+  // no-op that follows it — `wrangler tail` is the only view of this.
+  return { outcome: done ? 'done' : 'imported', rows: inserted };
 }
 
 /** Release the lock without touching the cursor — the abort paths. */

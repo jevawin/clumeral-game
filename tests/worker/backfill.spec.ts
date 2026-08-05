@@ -150,11 +150,15 @@ async function rewind(nextDay: string, subOffset = 0) {
 // console methods are bound natives, so reading the property back after spying
 // hands you the original and every assertion fails as "not a spy".
 let errors: string[];
+let warnings: string[];
 
 beforeEach(() => {
   errors = [];
+  warnings = [];
   vi.spyOn(console, 'log').mockImplementation(() => {});
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(console, 'warn').mockImplementation((...parts: unknown[]) => {
+    warnings.push(parts.join(' '));
+  });
   vi.spyOn(console, 'error').mockImplementation((...parts: unknown[]) => {
     errors.push(parts.join(' '));
   });
@@ -676,15 +680,21 @@ describe('the real per-invocation query count', () => {
     expect(counts.maxBind).toBeLessThanOrEqual(100);
   });
 
-  it('stays inside 50 on the path that binds: discovery, a full batch and the verified finish', async () => {
-    // Every cost in one invocation — the combination neither the first nor the
-    // second review pass had counted end to end.
-    const rows = [];
-    for (let day = 1; day <= 3; day++) {
-      for (let i = 0; i < 120; i++) rows.push({ ts: Date.UTC(2026, 7, day, 6) + i * 1000, blob2: `uid-${day}-${i}` });
-    }
+  it('stays inside 50 on the path that binds: discovery, a full window and the verified finish', async () => {
+    // Every cost in one invocation — the combination neither of the first two
+    // review passes counted end to end. A full window's worth of rows, all inside
+    // the cutoff day, so this single invocation discovers the bounds, imports the
+    // maximum, reaches the ceiling and runs the verified finish.
+    const rows = Array.from({ length: MAX_ROWS_PER_RUN - 1 }, (_, i) => ({
+      ts: CUTOFF - (MAX_ROWS_PER_RUN - i) * 1000,
+      blob2: `uid-${i}`,
+    }));
     const { result, counts } = await runWithCounter(fakeAE(rows));
-    expect(result.outcome).not.toBe('failed');
+
+    // Prove the path really was the expensive one rather than trusting the setup.
+    expect(result.outcome).toBe('done');
+    expect(result.rows).toBe(MAX_ROWS_PER_RUN - 1);
+    expect(counts.queries).toBeGreaterThan(45);
     expect(counts.queries).toBeLessThanOrEqual(48);
     expect(counts.maxBind).toBeLessThanOrEqual(100);
   });
@@ -810,21 +820,36 @@ describe('trusting Analytics Engine', () => {
 
   it('finishes when the missing rows are ones AE has since deleted', async () => {
     const rows = Array.from({ length: 40 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
-    const ae = fakeAE(rows);
-    await runBackfill(prodEnv(), NOW, ae);
+    await runBackfill(prodEnv(), NOW, fakeAE(rows));
 
-    // Retention removes the oldest 20 from AE *and* they are not in D1 — the state
+    // Retention removes the oldest few from AE *and* they are not in D1 — the state
     // an import interrupted at the retention edge really lands in. The rows are
     // gone from the source, so halting forever would be a one-way door for no gain.
-    await db().prepare('DELETE FROM analytics_events WHERE backfilled = 1 AND ts < ?').bind(Date.UTC(2026, 7, 1, 6, 0, 20)).run();
-    const shrunk = fakeAE(rows.slice(20));
+    await db().prepare('DELETE FROM analytics_events WHERE backfilled = 1 AND ts < ?').bind(Date.UTC(2026, 7, 1, 6, 0, 4)).run();
 
-    const result = await runBackfill(prodEnv(), NOW, shrunk);
+    const result = await runBackfill(prodEnv(), NOW, fakeAE(rows.slice(4)));
     expect(result.outcome).toBe('done');
     expect((await state())?.done).toBe(1);
   });
 
-  it('does not replace an imported window with fewer rows than it already holds', async () => {
+  it.each([
+    ['a drop too large to be one run of retention', 20],
+    ['an empty dataset, which would otherwise satisfy every inequality', 40],
+  ])('does not accept %s as a reason to finish short', async (_label, removed) => {
+    const rows = Array.from({ length: 40 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
+    await runBackfill(prodEnv(), NOW, fakeAE(rows));
+    await db().prepare('DELETE FROM analytics_events WHERE backfilled = 1 AND ts < ?').bind(Date.UTC(2026, 7, 1, 6, 0, removed)).run();
+
+    // AE claiming to hold far less than it did is not evidence that an import
+    // known to be short has finished — and the worse the claim, the less it may
+    // be believed. Zero in particular passes every naive comparison.
+    const result = await runBackfill(prodEnv(), NOW, fakeAE(rows.slice(removed)));
+    expect(result.outcome).toBe('failed');
+    expect((await state())?.done).toBe(0);
+    expect(errors.join('\n')).toMatch(/too large to be retention|refusing to finish/);
+  });
+
+  it('keeps an imported window rather than replacing it with fewer rows, and moves on', async () => {
     const rows = Array.from({ length: 20 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
     await runBackfill(prodEnv(), NOW, fakeAE(rows));
     expect(await rowCount('backfilled = 1')).toBe(20);
@@ -832,12 +857,15 @@ describe('trusting Analytics Engine', () => {
     // A re-run of a window AE has since shrunk. Both AE queries now agree at the
     // lower number, so the count guard is satisfied — only what D1 already holds
     // can catch this, and delete-then-insert would drop the difference for good.
+    // Skipping keeps the rows AND lets the cursor advance: failing here would stall
+    // the import at the retention edge with nothing able to clear it.
     await rewind('2026-08-01');
     const result = await runBackfill(prodEnv(), NOW, fakeAE(rows.slice(0, 12)));
 
-    expect(result.outcome).toBe('failed');
-    expect(result.detail).toContain('refusing to replace them with fewer');
+    expect(result.outcome).not.toBe('failed');
     expect(await rowCount('backfilled = 1')).toBe(20);
+    expect((await state())?.next_day).not.toBe('2026-08-01');
+    expect(warnings.join('\n')).toContain('skipping rather than replacing them with fewer');
   });
 
   it('records what Analytics Engine said it held, so the total can be checked', async () => {

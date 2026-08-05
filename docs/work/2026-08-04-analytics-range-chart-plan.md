@@ -1160,8 +1160,10 @@ zero rows rather than erroring.
 
 - **The statement budget is tighter than P49.** P49 budgeted 45 `INSERT`s plus five spare,
   but it also allows multi-day batches, and each extra day is another `DELETE`. `planDays`
-  now counts `1 + ceil(rows / 10)` per day against 45, and rows against 450, taking whichever
-  binds first — always at least one day.
+  counts per-day cost against a budget and rows against a cap, taking whichever binds first —
+  always at least one day. **The constants moved twice under review** and the shipped values
+  are `MAX_ROWS_PER_RUN = 390`, `STATEMENT_BUDGET = 41`, per-day cost `2 + ceil(rows / 10)`
+  (guard SELECT, DELETE, INSERTs), worst case 48 of D1's 50 queries. See C-3 and C-12.
 - **Discovery imports in the same invocation.** §3.3 reads as though the first run only
   freezes the bounds. It freezes them in their own committed statement (so a crash mid-import
   cannot lose them) and then carries straight on, saving an invocation.
@@ -1187,9 +1189,12 @@ committed), cutoff fixed at 2026-08-05T00:00Z:
 
 **6,838 rows over 92 days in 23 invocations, and all 92 days matched AE exactly** on both
 `COUNT()` and `SUM(_sample_interval)` — zero mismatches, so the ±1% gate was not needed. The
-sub-day path ran for real (2026-08-04 as 448 + 31). Sampling survived: 1/2/3/10 in AE's own
-proportions. 11 hostnames imported; `clumeral.com` is 4,690 of 6,838. Per-invocation rows
-were 31–449, inside the 450 cap, so P49's sizing holds against real data.
+sub-day path ran for real. Sampling survived: 1/2/3/10 in AE's own proportions. 11 hostnames
+imported; `clumeral.com` is 4,690 of 6,838.
+
+**These figures are from the pre-review build**, at the 450-row batch it shipped with at the
+time. They are kept as the record of that run; the numbers for the build actually being
+merged are in the re-review sections below, which is where the pre-merge evidence lives.
 
 This proves the query shapes, the mapping and the windowing. It cannot prove CPU per
 invocation — that needs `wrangler tail` on the deployed cron.
@@ -1347,3 +1352,56 @@ one second is **3**, against a 390-row window.
 **Re-verified live a third time, after these fixes:** 6,838 imported against 6,838 expected,
 27 invocations, 0 failures, 92 of 92 days matching, and a further invocation after completion
 is a no-op that changes nothing.
+
+### `da-build` third pass — 2026-08-06
+
+Fresh context again, because two rounds running a fix had reintroduced the bug it was fixing.
+It happened a third time. **1 High, 3 Medium, 8 Low**; verdict NOT READY. All four blockers
+are fixed, plus the two non-blocking items it asked to be folded in.
+
+**High**
+
+- **C-18. The C-13 retention escape accepted any answer at all, including zero.**
+  `imported >= nowHolds - tolerance` is trivially true whenever `nowHolds <= imported`, so the
+  *worse* AE's reply, the more readily a provably short import declared itself finished — and
+  `done` is terminal. **Reproduced: 40 rows imported, 30 deleted from D1, AE answering 0 →
+  `done = 1` with 10 rows held.** The reviewer also found a second route in: the recovery
+  procedure this repo now documents has a human editing `backfill_state`, and a mistyped
+  `cutoff_ms` collapses the ceiling straight into this branch. This is the third time a guard
+  has been undone by reading a bad number as a real one. The escape now requires all of:
+  `nowHolds` is not null, `nowHolds > 0`, the drop is inside 5% of the window (retention
+  removes days, not archives), and D1 holds what AE still has. Anything else logs and halts.
+
+**Medium**
+
+- **C-19. The C-12 guard could wedge a healthy import permanently.** If a window is imported,
+  the invocation later throws for an unrelated reason, and retention then removes a row from
+  that same window, every retry finds `existing > batch` and throws — forever, at the
+  retention edge, which is where the import starts. **Reviewer reproduced the halt.** The
+  wrong response was mine: D1 holding a superset means there is nothing to gain by rewriting
+  the window. It is now **kept and skipped**, with a warning, and the cursor advances.
+- **C-20. `runBackfill` could still throw**, despite two rounds of comments promising it
+  could not: the CAS and the failure-counter update sat outside every `try`. **Verified.** A
+  D1 error in either rejected the cron invocation, took the result log with it, and left the
+  lock held for its full 180 s. The body now runs inside an outer catch.
+- **C-21. The recovery procedure contradicted the code.** It said re-running a day is always
+  safe; since C-12 that was false. The C-19 skip makes it true again, and the doc now says why,
+  and carries the `WHERE id = 1` it was missing.
+
+**Low, fixed** — the budget test did not reach the path it was named for (34 queries, never
+reaching the verified finish); it now drives discovery, a full window and the finish in one
+invocation and asserts 46–48, so it fails if the headroom is eaten. §16's constants were stale
+against the shipped code. `earliestAERow`'s null-versus-zero conflation is now stated as
+deliberate. The failure log names the cursor actually used. The invocation that finishes now
+reports `done` itself rather than a minute later. A row query returning *more* than its count
+promised is refused as well as fewer. `DAY_LOOKAHEAD`'s subrequest arithmetic said 13, is 14.
+
+**Low, recorded not fixed** — no index covers `backfilled = 1 AND ts BETWEEN`, so the guard
+SELECT and the DELETE scan the table; negligible at ~7k rows and the table is dropped from the
+hot path entirely in PR 3. `toImportRow` maps a missing `blob1`/`blob2` to `''` rather than
+failing the batch — a junk row is better than losing a window, and no such row exists in the
+measured dataset.
+
+**Final live run, on the constants being merged:** 6,838 imported against 6,838 expected, 26
+invocations, 0 failures, max 388 rows in one invocation, 92 of 92 days matching AE on both
+counts and sampled sums, and a further run after completion changes nothing.

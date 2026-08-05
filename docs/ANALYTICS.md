@@ -169,9 +169,11 @@ which is true first:
    analytics_events WHERE backfilled = 1 GROUP BY day` against the same query on AE — and find
    the days that are short.
 2. **If AE still holds those rows**, this is a real import defect: rewind the cursor to the
-   first short day (`UPDATE backfill_state SET next_day = '<day>', sub_offset = 0,
-   consecutive_failures = 0`) and let the cron re-import from there. Re-running a day is safe
-   by design.
+   first short day and let the cron re-import from there —
+   `UPDATE backfill_state SET next_day = '<day>', sub_offset = 0, consecutive_failures = 0,
+   done = 0 WHERE id = 1;`. Re-running a day is safe by design: each window deletes exactly
+   what it rewrites, and a window where D1 already holds **more** than AE can still supply is
+   skipped rather than replaced, so a rewind past healthy days cannot cost you anything.
 3. **If AE no longer holds them**, they are gone and no import can recover them. The code
    already checks this itself — it re-asks AE for its current total before halting, and
    finishes if what remains matches what D1 holds — so reaching this state by hand means
@@ -183,9 +185,11 @@ the import part-way, permanently, and an empty response is not an error anywhere
 things have to agree before it finishes: the day-count query returns no days, a differently
 shaped `COUNT()` over the same window returns a row reading zero, and the rows in D1 match
 `expected_rows`, the total AE reported at discovery (migration 0007). A shortfall past 1% (or
-3 rows) refuses to finish, logs, and counts as a failure. Symmetrically, a row query that
-returns fewer rows than the sizing query just promised **aborts before its `DELETE`** — on a
-re-run, delete-then-insert with a short read would destroy the difference.
+3 rows) refuses to finish, logs, and counts as a failure — unless AE's *current* total explains
+it, which it may only do within a bounded drop (5%) and never from zero. Symmetrically, a row
+query that disagrees with the sizing query **aborts before its `DELETE`**, and a window where
+D1 already holds more rows than AE can still supply is **kept and skipped** rather than
+replaced with fewer.
 
 **Worker secrets.** The backfill queries the AE SQL API over HTTPS and needs `CF_ACCOUNT_ID`
 and `CF_API_TOKEN` set on the Worker — the same pair `/stats` used before PR 1 moved reads to
