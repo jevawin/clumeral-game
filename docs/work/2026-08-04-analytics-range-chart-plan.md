@@ -1290,3 +1290,60 @@ unreachable at 677 rows across 86,400 seconds.
 rows imported against 6,838 expected — exact — in 24 invocations, 0 failures, 92 of 92 days
 matching AE on both counts and sampled sums.** Max rows in one invocation 399, inside the new
 400 cap.
+
+### `da-build` re-review — 2026-08-06
+
+Fresh context, second pass. Confirmed C-1's premise live (an empty bounded window really does
+return one row reading zero where the grouped query returns nothing), confirmed C-2 holds at
+all five call sites, independently recounted C-3's budget, and confirmed C-5 clean. Found
+**4 Medium and 6 Low** that both earlier passes missed. Verdict NOT READY; all four Mediums
+are fixed, plus three of the Lows.
+
+**Medium**
+
+- **C-11. The fix for C-1 had the same bug C-1 was about.** `countBelowCutoff` read a missing
+  row as `Number(undefined ?? 0)` = 0, and that value is *frozen*, so one malformed 200 at
+  discovery would set `expected_rows = 0` and make the shortfall check vacuous — negative — for
+  the entire irreversible run, logging "0 rows to import" and nothing else. **Reviewer verified
+  it end to end.** It now returns null and discovery throws, which costs a minute and no data
+  because nothing has been written at that point.
+- **C-12. The C-2 guard was one-sided.** It compares the row query against the sizing query
+  *from the same invocation*, so it cannot see rows a previous invocation already imported. If
+  AE shrinks between a successful import and a re-run of that window, both queries agree at the
+  lower number and the delete-then-insert drops the difference. **Verified: 6 rows → 3, no
+  error, no failure recorded.** Narrow — needs a re-run plus retention landing in the same
+  60–180 s — but the import starts at the retention edge, which is exactly where shrinkage
+  happens. Each window now counts what D1 already holds for its exact range and refuses to
+  replace it with fewer. That costs one SELECT per window, so the per-day statement cost is
+  `2 + ceil(rows / 10)` and the constants drop to 390 rows / 41 statements, worst case 48 of 50.
+- **C-13. A shortfall halt was a one-way door.** The cursor is past the ceiling, so every
+  retry re-fails identically; the documented recovery (clear `consecutive_failures`) provably
+  does not work, and only a hand-edited state row could ever release it. **Reviewer verified
+  the loop.** Before halting, the code now re-asks AE what it holds *now*: if what remains
+  matches what D1 holds, the difference is retention deleting rows during the run — genuinely
+  gone, nobody's defect — and it finishes with a warning. A real shortfall still halts, and
+  `docs/ANALYTICS.md` now carries the actual recovery procedure for it.
+- **C-14. The shortfall branch had no test at all** — the one branch that can permanently block
+  completion. Three added: a real shortfall halts and then trips the halt at five, a
+  retention-shaped shortfall finishes, and a malformed discovery total refuses to start.
+
+**Low, fixed** — C-15 the state row was read *before* the CAS, so the lock did not protect the
+snapshot it guards (a run releasing between the two could hand the next one a stale cursor, or
+in the narrowest case re-run discovery and re-freeze the bounds); it is re-read inside the
+lock. C-16 `scheduled()` discarded the result, so `ms` — documented as Task 15's source — was
+never printed, `'locked'` logged nothing, and a finished import looked identical to a stalled
+one; the result object is now logged. C-17 `DAY_LOOKAHEAD`'s comment claimed it was slack when
+it is in fact what caps days per batch and AE subrequests at 13.
+
+**Low, also taken** — the completion check now also reports D1 holding *more* than AE reported,
+which delete-then-insert should make impossible and which is the one error a deleted source
+makes permanent. `docs/ANALYTICS.md` had mixed pre- and post-fix rehearsal numbers.
+
+**Low, recorded not fixed** — the counting test asserts a 48-query ceiling rather than a
+recorded high-water mark. The reviewer also noted the C-10 same-second overflow now leads to a
+halt rather than a logged loss, and confirmed live that the busiest day's maximum rows in any
+one second is **3**, against a 390-row window.
+
+**Re-verified live a third time, after these fixes:** 6,838 imported against 6,838 expected,
+27 invocations, 0 failures, 92 of 92 days matching, and a further invocation after completion
+is a no-op that changes nothing.

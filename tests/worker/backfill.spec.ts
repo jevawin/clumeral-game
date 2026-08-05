@@ -655,7 +655,10 @@ describe('the real per-invocation query count', () => {
     );
     const { result, counts } = await runWithCounter(ae);
     expect(result.outcome).toBe('imported');
-    expect(counts.queries).toBeLessThanOrEqual(50);
+    // 48 is the worst case the constants allow; asserting the real ceiling rather
+    // than D1's 50 means a regression that eats the headroom fails here instead of
+    // in production, one query short of the cap.
+    expect(counts.queries).toBeLessThanOrEqual(48);
     expect(counts.maxBind).toBeLessThanOrEqual(100);
   });
 
@@ -669,7 +672,20 @@ describe('the real per-invocation query count', () => {
     await runWithCounter(ae); // discovery
     const { result, counts } = await runWithCounter(ae);
     expect(result.outcome).toBe('imported');
-    expect(counts.queries).toBeLessThanOrEqual(50);
+    expect(counts.queries).toBeLessThanOrEqual(48);
+    expect(counts.maxBind).toBeLessThanOrEqual(100);
+  });
+
+  it('stays inside 50 on the path that binds: discovery, a full batch and the verified finish', async () => {
+    // Every cost in one invocation — the combination neither the first nor the
+    // second review pass had counted end to end.
+    const rows = [];
+    for (let day = 1; day <= 3; day++) {
+      for (let i = 0; i < 120; i++) rows.push({ ts: Date.UTC(2026, 7, day, 6) + i * 1000, blob2: `uid-${day}-${i}` });
+    }
+    const { result, counts } = await runWithCounter(fakeAE(rows));
+    expect(result.outcome).not.toBe('failed');
+    expect(counts.queries).toBeLessThanOrEqual(48);
     expect(counts.maxBind).toBeLessThanOrEqual(100);
   });
 });
@@ -755,6 +771,73 @@ describe('trusting Analytics Engine', () => {
     expect(result.outcome).toBe('failed');
     expect((await state())?.done).toBe(0);
     expect(errors.join('\n')).toContain('not treating that as finished');
+  });
+
+  it('refuses to start when the discovery total comes back with no row', async () => {
+    const ae = fakeAE([{ ts: Date.UTC(2026, 7, 1, 6) }]);
+    // Only the unbounded discovery total misbehaves. Reading that as zero would
+    // switch off the completion check for the whole import, permanently, and
+    // nothing later would notice — the shortfall would always be negative.
+    const blind = sabotage(ae, (sql) => /^SELECT COUNT\(\) AS n FROM \w+ WHERE timestamp </.test(sql.trimStart()), []);
+    const result = await runBackfill(prodEnv(), NOW, blind);
+
+    expect(result.outcome).toBe('failed');
+    const s = await state();
+    expect(s?.expected_rows).toBeNull();
+    expect(s?.cutoff_ms).toBeNull();
+    expect(await rowCount('backfilled = 1')).toBe(0);
+  });
+
+  it('halts rather than finishing when rows are missing and AE still holds them', async () => {
+    const rows = Array.from({ length: 40 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
+    const ae = fakeAE(rows);
+    await runBackfill(prodEnv(), NOW, ae);
+    expect(await rowCount('backfilled = 1')).toBe(40);
+
+    // Rows disappear from D1 without the cursor knowing — the shape of any bug
+    // that loses part of the import. AE still has all 40, so this is not retention.
+    await db().prepare('DELETE FROM analytics_events WHERE backfilled = 1 AND ts >= ?').bind(Date.UTC(2026, 7, 1, 6, 0, 10)).run();
+
+    let result = await runBackfill(prodEnv(), NOW, ae);
+    expect(result.outcome).toBe('failed');
+    expect(errors.join('\n')).toContain('refusing to finish');
+    expect((await state())?.done).toBe(0);
+
+    // And it halts loudly rather than retrying every minute forever.
+    for (let i = 0; i < MAX_CONSECUTIVE_FAILURES; i++) result = await runBackfill(prodEnv(), NOW, ae);
+    expect(result.outcome).toBe('halted');
+  });
+
+  it('finishes when the missing rows are ones AE has since deleted', async () => {
+    const rows = Array.from({ length: 40 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
+    const ae = fakeAE(rows);
+    await runBackfill(prodEnv(), NOW, ae);
+
+    // Retention removes the oldest 20 from AE *and* they are not in D1 — the state
+    // an import interrupted at the retention edge really lands in. The rows are
+    // gone from the source, so halting forever would be a one-way door for no gain.
+    await db().prepare('DELETE FROM analytics_events WHERE backfilled = 1 AND ts < ?').bind(Date.UTC(2026, 7, 1, 6, 0, 20)).run();
+    const shrunk = fakeAE(rows.slice(20));
+
+    const result = await runBackfill(prodEnv(), NOW, shrunk);
+    expect(result.outcome).toBe('done');
+    expect((await state())?.done).toBe(1);
+  });
+
+  it('does not replace an imported window with fewer rows than it already holds', async () => {
+    const rows = Array.from({ length: 20 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
+    await runBackfill(prodEnv(), NOW, fakeAE(rows));
+    expect(await rowCount('backfilled = 1')).toBe(20);
+
+    // A re-run of a window AE has since shrunk. Both AE queries now agree at the
+    // lower number, so the count guard is satisfied — only what D1 already holds
+    // can catch this, and delete-then-insert would drop the difference for good.
+    await rewind('2026-08-01');
+    const result = await runBackfill(prodEnv(), NOW, fakeAE(rows.slice(0, 12)));
+
+    expect(result.outcome).toBe('failed');
+    expect(result.detail).toContain('refusing to replace them with fewer');
+    expect(await rowCount('backfilled = 1')).toBe(20);
   });
 
   it('records what Analytics Engine said it held, so the total can be checked', async () => {

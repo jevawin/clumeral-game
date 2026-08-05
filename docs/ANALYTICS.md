@@ -151,8 +151,31 @@ a mean of ~80, so a day too big for one invocation already exists in the data.
 
 **When it is stuck, it says so.** A compare-and-set lock (`lock_until`) stops overlapping
 invocations and is released on every exit; five consecutive failures halt the import with a
-`console.error` rather than retrying once a minute forever. Clearing
-`backfill_state.consecutive_failures` is what restarts it, deliberately by hand.
+`console.error` rather than retrying once a minute forever. Every invocation logs its result
+object, so `npx wrangler tail --format pretty` is the window onto all of it.
+
+**Restarting a halted import.** For most failures — an AE hiccup, a D1 error — clearing the
+counter is enough:
+
+```sql
+UPDATE backfill_state SET consecutive_failures = 0 WHERE id = 1;
+```
+
+**That alone does not clear a shortfall halt** ("refusing to finish: … rows missing"). The
+cursor is already past the end, so every retry re-checks the same total and re-fails. Work out
+which is true first:
+
+1. Compare per day — `SELECT strftime('%Y-%m-%d', ts/1000, 'unixepoch') AS day, COUNT(*) FROM
+   analytics_events WHERE backfilled = 1 GROUP BY day` against the same query on AE — and find
+   the days that are short.
+2. **If AE still holds those rows**, this is a real import defect: rewind the cursor to the
+   first short day (`UPDATE backfill_state SET next_day = '<day>', sub_offset = 0,
+   consecutive_failures = 0`) and let the cron re-import from there. Re-running a day is safe
+   by design.
+3. **If AE no longer holds them**, they are gone and no import can recover them. The code
+   already checks this itself — it re-asks AE for its current total before halting, and
+   finishes if what remains matches what D1 holds — so reaching this state by hand means
+   something else is going on. Record the shortfall here before setting `done = 1`.
 
 **It will not call itself finished on one query's say-so.** `done = 1` is terminal — every
 later invocation returns before touching AE — so a single empty response would otherwise end
@@ -189,12 +212,12 @@ and would have failed at run time in production:
 The importer was run end-to-end against live Analytics Engine into a local D1 on 2026-08-06,
 with a fixed cutoff of 2026-08-05T00:00Z:
 
-- **6,838 rows over 92 days, in 24 invocations**, which is what AE itself reported held below
-  the cutoff — imported and expected agree exactly, with no failures. Per-invocation row
-  counts 80–399, inside the 400 cap.
+- **6,838 rows over 92 days**, which is exactly what AE itself reported held below the cutoff
+  — imported and expected agree to the row, with no failures.
 - **Every one of the 92 days matched AE exactly** — both `COUNT()` and
   `SUM(_sample_interval)`. Zero mismatches, so the ±1% tolerance was not needed.
-- The sub-day path was exercised for real: 2026-08-04 imported as 448 + 31 rows.
+- The sub-day path was exercised for real: days over the per-invocation cap, including
+  2026-08-03 at 677 rows, imported across several windows.
 - Sampling survived: intervals 1 (6,768), 2 (62), 3 (7) and 10 (1), matching AE's own
   distribution.
 - 11 hostnames imported, `clumeral.com` 4,690 of 6,838.

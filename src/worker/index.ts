@@ -591,9 +591,13 @@ export default {
   // importing analytics.
   async scheduled(event: ScheduledEvent, env: Env): Promise<void> {
     if (event.cron === BACKFILL_CRON) {
-      // runBackfill never throws: a backfill problem must not fail the cron
-      // invocation, and it reports itself through console for `wrangler tail`.
-      await runBackfill(env);
+      // runBackfill returns rather than throws: a backfill problem must not fail
+      // the cron invocation. The result is logged because `wrangler tail` is the
+      // only window onto this — without it, 'locked' says nothing at all, a
+      // finished import looks identical to a stalled one, and Task 15 has no
+      // wall-clock figure to read.
+      const result = await runBackfill(env);
+      console.log(`[backfill] ${JSON.stringify(result)}`);
       return;
     }
     await runDailyCron(env.PUZZLES);
