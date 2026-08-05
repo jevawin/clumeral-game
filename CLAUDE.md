@@ -59,9 +59,29 @@ never deployed. That is why preview URLs are unchanged and why `HMAC_SECRET` (a
 per-Worker secret) is available in both.
 
 - **production** — the `main` branch. `clumeral-feedback`, `clumeral-analytics`,
-  the daily cron.
+  the daily cron. Served on `clumeral.com`.
 - **preprod** — every other branch, sharing one environment.
-  `clumeral-feedback-preprod`, `clumeral-analytics-preprod`.
+  `clumeral-feedback-preprod`, `clumeral-analytics-preprod`. Served on
+  `<branch>-clumeral-game.jevawin.workers.dev`.
+
+**Pre-prod stays on `workers.dev`, and there is no `staging.clumeral.com`.** This was
+asked for and rejected on 2026-08-05, so it does not need re-deciding:
+
+> "You cannot currently configure Preview URLs to run on a subdomain other than
+> workers.dev."
+> — https://developers.cloudflare.com/workers/configuration/previews/
+
+A custom domain attaches to a **deployment**; pre-prod builds are **versions**, uploaded and
+never deployed. So a custom hostname cannot reach a pre-prod build at all. Getting one would
+mean a **second, separately deployed Worker** — which is what the environment split
+deliberately avoided, because `HMAC_SECRET` is a per-Worker secret whose absence fails
+*silently*: `TextEncoder.encode(undefined)` yields `""`, making the signing key
+`SHA-256("")` and every random-puzzle token forgeable.
+
+Jamie's call, 2026-08-05: keep `workers.dev` for pre-prod. Isolation was the point and it is
+already delivered by `env.preprod`; the hostname was only ever cosmetic. Closed #260. The one
+real cost is that service-worker and PWA behaviour is exercised on a different origin shape
+than production — if that ever bites, *that* is the reason to revisit, not the aesthetics.
 
 `PUZZLES` KV and the Analytics Engine dataset are **shared** by both, and are
 restated in `env.preprod` because wrangler does not inherit them. Sharing PUZZLES
