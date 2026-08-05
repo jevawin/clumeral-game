@@ -357,10 +357,16 @@ pre-prod ledger now reads `0001`, `0003`, `0004`.
 **§7.5 / §7.6 — the lint. PASSED**, via `tests/lint-migrations.spec.ts`, which covers the
 opt-in suffix, the `--`-inside-a-string bypass and the quoted-identifier false positive.
 
-**§7.4 — nothing to re-apply. Strongly implied, not directly evidenced.** A branch build was
-re-run at 21:59Z with no new migrations and succeeded. Since `0001` was by then in the
-ledger, wrangler cannot have re-applied it — but the log excerpt available stopped before
-the migration step, so the literal "no migrations to apply" line was not captured.
+**§7.4 — nothing to re-apply. PASSED.** A branch build was re-run at 21:59Z with no new
+migrations, and the log reads:
+
+```
+2026-08-05T21:59:26.635Z ✅ No migrations to apply!
+```
+
+So the ledger is doing its job: `0001` was applied once, recorded, and not re-run. This is
+the check that proves migrations are idempotent across builds — without it, every branch
+push would re-execute the whole directory.
 
 **§7.7 and §7.8 remain outstanding**, and in this order: production migrations apply on the
 first `main` merge after Stage B, and only after that does the production cleanup
