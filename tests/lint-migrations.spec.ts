@@ -40,6 +40,23 @@ describe('isDestructive — must catch', () => {
   it('sees through an interrupting comment', () => {
     expect(isDestructive('DROP /* sneaky */ TABLE feedback;')).toBe(true);
   });
+
+  // SQLite makes COLUMN optional. Verified against a real D1: both of these drop
+  // and rename the column, and both passed the first version of this lint.
+  it('flags a column drop written without the COLUMN keyword', () => {
+    expect(isDestructive('ALTER TABLE feedback DROP host;')).toBe(true);
+    expect(isDestructive('ALTER TABLE feedback DROP "host";')).toBe(true);
+    expect(isDestructive('ALTER TABLE main.feedback DROP host;')).toBe(true);
+  });
+
+  it('flags a column rename written without the COLUMN keyword', () => {
+    expect(isDestructive('ALTER TABLE feedback RENAME host TO origin;')).toBe(true);
+  });
+
+  it('is not silenced by an unterminated bracket quote', () => {
+    // A blanket blank-to-EOF here would swallow the DROP and report it clean.
+    expect(isDestructive('CREATE TABLE [t (a INT); DROP TABLE feedback;')).toBe(true);
+  });
 });
 
 describe('isDestructive — must NOT fire', () => {
@@ -64,6 +81,14 @@ describe('isDestructive — must NOT fire', () => {
 
   it('ignores destructive words inside string values', () => {
     expect(isDestructive("INSERT INTO t(note) VALUES ('drop table feedback');")).toBe(false);
+  });
+
+  // The ALTER TABLE rules match on the verb rather than the object, so check they
+  // do not swallow the additive form they sit next to.
+  it('still allows ADD COLUMN on a table whose name contains a destructive word', () => {
+    expect(isDestructive('ALTER TABLE drop_log ADD COLUMN note TEXT;')).toBe(false);
+    expect(isDestructive('ALTER TABLE t ADD COLUMN dropdown TEXT;')).toBe(false);
+    expect(isDestructive('ALTER TABLE t ADD COLUMN renamed_at TEXT;')).toBe(false);
   });
 });
 
