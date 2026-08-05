@@ -16,6 +16,9 @@
     "e2e:db:feedback": "wrangler d1 execute clumeral-feedback --local --command=\"DROP TABLE IF EXISTS feedback;\" && wrangler d1 execute clumeral-feedback --local --file=migrations/feedback/0001_create_feedback.sql",
     "e2e:db:analytics": "wrangler d1 execute clumeral-analytics --local --command=\"DROP TABLE IF EXISTS analytics_events; DROP TABLE IF EXISTS backfill_state;\" && wrangler d1 execute clumeral-analytics --local --file=migrations/analytics/0005_create_analytics_events.sql && wrangler d1 execute clumeral-analytics --local --file=migrations/analytics/0006_create_backfill_state.sql && wrangler d1 execute clumeral-analytics --local --file=tests/fixtures/analytics-seed.sql",
     "e2e:serve": "npm run e2e:db && npm run preview",
+    "lint:migrations": "node scripts/lint-migrations.mjs migrations/feedback migrations/analytics",
+    "migrate:prod": "npm run lint:migrations && npx wrangler d1 migrations apply FEEDBACK_DB --remote && npx wrangler d1 migrations apply ANALYTICS_DB --remote",
+    "migrate:preprod": "npm run lint:migrations && npx wrangler d1 migrations apply FEEDBACK_DB --remote --env preprod && npx wrangler d1 migrations apply ANALYTICS_DB --remote --env preprod",
     "db:migrate:remote": "wrangler d1 execute clumeral-feedback --remote --file",
     "analytics:migrate:remote": "wrangler d1 execute clumeral-analytics --remote --file",
     "deploy": "cd dist/clumeral_game && npx wrangler deploy --config wrangler.json"
