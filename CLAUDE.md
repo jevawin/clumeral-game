@@ -51,6 +51,50 @@ Every roadmap item follows at least a minimal **discuss → plan → execute →
 
 When starting work, committing, pushing, or merging, follow [docs/GIT-WORKFLOW.md](docs/GIT-WORKFLOW.md) — branches, preview URLs, staging/main flow, and recovery paths.
 
+## Environments and database migrations
+
+**One Worker, two environments.** Pre-prod is not a second Worker — it is the same
+`clumeral-game` Worker, and pre-prod builds are *versions* of it, uploaded but
+never deployed. That is why preview URLs are unchanged and why `HMAC_SECRET` (a
+per-Worker secret) is available in both.
+
+- **production** — the `main` branch. `clumeral-feedback`, `clumeral-analytics`,
+  the daily cron.
+- **preprod** — every other branch, sharing one environment.
+  `clumeral-feedback-preprod`, `clumeral-analytics-preprod`.
+
+`PUZZLES` KV and the Analytics Engine dataset are **shared** by both, and are
+restated in `env.preprod` because wrangler does not inherit them. Sharing PUZZLES
+is safe only because pre-prod versions are never deployed and so never run
+`scheduled()`, and the cron is the sole writer (`src/worker/daily-puzzle.ts`,
+#257).
+
+**To add a table or column:** drop a `.sql` file into `migrations/feedback/` or
+`migrations/analytics/` — the directory chooses the database, via `migrations_dir`
+in `wrangler.jsonc`. Number it after the highest existing migration, across both
+directories. `wrangler d1 migrations apply` applies it automatically: to pre-prod
+when your branch builds, to production when the pull request merges. Nobody runs
+a command.
+
+**Rules:**
+- **Never run wrangler against a remote database.** The guard hook blocks
+  `wrangler d1 … --remote` and that is correct. Use `--local`.
+- **Never deploy the preprod environment.** Both environments share the Worker
+  name, so `--env preprod` on a deploy would overwrite production. Pre-prod is
+  reached only by `versions upload`.
+- **Migrations are additive only.** They run before the new version is live, so
+  they must leave the currently-deployed code working. Add columns and tables;
+  never drop or rename in the same pull request as the code that stops using them.
+- **Destructive SQL is refused** by `npm run lint:migrations` unless the file is
+  named `*.destructive.sql`. Only Jamie adds one. `UPDATE … SET` is allowed —
+  backfilling a new column is additive.
+- **Adding a new wrangler binding?** It must be added to `env.preprod` too.
+  `d1_databases`, `kv_namespaces`, `analytics_engine_datasets` and `vars` are
+  **not inherited** by an env block, and omitting one is only a warning — the
+  deploy succeeds and the Worker throws at runtime.
+- Creating a new *database* is still a human step. Declare the binding and say so
+  in the pull request.
+
 ## Context hygiene
 
 Prompt the user to start a new chat at these trigger points (the user keeps old chats to revisit, so don't suggest `/clear`):

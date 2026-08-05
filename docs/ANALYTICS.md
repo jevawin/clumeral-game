@@ -26,12 +26,18 @@ indefinitely.
 | Write path | `POST /api/event` → `recordEvent()` in `src/worker/analytics-db.ts` |
 | Read path | `GET /stats`, `GET /api/stats` → `getStats()` |
 
-**One database for every hostname.** Every row carries `hostname`, and `/stats` is locked
-to the host it is called from — so `clumeral.com/stats` shows production, a preview's
-`/stats` shows that preview, and staging shows staging. The per-host lock *is* the
-prod/pre-prod separation; a second database would enforce the same property twice while
-doubling the migration surface forever. Splitting later is one `INSERT ... SELECT` plus one
-`DELETE`, because the column is there.
+**Prod and pre-prod are separate databases** — `clumeral-analytics` and
+`clumeral-analytics-preprod`, selected by the `env.preprod` block in `wrangler.jsonc` at
+build time. Branch previews cannot read or write production analytics at all.
+
+This supersedes the earlier decision to share one database across hostnames. That call was
+made to avoid maintaining a second migration target by hand; adopting wrangler's own
+`d1 migrations apply` removed the cost, so the split is now free. See
+[the pre-prod split spec](superpowers/specs/2026-08-05-clumeral-preprod-split-design.md).
+
+**The `hostname` column stays regardless.** `/stats` is locked to the host it is called
+from, so `clumeral.com/stats` shows production and a preview's `/stats` shows that preview.
+That is now belt-and-braces rather than the isolation mechanism, and it costs nothing.
 
 **Writes are fire-and-forget.** The D1 insert goes through `ctx.waitUntil` with its own
 `.catch`, so the event POST always answers 202. A D1 outage costs rows, never responses —
