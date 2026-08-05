@@ -4,6 +4,15 @@
 -- The backfill imports pre-cutover history out of Analytics Engine into
 -- analytics_events. It runs from scheduled() on a temporary per-minute cron and is
 -- removed once the import is verified.
+--
+-- ⚠️ The backfill MUST run in production only. Gate it on env.ENVIRONMENT ===
+-- 'production'. An unset value must mean NO — absence of a signal is not
+-- permission. Pre-prod importing real Analytics Engine history would make its
+-- numbers useless for testing, silently.
+--
+-- Note the cron alone is not the guard: pre-prod versions are uploaded, never
+-- deployed, so they should never fire scheduled() — but "should never" is not a
+-- check, and the ENVIRONMENT gate is.
 CREATE TABLE IF NOT EXISTS backfill_state (
   id                   INTEGER PRIMARY KEY CHECK (id = 1),
   -- Both bounds are discovered on the first invocation and then frozen, never
