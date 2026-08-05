@@ -224,6 +224,10 @@ showing input UI.
 - `puzzle_start`, `puzzle_complete`, `incorrect_guess`, `theme_toggle`,
   `htp_opened`, `feedback_submitted`, `tooltip_opened` — already in
   `VALID_EVENTS`.
+- `undo_used`, `reset_used` — fire only when the action actually changed the
+  board. Each carries a `source` of `keyboard` or `button`, so the stats
+  dashboard can split the two triggers; a keyboard count alone has no
+  denominator. Auto-repeat sends one event per hold, not one per step.
 
 ---
 

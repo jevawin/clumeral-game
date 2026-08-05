@@ -20,7 +20,9 @@ src/
     index.ts     Entry — API routes + HTML serving
     puzzle.ts    Filter/compute logic, RNG, seeding (server-only)
     puzzles.ts   /puzzles history page (SSR)
-    stats.ts     /stats dashboard, Analytics Engine queries
+    stats.ts     /stats dashboard renderer (chart, tables, nav)
+    analytics-db.ts  Analytics storage + queries (D1)
+    chart.ts     Daily-plays chart geometry (pure)
     feedback.ts  /feedback admin dashboard renderer (reads D1)
     crypto.ts    AES-GCM token signing for random puzzles
 public/          Static (icons, manifest, sw.js)
@@ -44,9 +46,17 @@ index.html       Shell
 
 Client fetches puzzle data on load. Never has the answer — validation is server-side (`POST /api/guess`). Daily puzzles are served from KV, write-once (see [Puzzle storage & archive integrity](#puzzle-storage--archive-integrity-kv--write-once)).
 
+## Analytics
+
+Events are stored in **Cloudflare D1** (`clumeral-analytics`, binding `ANALYTICS_DB`), written by
+`POST /api/event` and read by the private `/stats` dashboard. Analytics Engine is dual-written
+during the migration and is being retired — it retains only ~90 days, which is why the move
+happened. Full reference — schema, sampling caveat, cutover and comparison gate:
+[ANALYTICS.md](ANALYTICS.md).
+
 ## Feedback
 
-Player feedback is stored in **Cloudflare D1** (`clumeral-feedback`, binding `FEEDBACK_DB`), written by `POST /api/feedback` and read via the private `/feedback` dashboard. Full reference — schema, access, migrations, process: [FEEDBACK.md](FEEDBACK.md).
+Player feedback is stored in **Cloudflare D1** (`clumeral-feedback` in production, `clumeral-feedback-preprod` on every other branch, binding `FEEDBACK_DB`), written by `POST /api/feedback` and read via the private `/feedback` dashboard. Full reference — schema, access, migrations, process: [FEEDBACK.md](FEEDBACK.md).
 
 ## Puzzle algorithm (puzzle.ts)
 
@@ -71,7 +81,9 @@ Puzzles are **generated once, then frozen in KV** — the archive is static by c
 
 ### Write authority (cron-only, #257)
 
-There is **one** `PUZZLES` namespace with no per-environment override (`wrangler.jsonc`), so **every deployment shares production KV — preview URLs included**. Combined with write-once entries, whichever deployment writes a date freezes it permanently for real players.
+There is **one** `PUZZLES` namespace, so **every deployment shares production KV — preview URLs included**. Combined with write-once entries, whichever deployment writes a date freezes it permanently for real players.
+
+(`env.preprod` in `wrangler.jsonc` *does* restate `kv_namespaces` — but with the **same id**, deliberately. Wrangler does not inherit that key, so restating it is how sharing is expressed rather than a split. The D1 databases beside it genuinely are split. Sharing KV stays safe only because pre-prod versions are uploaded and never deployed, so they never run `scheduled()` — the sole writer below. Anything that later gives pre-prod a deployment with a cron must give it its own namespace in the same change.)
 
 Write authority is therefore constrained to the nightly cron:
 

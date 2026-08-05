@@ -4,6 +4,7 @@ import { gotoPlayableGame } from "../helpers/game-setup.ts";
 import { seedHistory, seedLastVisit, seedTheme } from "../helpers/storage.ts";
 import { freezeDate } from "../helpers/clock.ts";
 import { waitForScreenSettled } from "../helpers/screens.ts";
+import { expectedModifier } from "../helpers/modifier.ts";
 import { MenuPage } from "../pages/menu.page.ts";
 import { FeedbackPage } from "../pages/feedback.page.ts";
 
@@ -142,6 +143,54 @@ for (const scheme of ["light", "dark"] as const) {
     });
   }
 }
+
+// The shortcut hint is exposed as a DESCRIPTION, not part of the name: the
+// button still leads with "Undo last change", and "Keyboard shortcut: Control Z"
+// follows once, rather than bloating a name that is re-read on every
+// aria-disabled change. The visible "Ctrl + Z" is hidden from the a11y tree so
+// the words are spoken rather than a glyph soup.
+test.describe("accessibility — board control shortcut hint", () => {
+  test.use({ colorScheme: "light" });
+
+  // All three desktop projects, not just Chromium: they all have a fine pointer
+  // so they all render the hint, and name/description exposure is exactly the
+  // thing most likely to differ between engines. Matches the hint test's own gate
+  // in undo-reset.spec.ts. Mobile projects are excluded because the hint never
+  // renders there without a keypress.
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      !testInfo.project.name.endsWith("-desktop"),
+      "the hint only renders where a fine pointer is detected",
+    );
+  });
+
+  test("each control exposes its name and its shortcut description", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+
+    // Derived rather than hardcoded — the spoken form follows the platform too,
+    // so "Control" alone would go red on any Mac.
+    const mod = await expectedModifier(page);
+    for (const [ctrl, name, spoken] of [
+      ["[data-undo]", "Undo last change", `Keyboard shortcut: ${mod.spoken} Z`],
+      ["[data-reset]", "Reset all boxes", `Keyboard shortcut: ${mod.spoken} X`],
+    ] as const) {
+      const button = page.locator(ctrl);
+      await expect(button).toHaveAttribute("aria-label", name);
+      const describedBy = await button.getAttribute("aria-describedby");
+      expect(describedBy, `${ctrl} must carry a description`).toBeTruthy();
+      await expect(page.locator(`#${describedBy}`)).toHaveText(spoken);
+    }
+  });
+
+  test("the visible key text is hidden from the accessibility tree", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+
+    await expect(page.locator("[data-undo-key]")).toHaveAttribute("aria-hidden", "true");
+    await expect(page.locator("[data-reset-key]")).toHaveAttribute("aria-hidden", "true");
+  });
+});
 
 // Scheme-independent — focus order doesn't vary by colour, so run it once.
 test.describe("accessibility — keyboard", () => {

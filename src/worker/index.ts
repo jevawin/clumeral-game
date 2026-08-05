@@ -5,7 +5,8 @@ import { runFilterLoop, makeRng, todayUTC, puzzleNumber, puzzleDate } from './pu
 import { readDailyPuzzle, runDailyCron, type StoredPuzzle } from './daily-puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
-import { getStats, renderDashboard } from './stats.ts';
+import { renderDashboard } from './stats.ts';
+import { getStats, parsePeriod, recordEvent } from './analytics-db.ts';
 import { renderArchivePage } from './puzzles.ts';
 import {
   renderFeedbackPage, parseStatusPath, isSameOrigin, isStatus, isCanonicalHost,
@@ -15,18 +16,26 @@ import {
 interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
   ANALYTICS: AnalyticsEngineDataset;
+  ANALYTICS_DB: D1Database;
   PUZZLES: KVNamespace;
   FEEDBACK_DB: D1Database;
   HMAC_SECRET: string;
-  CF_ACCOUNT_ID: string;
-  CF_API_TOKEN: string;
+  // 'production' or 'preprod', from `vars` in wrangler.jsonc. Optional on the type
+  // because an older deployed version predates it — and because the one consumer
+  // that matters (the AE backfill) must treat an unset value as "no".
+  ENVIRONMENT?: string;
 }
 
-const VALID_EVENTS = new Set([
+// Exported so a unit test can assert an event name is actually accepted. The
+// frontend cannot tell: track() swallows the POST failure, so a name missing
+// from this set records nothing while the feature looks perfectly fine.
+export const VALID_EVENTS = new Set([
   'puzzle_start', 'puzzle_complete', 'incorrect_guess',
   'htp_opened', 'feedback_submitted',
   'theme_toggle', 'tooltip_opened',
   'route_change',
+  // Both carry a source of 'keyboard' or 'button' in blob3.
+  'undo_used', 'reset_used',
 ]);
 
 function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
@@ -213,7 +222,9 @@ async function handleFeedbackSubmit(request: Request, env: Env): Promise<Respons
 // ─── Main fetch handler ──────────────────────────────────────────────────────
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  // ctx is here for the analytics dual write: the D1 insert is handed to
+  // waitUntil so the event POST still answers 202 immediately.
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     // ── API routes ──
@@ -404,11 +415,28 @@ export default {
         if (!event || !VALID_EVENTS.has(event) || !uid) {
           return new Response('Bad request', { status: 400 });
         }
+        // Dual write during the migration: Analytics Engine stays untouched so the
+        // two sides can be compared before AE is switched off. Removed in the
+        // follow-up PR once the comparison is green.
         env.ANALYTICS.writeDataPoint({
           indexes: [event],
           blobs: [event, uid, source ?? '', url.hostname],
           doubles: [value ?? 0, newUser ? 1 : 0],
         });
+        // Not awaited: analytics must never delay or fail an event POST. A D1
+        // outage costs us the row, not the response.
+        ctx.waitUntil(
+          recordEvent(env.ANALYTICS_DB, {
+            event,
+            uid,
+            source,
+            hostname: url.hostname,
+            value,
+            newUser,
+          }).catch((err: unknown) => {
+            console.error('Analytics D1 write failed:', err instanceof Error ? err.message : String(err));
+          }),
+        );
         return new Response('ok', { status: 202 });
       } catch {
         return new Response('Bad request', { status: 400 });
@@ -417,13 +445,12 @@ export default {
 
     // ── Stats ──
 
+    // Stats read from D1 now, so there are no API secrets to be missing and the
+    // 503 "not configured" branches both routes carried are gone.
     if (request.method === 'GET' && url.pathname === '/api/stats') {
       try {
-        if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
-          return new Response('Analytics secrets not configured', { status: 503 });
-        }
-        const days = Math.min(Number(url.searchParams.get('period') || 90), 90);
-        const stats = await getStats(env, days, url.hostname);
+        const range = parsePeriod(url.searchParams.get('period'));
+        const stats = await getStats(env.ANALYTICS_DB, range, url.hostname);
         return new Response(JSON.stringify(stats), {
           headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' },
         });
@@ -435,15 +462,9 @@ export default {
 
     if (request.method === 'GET' && url.pathname === '/stats') {
       try {
-        if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
-          return new Response('Analytics secrets not configured. Set CF_ACCOUNT_ID and CF_API_TOKEN as Worker secrets.', {
-            status: 503,
-            headers: { 'Content-Type': 'text/plain' },
-          });
-        }
-        const days = Math.min(Number(url.searchParams.get('period') || 90), 90) || 90;
-        const stats = await getStats(env, days, url.hostname);
-        const html = renderDashboard(stats, days, url.hostname);
+        const range = parsePeriod(url.searchParams.get('period'));
+        const stats = await getStats(env.ANALYTICS_DB, range, url.hostname);
+        const html = renderDashboard(stats, range, url.hostname);
         return new Response(html, {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'max-age=300' },
         });

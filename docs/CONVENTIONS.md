@@ -30,6 +30,7 @@
 ## DOM patterns
 
 - Selectors use `data-*` attributes (e.g. `[data-digit]`, `[data-htp-btn]`), NOT IDs. Don't introduce new IDs — use `data-*`.
+  - **One exception:** ARIA relationship attributes (`aria-describedby`, `aria-labelledby`, `aria-controls`) take an IDREF, so their targets must carry an `id`. Add a `data-*` hook alongside it and query *that* — the `id` exists for ARIA, not for JavaScript. See `[data-undo-desc]` / `#undo-shortcut-desc`.
 - Event listeners attached at module level in `app.ts`. Never inside `startDailyPuzzle`.
 - `gameState` = module-scoped `let` in `app.ts`. Never on `window`.
 

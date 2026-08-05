@@ -5,13 +5,14 @@ import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
+import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
 import { initColours } from './colours.ts';
 import { initFeedbackModal } from './modals.ts';
 import { celebrateOcto, sadOcto, bounceBrand } from './octo.ts';
-import './walkthrough.ts';
-import { showScreen } from './screens.ts';
+import { isWalkthroughActive } from './walkthrough.ts';
+import { showScreen, getCurrentScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion } from './completion.ts';
@@ -79,6 +80,12 @@ const dom = {
   resetBtn: $('[data-reset]') as HTMLButtonElement | null,
   undoMsg: $('[data-undo-msg]') as HTMLElement | null,
   undoLabel: $('[data-undo-label]') as HTMLElement | null,
+  undoKey: $('[data-undo-key]') as HTMLElement | null,
+  resetKey: $('[data-reset-key]') as HTMLElement | null,
+  // Queried by data-*, like everything else here. The elements also carry ids,
+  // which aria-describedby needs as IDREF targets — see CONVENTIONS.md.
+  undoDesc: $('[data-undo-desc]') as HTMLElement | null,
+  resetDesc: $('[data-reset-desc]') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -496,7 +503,9 @@ function toggleDigit(digit: number): void {
     // here would leave a no-op on the stack that makes one Undo press look dead.
     pushHistory();
     s.delete(digit);
-    // First-play walkthrough hook (issue #214). Fires only on elimination. No-op once dlng_history exists.
+    // First-play walkthrough hook (issue #214). Fires only on elimination.
+    // INERT while the walkthrough is disabled (#294) — nothing listens today. Kept
+    // because its replacement will almost certainly want the same two gates.
     document.dispatchEvent(new CustomEvent("game:digit-eliminated"));
   } else {
     pushHistory();
@@ -518,13 +527,42 @@ function toggleDigit(digit: number): void {
 
 // ─── Undo / Reset controls (#251) ────────────────────────────────────────────
 
-// Screen-reader announcement for a reset. The visible cue is the Undo button's
-// own label, but a sighted-only cue would leave the one signal that Reset is
-// recoverable unannounced. Driven by text content, not display:none — a live
-// region toggled in and out of the layout is unreliably announced (VoiceOver in
-// particular often stays silent).
+// Screen-reader announcements for the board controls. Driven by text content,
+// not display:none — a live region toggled in and out of the layout is
+// unreliably announced (VoiceOver in particular often stays silent).
+let announceTimer: number | undefined;
+let lastAnnounced = "";
+
+function announce(message: string): void {
+  if (!dom.undoMsg) return;
+  clearTimeout(announceTimer);
+  // Clearing is not an announcement, so it never needs the repeat dance below —
+  // and it happens on every digit tap, which would otherwise queue a timer per tap.
+  if (message === "") {
+    dom.undoMsg.textContent = "";
+    lastAnnounced = "";
+    return;
+  }
+  if (message !== lastAnnounced) {
+    // Normal path — a changed message IS re-announced, so write it synchronously.
+    // Every pre-existing call site takes this branch, unchanged.
+    dom.undoMsg.textContent = message;
+    lastAnnounced = message;
+    return;
+  }
+  // Repeat path: two consecutive undos produce identical text, and a polite
+  // region whose content does not change is not re-announced at all. Clear now,
+  // rewrite after a beat, so the second undo is audible. 100ms is under the
+  // polite-region settle time and well above a microtask, which AT coalesces away.
+  dom.undoMsg.textContent = "";
+  announceTimer = window.setTimeout(() => { dom.undoMsg!.textContent = message; }, 100);
+}
+
+// Reset's own announcement. The visible cue is the Undo button's label, but a
+// sighted-only cue would leave the one signal that Reset is recoverable
+// unannounced. Signature and wording unchanged, so its six call sites are too.
 function announceReset(on: boolean): void {
-  if (dom.undoMsg) dom.undoMsg.textContent = on ? "Board reset. Undo reset available." : "";
+  announce(on ? "Board reset. Undo reset available." : "");
 }
 
 // Undo and Reset don't share a condition. Straight after a Reset the board IS
@@ -578,22 +616,89 @@ function applyBoard(next: Set<number>[]): void {
   checkSubmit();
 }
 
-function undoLast(): void {
-  if (gameState.solved) return;
+// Returns the kind of change stepped back over, or null if nothing happened.
+// Callers need to tell the two apart: the keyboard path announces "Undone." or
+// "Undo reset." for a real step and "Nothing to undo." for a dead press, and
+// neither route should log an analytics event for a press that did nothing.
+//
+// Deliberately does NOT announce. The clear moves out to the callers so the
+// keyboard path can write its own message instead of having it wiped.
+function undoLast(): EntryKind | null {
+  if (gameState.solved) return null;
+  const kind = boardHistory.nextKind();   // read BEFORE the pop
   const previous = boardHistory.undo();
-  if (previous === null) return;
-  announceReset(false);
+  if (previous === null) return null;
   applyBoard(previous);   // persists the popped stack against the restored board
+  // Non-null whenever undo() was: nextKind() and undo() share the empty-stack guard.
+  return kind;
 }
 
-function resetBoard(): void {
-  if (gameState.solved || isStartingBoard(possibles)) return;
+// Returns true if the board was actually reset.
+function resetBoard(): boolean {
+  if (gameState.solved || isStartingBoard(possibles)) return false;
   // One entry, tagged so the Undo control can label itself "Undo reset". A
   // single press restores the whole pre-reset board.
   pushHistory('reset');
   applyBoard(startingBoard());
   announceReset(true);
+  return true;
 }
+
+// ─── Keyboard shortcut hint ──────────────────────────────────────────────────
+
+// Platform is read ONCE at load. userAgentData.platform is preferred where the
+// browser has it; navigator.platform is the fallback; anything inconclusive gets
+// Ctrl. iPadOS reporting "Macintosh" is harmless — an iPad keyboard has a Command
+// key, and matchShortcut accepts either modifier on either platform anyway, so a
+// wrong guess is only ever cosmetic.
+const MODIFIER = modifierLabel(
+  (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
+    ?? navigator.platform,
+);
+const SPOKEN = MODIFIER === 'Cmd' ? 'Command' : 'Control';
+
+let keyboardSeen = false;
+
+// Fills in the shortcut hints and reveals them. Not a live region and never
+// announces itself — it is static description reached via aria-describedby.
+function showKeyboardHint(): void {
+  if (keyboardSeen) return;
+  keyboardSeen = true;
+  if (dom.undoKey) dom.undoKey.textContent = `${MODIFIER} + Z`;
+  if (dom.resetKey) dom.resetKey.textContent = `${MODIFIER} + X`;
+  if (dom.undoDesc) dom.undoDesc.textContent = `Keyboard shortcut: ${SPOKEN} Z`;
+  if (dom.resetDesc) dom.resetDesc.textContent = `Keyboard shortcut: ${SPOKEN} X`;
+  document.documentElement.setAttribute('data-keyboard', 'true');
+}
+
+// Two triggers, either one is enough. A pure-touch player never sees the hint;
+// a desktop player sees it before first paint, so never sees the transition; a
+// hybrid player (iPad with a Magic Keyboard, where the pointer test fails) gets
+// it as soon as they use the keyboard on the board.
+if (window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) showKeyboardHint();
+
+// A keydown only counts as evidence of a physical keyboard when it did NOT come
+// from a text field. On iOS the on-screen keyboard cannot appear unless one is
+// focused, so a keypress anywhere else means real keys — while typing feedback
+// on an iPhone, which used to reveal a hint for shortcuts that phone can never
+// send, now proves nothing.
+//
+// Any key qualifies rather than a hand-picked list: Tab, a digit, an arrow and
+// Escape are all real board bindings, and enumerating them would be a list to
+// keep in step with the keydown handler for no benefit.
+//
+// Not `once`, because the first keydown of a page session is often a character
+// typed into feedback; the listener has to survive that and keep watching. It
+// removes itself the moment it fires for real.
+//
+// Deliberately separate from the game's own keydown handler, which returns early
+// on a solved board — a solved-board player pressing keys still has a keyboard.
+function detectKeyboard(e: KeyboardEvent): void {
+  if (isTypingTarget(e.target)) return;
+  showKeyboardHint();
+  document.removeEventListener('keydown', detectKeyboard, true);
+}
+document.addEventListener('keydown', detectKeyboard, { capture: true });
 
 function openBox(i: number): void {
   activeBox = i;
@@ -602,7 +707,9 @@ function openBox(i: number): void {
   renderAllBoxes();
   buildKeypad();
   openKeypad();
-  // First-play walkthrough hook (issue #214). No-op once dlng_history exists.
+  // First-play walkthrough hook (issue #214).
+  // INERT while the walkthrough is disabled (#294) — see the note on the sibling
+  // game:digit-eliminated dispatch.
   document.dispatchEvent(new CustomEvent("game:box-opened"));
 }
 
@@ -999,8 +1106,17 @@ dom.submitBtn?.addEventListener("click", () => { handleGuess(); });
 // disabled, so a press still reaches the handler when the control is unavailable.
 // Both handlers re-derive live state and return early, which is what makes that
 // safe — see setUnavailable.
-dom.undoBtn?.addEventListener("click", () => { undoLast(); });
-dom.resetBtn?.addEventListener("click", () => { resetBoard(); });
+// A click that acted clears any stale reset message and says nothing new: focus
+// is already on the button and the action is self-evident. Only the keyboard
+// path announces what it did.
+// Both routes are tracked, not just the keyboard — a keyboard-only count is a
+// number with no denominator. A press that did nothing sends no event.
+dom.undoBtn?.addEventListener("click", () => {
+  if (undoLast()) { announceReset(false); track("undo_used", undefined, "button"); }
+});
+dom.resetBtn?.addEventListener("click", () => {
+  if (resetBoard()) track("reset_used", undefined, "button");
+});
 
 // Save checkbox
 if (dom.saveCheck) {
@@ -1010,9 +1126,117 @@ if (dom.saveCheck) {
   });
 }
 
-// Keyboard: digit keys toggle active box; Tab/arrows navigate; Enter submits; Escape closes
+// The native `open` property, NEVER the `.open` class: modals.ts removes that
+// class before the dialog actually closes on transitionend, so a class check
+// reports "closed" while the dialog is still up with focus inside it.
+//
+// How to Play is not listed here — it navigates to /welcome, so it is a screen
+// and the getCurrentScreen() gate already covers it.
+function isOverlayOpen(): boolean {
+  const fb = document.querySelector('[data-fb-modal]') as HTMLDialogElement | null;
+  if (fb?.open) return true;
+  const menu = document.querySelector('[data-menu]');
+  return !!menu && !menu.classList.contains('hidden');
+}
+
+// Is this element still on the page AND still rendered? getClientRects() is empty
+// for anything in a display:none subtree, and forces the pending style flush on
+// the way, so this answers the question rather than racing it.
+function isRendered(el: Element): boolean {
+  return el.isConnected && el.getClientRects().length > 0;
+}
+
+// Item 59: a shortcut never moves focus. A board change can take the focused
+// element out from under the player two different ways —
+//   - buildKeypad() wipes innerHTML and rebuilds all ten keys, so a focused key
+//     is a different element afterwards (the old one is detached);
+//   - un-resolving the board re-hides [data-submit-wrap], and the save-score
+//     checkbox goes display:none with it (see tailwind.css) — reachable precisely
+//     when a player most wants an undo, which is why the checkbox is deliberately
+//     NOT treated as a typing target.
+//
+// Decided from the elements' own rendered state, never from document.activeElement.
+// The two cases lose focus at different moments: detaching a node resets focus
+// synchronously, but hiding one by CLASS defers the browser's focus fixup to the
+// next style update — so an activeElement read straight after the change still
+// reports the checkbox, returns "nothing was lost", and the focus is dropped a
+// frame later anyway. Reading the element instead is timing-independent.
+function restoreFocusAfterBoardChange(before: HTMLElement | null, key: string | null): void {
+  // Nothing had focus to begin with, so there is nothing to restore. This is the
+  // NORMAL state for a mouse user — macOS Safari and Firefox don't focus a button
+  // on click — and giving them a focus ring they never asked for would break item
+  // 59 in the other direction, as well as pre-empting the pending announcement.
+  if (before === null) return;
+
+  // The keypad key it was on, rebuilt as a new node with the same digit.
+  if (key !== null) {
+    const rebuilt = document.querySelector(`[data-key="${key}"]`) as HTMLElement | null;
+    if (rebuilt && isRendered(rebuilt)) { rebuilt.focus(); return; }
+  }
+
+  // Still there and still visible — it kept focus, or will. Leave it alone.
+  if (isRendered(before)) return;
+
+  // It has gone. Undo is always present on the game screen and is aria-disabled
+  // rather than natively disabled, so it stays focusable even with nothing left
+  // to undo — the same reasoning that kept focus safe in #251.
+  dom.undoBtn?.focus();
+}
+
+// Keyboard: Ctrl/Cmd+Z undoes and Ctrl/Cmd+X resets; digit keys toggle active box;
+// Tab/arrows navigate; Enter submits; Escape closes
 document.addEventListener("keydown", (e) => {
   if (gameState.solved) return;
+
+  // First, where a reader expects a modifier branch and where it is robust to
+  // the digit branch changing. The solved guard above is also what makes a
+  // shortcut on a solved board free: it never reaches here, so there is nothing
+  // to announce and no second guard to keep in step.
+  const action = matchShortcut(e);
+  if (action) {
+    if (getCurrentScreen() !== 'game') return;
+    if (isTypingTarget(e.target)) return;
+    if (isOverlayOpen()) return;
+    // Always false today — the walkthrough is disabled (#294) precisely because
+    // this guard, plus its indefinite gated steps, left first-time players with
+    // no shortcuts at all. Kept for its replacement, which will want it: an undo
+    // landing mid-step desyncs a tutorial narrating real board actions. Whatever
+    // replaces it must end, or this is a trap all over again.
+    if (isWalkthroughActive()) return;
+
+    // AFTER every guard, never before — a shortcut that eats Cut inside a
+    // textarea is a bug, not a feature.
+    e.preventDefault();
+
+    // Where focus was, if anywhere. e.target IS the focused element on a keydown
+    // — and it is <body> when nothing is focused at all, which is what a mouse
+    // user looks like. See restoreFocusAfterBoardChange.
+    const focusedBefore =
+      e.target instanceof HTMLElement && e.target !== document.body ? e.target : null;
+    const focusedKey = focusedBefore?.closest?.('[data-key]')?.getAttribute('data-key') ?? null;
+
+    // Holding the key unwinds repeatedly until the stack is empty, the same as a
+    // native undo. e.repeat suppresses only the announcement and the analytics
+    // event, never the action: otherwise a one-second hold writes to a polite
+    // region at the OS repeat rate and posts thirty identical rows.
+    if (action === 'undo') {
+      const kind = undoLast();
+      // Silence on a keypress is indistinguishable from a broken key, so a dead
+      // press says so rather than saying nothing.
+      if (!kind) { if (!e.repeat) announce("Nothing to undo."); return; }
+      if (!e.repeat) {
+        announce(kind === 'reset' ? "Undo reset." : "Undone.");
+        track("undo_used", undefined, "keyboard");
+      }
+    } else {
+      if (!resetBoard()) { if (!e.repeat) announce("Board is already clear."); return; }
+      if (!e.repeat) track("reset_used", undefined, "keyboard");
+    }
+    // Only on a press that actually acted — the dead-press paths above return
+    // early, and nothing was rebuilt or hidden for them.
+    restoreFocusAfterBoardChange(focusedBefore, focusedKey);
+    return;
+  }
 
   const digit = parseInt(e.key, 10);
   if (!isNaN(digit) && e.key.length === 1) {

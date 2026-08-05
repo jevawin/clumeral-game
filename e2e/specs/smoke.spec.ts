@@ -37,15 +37,13 @@ test.describe("smoke: routes load clean", () => {
     await expect(page.locator("h1")).toContainText("Every Clumeral");
   });
 
-  test("/stats serves the dashboard or the documented 503", async ({ page }) => {
-    // Checked at the request level: a browser navigation to the 503 fallback would
-    // log an (expected) resource-load console error, which the guard shouldn't have
-    // to allowlist. Local preview usually lacks analytics secrets → documented 503;
-    // with secrets it renders the dashboard.
+  test("/stats serves the dashboard", async ({ page }) => {
+    // Checked at the request level rather than by navigating: a browser
+    // navigation logs resource-load console errors the guard would have to
+    // allowlist. The old "200 or 503" tolerance is gone — stats read D1, so
+    // there are no secrets to be missing and 503 is no longer a valid outcome.
     const res = await page.request.get("/stats");
-    expect([200, 503]).toContain(res.status());
-    const body = await res.text();
-    if (res.status() === 200) expect(body).toContain("Clumeral Stats");
-    else expect(body).toContain("Analytics secrets not configured");
+    expect(res.status()).toBe(200);
+    expect(await res.text()).toContain("Clumeral Stats");
   });
 });

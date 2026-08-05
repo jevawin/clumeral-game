@@ -84,3 +84,51 @@ describe('palette AA guarantee', () => {
     }
   });
 });
+
+// The Undo/Reset shortcut hint renders at 80% of the text colour on the button
+// surface (.board-ctrl__key, via color-mix). It is 13px — normal text for WCAG,
+// so the 4.5:1 bar applies, not 3:1. Nothing else pins that number, so a token
+// tweak could quietly drop it below AA with the whole suite still green.
+describe('shortcut hint tint (.board-ctrl__key)', () => {
+  const KEY_ALPHA = 0.8;
+
+  // color-mix(in srgb, currentColor 80%, transparent) over an opaque backdrop
+  // composites to the same colour as an 80/20 blend of the two.
+  function blend(fg: string, bg: string, alpha: number): string {
+    const rgb = (h: string) =>
+      [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [fr, fg_, fb] = rgb(fg);
+    const [br, bg_, bb] = rgb(bg);
+    const mix = (f: number, b: number) => Math.round(f * alpha + b * (1 - alpha));
+    return (
+      '#' +
+      [mix(fr, br), mix(fg_, bg_), mix(fb, bb)]
+        .map((v) => v.toString(16).padStart(2, '0').toUpperCase())
+        .join('')
+    );
+  }
+
+  it.each(['light', 'dark'] as const)('clears AA for normal text in %s', (mode) => {
+    const { text, surface } = PALETTE[mode];
+    const tinted = blend(text, surface, KEY_ALPHA);
+    expect(contrastRatio(tinted, surface), `${mode} hint on surface`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // The figures Jamie signed off, pinned so a drift is visible rather than merely
+  // still-passing. 80% was chosen as roughly half the distance from full strength
+  // to the point where each theme would touch 4.5:1 (63% light, 50% dark).
+  //
+  // These are the 8-bit values — blend() rounds to whole channels, as a rasteriser
+  // ultimately does. Compositing color-mix at higher precision gives 7.902 / 9.197,
+  // which is why the prose elsewhere says "about 7.9" rather than a false-precise
+  // figure. The arithmetic here is exact for fixed tokens, so a tight tolerance is
+  // safe: it can only move if a token moves, which is the point.
+  it('holds the agreed ratios', () => {
+    expect(
+      contrastRatio(blend(PALETTE.light.text, PALETTE.light.surface, KEY_ALPHA), PALETTE.light.surface),
+    ).toBeCloseTo(7.9465, 3);
+    expect(
+      contrastRatio(blend(PALETTE.dark.text, PALETTE.dark.surface, KEY_ALPHA), PALETTE.dark.surface),
+    ).toBeCloseTo(9.2037, 3);
+  });
+});

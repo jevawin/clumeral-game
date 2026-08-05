@@ -46,7 +46,7 @@ wrangler d1 execute clumeral-feedback --remote --command \
 
 ## Schema
 
-Table `feedback` ([migrations/0001_create_feedback.sql](../migrations/0001_create_feedback.sql)):
+Table `feedback` ([migrations/feedback/0001_create_feedback.sql](../migrations/feedback/0001_create_feedback.sql)):
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -97,11 +97,17 @@ Three things about that route are deliberate and easy to break:
 
 - **It only works on `clumeral.com` and `localhost`.** Everywhere else it 404s. This is
   not an authentication measure — Access *does* cover `workers.dev` hosts when the policy
-  pattern matches them. It is **data isolation**: there is a single D1 binding and no
-  environment override in [wrangler.jsonc](../wrangler.jsonc), so every preview deploy is
-  bound to the **production** feedback database. A signed-in admin resolving rows from
-  staging would be mutating real triage state. [#260](https://github.com/jevawin/clumeral-game/issues/260)
-  — a real staging Worker with its own D1 — is the actual fix.
+  pattern matches them.
+
+  It *was* data isolation: there used to be a single D1 binding and no environment
+  override, so every preview deploy wrote to the **production** feedback database and a
+  signed-in admin resolving rows from a preview would have been mutating real triage
+  state. **That is no longer true.** `env.preprod` in [wrangler.jsonc](../wrangler.jsonc)
+  binds every non-production branch to `clumeral-feedback-preprod`, which is what
+  [#260](https://github.com/jevawin/clumeral-game/issues/260) asked for. The host gate now
+  stands on its own merits — it keeps the admin surface to one known origin — rather than
+  as a stand-in for isolation.
+
   On production it additionally requires the `Cf-Access-Jwt-Assertion` header, so the
   route fails closed if the Access app is ever removed or re-scoped.
 - **It lives under `/feedback`, not `/api/feedback`.** Cloudflare Access gates the
@@ -113,8 +119,10 @@ Three things about that route are deliberate and easy to break:
   dashboard's own form. Note this only proves a request *is* same-origin, never *which*
   origin, so it is worth nothing without the host gate above.
 
-Consequence worth knowing: **you cannot test Resolve/Reopen from a preview URL.** Use
-localhost, or production after merge.
+Consequence worth knowing: **you cannot test Resolve/Reopen from a preview URL** — the
+host gate 404s it there. Use localhost, or production after merge. The reason is now the
+host gate alone; a preview's writes would land in `clumeral-feedback-preprod`, not in
+production.
 
 ## The dashboard is production-only
 
@@ -161,7 +169,8 @@ wrangler d1 execute clumeral-feedback --remote --command \
 
 ## Migrations
 
-`migrations/` — applied in order:
+`migrations/feedback/` — applied in order. The directory is what maps these to the
+`FEEDBACK_DB` binding, via `migrations_dir` in `wrangler.jsonc`:
 
 - `0001_create_feedback.sql` — table + indexes. **Fresh DBs only** — this is the full current
   schema, and it's what `e2e:db` seeds from. New columns get added here *and* in a numbered
@@ -170,27 +179,36 @@ wrangler d1 execute clumeral-feedback --remote --command \
 - `0003_add_host_column.sql` — adds `host` to the pre-existing remote DB and backfills `clumeral.com`
 - `0004_add_triage_columns.sql` — adds `status`, `github_issue`, `resolved_at` (#225)
 
-Commands ([package.json](../package.json)):
+### Migrations apply themselves — do not run them by hand
+
+**This changed with the pre-prod split.** Wrangler's own `d1 migrations apply` runs from
+Cloudflare's builder: against `clumeral-feedback-preprod` when a branch builds, and against
+`clumeral-feedback` when a pull request merges to `main`. Nobody runs a command, and the
+dev bot never holds a Cloudflare credential.
+
+To add a column: drop a numbered `.sql` file into `migrations/feedback/` and open a pull
+request. Full rules — additive-only, the destructive-SQL lint, numbering — are in
+[CLAUDE.md](../CLAUDE.md#environments-and-database-migrations).
+
+The old "apply the migration against remote, **then** merge" instruction is gone, and
+following it now would actively break the production build: applying a file by hand does
+**not** write a `d1_migrations` ledger row, so the automatic run repeats the same file and
+fails with `duplicate column name`.
+
+`npm run db:migrate:remote` still exists as an emergency escape hatch. If you ever use it,
+you must also insert the matching ledger row by hand, or the next merge fails:
+
+```sql
+INSERT OR IGNORE INTO d1_migrations (name) VALUES ('000N_name.sql');
+```
+
+`0002` is the reason the escape hatch takes one filename rather than a directory: it is a
+**one-time legacy import**, gitignored, and re-running it would duplicate every imported row.
+
+Local commands ([package.json](../package.json)):
 
 - `npm run e2e:db` — reset the **local** DB (drop + recreate from 0001), used by e2e.
-- `npm run db:migrate:remote -- migrations/000N_name.sql` — apply **one** migration to remote production D1.
-
-The remote script takes the file as an argument on purpose. It can't just run every migration
-in order: `0002` is a **one-time legacy import**, and re-running it would duplicate every
-imported row. Name the file you mean. Migrations are not re-runnable either — a second
-`ADD COLUMN` fails with `duplicate column name`.
-
-### Apply the migration BEFORE merging to main
-
-Merging to `main` deploys automatically. If the code lands before the columns exist, every
-dashboard load throws `no such column: status` and returns a 500. Player submissions keep
-working (the INSERT names no new columns), but triage is dead until you catch up.
-
-So the order is: run the migration against remote, **then** merge.
-
-```bash
-npm run db:migrate:remote -- migrations/0004_add_triage_columns.sql
-```
+- `npm run lint:migrations` — refuse destructive SQL. Touches no database.
 
 ## The debug payload
 
