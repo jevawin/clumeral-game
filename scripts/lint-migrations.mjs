@@ -8,6 +8,7 @@
 // column is a legitimate additive pattern, and blocking it would turn routine
 // migrations into failed deploys.
 import { readdir, readFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -26,11 +27,12 @@ const DESTRUCTIVE = new RegExp(
     'insert\\s+or\\s+replace',
     'pragma\\s+writable_schema',
     'attach\\s+database',
-    // Any DROP or RENAME applied to a table, whatever the object spelling.
-    // `\\S+` is the table name, which strip() may have reduced to the _q_
-    // placeholder if it was quoted.
-    'alter\\s+table\\s+\\S+\\s+drop',
-    'alter\\s+table\\s+\\S+\\s+rename',
+    // Any DROP or RENAME applied to a table, whatever the object spelling and
+    // whatever the table name looks like. Scans to the statement terminator
+    // rather than matching a single `\\S+` token: a schema-qualified or quoted
+    // name is several tokens ("main"."feedback", [main].[feedback], main . x),
+    // and each of those slipped a real column drop past the token version.
+    'alter\\s+table\\b[^;]*?\\b(?:drop|rename)',
   ].map((p) => `\\b(?:${p})\\b`).join('|'),
   'i',
 );
@@ -99,11 +101,19 @@ export async function lint(dirs) {
   return offenders;
 }
 
-// pathToFileURL, not a template string: import.meta.url is percent-encoded, so a
-// checkout path containing a space (or any character needing escaping) makes the
-// naive comparison false. The script would then exit 0 having linted nothing —
-// failing open, silently, in the one place that matters.
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Is this file being run directly, rather than imported by a test?
+//
+// Three things have to line up, and each one has silently failed open before:
+//   - pathToFileURL, not a template string — import.meta.url is percent-encoded,
+//     so a checkout path with a space made the naive comparison false;
+//   - realpathSync — Node resolves symlinks in import.meta.url but not in
+//     argv[1], so reaching the script through a symlinked path did the same;
+//   - the argv[1] guard — it is undefined under `node -e`, and without the check
+//     pathToFileURL throws and the module cannot be imported at all.
+//
+// Every one of those ends in "exit 0, nothing linted", after which migrate:prod's
+// && chain happily applies the migration.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   const dirs = process.argv.slice(2);
   if (dirs.length === 0) {
     console.error('usage: node scripts/lint-migrations.mjs <dir> [dir...]');

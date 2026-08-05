@@ -53,6 +53,21 @@ describe('isDestructive — must catch', () => {
     expect(isDestructive('ALTER TABLE feedback RENAME host TO origin;')).toBe(true);
   });
 
+  // A schema-qualified or quoted table name is several tokens, so matching a
+  // single one between ALTER TABLE and DROP let all of these through. Each was
+  // executed against a real local D1 and really did drop or rename the column.
+  it.each([
+    'ALTER TABLE "main"."feedback" DROP host;',
+    'ALTER TABLE [main].[feedback] DROP c;',
+    'ALTER TABLE `main`.`feedback` DROP x;',
+    'ALTER TABLE main . feedback DROP a;',
+    'ALTER TABLE main.feedback DROP a;',
+    'ALTER TABLE "main"."feedback" RENAME d TO dd;',
+    'ALTER  TABLE\nfeedback\tDROP\nhost;',
+  ])('flags a qualified or oddly-spaced table name: %s', (sql) => {
+    expect(isDestructive(sql)).toBe(true);
+  });
+
   it('is not silenced by an unterminated bracket quote', () => {
     // A blanket blank-to-EOF here would swallow the DROP and report it clean.
     expect(isDestructive('CREATE TABLE [t (a INT); DROP TABLE feedback;')).toBe(true);
