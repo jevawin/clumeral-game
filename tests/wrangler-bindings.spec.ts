@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BACKFILL_CRON } from '../src/worker/backfill.ts';
 
 // Resolved from the vitest root rather than import.meta.url: under the jsdom
 // environment import.meta.url is not a file: URL and readFileSync rejects it.
@@ -133,5 +134,14 @@ describe('env.preprod', () => {
 
   it('leaves the production cron intact', () => {
     expect(config.triggers.crons).toContain('0 0 * * *');
+  });
+
+  // The backfill cron expression lives in two files: here, and as BACKFILL_CRON in
+  // src/worker/backfill.ts, which scheduled() matches on to tell the two triggers
+  // apart. Change one and the other keeps compiling: the backfill would simply
+  // never run, or — worse — the daily puzzle job would run once a minute, because
+  // the dispatch falls through to it for anything unrecognised.
+  it('declares the backfill cron the worker dispatches on', () => {
+    expect(config.triggers.crons).toContain(BACKFILL_CRON);
   });
 });

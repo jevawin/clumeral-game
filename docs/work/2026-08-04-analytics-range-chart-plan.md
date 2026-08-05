@@ -1106,3 +1106,125 @@ stay, now as belt-and-braces rather than the mechanism.
 
 Spec: `docs/superpowers/specs/2026-08-05-clumeral-preprod-split-design.md`.
 Plan: `docs/superpowers/plans/2026-08-05-clumeral-preprod-split.md`.
+
+---
+
+## 16. Build notes — PR 2, 2026-08-06
+
+Task 13 is built. **Tasks 14 and 15 are not code and cannot be done in this PR** — see
+"Still owed after merge" below. What follows is every place Build departed from, or
+resolved, what the plan said.
+
+### P57. The plan's sub-day mechanism is not idempotent, and it is replaced
+
+§3.4 step 4 imports an oversized day in `LIMIT/OFFSET` sub-windows with the day's `DELETE`
+running **only on the first sub-window**. That is safe only if the cursor advances after
+every window. A CPU kill advances nothing: the retry re-runs the same offset window with no
+`DELETE` in front of it and silently doubles those rows — inside the very import that P19
+exists to make re-runnable, and invisibly, because the duplicates are spread across a day.
+
+Replaced by a **time cursor**. `sub_offset` holds milliseconds into the day rather than a row
+offset, each window imports `[dayStart + sub_offset, windowEnd)`, and its `DELETE` covers
+exactly that range. A window that fills closes on a **whole second** — the trailing rows
+sharing the last timestamp are dropped and become the next window's first rows — so no second
+is ever half-imported. Every window is then re-runnable on its own, killed anywhere, and the
+"DELETE runs once per day" test in §6 becomes "re-running any sub-window changes nothing",
+which is the property that was actually wanted.
+
+The residual case is `MAX_ROWS_PER_RUN` rows inside one second, where the cursor cannot close
+on a second boundary. It logs an error and advances a second, losing the overflow. The
+busiest day on record is 677 rows across 86,400 seconds, so this is unreachable in practice —
+recorded rather than silently handled.
+
+### The Analytics Engine SQL API, measured before a line was written
+
+Four of the plan's query forms would have failed at run time in production. Probed live
+2026-08-06 (read-only, with the `.env` token) and now documented in `docs/ANALYTICS.md`:
+
+- **`COUNT(*)` is rejected outright** — it must be `COUNT()`.
+- **Absolute time bounds must be `toDateTime(<epoch seconds>)`.** A string literal is
+  refused. §3.3 and §3.4 never say how the day window is expressed; the obvious
+  ClickHouse-shaped guess is the one AE will not take.
+- **Aggregates come back as strings** (`COUNT()` → `"677"`). Arithmetic on them silently
+  concatenates.
+- **`toUnixTimestamp(timestamp) AS ts` makes `timestamp` unaddressable in `ORDER BY`.**
+  Order by the alias. P45 correctly insisted on an explicit `ORDER BY`; the form it needs
+  is not the obvious one.
+
+Also confirmed: `timestamp` is second-precision, so imported rows lose sub-second detail
+(irrelevant to day bucketing, which is all `/stats` reads); `LIMIT 1000` on a 677-row day
+returns 677, so P11/P45's "no hidden row cap" still holds; an `OFFSET` past the end returns
+zero rows rather than erroring.
+
+### Smaller departures
+
+- **The statement budget is tighter than P49.** P49 budgeted 45 `INSERT`s plus five spare,
+  but it also allows multi-day batches, and each extra day is another `DELETE`. `planDays`
+  now counts `1 + ceil(rows / 10)` per day against 45, and rows against 450, taking whichever
+  binds first — always at least one day.
+- **Discovery imports in the same invocation.** §3.3 reads as though the first run only
+  freezes the bounds. It freezes them in their own committed statement (so a crash mid-import
+  cannot lose them) and then carries straight on, saving an invocation.
+- **`done` needs one more invocation than the plan implies.** After the last day with rows is
+  imported the cursor sits on the next day; only the following run's count query can tell
+  "nothing left" from "not there yet". Finishing on evidence rather than on the absence of a
+  row is the safer of the two.
+- **Empty days are skipped in one hop.** The sizing query returns only days that hold rows,
+  so a three-week gap costs one invocation, not twenty-one.
+- **The cursor write, the totals, the failure reset and the lock release are one statement**,
+  which is also the commit point.
+- **Unrecognised cron expressions fall through to the daily puzzle job**, the behaviour that
+  predates the backfill. `BACKFILL_CRON` lives in `backfill.ts` and in `wrangler.jsonc`, and
+  `tests/wrangler-bindings.spec.ts` asserts they agree — get that wrong silently and the
+  daily puzzle cron runs 1,440 times a day.
+- **`MAX_UID` and `MAX_SOURCE` are now exported from `analytics-db.ts`** and imported here, so
+  a live row and an imported row can never disagree about the same uid.
+
+### Verified end-to-end against the live dataset, before the review
+
+The importer was run against live Analytics Engine into a local D1 (temporary harness, not
+committed), cutoff fixed at 2026-08-05T00:00Z:
+
+**6,838 rows over 92 days in 23 invocations, and all 92 days matched AE exactly** on both
+`COUNT()` and `SUM(_sample_interval)` — zero mismatches, so the ±1% gate was not needed. The
+sub-day path ran for real (2026-08-04 as 448 + 31). Sampling survived: 1/2/3/10 in AE's own
+proportions. 11 hostnames imported; `clumeral.com` is 4,690 of 6,838. Per-invocation rows
+were 31–449, inside the 450 cap, so P49's sizing holds against real data.
+
+This proves the query shapes, the mapping and the windowing. It cannot prove CPU per
+invocation — that needs `wrangler tail` on the deployed cron.
+
+### Open for Jamie — P35 versus the pre-prod split
+
+P54 settled "import all hostnames" on 2026-08-04, when there was **one** analytics database.
+§15 then split prod and pre-prod into two, and the backfill only ever runs in production, so
+all 11 pre-prod hostnames now land in the **production** database, where `/stats` — locked to
+`clumeral.com` — can never display them. That is 2,148 of 6,838 rows readable only by direct
+SQL.
+
+**Recommendation: leave P54 as it is.** The rows cost nothing, AE deletes this history within
+days and it can never be re-imported, and clearing them later is a single targeted statement
+against `hostname`. Importing and ignoring is reversible; not importing is permanent. Say the
+word and it becomes a one-line hostname filter instead.
+
+### Still owed after merge — Tasks 14 and 15
+
+Neither is code and neither can be done from here, so they are not in this PR:
+
+- **Task 14, the comparison.** `scripts/compare-ae-d1.mjs` reads the D1 side through
+  `wrangler d1 execute --remote`, which the guard hook blocks for this agent and which needs
+  Cloudflare credentials it does not hold. **Jamie runs it** once the backfill reports done.
+  The local rehearsal above is the strongest evidence obtainable before merge.
+- **Task 15, the measurement.** CPU per batch, wall-clock per run and rows per invocation come
+  from `wrangler tail` against the deployed per-minute cron. Local wall-clock was ~890 ms per
+  invocation including live AE round trips, which says nothing about CPU. If 450 rows will not
+  parse inside the 10 ms budget the invocation is killed, the cursor does not move, and the
+  next minute retries — the import gets slower, never wrong. That is why P21/P49's constant is
+  tuning rather than risk.
+- **Storage measurement for [104] cannot use `page_count × page_size`.** D1 refuses
+  `pragma_page_count()` over the API with `not authorized: SQLITE_AUTH`, confirmed 2026-08-06.
+  Use `wrangler d1 info clumeral-analytics` or the dashboard. The PR 3 checklist says so now.
+- **Worker secrets must be confirmed present.** `CF_ACCOUNT_ID` and `CF_API_TOKEN` predate
+  PR 1 (which removed the code that used them, not the secrets), but nobody has verified they
+  are still set. If they are gone the cron fires every minute and imports nothing, logging one
+  line per run.
