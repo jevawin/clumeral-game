@@ -1078,3 +1078,31 @@ planting a failing test; the −200-day fixture row breaks no other assertion; a
   after merge without being an outage: until PR 2 lands, every pre-cutover day renders as a
   zero stub and "Avg daily plays" divides by the full window. "All time" is the honest view
   in that period.
+
+---
+
+## 15. Superseded by the pre-prod split — 2026-08-05
+
+**§8 questions 3 and 4 are CLOSED, and not in the way this plan expected.** Do not action
+them as written; the commands in q4 point at paths that no longer exist.
+
+- **q3 (create the database)** — done. Jamie created `clumeral-analytics`
+  (`6e076e77-0937-4e3c-9756-3898a2b48ad6`) and a `clumeral-analytics-preprod` alongside it.
+  The `REPLACE_WITH_…` placeholder in `wrangler.jsonc` is gone.
+- **q4 (apply 0005/0006 remotely, by hand)** — **no longer a human step at all.** Migrations
+  are now applied by wrangler's own `d1 migrations apply` from Cloudflare's builder: to
+  pre-prod when a branch builds, to production when a PR merges. Nobody runs a command, and
+  the bot never holds a Cloudflare credential.
+- The migration files moved: `migrations/0005_*` and `0006_*` are now under
+  `migrations/analytics/`, and the feedback ones under `migrations/feedback/`. The directory
+  is what maps a migration to its database, via `migrations_dir`.
+
+**P54/P55 are superseded.** This plan settled on one analytics database for all hostnames,
+with `/stats` locked to the calling host as the separation. Prod and pre-prod are now
+genuinely separate databases. The reasoning that picked one database was the cost of
+maintaining a second migration target by hand — wrangler's tooling removed that cost, so the
+trade-off it rested on no longer exists. The `hostname` column and the per-host lock both
+stay, now as belt-and-braces rather than the mechanism.
+
+Spec: `docs/superpowers/specs/2026-08-05-clumeral-preprod-split-design.md`.
+Plan: `docs/superpowers/plans/2026-08-05-clumeral-preprod-split.md`.
