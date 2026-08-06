@@ -134,3 +134,67 @@ Ledger: **Settled: pending · Ack: pending**
     did not exist yet would otherwise dominate the output with empty rows)
 28. The "differences inside the band — record them in docs/ANALYTICS.md" reminder survives and
     now names the event as well as the day. (assumed)
+
+### Reopened by Jamie 2026-08-06 — the full sweep, and what the delta actually is
+
+Jamie asked whether the 08-04 delta was the only one and whether the missing events could be
+inserted by hand. Both answers changed the picture, so items 10 and 22 are reopened.
+
+29. **The full sweep was run before answering.** AE (all events, `clumeral.com`,
+    `SUM(_sample_interval)`) against `/api/stats?period=all` (`SUM(sample_interval)`), every
+    full UTC day 2026-06-28 to 2026-08-05: **176 non-empty (day, event) cells, exactly one
+    out of tolerance, and zero others differing at all** — not one in-band drift in the whole
+    window. So the answer to "is it only those 9" is yes, and every other cell is exact.
+
+30. **The delta is not 9 missing events.** Pulling AE's individual rows for that cell:
+    **AE holds 18 rows and D1 holds 18.** AE's figure of 27 comes from one row —
+    `2026-08-04T17:30:26Z`, uid `ba034600…` — carrying `_sample_interval = 10`. AE counts
+    that single stored row as ten events; D1 counts it as one.
+31. AE's `_sample_interval` is an exact accounting of writes the sampler stood down from, not
+    a statistical guess. Corroborated on 2026-08-05, which AE stored as 819 rows weighted to
+    1,053 while D1 independently reports 1,053 across all nine events — an exact match that
+    could not happen by chance if the weighting were an estimate.
+32. So on 2026-08-04 there were 27 real `incorrect_guess` writes, and **D1's total for that
+    day (479) equals AE's raw row count (479), not AE's weighted count (488)** — the shortfall
+    is exactly the one sampled row's multiplier, on the only day in the window where a
+    multiplier above 4 appears.
+33. **Two candidate causes, and they need different fixes.**
+    - **(a) The backfill imported that row with `sample_interval = 1` instead of 10.** Fix is
+      a one-row `UPDATE`, not an insert. The local rehearsal did preserve interval 10 on this
+      exact row (ANALYTICS.md records "intervals 1, 2, 3 and 10" imported), so production
+      behaving differently would be the defect.
+    - **(b) The row is live-written and 9 D1 writes were genuinely lost** around the cutover —
+      the documented fire-and-forget failure mode.
+    Sampled rows on 2026-07-09, 2026-07-16 and 2026-08-01 all match exactly, so intervals are
+    preserved in general; that favours (b) being narrow or (a) being a one-row slip.
+34. **Inserting 9 rows would be wrong under either cause.** Under (a) it double-counts on top
+    of a row that is already there. Under (b) the 9 events have no recoverable uid, timestamp
+    or source — AE never stored them, by definition — so they could only be invented.
+35. **There is no shared key to diff on.** `analytics_events.id` is a D1 rowid alias
+    (migration 0005, no AUTOINCREMENT); Analytics Engine has no row id at all. Matching rows
+    across the two is only possible on `(event, uid, timestamp-to-the-second)`, and AE
+    timestamps are second-precision. That is enough here because the candidate is a single
+    known row.
+36. **Deciding between (a) and (b) needs one read of production D1**, which Claude cannot run
+    (`wrangler d1 --remote` is blocked by the guard hook). SQL handed to Jamie for the
+    Cloudflare console 2026-08-06:
+    ```sql
+    SELECT id, datetime(ts/1000,'unixepoch') AS utc, uid, source, sample_interval, backfilled
+    FROM analytics_events
+    WHERE hostname = 'clumeral.com' AND event = 'incorrect_guess'
+      AND ts >= 1785801600000 AND ts < 1785888000000
+    ORDER BY ts;
+    ```
+    Reading it: 18 rows including one at `17:30:26` → cause (a), and the fix is
+    `UPDATE … SET sample_interval = 10` on that `id`. 18 rows with nothing at `17:30:26` →
+    cause (b), and nothing can be recovered.
+
+37. **Open — does the answer to item 36 change the plan?** My rec: **the script work is
+    unaffected either way and should proceed as briefed**; only the ANALYTICS.md wording
+    changes, and item 22 (zero-on-one-side as a hard fail) gets stronger, because this whole
+    episode was a magnitude question that a raw-count check would have settled instantly.
+38. **Open — should the comparison also check AE row COUNT against D1 row COUNT, alongside
+    the weighted sums?** My rec: **yes.** Why: the weighted-vs-weighted check is what made a
+    single dropped multiplier look like nine lost events and cost an afternoon. Counting rows
+    on both sides separates "we are missing records" from "we are missing a multiplier" in
+    the output itself, which is the distinction that actually matters when reading a red gate.
