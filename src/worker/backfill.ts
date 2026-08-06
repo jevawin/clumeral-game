@@ -428,20 +428,33 @@ async function importWindow(
   // delete-then-insert would quietly drop the difference. The import starts at the
   // retention edge, so this is the likeliest place for it to happen.
   const existing = await db
-    .prepare('SELECT COUNT(*) AS n FROM analytics_events WHERE backfilled = 1 AND ts >= ? AND ts < ?')
+    .prepare('SELECT COUNT(*) AS n, MAX(ts) AS hi FROM analytics_events WHERE backfilled = 1 AND ts >= ? AND ts < ?')
     .bind(fromMs, end)
-    .first<{ n: number }>();
+    .first<{ n: number; hi: number | null }>();
   if (Number(existing?.n ?? 0) > batch.length) {
-    // We already hold a superset of what AE can still give us for this range, so
-    // there is nothing to gain by rewriting it and everything to lose. Skip the
-    // window and move on — throwing here would stall the import permanently at the
-    // retention edge, which is precisely where this happens, and no amount of
-    // retrying could ever clear it.
+    // We hold more rows for this range than AE can still give us, so rewriting it
+    // could only lose data. Throwing would stall the import permanently at the
+    // retention edge — precisely where this happens — and nothing could clear it,
+    // so the window is kept instead.
+    //
+    // But "more rows" is not "all the rows". A previous invocation that inserted
+    // and then died before its cursor write leaves a *prefix* of the window, and if
+    // AE has shrunk below that prefix's count since, a plain skip would carry the
+    // cursor past rows AE still holds — silently, and past the point of recovery.
+    // MAX(ts) is what tells the two apart, and it costs nothing: the query is
+    // already being made.
+    const heldTo = Number(existing?.hi ?? fromMs);
+    const aeLast = batch.length > 0 ? batch[batch.length - 1].ts : fromMs;
+    const covered = heldTo >= aeLast;
+    const resume = covered ? end : Math.min(heldTo + 1000, end);
     console.warn(
       `[backfill] keeping ${existing?.n} imported rows for ${new Date(fromMs).toISOString()}–${new Date(end).toISOString()}; ` +
-        `Analytics Engine now offers only ${batch.length} — skipping rather than replacing them with fewer`,
+        `Analytics Engine now offers only ${batch.length} — ` +
+        (covered
+          ? 'skipping rather than replacing them with fewer'
+          : `they stop at ${new Date(heldTo).toISOString()}, so resuming from there rather than skipping the rest`),
     );
-    return { inserted: 0, nextFromMs: end >= toMs ? null : end };
+    return { inserted: 0, nextFromMs: resume >= toMs ? null : resume };
   }
 
   const statements: D1PreparedStatement[] = [

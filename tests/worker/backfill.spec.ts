@@ -868,6 +868,61 @@ describe('trusting Analytics Engine', () => {
     expect(warnings.join('\n')).toContain('skipping rather than replacing them with fewer');
   });
 
+  it('resumes past a partly imported window instead of skipping the rest of it', async () => {
+    // A window inserted by a run that died before its cursor write leaves a PREFIX
+    // of the day. If AE has since shrunk below the count D1 holds, the
+    // keep-rather-than-replace guard fires — and skipping the whole window there
+    // would carry the cursor past rows AE still has, terminally. D1 holds more
+    // rows, but not the LAST rows, and only MAX(ts) can tell those apart.
+    const rows = Array.from({ length: 30 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
+    await runBackfill(prodEnv(), NOW, fakeAE(rows));
+
+    // D1 keeps indices 0–19. AE keeps 0–9 and 25–29: fifteen rows against D1's
+    // twenty, so the guard fires, but five of them sit beyond everything D1 has.
+    await db().prepare('DELETE FROM analytics_events WHERE backfilled = 1 AND ts >= ?').bind(rows[20].ts).run();
+    const shrunk = fakeAE([...rows.slice(0, 10), ...rows.slice(25)]);
+    await rewind('2026-08-01');
+
+    let result = await runBackfill(prodEnv(), NOW, shrunk);
+    for (let i = 0; i < 5 && result.outcome === 'imported'; i++) {
+      result = await runBackfill(prodEnv(), NOW, shrunk);
+    }
+
+    const last = await db()
+      .prepare('SELECT MAX(ts) AS hi FROM analytics_events WHERE backfilled = 1')
+      .first<{ hi: number }>();
+    expect(last?.hi).toBe(rows[29].ts);
+    expect(await rowCount('backfilled = 1')).toBe(25);
+    expect(warnings.join('\n')).toContain('resuming from there rather than skipping the rest');
+  });
+
+  it('refuses a row query that returns MORE rows than its own count promised', async () => {
+    const rows = Array.from({ length: 10 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
+    const ae = fakeAE(rows);
+    // The sizing query undercounts while the row query is honest. These rows are
+    // historical and immutable, so the two disagreeing in either direction means
+    // neither answer can be trusted — and planDays sized the statement budget from
+    // the low one.
+    const inflated = sabotage(ae, (sql) => sql.includes('toStartOfDay'), [{ day: '2026-08-01 00:00:00', n: '4' }]);
+    const result = await runBackfill(prodEnv(), NOW, inflated);
+
+    expect(result.outcome).toBe('failed');
+    expect(errors.join('\n')).toContain('the two disagree about');
+    expect(await rowCount('backfilled = 1')).toBe(0);
+  });
+
+  it('will not treat an Analytics Engine total of zero as retention, even in a tiny window', async () => {
+    // The drop bound has a floor of 10 rows, so for a small import it alone would
+    // admit a drop all the way to zero. This is the clause that stops that.
+    const rows = Array.from({ length: 8 }, (_, i) => ({ ts: Date.UTC(2026, 7, 1, 6) + i * 1000, blob2: `uid-${i}` }));
+    await runBackfill(prodEnv(), NOW, fakeAE(rows));
+    await db().prepare('DELETE FROM analytics_events WHERE backfilled = 1').run();
+
+    const result = await runBackfill(prodEnv(), NOW, fakeAE([]));
+    expect(result.outcome).toBe('failed');
+    expect((await state())?.done).toBe(0);
+  });
+
   it('records what Analytics Engine said it held, so the total can be checked', async () => {
     const ae = fakeAE([{ ts: Date.UTC(2026, 7, 1, 6) }, { ts: Date.UTC(2026, 7, 2, 6) }, { ts: NOW }]);
     await runBackfill(prodEnv(), NOW, ae);

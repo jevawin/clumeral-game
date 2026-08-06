@@ -1405,3 +1405,46 @@ measured dataset.
 **Final live run, on the constants being merged:** 6,838 imported against 6,838 expected, 26
 invocations, 0 failures, max 388 rows in one invocation, 92 of 92 days matching AE on both
 counts and sampled sums, and a further run after completion changes nothing.
+
+### `da-build` fourth pass — 2026-08-06
+
+Fresh context. **1 Medium blocking, 7 Low.** It found that C-19's skip — the fix from the
+third pass — had a false premise, which is the fourth round running that a fix reintroduced
+the class of bug it replaced. Fixed, with a test that fails without it.
+
+- **C-22, Medium. "We hold more rows" is not "we hold all the rows".** C-19 skipped a window
+  when D1 held more rows than AE could still supply. But a window inserted by a run that died
+  before its cursor write leaves a **prefix** of the day, and if AE has shrunk below that
+  prefix's count since, the skip carries the cursor past rows AE still holds — silently, and
+  terminally, and small enough to slip under the completion tolerance. **The reviewer
+  reproduced it without touching state, by failing only the cursor write: 11 rows still in AE,
+  never imported, `done = 1`, one `console.warn`.** The guard SELECT now also reads `MAX(ts)`,
+  which costs nothing because the query was already being made: the window is skipped only
+  when what we hold reaches AE's last row, and otherwise the cursor resumes from where our
+  rows stop. Mutation-checked — restoring the plain skip fails the new test.
+  *Reachability, recorded because it is what makes this a Medium rather than a High:* it needs
+  a day over the 390-row window, a kill between the insert and the cursor write, and AE
+  shrinking that same day before the retry. Measured live, the retention-edge days hold 25–47
+  rows and the only day over 390 (2026-08-03, 677) sits two days inside the cutoff, where
+  retention cannot reach it during a ~25-minute run. So it could not have fired on this
+  import. It is fixed anyway: an unreachable-today argument is not a property, and the premise
+  in the code comment was simply false.
+- **Two clauses added in earlier rounds had no test that failed without them** — the `>`
+  direction of the row-count disagreement, and the `nowHolds > 0` guard on the retention
+  escape (the drop bound was catching the reviewer's zero case, not the clause named for it).
+  Both now have isolating tests.
+- **Recorded, not fixed.** The outer catch in `runBackfill` cannot increment
+  `consecutive_failures` — a persistent D1 error in the bookkeeping retries every minute
+  forever rather than halting at five. It is loud on every invocation and touches no data, and
+  incrementing a counter through a database that is failing is not obviously better.
+  Migration 0006's `sub_offset` comment still describes the `LIMIT/OFFSET` scheme P57
+  replaced; the migration is applied, so it is not edited. No index covers
+  `backfilled = 1 AND ts BETWEEN`, so the guard SELECT and the DELETE scan a ~7k-row table.
+  `docs/ANALYTICS.md`'s "Cutover instant" is still a placeholder — a Jamie action, on the PR.
+
+**Confirmed by the fourth pass, having recounted rather than taken on trust:** the worst-case
+invocation is **exactly 48** D1 queries of 50 and 80 bound parameters of 100 (instrumented,
+not argued); AE subrequests ≤ 14; the hard cutoff holds in both directions; `backfilled = 1`
+filters the DELETE, the guard SELECT and the completion count; the whole-second trim always
+advances; migration 0007 is additive, correctly numbered and wired into `e2e:db`; and the
+production gate rejects all four non-production values.

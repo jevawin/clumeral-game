@@ -173,7 +173,8 @@ which is true first:
    `UPDATE backfill_state SET next_day = '<day>', sub_offset = 0, consecutive_failures = 0,
    done = 0 WHERE id = 1;`. Re-running a day is safe by design: each window deletes exactly
    what it rewrites, and a window where D1 already holds **more** than AE can still supply is
-   skipped rather than replaced, so a rewind past healthy days cannot cost you anything.
+   kept rather than replaced — and if what it holds stops short of AE's last row, the import
+   resumes from there rather than stepping over the remainder.
 3. **If AE no longer holds them**, they are gone and no import can recover them. The code
    already checks this itself — it re-asks AE for its current total before halting, and
    finishes if what remains matches what D1 holds — so reaching this state by hand means
@@ -181,8 +182,9 @@ which is true first:
 
 **It will not call itself finished on one query's say-so.** `done = 1` is terminal — every
 later invocation returns before touching AE — so a single empty response would otherwise end
-the import part-way, permanently, and an empty response is not an error anywhere. Three
-things have to agree before it finishes: the day-count query returns no days, a differently
+the import part-way, permanently, and an empty response is not an error anywhere. When the
+cursor stops because the day-count query is empty, three things have to agree before it
+finishes: that query returns no days, a differently
 shaped `COUNT()` over the same window returns a row reading zero, and the rows in D1 match
 `expected_rows`, the total AE reported at discovery (migration 0007). A shortfall past 1% (or
 3 rows) refuses to finish, logs, and counts as a failure — unless AE's *current* total explains
