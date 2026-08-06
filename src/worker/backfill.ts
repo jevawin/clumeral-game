@@ -443,6 +443,12 @@ async function importWindow(
     // cursor past rows AE still holds — silently, and past the point of recovery.
     // MAX(ts) is what tells the two apart, and it costs nothing: the query is
     // already being made.
+    //
+    // This is exact under the invariant the importer maintains — the backfilled
+    // rows inside a window not yet past the cursor are a contiguous prefix of it,
+    // because every window is a contiguous delete-then-insert and both branches
+    // below preserve that. A hole punched in the middle by hand would defeat it;
+    // the completion check then halts on the shortfall rather than finishing.
     const heldTo = Number(existing?.hi ?? fromMs);
     const aeLast = batch.length > 0 ? batch[batch.length - 1].ts : fromMs;
     const covered = heldTo >= aeLast;

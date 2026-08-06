@@ -1442,6 +1442,19 @@ the class of bug it replaced. Fixed, with a test that fails without it.
   `backfilled = 1 AND ts BETWEEN`, so the guard SELECT and the DELETE scan a ~7k-row table.
   `docs/ANALYTICS.md`'s "Cutover instant" is still a placeholder — a Jamie action, on the PR.
 
+**Verified after the fix, by the same reviewer against its own reproducer:** the 11 rows it
+had lost are now imported and the run finishes clean. All four guard clauses are isolated by
+exactly the test named for each — mutation-checked one at a time. The resume path makes strict
+progress in every case (it cannot crawl: `MAX(ts)` clears the whole window at once) and cannot
+step past a row (whole-second timestamps force `heldTo + 1000 ≤ aeLast < end`). Verdict READY
+TO PUSH.
+
+Its one recorded note, now also stated in the code: `heldTo >= aeLast` proves coverage under
+the invariant that backfilled rows inside an un-imported window form a **contiguous prefix**,
+which the importer always maintains. A hole punched mid-range by hand would defeat it — and
+the reviewer probed that too: the import halts on the shortfall rather than finishing, which
+is the right outcome.
+
 **Confirmed by the fourth pass, having recounted rather than taken on trust:** the worst-case
 invocation is **exactly 48** D1 queries of 50 and 80 bound parameters of 100 (instrumented,
 not argued); AE subrequests ≤ 14; the hard cutoff holds in both directions; `backfilled = 1`
