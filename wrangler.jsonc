@@ -65,7 +65,19 @@
 	},
 	"triggers": {
 		"crons": [
-			"0 0 * * *"
+			// Daily puzzle pre-generation. Permanent.
+			"0 0 * * *",
+			// TEMPORARY — drives the Analytics Engine → D1 backfill, and is deleted in
+			// PR 3 the moment the import is verified. src/worker/backfill.ts matches on
+			// this exact string (BACKFILL_CRON) to tell the two triggers apart.
+			//
+			// It costs ~1,440 Worker invocations a day against the free 100k, and it
+			// keeps firing after the import finishes — the handler returns immediately
+			// once backfill_state.done is 1, but the invocation still happens. That is
+			// the cost of not building a mutating HTTP endpoint to drive it instead.
+			//
+			// Free plan allows 5 cron triggers per account; this is the second.
+			"* * * * *"
 		]
 	},
 	"env": {

@@ -1106,3 +1106,358 @@ stay, now as belt-and-braces rather than the mechanism.
 
 Spec: `docs/superpowers/specs/2026-08-05-clumeral-preprod-split-design.md`.
 Plan: `docs/superpowers/plans/2026-08-05-clumeral-preprod-split.md`.
+
+---
+
+## 16. Build notes — PR 2, 2026-08-06
+
+Task 13 is built. **Tasks 14 and 15 are not code and cannot be done in this PR** — see
+"Still owed after merge" below. What follows is every place Build departed from, or
+resolved, what the plan said.
+
+### P57. The plan's sub-day mechanism is not idempotent, and it is replaced
+
+§3.4 step 4 imports an oversized day in `LIMIT/OFFSET` sub-windows with the day's `DELETE`
+running **only on the first sub-window**. That is safe only if the cursor advances after
+every window. A CPU kill advances nothing: the retry re-runs the same offset window with no
+`DELETE` in front of it and silently doubles those rows — inside the very import that P19
+exists to make re-runnable, and invisibly, because the duplicates are spread across a day.
+
+Replaced by a **time cursor**. `sub_offset` holds milliseconds into the day rather than a row
+offset, each window imports `[dayStart + sub_offset, windowEnd)`, and its `DELETE` covers
+exactly that range. A window that fills closes on a **whole second** — the trailing rows
+sharing the last timestamp are dropped and become the next window's first rows — so no second
+is ever half-imported. Every window is then re-runnable on its own, killed anywhere, and the
+"DELETE runs once per day" test in §6 becomes "re-running any sub-window changes nothing",
+which is the property that was actually wanted.
+
+The residual case is `MAX_ROWS_PER_RUN` rows inside one second, where the cursor cannot close
+on a second boundary. It logs an error and advances a second, losing the overflow. The
+busiest day on record is 677 rows across 86,400 seconds, so this is unreachable in practice —
+recorded rather than silently handled.
+
+### The Analytics Engine SQL API, measured before a line was written
+
+Four of the plan's query forms would have failed at run time in production. Probed live
+2026-08-06 (read-only, with the `.env` token) and now documented in `docs/ANALYTICS.md`:
+
+- **`COUNT(*)` is rejected outright** — it must be `COUNT()`.
+- **Absolute time bounds must be `toDateTime(<epoch seconds>)`.** A string literal is
+  refused. §3.3 and §3.4 never say how the day window is expressed; the obvious
+  ClickHouse-shaped guess is the one AE will not take.
+- **Aggregates come back as strings** (`COUNT()` → `"677"`). Arithmetic on them silently
+  concatenates.
+- **`toUnixTimestamp(timestamp) AS ts` makes `timestamp` unaddressable in `ORDER BY`.**
+  Order by the alias. P45 correctly insisted on an explicit `ORDER BY`; the form it needs
+  is not the obvious one.
+
+Also confirmed: `timestamp` is second-precision, so imported rows lose sub-second detail
+(irrelevant to day bucketing, which is all `/stats` reads); `LIMIT 1000` on a 677-row day
+returns 677, so P11/P45's "no hidden row cap" still holds; an `OFFSET` past the end returns
+zero rows rather than erroring.
+
+### Smaller departures
+
+- **The statement budget is tighter than P49.** P49 budgeted 45 `INSERT`s plus five spare,
+  but it also allows multi-day batches, and each extra day is another `DELETE`. `planDays`
+  counts per-day cost against a budget and rows against a cap, taking whichever binds first —
+  always at least one day. **The constants moved twice under review** and the shipped values
+  are `MAX_ROWS_PER_RUN = 390`, `STATEMENT_BUDGET = 41`, per-day cost `2 + ceil(rows / 10)`
+  (guard SELECT, DELETE, INSERTs), worst case 48 of D1's 50 queries. See C-3 and C-12.
+- **Discovery imports in the same invocation.** §3.3 reads as though the first run only
+  freezes the bounds. It freezes them in their own committed statement (so a crash mid-import
+  cannot lose them) and then carries straight on, saving an invocation.
+- **`done` needs one more invocation than the plan implies.** After the last day with rows is
+  imported the cursor sits on the next day; only the following run's count query can tell
+  "nothing left" from "not there yet". Finishing on evidence rather than on the absence of a
+  row is the safer of the two.
+- **Empty days are skipped in one hop.** The sizing query returns only days that hold rows,
+  so a three-week gap costs one invocation, not twenty-one.
+- **The cursor write, the totals, the failure reset and the lock release are one statement**,
+  which is also the commit point.
+- **Unrecognised cron expressions fall through to the daily puzzle job**, the behaviour that
+  predates the backfill. `BACKFILL_CRON` lives in `backfill.ts` and in `wrangler.jsonc`, and
+  `tests/wrangler-bindings.spec.ts` asserts they agree — get that wrong silently and the
+  daily puzzle cron runs 1,440 times a day.
+- **`MAX_UID` and `MAX_SOURCE` are now exported from `analytics-db.ts`** and imported here, so
+  a live row and an imported row can never disagree about the same uid.
+
+### Verified end-to-end against the live dataset, before the review
+
+The importer was run against live Analytics Engine into a local D1 (temporary harness, not
+committed), cutoff fixed at 2026-08-05T00:00Z:
+
+**6,838 rows over 92 days in 23 invocations, and all 92 days matched AE exactly** on both
+`COUNT()` and `SUM(_sample_interval)` — zero mismatches, so the ±1% gate was not needed. The
+sub-day path ran for real. Sampling survived: 1/2/3/10 in AE's own proportions. 11 hostnames
+imported; `clumeral.com` is 4,690 of 6,838.
+
+**These figures are from the pre-review build**, at the 450-row batch it shipped with at the
+time. They are kept as the record of that run; the numbers for the build actually being
+merged are in the re-review sections below, which is where the pre-merge evidence lives.
+
+This proves the query shapes, the mapping and the windowing. It cannot prove CPU per
+invocation — that needs `wrangler tail` on the deployed cron.
+
+### Open for Jamie — P35 versus the pre-prod split
+
+P54 settled "import all hostnames" on 2026-08-04, when there was **one** analytics database.
+§15 then split prod and pre-prod into two, and the backfill only ever runs in production, so
+all 11 pre-prod hostnames now land in the **production** database, where `/stats` — locked to
+`clumeral.com` — can never display them. That is 2,148 of 6,838 rows readable only by direct
+SQL.
+
+**Recommendation: leave P54 as it is.** The rows cost nothing, AE deletes this history within
+days and it can never be re-imported, and clearing them later is a single targeted statement
+against `hostname`. Importing and ignoring is reversible; not importing is permanent. Say the
+word and it becomes a one-line hostname filter instead.
+
+### Still owed after merge — Tasks 14 and 15
+
+Neither is code and neither can be done from here, so they are not in this PR:
+
+- **Task 14, the comparison.** `scripts/compare-ae-d1.mjs` reads the D1 side through
+  `wrangler d1 execute --remote`, which the guard hook blocks for this agent and which needs
+  Cloudflare credentials it does not hold. **Jamie runs it** once the backfill reports done.
+  The local rehearsal above is the strongest evidence obtainable before merge.
+- **Task 15, the measurement.** CPU per batch, wall-clock per run and rows per invocation come
+  from `wrangler tail` against the deployed per-minute cron. Local wall-clock was ~890 ms per
+  invocation including live AE round trips, which says nothing about CPU. If 450 rows will not
+  parse inside the 10 ms budget the invocation is killed, the cursor does not move, and the
+  next minute retries — the import gets slower, never wrong. That is why P21/P49's constant is
+  tuning rather than risk.
+- **Storage measurement for [104] cannot use `page_count × page_size`.** D1 refuses
+  `pragma_page_count()` over the API with `not authorized: SQLITE_AUTH`, confirmed 2026-08-06.
+  Use `wrangler d1 info clumeral-analytics` or the dashboard. The PR 3 checklist says so now.
+- **Worker secrets must be confirmed present.** `CF_ACCOUNT_ID` and `CF_API_TOKEN` predate
+  PR 1 (which removed the code that used them, not the secrets), but nobody has verified they
+  are still set. If they are gone the cron fires every minute and imports nothing, logging one
+  line per run.
+
+### `da-build` review — findings and fixes, 2026-08-06
+
+Fresh-context review of the PR 2 diff. Returned **2 High, 3 Medium, 5 Low**, verdict NOT
+READY. Both Highs were silent, permanent data loss on a source that is being deleted, and
+both were reproduced with probes rather than argued. All Highs and Mediums are fixed; the
+Lows are fixed or recorded.
+
+**High**
+
+- **C-1. One empty response from AE would have ended the import forever, part-way.**
+  `done = 1` is terminal, and `counts.length === 0` was taken as proof of completion — but an
+  empty result is not a failure, so nothing would have retried, and the only trace was a
+  `console.log`. `makeAEQuery`'s `body.data ?? []` widens it: any 200 with an unexpected shape
+  becomes a clean empty array. **Verified by the reviewer: 10 of 30 rows imported, `done = 1`,
+  `consecutive_failures = 0`.** Now three things must agree before it finishes — no days from
+  the grouped query, a row reading zero from a differently shaped `COUNT()` over the same
+  window, and D1's own row count matching `expected_rows`, the total AE reported at discovery.
+  That total needs somewhere to live, hence **migration 0007**. A shortfall past 1%/3 rows
+  refuses to finish, logs and counts as a failure, so five of them halt loudly. The reviewer
+  was also right that the old comment had it backwards: retention deletes from the *old* end,
+  which the cursor has already passed, so "AE deleted it underneath us" was never the
+  explanation for an empty window.
+- **C-2. A short read on a re-run window destroyed already-imported rows.** `importWindow`
+  deleted unconditionally and inserted whatever came back, without checking it against the
+  count the sizing query had just given for the same window. **Verified: 5 rows → 0 rows,
+  cursor advanced, no failure recorded.** Not hypothetical — the import *starts* at AE's
+  retention edge, so the first days it touches are precisely the ones AE is about to delete.
+  Now a window whose row query returns fewer rows than its own count query promised throws
+  before the `DELETE`, and the minute-later retry sees a consistent pair and proceeds.
+
+**Medium**
+
+- **C-3. The discovery invocation issued 51 D1 queries against a free-tier cap of 50.**
+  `MAX_ROWS_PER_RUN = 450` is 45 INSERTs, 46 statements with the DELETE — already over
+  `STATEMENT_BUDGET = 45`, which the single-oversized-day path bypasses because it always
+  takes at least one day, and neither constant accounted for discovery's two extra reads.
+  P48's 523-row first day is exactly that shape. Now 400 rows / 42 statements, worst case 47.
+- **C-4. The statement-cap test was tautological** — it recomputed the implementation's own
+  cost formula from the implementation's own constants and compared it to the implementation's
+  own budget. It stayed green while the real path issued 51. Replaced by a counting
+  `D1Database` wrapper that counts what actually reaches D1 across the discovery path, the
+  oversized-day path and a maxed multi-day batch, asserted against 50 and 100 bound
+  parameters. Mutation-checked: restoring 450 fails it.
+- **C-5. The test file contained a literal NUL byte**, so git treated it as binary and the
+  diff showed nothing — for the one change in this repo that cannot be undone. Fixed, and the
+  fake AE's row ordering now sorts `ts` numerically rather than as text (it only agreed while
+  every timestamp had the same digit count).
+
+**Low** — C-6 backwards clock reached the same terminal `done` (now goes through the same
+verification). C-7 `rows_written` double-counts re-run windows, so the PR 3 checklist now
+checks `COUNT(*)` against `expected_rows` instead. C-8 no behavioural test for the cron
+dispatch (added: the per-minute expression must reach the backfill without touching KV, and
+`0 0 * * *` and an unknown expression must reach the daily job without touching D1). C-9
+"runBackfill never throws" was untrue for the pre-lock state read (now inside its own try).
+C-10 the same-second overflow path still reports success after logging its loss — accepted,
+unreachable at 677 rows across 86,400 seconds.
+
+**Re-verified live after the fixes.** Same harness, same 2026-08-05T00:00Z cutoff: **6,838
+rows imported against 6,838 expected — exact — in 24 invocations, 0 failures, 92 of 92 days
+matching AE on both counts and sampled sums.** Max rows in one invocation 399, inside the new
+400 cap.
+
+### `da-build` re-review — 2026-08-06
+
+Fresh context, second pass. Confirmed C-1's premise live (an empty bounded window really does
+return one row reading zero where the grouped query returns nothing), confirmed C-2 holds at
+all five call sites, independently recounted C-3's budget, and confirmed C-5 clean. Found
+**4 Medium and 6 Low** that both earlier passes missed. Verdict NOT READY; all four Mediums
+are fixed, plus three of the Lows.
+
+**Medium**
+
+- **C-11. The fix for C-1 had the same bug C-1 was about.** `countBelowCutoff` read a missing
+  row as `Number(undefined ?? 0)` = 0, and that value is *frozen*, so one malformed 200 at
+  discovery would set `expected_rows = 0` and make the shortfall check vacuous — negative — for
+  the entire irreversible run, logging "0 rows to import" and nothing else. **Reviewer verified
+  it end to end.** It now returns null and discovery throws, which costs a minute and no data
+  because nothing has been written at that point.
+- **C-12. The C-2 guard was one-sided.** It compares the row query against the sizing query
+  *from the same invocation*, so it cannot see rows a previous invocation already imported. If
+  AE shrinks between a successful import and a re-run of that window, both queries agree at the
+  lower number and the delete-then-insert drops the difference. **Verified: 6 rows → 3, no
+  error, no failure recorded.** Narrow — needs a re-run plus retention landing in the same
+  60–180 s — but the import starts at the retention edge, which is exactly where shrinkage
+  happens. Each window now counts what D1 already holds for its exact range and refuses to
+  replace it with fewer. That costs one SELECT per window, so the per-day statement cost is
+  `2 + ceil(rows / 10)` and the constants drop to 390 rows / 41 statements, worst case 48 of 50.
+- **C-13. A shortfall halt was a one-way door.** The cursor is past the ceiling, so every
+  retry re-fails identically; the documented recovery (clear `consecutive_failures`) provably
+  does not work, and only a hand-edited state row could ever release it. **Reviewer verified
+  the loop.** Before halting, the code now re-asks AE what it holds *now*: if what remains
+  matches what D1 holds, the difference is retention deleting rows during the run — genuinely
+  gone, nobody's defect — and it finishes with a warning. A real shortfall still halts, and
+  `docs/ANALYTICS.md` now carries the actual recovery procedure for it.
+- **C-14. The shortfall branch had no test at all** — the one branch that can permanently block
+  completion. Three added: a real shortfall halts and then trips the halt at five, a
+  retention-shaped shortfall finishes, and a malformed discovery total refuses to start.
+
+**Low, fixed** — C-15 the state row was read *before* the CAS, so the lock did not protect the
+snapshot it guards (a run releasing between the two could hand the next one a stale cursor, or
+in the narrowest case re-run discovery and re-freeze the bounds); it is re-read inside the
+lock. C-16 `scheduled()` discarded the result, so `ms` — documented as Task 15's source — was
+never printed, `'locked'` logged nothing, and a finished import looked identical to a stalled
+one; the result object is now logged. C-17 `DAY_LOOKAHEAD`'s comment claimed it was slack when
+it is in fact what caps days per batch and AE subrequests at 13.
+
+**Low, also taken** — the completion check now also reports D1 holding *more* than AE reported,
+which delete-then-insert should make impossible and which is the one error a deleted source
+makes permanent. `docs/ANALYTICS.md` had mixed pre- and post-fix rehearsal numbers.
+
+**Low, recorded not fixed** — the counting test asserts a 48-query ceiling rather than a
+recorded high-water mark. The reviewer also noted the C-10 same-second overflow now leads to a
+halt rather than a logged loss, and confirmed live that the busiest day's maximum rows in any
+one second is **3**, against a 390-row window.
+
+**Re-verified live a third time, after these fixes:** 6,838 imported against 6,838 expected,
+27 invocations, 0 failures, 92 of 92 days matching, and a further invocation after completion
+is a no-op that changes nothing.
+
+### `da-build` third pass — 2026-08-06
+
+Fresh context again, because two rounds running a fix had reintroduced the bug it was fixing.
+It happened a third time. **1 High, 3 Medium, 8 Low**; verdict NOT READY. All four blockers
+are fixed, plus the two non-blocking items it asked to be folded in.
+
+**High**
+
+- **C-18. The C-13 retention escape accepted any answer at all, including zero.**
+  `imported >= nowHolds - tolerance` is trivially true whenever `nowHolds <= imported`, so the
+  *worse* AE's reply, the more readily a provably short import declared itself finished — and
+  `done` is terminal. **Reproduced: 40 rows imported, 30 deleted from D1, AE answering 0 →
+  `done = 1` with 10 rows held.** The reviewer also found a second route in: the recovery
+  procedure this repo now documents has a human editing `backfill_state`, and a mistyped
+  `cutoff_ms` collapses the ceiling straight into this branch. This is the third time a guard
+  has been undone by reading a bad number as a real one. The escape now requires all of:
+  `nowHolds` is not null, `nowHolds > 0`, the drop is inside 5% of the window (retention
+  removes days, not archives), and D1 holds what AE still has. Anything else logs and halts.
+
+**Medium**
+
+- **C-19. The C-12 guard could wedge a healthy import permanently.** If a window is imported,
+  the invocation later throws for an unrelated reason, and retention then removes a row from
+  that same window, every retry finds `existing > batch` and throws — forever, at the
+  retention edge, which is where the import starts. **Reviewer reproduced the halt.** The
+  wrong response was mine: D1 holding a superset means there is nothing to gain by rewriting
+  the window. It is now **kept and skipped**, with a warning, and the cursor advances.
+- **C-20. `runBackfill` could still throw**, despite two rounds of comments promising it
+  could not: the CAS and the failure-counter update sat outside every `try`. **Verified.** A
+  D1 error in either rejected the cron invocation, took the result log with it, and left the
+  lock held for its full 180 s. The body now runs inside an outer catch.
+- **C-21. The recovery procedure contradicted the code.** It said re-running a day is always
+  safe; since C-12 that was false. The C-19 skip makes it true again, and the doc now says why,
+  and carries the `WHERE id = 1` it was missing.
+
+**Low, fixed** — the budget test did not reach the path it was named for (34 queries, never
+reaching the verified finish); it now drives discovery, a full window and the finish in one
+invocation and asserts 46–48, so it fails if the headroom is eaten. §16's constants were stale
+against the shipped code. `earliestAERow`'s null-versus-zero conflation is now stated as
+deliberate. The failure log names the cursor actually used. The invocation that finishes now
+reports `done` itself rather than a minute later. A row query returning *more* than its count
+promised is refused as well as fewer. `DAY_LOOKAHEAD`'s subrequest arithmetic said 13, is 14.
+
+**Low, recorded not fixed** — no index covers `backfilled = 1 AND ts BETWEEN`, so the guard
+SELECT and the DELETE scan the table; negligible at ~7k rows and the table is dropped from the
+hot path entirely in PR 3. `toImportRow` maps a missing `blob1`/`blob2` to `''` rather than
+failing the batch — a junk row is better than losing a window, and no such row exists in the
+measured dataset.
+
+**Final live run, on the constants being merged:** 6,838 imported against 6,838 expected, 26
+invocations, 0 failures, max 388 rows in one invocation, 92 of 92 days matching AE on both
+counts and sampled sums, and a further run after completion changes nothing.
+
+### `da-build` fourth pass — 2026-08-06
+
+Fresh context. **1 Medium blocking, 7 Low.** It found that C-19's skip — the fix from the
+third pass — had a false premise, which is the fourth round running that a fix reintroduced
+the class of bug it replaced. Fixed, with a test that fails without it.
+
+- **C-22, Medium. "We hold more rows" is not "we hold all the rows".** C-19 skipped a window
+  when D1 held more rows than AE could still supply. But a window inserted by a run that died
+  before its cursor write leaves a **prefix** of the day, and if AE has shrunk below that
+  prefix's count since, the skip carries the cursor past rows AE still holds — silently, and
+  terminally, and small enough to slip under the completion tolerance. **The reviewer
+  reproduced it without touching state, by failing only the cursor write: 11 rows still in AE,
+  never imported, `done = 1`, one `console.warn`.** The guard SELECT now also reads `MAX(ts)`,
+  which costs nothing because the query was already being made: the window is skipped only
+  when what we hold reaches AE's last row, and otherwise the cursor resumes from where our
+  rows stop. Mutation-checked — restoring the plain skip fails the new test.
+  *Reachability, recorded because it is what makes this a Medium rather than a High:* it needs
+  a day over the 390-row window, a kill between the insert and the cursor write, and AE
+  shrinking that same day before the retry. Measured live, the retention-edge days hold 25–47
+  rows and the only day over 390 (2026-08-03, 677) sits two days inside the cutoff, where
+  retention cannot reach it during a ~25-minute run. So it could not have fired on this
+  import. It is fixed anyway: an unreachable-today argument is not a property, and the premise
+  in the code comment was simply false.
+- **Two clauses added in earlier rounds had no test that failed without them** — the `>`
+  direction of the row-count disagreement, and the `nowHolds > 0` guard on the retention
+  escape (the drop bound was catching the reviewer's zero case, not the clause named for it).
+  Both now have isolating tests.
+- **Recorded, not fixed.** The outer catch in `runBackfill` cannot increment
+  `consecutive_failures` — a persistent D1 error in the bookkeeping retries every minute
+  forever rather than halting at five. It is loud on every invocation and touches no data, and
+  incrementing a counter through a database that is failing is not obviously better.
+  Migration 0006's `sub_offset` comment still describes the `LIMIT/OFFSET` scheme P57
+  replaced; the migration is applied, so it is not edited. No index covers
+  `backfilled = 1 AND ts BETWEEN`, so the guard SELECT and the DELETE scan a ~7k-row table.
+  `docs/ANALYTICS.md`'s "Cutover instant" is still a placeholder — a Jamie action, on the PR.
+
+**Verified after the fix, by the same reviewer against its own reproducer:** the 11 rows it
+had lost are now imported and the run finishes clean. All four guard clauses are isolated by
+exactly the test named for each — mutation-checked one at a time. The resume path makes strict
+progress in every case (it cannot crawl: `MAX(ts)` clears the whole window at once) and cannot
+step past a row (whole-second timestamps force `heldTo + 1000 ≤ aeLast < end`). Verdict READY
+TO PUSH.
+
+Its one recorded note, now also stated in the code: `heldTo >= aeLast` proves coverage under
+the invariant that backfilled rows inside an un-imported window form a **contiguous prefix**,
+which the importer always maintains. A hole punched mid-range by hand would defeat it — and
+the reviewer probed that too: the import halts on the shortfall rather than finishing, which
+is the right outcome.
+
+**Confirmed by the fourth pass, having recounted rather than taken on trust:** the worst-case
+invocation is **exactly 48** D1 queries of 50 and 80 bound parameters of 100 (instrumented,
+not argued); AE subrequests ≤ 14; the hard cutoff holds in both directions; `backfilled = 1`
+filters the DELETE, the guard SELECT and the completion count; the whole-second trim always
+advances; migration 0007 is additive, correctly numbered and wired into `e2e:db`; and the
+production gate rejects all four non-production values.

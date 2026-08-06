@@ -84,8 +84,11 @@ export function rangeCutoff(range: StatsRange, now: number): number | null {
 // leaving the endpoint open; that reasoning does not carry over. Truncate rather
 // than reject: a client sending an over-long uid is far more likely to be a bug
 // than an attack, and dropping the event would lose a real play.
-const MAX_UID = 64;
-const MAX_SOURCE = 128;
+// Exported so the backfill applies exactly these caps to imported rows: two
+// copies of the number would let an imported uid and a live uid for the same
+// browser differ, which is the one thing a distinct-count cannot survive.
+export const MAX_UID = 64;
+export const MAX_SOURCE = 128;
 
 /**
  * Store one event.

@@ -109,8 +109,8 @@ and below even the 3:1 graphics threshold. That is what `--ink-muted` replaced.
 
 ## Migration status
 
-**PR 1 (this one).** Schema, dual write, D1 reads, the rebuilt chart, test harness, docs.
-After it merges, D1 collects and `/stats` shows post-merge data only.
+**PR 1 — merged 2026-08-05.** Schema, dual write, D1 reads, the rebuilt chart, test harness,
+docs. D1 has collected every event since; `/stats` shows post-merge data only until PR 2 runs.
 
 **Expect production `/stats` to look wrong for a few days, and it will not be an outage.**
 Until PR 2 backfills, every pre-cutover day in the 7/30/90 ranges renders as a zero-day stub
@@ -118,11 +118,119 @@ Until PR 2 backfills, every pre-cutover day in the 7/30/90 ranges renders as a z
 the full window, so it reads far too low. "All time" is the honest view during this period,
 because it starts at the first row we actually hold.
 
-**PR 2.** The backfill: imports everything from before the dual-write cutover out of AE,
-all hostnames, idempotent per UTC day, driven by a temporary per-minute cron.
+**PR 2 (this one).** The backfill: imports everything from before the dual-write cutover out
+of AE, all hostnames, idempotent per window, driven by a temporary per-minute cron. See
+**The backfill** below.
 
 **PR 3.** AE removal — `writeDataPoint`, the `ANALYTICS` binding, the second cron entry,
 and the API token revoked. Gated on the comparison below.
+
+## The backfill
+
+`src/worker/backfill.ts`, run from `scheduled()` on a temporary `* * * * *` cron entry and
+deleted whole in PR 3. It walks UTC days forward from AE's earliest surviving row up to the
+instant the dual write went live, and stops.
+
+**It runs in production only**, gated on `env.ENVIRONMENT === 'production'` — an unset value
+means no. Pre-prod versions are uploaded and never deployed, so they should never fire a
+cron at all, but "should never" is not a check, and pre-prod importing real history would
+quietly make its own numbers useless for testing.
+
+**What makes it safe to interrupt.** Every window is delete-then-insert, and the `DELETE` is
+filtered to `backfilled = 1`, so it can never reach a live dual-written row. The window
+imported is exactly the window deleted, and windows close on whole seconds. A run killed
+anywhere — between the delete and the insert, mid-batch, or after inserting but before the
+cursor moves — is simply re-run, and converges on the same rows. None of this depends on
+whether `db.batch()` is transactional, which is still undocumented.
+
+**It is bounded by D1's free-tier limits, not by a guessed batch size.** 50 queries per
+invocation and 100 bound parameters per query (= 10 rows per `INSERT`). The batch is sized at
+run time from AE's own per-day counts: whole days while they fit, otherwise one day split
+into sub-windows. This is not belt and braces — the busiest recorded day is 677 rows against
+a mean of ~80, so a day too big for one invocation already exists in the data.
+
+**When it is stuck, it says so.** A compare-and-set lock (`lock_until`) stops overlapping
+invocations and is released on every exit; five consecutive failures halt the import with a
+`console.error` rather than retrying once a minute forever. Every invocation logs its result
+object, so `npx wrangler tail --format pretty` is the window onto all of it.
+
+**Restarting a halted import.** For most failures — an AE hiccup, a D1 error — clearing the
+counter is enough:
+
+```sql
+UPDATE backfill_state SET consecutive_failures = 0 WHERE id = 1;
+```
+
+**That alone does not clear a shortfall halt** ("refusing to finish: … rows missing"). The
+cursor is already past the end, so every retry re-checks the same total and re-fails. Work out
+which is true first:
+
+1. Compare per day — `SELECT strftime('%Y-%m-%d', ts/1000, 'unixepoch') AS day, COUNT(*) FROM
+   analytics_events WHERE backfilled = 1 GROUP BY day` against the same query on AE — and find
+   the days that are short.
+2. **If AE still holds those rows**, this is a real import defect: rewind the cursor to the
+   first short day and let the cron re-import from there —
+   `UPDATE backfill_state SET next_day = '<day>', sub_offset = 0, consecutive_failures = 0,
+   done = 0 WHERE id = 1;`. Re-running a day is safe by design: each window deletes exactly
+   what it rewrites, and a window where D1 already holds **more** than AE can still supply is
+   kept rather than replaced — and if what it holds stops short of AE's last row, the import
+   resumes from there rather than stepping over the remainder.
+3. **If AE no longer holds them**, they are gone and no import can recover them. The code
+   already checks this itself — it re-asks AE for its current total before halting, and
+   finishes if what remains matches what D1 holds — so reaching this state by hand means
+   something else is going on. Record the shortfall here before setting `done = 1`.
+
+**It will not call itself finished on one query's say-so.** `done = 1` is terminal — every
+later invocation returns before touching AE — so a single empty response would otherwise end
+the import part-way, permanently, and an empty response is not an error anywhere. When the
+cursor stops because the day-count query is empty, three things have to agree before it
+finishes: that query returns no days, a differently
+shaped `COUNT()` over the same window returns a row reading zero, and the rows in D1 match
+`expected_rows`, the total AE reported at discovery (migration 0007). A shortfall past 1% (or
+3 rows) refuses to finish, logs, and counts as a failure — unless AE's *current* total explains
+it, which it may only do within a bounded drop (5%) and never from zero. Symmetrically, a row
+query that disagrees with the sizing query **aborts before its `DELETE`**, and a window where
+D1 already holds more rows than AE can still supply is **kept and skipped** rather than
+replaced with fewer.
+
+**Worker secrets.** The backfill queries the AE SQL API over HTTPS and needs `CF_ACCOUNT_ID`
+and `CF_API_TOKEN` set on the Worker — the same pair `/stats` used before PR 1 moved reads to
+D1. If either is missing it logs and does nothing; it never sends an undefined token.
+
+### Analytics Engine SQL, as it actually behaves
+
+Verified against the live API on 2026-08-06. Each of these was assumed otherwise in the plan
+and would have failed at run time in production:
+
+- `COUNT(*)` is rejected — *"COUNT() function must have 0 arguments"*. It must be `COUNT()`.
+- Absolute time bounds must be `toDateTime(<epoch seconds>)`. A string literal is refused:
+  *"cannot combine the DateTime and String types with the >= operator"*.
+- `timestamp` comes back as a second-precision string, so imported rows lose sub-second
+  precision. Day bucketing, which is all `/stats` reads, is unaffected.
+- Aggregates are returned as **strings** (`COUNT()` → `"677"`); doubles as numbers.
+- Projecting `toUnixTimestamp(timestamp) AS ts` makes the underlying column unaddressable in
+  `ORDER BY` — order by the alias instead.
+- `LIMIT`/`OFFSET` paging is stable given a deterministic `ORDER BY`, and results are
+  **unordered by default**, so every query carries one.
+
+### Verified before merge, against the real dataset
+
+The importer was run end-to-end against live Analytics Engine into a local D1 on 2026-08-06,
+with a fixed cutoff of 2026-08-05T00:00Z:
+
+- **6,838 rows over 92 days**, which is exactly what AE itself reported held below the cutoff
+  — imported and expected agree to the row, with no failures.
+- **Every one of the 92 days matched AE exactly** — both `COUNT()` and
+  `SUM(_sample_interval)`. Zero mismatches, so the ±1% tolerance was not needed.
+- The sub-day path was exercised for real: days over the per-invocation cap, including
+  2026-08-03 at 677 rows, imported across several windows.
+- Sampling survived: intervals 1 (6,768), 2 (62), 3 (7) and 10 (1), matching AE's own
+  distribution.
+- 11 hostnames imported, `clumeral.com` 4,690 of 6,838.
+
+This is a local rehearsal, not the production run. It proves the query shapes, the mapping
+and the windowing; it cannot prove CPU per invocation, which needs `wrangler tail` against
+the deployed cron (Task 15).
 
 ### Cutover instant
 
@@ -153,7 +261,13 @@ silently passed.
 ### PR 3 removal checklist
 
 - [ ] Three consecutive full days, including a weekend day, inside the tolerance
-- [ ] Storage measured (`page_count × page_size`) and recorded here
+- [ ] The backfill reported `done = 1`. Check the total with
+      `SELECT COUNT(*) FROM analytics_events WHERE backfilled = 1` against
+      `backfill_state.expected_rows` — **not** `rows_written`, which counts rows inserted per
+      invocation and so double-counts any window that was legitimately re-run.
+- [ ] Storage measured and recorded here. **Not** via `pragma_page_count()` — D1 refuses it
+      over the API with `not authorized: SQLITE_AUTH`, confirmed 2026-08-06. Read it from
+      `npx wrangler d1 info clumeral-analytics` or the Cloudflare dashboard instead.
 - [ ] `env.ANALYTICS.writeDataPoint` removed from `POST /api/event`
 - [ ] `analytics_engine_datasets` removed from `wrangler.jsonc`
 - [ ] The per-minute cron entry removed from `triggers.crons`
@@ -165,10 +279,19 @@ silently passed.
 ## The API token
 
 A scoped **Account · Account Analytics · Read** token, created by Jamie on 2026-08-03 and
-confirmed 2026-08-04 to be sufficient for the AE SQL API — no wider scope is needed. It
-lives in `.env` at the repo root (gitignored) as **`CF_ANALYTICS_TOKEN`** and is used only
-from the Pi, by `scripts/compare-ae-d1.mjs`. It is **not** a Worker secret and the Worker
-does not need it.
+confirmed 2026-08-04 to be sufficient for the AE SQL API — no wider scope is needed.
+
+It is used in **two** places:
+
+- On the Pi, from `.env` at the repo root (gitignored) as **`CF_ANALYTICS_TOKEN`**, by
+  `scripts/compare-ae-d1.mjs`.
+- **On the Worker, as the secrets `CF_API_TOKEN` and `CF_ACCOUNT_ID`**, by the PR 2 backfill.
+  These predate PR 1 — `/stats` queried AE with them until PR 1 moved reads to D1 — so they
+  should still be set; PR 1 removed the code, not the secrets. Confirm in the dashboard under
+  Workers → clumeral-game → Settings → Variables and Secrets before the backfill is expected
+  to run. Missing secrets are a logged no-op, not a crash: the cron fires, the import never
+  starts, and only `wrangler tail` says why. Secrets are per-Worker, so they are visible to
+  pre-prod versions too — the production gate, not the secret, is what keeps pre-prod out.
 
 Account id: `06ff16a35fdefa6cae9e3463116086aa` — the script defaults to this, so `.env`
 needs the token alone.

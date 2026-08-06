@@ -7,6 +7,7 @@ import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { renderDashboard } from './stats.ts';
 import { getStats, parsePeriod, recordEvent } from './analytics-db.ts';
+import { BACKFILL_CRON, runBackfill } from './backfill.ts';
 import { renderArchivePage } from './puzzles.ts';
 import {
   renderFeedbackPage, parseStatusPath, isSameOrigin, isStatus, isCanonicalHost,
@@ -24,6 +25,13 @@ interface Env {
   // because an older deployed version predates it — and because the one consumer
   // that matters (the AE backfill) must treat an unset value as "no".
   ENVIRONMENT?: string;
+  // Worker secrets, read only by the backfill, which queries the Analytics Engine
+  // SQL API over HTTPS. /stats used the same pair before PR 1 moved reads to D1.
+  // Optional on the type because a missing secret must be a logged no-op, not a
+  // TypeScript-invisible undefined in an Authorization header. Both are removed
+  // in PR 3 with the backfill.
+  CF_ACCOUNT_ID?: string;
+  CF_API_TOKEN?: string;
 }
 
 // Exported so a unit test can assert an event name is actually accepted. The
@@ -566,10 +574,32 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  // ── Cron: pre-generate today's and tomorrow's puzzles at midnight UTC ──
-  // Tomorrow is what makes the date-guard +1 tolerance a cache hit, so no
-  // request path ever needs to write (#257). The only writer in the worker.
-  async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
+  // ── Cron ──
+  //
+  // Two expressions share this handler during the analytics migration, so it
+  // dispatches on which one fired rather than doing both:
+  //
+  //   0 0 * * *  pre-generate today's and tomorrow's puzzles at midnight UTC.
+  //              Tomorrow is what makes the date-guard +1 tolerance a cache hit,
+  //              so no request path ever needs to write (#257). The only writer
+  //              in the worker.
+  //   * * * * *  the temporary Analytics Engine → D1 backfill. Removed in PR 3,
+  //              along with this branch.
+  //
+  // Anything unrecognised falls through to the daily job, which is the behaviour
+  // that predates the backfill — a new expression must not silently start
+  // importing analytics.
+  async scheduled(event: ScheduledEvent, env: Env): Promise<void> {
+    if (event.cron === BACKFILL_CRON) {
+      // runBackfill returns rather than throws: a backfill problem must not fail
+      // the cron invocation. The result is logged because `wrangler tail` is the
+      // only window onto this — without it, 'locked' says nothing at all, a
+      // finished import looks identical to a stalled one, and Task 15 has no
+      // wall-clock figure to read.
+      const result = await runBackfill(env);
+      console.log(`[backfill] ${JSON.stringify(result)}`);
+      return;
+    }
     await runDailyCron(env.PUZZLES);
   },
 };
