@@ -259,7 +259,7 @@ occurrence unambiguous.
 
 ## 6. How it fits
 
-Ledger: **Settled: pending · Ack: pending**
+Ledger: **Settled: Jamie 2026-08-07 (accepted all recommendations) · Ack: pending (Dave)**
 
 46. **`scripts/compare-ae-d1.mjs` is the only code file touched.** The AE half stays a plain
     `fetch` to the Analytics Engine SQL API; the D1 half stays `execFileSync` of
@@ -287,3 +287,60 @@ Ledger: **Settled: pending · Ack: pending**
     idiom, no second file to find, and the CLI behaviour is unchanged. The alternative is
     splitting the pure logic into `scripts/compare-lib.mjs`, which is cleaner in the abstract
     but adds a file to a tool that is deleted at PR 3.
+
+**Items 50 and 51 answered: both as recommended — Jamie 2026-08-07.** Unit tests for the pure
+logic only, in `tests/compare-ae-d1.spec.ts`; one file, guarded by a `import.meta.url` main check.
+
+## 11. Done / test plan
+
+Ledger: **Settled: pending · Ack: pending**
+
+### QA level, agreed up front
+
+52. **Unit tests plus one manual production run. No Playwright, no e2e, no CI job.** (assumed —
+    there is no UI and no deployed surface; the whole thing is a script a human runs. CLAUDE.md
+    asks for QA proportional to the change, and a browser matrix on a CLI tool is the
+    disproportionate case it warns about)
+53. `npm test` (vitest) is the only gate that runs automatically. There is no eslint config in
+    the repo, so there is no lint step to satisfy. (assumed — verified in `package.json`)
+
+### Unit tests — `tests/compare-ae-d1.spec.ts`
+
+54. **Tolerance**: inside 1% passes; inside the absolute 3 passes; outside both fails; the
+    floor is `max(3, 1%)` so 3 wins at low volume and 1% wins above 300.
+55. **The zero rule (item 22)**: AE > 0 with D1 = 0 fails regardless of magnitude; D1 > 0 with
+    AE = 0 fails; both zero is not a cell at all and never appears.
+56. **Cell union (item 17)**: an event present on only one side still produces a cell; the
+    event list is never a hardcoded array.
+57. **Partial days**: today is excluded from the verdict on both sides and reported as skipped.
+58. **Rollup and exit code**: any failing cell fails the run and exits 1; all-clear exits 0;
+    an unreachable source exits 2.
+59. **Row count vs weighted sum (item 38)**: when the two sides hold the *same number of rows*
+    but different weighted totals, the output says so distinctly — not "N events missing".
+60. **The 2026-08-04 case is the regression fixture.** AE 18 rows / 27 weighted against D1
+    18 rows / 18 weighted must report *same row count, different sample weighting*. This is
+    the single test that justifies the whole change: the old script could not express that
+    distinction, and a day was spent on the ambiguity. (assumed — but flagged for `da-brief`
+    as the most important item in this section)
+
+### Manual acceptance
+
+61. **One real run against production, compared against a known-good result.** The hand-run
+    sweep on 2026-08-07 gives the expected answer: **185 non-empty cells, 40 days
+    (2026-06-28 to 2026-08-06), zero out of tolerance, two in-band drifts on 2026-08-06**
+    (`puzzle_start` −1, `route_change` −2). The rewritten script must reproduce that, allowing
+    for whatever full days have accrued by the time it runs.
+62. The run needs `CF_ANALYTICS_TOKEN` in `.env` **and** wrangler credentials for the D1 half.
+    Claude cannot perform this step — `wrangler d1 … --remote` is blocked by the guard hook —
+    so **Jamie runs it and pastes the output.** (assumed — same constraint that shaped this
+    whole task)
+
+### Definition of done
+
+63. Tests in 54–60 pass under `npm test`; the manual run in 61 matches; ANALYTICS.md carries
+    the 2026-08-04 record, the 2026-08-06 in-band pair, and the corrected description of what
+    the gate now checks; `da-build` has passed; the PR is open against `staging` and **not**
+    merged by Claude. (assumed)
+64. **Explicit non-goal: this does not tick the PR 3 checklist.** Retiring AE stays a separate
+    decision on separate evidence, and needs three consecutive clean days including a weekend
+    — which this change makes measurable, not satisfied. (assumed)
