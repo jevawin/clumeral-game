@@ -81,7 +81,7 @@ Ledger: **Settled: Jamie 2026-08-06 · Ack: pending (Dave)**
 
 ## 3. How it works
 
-Ledger: **Settled: pending · Ack: pending**
+Ledger: **Settled: Jamie 2026-08-07 (22 yes, 26 rec, 37 fine, 38 yes) · Ack: pending (Dave)**
 
 ### Querying
 
@@ -241,3 +241,49 @@ inserted by hand. Both answers changed the picture, so items 10 and 22 are reope
 45. **Item 10's "record only" decision stands and is now cheap to honour** — the record is no
     longer "an unexplained 9-event gap" but "one imported row lost its sample interval,
     corrected on 2026-08-06, cause not reproducible". That is what goes in ANALYTICS.md.
+
+**Items 22, 26, 37, 38 answered — Jamie 2026-08-07.** 22 yes (hard fail). 26 as recommended
+(summary per event, full rows for failures, `--verbose` for the matrix) — Jamie will read the
+output alongside Claude, so legibility over completeness is the right trade. 37 proceed. 38 yes.
+
+**Fix applied and independently verified.** Jamie ran the `UPDATE` on 2026-08-06 and the
+check returned 27. Re-running the full sweep on 2026-08-07: **185 non-empty cells over 40 days
+(2026-06-28 to 2026-08-06), zero out of tolerance.**
+
+**In-band differences on 2026-08-06, recorded per the ANALYTICS.md rule rather than passed
+silently:** `puzzle_start` AE 91 / D1 90 (−1), `route_change` AE 190 / D1 188 (−2). Both inside
+the ±3 floor. These are live dual-write days, so the likely cause is the documented
+fire-and-forget D1 write path losing the odd row — the exact class the ±3 floor exists to
+tolerate. Worth watching, not worth blocking on; item 38's row-count check will make the next
+occurrence unambiguous.
+
+## 6. How it fits
+
+Ledger: **Settled: pending · Ack: pending**
+
+46. **`scripts/compare-ae-d1.mjs` is the only code file touched.** The AE half stays a plain
+    `fetch` to the Analytics Engine SQL API; the D1 half stays `execFileSync` of
+    `wrangler d1 execute --remote --json`. Neither mechanism changes — only the query shape,
+    the comparison loop and the output. (assumed)
+47. **`docs/ANALYTICS.md`** — the "Comparison gate (blocks PR 3)" section, the "differences
+    inside the tolerance get recorded here" note, and the PR 3 removal checklist. Plus the
+    2026-08-04 record from item 45 and the in-band 2026-08-06 pair above. (assumed)
+48. **Nothing else.** No `src/`, no `wrangler.jsonc`, no `migrations/`, no `.env`, no change to
+    the API token or its scope. (assumed — follows from §2)
+49. No new dependencies. Node built-ins and `fetch` only, as today. (assumed)
+50. **Does the comparison logic get unit tests?**
+    My rec: **yes, for the pure logic only** — tolerance, the new zero-on-one-side rule, the
+    (day, event) cell union, and the pass/fail rollup. Not the network or the wrangler call.
+    Why: this logic now decides whether we delete a data source we cannot recover, it is about
+    thirty lines of branching, and today none of it is reachable by a test. Precedent exists —
+    `tests/lint-migrations.spec.ts` already covers a file in `scripts/`. Test file would be
+    `tests/compare-ae-d1.spec.ts`; `vitest.config` includes `tests/**/*.spec.ts`, so it is
+    picked up with no config change.
+51. **If we do test it, how do we stop `import` running a real comparison?** The script runs
+    everything at top level today, so importing it would fire the AE query and shell out to
+    wrangler.
+    My rec: **keep one file and guard the run behind a main check** —
+    `if (import.meta.url === pathToFileURL(process.argv[1]).href) { … }`. Why: a two-line
+    idiom, no second file to find, and the CLI behaviour is unchanged. The alternative is
+    splitting the pure logic into `scripts/compare-lib.mjs`, which is cleaner in the abstract
+    but adds a file to a tool that is deleted at PR 3.
