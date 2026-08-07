@@ -161,6 +161,22 @@ counter is enough:
 UPDATE backfill_state SET consecutive_failures = 0 WHERE id = 1;
 ```
 
+> **Rewinding past 2026-08-04 destroys a hand-correction.** Row `id = 7447` had its
+> `sample_interval` restored to 10 by hand on 2026-08-06 (see the 2026-08-04 record under
+> "Comparison gate" below). The backfill's `DELETE` is filtered to `backfilled = 1`, and that
+> row is a backfilled row — so re-importing 2026-08-04 deletes the corrected row and rewrites
+> it with whatever interval AE returns that time, which may be the same `1` that made it
+> wrong. **After any rewind that crosses 2026-08-04, re-check and, if needed, re-apply:**
+>
+> ```sql
+> SELECT id, sample_interval FROM analytics_events WHERE id = 7447;
+> UPDATE analytics_events SET sample_interval = 10 WHERE id = 7447;
+> ```
+>
+> The `id` is not stable across a re-import. Find the row by its identity instead:
+> `WHERE hostname = 'clumeral.com' AND event = 'incorrect_guess'
+> AND ts = (unixepoch('2026-08-04 17:30:26') * 1000)`.
+
 **That alone does not clear a shortfall halt** ("refusing to finish: … rows missing"). The
 cursor is already past the end, so every retry re-checks the same total and re-fails. Work out
 which is true first:
@@ -243,24 +259,89 @@ The backfill discovers this value itself and freezes it — it is never typed in
 
 ### Comparison gate (blocks PR 3)
 
-Run `node scripts/compare-ae-d1.mjs` from the Pi. It compares **per-day
-`SUM(_sample_interval)` on the AE side against `SUM(sample_interval)` on the D1 side**, over
-**full UTC days only** — never a partial day, which removes the midnight-boundary class of
-mismatch outright.
+Run `node scripts/compare-ae-d1.mjs` from the Pi. A bare run compares **every event** — until
+2026-08-07 it silently compared `puzzle_start` alone, which is one event out of ten and could
+not have caught an event missing from D1 entirely.
 
-**Pass:** every full day within **±1% or ±3 events, whichever is larger**.
+**The unit is the (day, event) cell**, over **full UTC days only** — never a partial day,
+which removes the midnight-boundary class of mismatch outright. Cells are built from the
+**union** of both sides' keys, so an event present in AE and absent from D1 still produces a
+cell rather than vanishing.
+
+**The verdict is weighted sum against weighted sum** — `SUM(_sample_interval)` on the AE side
+against `SUM(sample_interval)` on the D1 side. Four outcomes:
+
+- **exact** — the two weighted sums agree.
+- **in-band** — they differ by no more than **±1% of the AE value, or ±3 events, whichever is
+  larger**. Passes, and gets recorded below.
+- **zero-side** — one side is zero and the other is not. **A hard failure whatever its size**,
+  checked before the tolerance so AE 1 / D1 0 cannot slide under the ±3 floor.
+- **out-of-tolerance** — anything else. A hard failure.
 
 Not "match exactly": at ~80 events/day a ±1% band is ±0.8 events, i.e. a gate that could
 never realistically go green. The absolute floor tolerates the real cause — a handful of
-requests landing on one write path but not the other around a deploy. A day outside the
-band, or any day at zero or half, is a real defect and blocks PR 3.
+requests landing on one write path but not the other around a deploy.
 
-**Differences inside the tolerance get recorded here with the day and the delta**, not
-silently passed.
+**Row counts are printed and are never a verdict.** They are there to separate "records are
+missing" from "a multiplier is missing", which is exactly the ambiguity that cost a day on
+2026-08-04. They cannot fail a run, because on a live day AE stores one *sampled* row per
+sample interval while D1 writes one row per event — so an AE/D1 row-count gap on a live cell
+is correct behaviour, and gating on it would fail forever on good data. Each cell is labelled
+`backfilled`, `live`, `mixed` or `—` (D1 has no rows to label) so the reader can tell which
+case they are looking at: a row-count difference is a real import defect on a `backfilled`
+cell and expected on a `live` one.
+
+Flags: `--days` (default 30), `--host` (default `clumeral.com`), `--event NAME` (narrow to one
+event — no longer a default), `--verbose` (print **every built cell**, not just the failures,
+the partial days and the in-band ones; ~185 lines on a 40-day window).
+
+Exit codes: **0** all clear, **1** at least one failing cell, **2** a source could not be read.
+
+**Differences inside the tolerance get recorded here with the day, the event and both
+counts**, not silently passed.
+
+### The one cell that ever failed this gate — 2026-08-04 `incorrect_guess`
+
+**What it looked like:** AE 27 weighted against D1 18 — apparently nine lost events.
+
+**What it actually was:** **18 rows on both sides. No event was lost.** One imported row —
+`id = 7447`, `2026-08-04 17:30:26` — lost its `sample_interval = 10` and imported as 1.
+
+Corrected by Jamie on 2026-08-06 with
+`UPDATE analytics_events SET sample_interval = 10 WHERE id = 7447`, verified back at 27.
+
+**One-off, not systemic.** Of the 13 cells in the window where AE's row count differs from its
+weighted sum, twelve preserved the interval exactly.
+
+**Mechanism: a hypothesis, not a finding.** `toImportRow`'s `… ? Math.trunc(interval) : 1`
+fallback (`src/worker/backfill.ts:313`) would turn a single unparseable `_sample_interval` into
+exactly this. It cannot be proven after the fact, because AE is not asked twice.
+
+This cell is now a regression fixture in `tests/compare-ae-d1.spec.ts`, asserting the line the
+script prints for it character for character:
+
+```
+2026-08-04 · incorrect_guess · AE 18/27 · D1 18/18 · backfilled · -9 · same row count, sample weighting differs
+```
+
+**In-band differences, 2026-08-06.** Recorded per the rule above rather than passed silently:
+
+- `puzzle_start` — AE 91 / D1 90 (−1)
+- `route_change` — AE 190 / D1 188 (−2)
+
+Both inside the ±3 floor, both on a live dual-write day. Most likely the documented
+fire-and-forget D1 write path losing the odd row. This list gains an entry every time a run
+reports an in-band cell.
 
 ### PR 3 removal checklist
 
-- [ ] Three consecutive full days, including a weekend day, inside the tolerance
+- [ ] Three consecutive full days, including a weekend day, in which **every (day, event) cell
+      is inside the tolerance** — not just `puzzle_start`, and not just the days as a whole.
+
+      **The one sign-off route:** a `zero-side` failure may be signed off by Jamie without
+      resetting the three-consecutive-clean-day streak, **provided it is recorded here with the
+      day, the event and both counts**. No other failure class may be signed off this way — an
+      out-of-tolerance weighted cell resets the streak, full stop.
 - [ ] The backfill reported `done = 1`. Check the total with
       `SELECT COUNT(*) FROM analytics_events WHERE backfilled = 1` against
       `backfill_state.expected_rows` — **not** `rows_written`, which counts rows inserted per
