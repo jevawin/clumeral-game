@@ -5,7 +5,9 @@ Brief: [2026-08-06-analytics-compare-all-events-brief.md](2026-08-06-analytics-c
 (closed 2026-08-07; all five short-form sections settled by Jamie, Dave's acks waived by
 dev-lead override, `da-brief` findings 70–88 all resolved).
 
-Status: **awaiting Jamie's approval.** No build work starts until he approves.
+Status: **approved by Jamie, 2026-08-07.** `da-plan` run fresh-context before approval —
+2 High, 6 Medium, 5 Low, all resolved (see the review section at the end). Next stage: Build,
+starting at Task 1.
 
 ---
 
