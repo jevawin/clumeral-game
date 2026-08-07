@@ -38,40 +38,83 @@ functions (brief 74, 75).
 
 ```js
 // Pure — exported, unit tested, no I/O.
-export function withinTolerance(ae, d1)          // Math.max(3, ae * 0.01)
+export function parseArgs(argv)                  // -> { days, host, event, verbose }
+export function withinTolerance(ae, d1)          // Math.max(3, ae * 0.01) — SOLE home of the arithmetic
 export function judgeCell(cell)                  // -> 'exact' | 'in-band' | 'zero-side' | 'out-of-tolerance'
 export function describeDelta(cell)              // -> human string naming rows vs weighting
 export function cellOrigin(cell)                 // -> 'backfilled' | 'live' | 'mixed' | 'unknown'
 export function buildCells(aeRows, d1Rows)       // union of (day, event); drops both-zero cells
-export function summarise(cells, today)          // -> { perEvent, failures, inBand, skipped, exitCode, retentionNote }
-export function formatCellLine(cell)             // the item-82 line
+export function summarise(cells, today)          // -> the object literal below; enriches each cell
+export function formatCellLine(cell)             // the item-82 line; takes an ENRICHED cell
 export function formatReport(summary, { verbose })
 
 // Impure — not exported, called only from main().
-function parseArgs(argv)
 function loadEnv()
 async function fromAE(opts)
 function fromD1(opts)
 async function main(argv)
 ```
 
+**`judgeCell` calls `withinTolerance`.** `Math.max(3, ae * 0.01)` appears in exactly one place
+in the file. Two copies is how the ±3 floor ends up applied on one path and not the other.
+
 **The cell object**, fixed here so the tests and the queries agree:
 
 ```js
+// As built by buildCells:
 { day: '2026-08-04', event: 'incorrect_guess',
   aeRows: 18, aeWeighted: 27,
-  d1Rows: 18, d1Weighted: 18, d1Backfilled: 18 }
+  d1Rows: 18, d1Weighted: 18, d1Backfilled: 18,
+  origin: 'backfilled', delta: -9 }          // delta = d1Weighted - aeWeighted, as today
+
+// summarise() ENRICHES each cell in place with two more fields, and
+// formatCellLine requires an enriched cell:
+{ …, skipped: false, verdict: 'out-of-tolerance' }
 ```
+
+`delta` is `d1Weighted - aeWeighted`, keeping today's sign convention
+(`compare-ae-d1.mjs:143`) — D1 short of AE is negative.
 
 `cellOrigin` reads `d1Backfilled` against `d1Rows`: all backfilled → `backfilled`, none →
 `live`, some → `mixed`. **Plan-level decision:** `d1Rows === 0` gives `unknown`, printed as
 `—`. The brief (72) named three labels and did not cover the case where D1 has no rows to
 label; inventing `live` there would assert something we did not measure.
 
+**`summarise(cells, today)` returns exactly this:**
+
+```js
+{
+  cells,                        // the same array, each cell enriched with skipped + verdict
+  perEvent: [                   // one entry per event, sorted by name
+    { event: 'incorrect_guess', days: 38, worstDelta: -9, verdict: 'FAIL' },
+  ],
+  failures: [ …cells… ],        // every non-skipped cell with verdict zero-side | out-of-tolerance
+  inBand:   [ …cells… ],        // every non-skipped cell with verdict in-band
+  skipped:  [ …cells… ],        // every cell with day >= today
+  oldestDay: '2026-06-28',      // cells[0].day — the retention-note condition reads this
+  exitCode: 0,                  // 1 if failures.length > 0, else 0
+}
+```
+
+`failures`, `inBand` and `skipped` are **lists of cells, not counters** — brief 28 requires the
+in-band reminder to name the event as well as the day, which a count cannot do. Today's script
+uses integer counters (`compare-ae-d1.mjs:132–133`); they go.
+
+`worstDelta` is the delta with the **largest absolute value**, printed with its sign. Across a
+mix of +2 and −5, −5 is the worst.
+
 ## Task list
 
 Each task is a commit. Tests are written before the implementation within each task
 (CLAUDE.md, test-driven-development).
+
+**Where `main()` moves, stated once so no task has to infer it.** Task 1 lifts today's
+module-scope loop (`compare-ae-d1.mjs:127–179`) into `main()` **unchanged** — same single
+event, same per-day output. **Tasks 2, 3 and 4 add exported pure functions and their tests
+only; they do not touch `main()`, which stays on the old path and keeps working.** Task 5 is
+the rewire: it replaces the body of `main()` with `fromAE`/`fromD1` → `buildCells` →
+`summarise` → `formatReport`, and the old loop is deleted there. Every commit therefore leaves
+a script that runs; the exported functions are simply unreferenced by `main()` until Task 5.
 
 ---
 
@@ -84,9 +127,11 @@ no token is found. `ci-smoke.yml` runs `npm test` on every PR into `staging` and
 no `.env`, so an unguarded import kills the vitest process during collection and turns a
 required check red. Nothing else in this plan is safe to write until this is done.
 
-1. **Test first** — `tests/compare-ae-d1.spec.ts`, one case: importing the module with
-   `CF_ANALYTICS_TOKEN` and `CF_API_TOKEN` deleted from `process.env` resolves, and
-   `withinTolerance` is a function. That the suite runs at all is the assertion.
+1. **Test first** — `tests/compare-ae-d1.spec.ts`, one case: a static
+   `import { withinTolerance } from '../scripts/compare-ae-d1.mjs'` at the top of the spec,
+   asserting it is a function. That vitest collects the file at all is the assertion. Note
+   that deleting `process.env` keys inside a test body would be decorative — ESM imports are
+   hoisted, so module evaluation has already happened by then.
 2. Move argv parsing into `parseArgs(argv)`, and `loadEnv()`, the token check, both queries,
    every `console.log` and every `process.exit` into `async function main(argv)`.
 3. `main()` returns an exit code; the guard sets `process.exitCode`. No `process.exit` on a
@@ -101,9 +146,23 @@ required check red. Nothing else in this plan is safe to write until this is don
    The three-part comment at `lint-migrations.mjs:104–115` explains why each part is load-bearing;
    this file gets a one-line comment pointing at it rather than a copy of the essay.
 
-**Done when:** `npm test` passes with no `.env` present, and `node scripts/compare-ae-d1.mjs`
-still behaves exactly as it does today (single event, per-day) — this task is a refactor with
-no behaviour change.
+**Done when:** this command prints `function` —
+
+```bash
+node -e "import('./scripts/compare-ae-d1.mjs').then(m => console.log(typeof m.withinTolerance))"
+```
+
+**Do not test this by moving `.env`.** It holds the only copy of Jamie's Analytics Read token,
+and `loadEnv` reads it off disk (`compare-ae-d1.mjs:32–43`) before the token check — so on the
+Pi the token is always found and the module-scope `process.exit(1)` never fires. A spec that
+merely deletes the env vars would therefore pass against the *un-refactored* module locally and
+only fail in CI, which is the exact regression it exists to pre-empt. The `node -e` form proves
+side-effect-free import without touching `.env`, and it exercises the `process.argv[1] &&` limb
+of the copied guard for free: `argv[1]` is undefined under `node -e`, which brief item 76
+records as having failed open before.
+
+Also done when `node scripts/compare-ae-d1.mjs` still behaves exactly as it does today (single
+event, per-day) — this task is a refactor with no behaviour change.
 
 ---
 
@@ -128,15 +187,22 @@ out-of-tolerance   otherwise                                                -> F
 
 **Tests, written first:**
 
-- **Tolerance (54, 85).** The 1% is 1% *of the AE value*, asserted explicitly: AE 1000 / D1 990
+- **Tolerance (54, 85) — asserted against `withinTolerance` directly**, since that is where the
+  arithmetic lives. The 1% is 1% *of the AE value*, asserted explicitly: AE 1000 / D1 990
   passes (allowed 10); AE 1000 / D1 989 fails; AE 80 / D1 77 passes on the floor; AE 80 / D1 76
   fails. AE 200 / D1 203 passes on the floor where 1% would not — the floor wins below 300, the
   percentage above it.
-- **The zero rule (55).** AE 3 / D1 0 → `zero-side`. AE 0 / D1 3 → `zero-side`. AE 1 / D1 0 →
-  `zero-side` (magnitude is irrelevant). Both zero is asserted never to reach `judgeCell` —
-  `buildCells` drops it (Task 3).
+- **The zero rule and the verdict names (55) — asserted against `judgeCell(cell)`**, built from
+  whole cell objects. AE 3 / D1 0 → `zero-side`. AE 0 / D1 3 → `zero-side`. AE 1 / D1 0 →
+  `zero-side` (magnitude is irrelevant). AE 27 / D1 18 → `out-of-tolerance`. AE 91 / D1 90 →
+  `in-band`. AE 90 / D1 90 → `exact`.
 - **Asymmetry is deliberate.** AE 0 / D1 5 fails even though the ±3 band around AE 0 is ±3;
   the zero check runs first.
+- **Both-zero is asserted never to reach `judgeCell`** — `buildCells` drops it (Task 3). This is
+  belt-and-braces, not a live safeguard: see the note in Task 3.
+
+**Done when:** the tolerance and verdict tests pass, and `node scripts/compare-ae-d1.mjs` still
+runs on the old path — `main()` is not touched by this task.
 
 ---
 
@@ -151,8 +217,13 @@ cells keyed on `(day, event)`.
   produces a cell — that is the defect class the whole change exists to catch. The event list
   is derived from the data and appears nowhere as a literal in the script; a test asserts an
   AE-only event and a D1-only event each survive (56).
-- A cell where both weighted sums are zero is **not produced at all** (27). In practice this
-  means an event that did not exist yet contributes no rows rather than a wall of empty ones.
+- A cell where both weighted sums are zero is **not produced at all** (27). **This state cannot
+  actually arise from the real queries** — both sides `GROUP BY day, event` and return only
+  groups that exist, and `sample_interval` is at minimum 1, so a key is in the union only if one
+  side had at least one row. Brief 27's "wall of empty rows" is a hazard of a day × event
+  cartesian, which this plan deliberately does not build. The rule and its test stay as a
+  cheap invariant, but **the union logic is not load-bearing here** and a later reader should
+  not think it is.
 - Missing side defaults to `{ rows: 0, weighted: 0 }`, so a one-sided cell is expressible.
 - `cellOrigin` labels each cell from `d1Backfilled` vs `d1Rows` (72). Without the label the
   printed row counts are uninterpretable: an AE/D1 row-count difference is a real import
@@ -165,8 +236,10 @@ hidden. `today` is passed in as a string, never read from the clock inside a pur
 that is what makes it testable.
 
 **Tests:** union both directions; both-zero absent; `d1Backfilled` 18/18 → `backfilled`, 0/18
-→ `live`, 4/18 → `mixed`, `d1Rows` 0 → `unknown`; a cell dated today is `skipped` and does not
-appear in the failure count even when it is wildly out of tolerance.
+→ `live`, 4/18 → `mixed`, `d1Rows` 0 → `unknown`; a cell dated today is `skipped` and appears
+in `summary.skipped` rather than `summary.failures`, even when it is wildly out of tolerance.
+
+**Done when:** those tests pass; `main()` still untouched.
 
 ---
 
@@ -174,13 +247,26 @@ appear in the failure count even when it is wildly out of tolerance.
 
 **Implements:** brief 25, 26, 28, 58, 59, 60, 82.
 
-**The per-cell line (82), fixed exactly because item 60 is asserted against it:**
+**The per-cell line (82).** Item 60 asserts a literal string, so the line is written **once**,
+here, and every other mention in this plan quotes it rather than paraphrasing it.
+
+Shape:
 
 ```
-day · event · AE rows/weighted · D1 rows/weighted · origin · delta · verdict
+day · event · AE <rows>/<weighted> · D1 <rows>/<weighted> · origin · delta · verdict
 ```
 
-e.g. `2026-08-04 · incorrect_guess · AE 18/27 · D1 18/18 · backfilled · -9 · sample weighting differs`
+**The canonical example — this exact string is what the Task 4 fixture asserts:**
+
+```
+2026-08-04 · incorrect_guess · AE 18/27 · D1 18/18 · backfilled · -9 · same row count, sample weighting differs
+```
+
+`formatCellLine(cell)` takes an **enriched** cell (one that has been through `summarise`), so
+`verdict` and `skipped` are on the object and the function needs no second argument. A skipped
+partial day renders `partial, skipped` in the verdict position, as today
+(`compare-ae-d1.mjs:147`). The verdict position carries `describeDelta(cell)` where the cell
+differs, and the bare verdict name (`exact`, `partial, skipped`) where it does not.
 
 **`describeDelta` is the point of item 38** (brief 42): it separates "we are missing records"
 from "we are missing a multiplier".
@@ -196,31 +282,39 @@ events'."* (brief 42)
 
 **What a run prints (26, settled as recommended):**
 
-- One **summary line per event**: days compared, worst delta, verdict.
+- One **summary line per event**: days compared, worst delta (largest absolute, printed
+  signed), verdict.
 - A **full line for every cell out of tolerance** (including `zero-side`).
 - Skipped partial days, printed.
-- `--verbose` prints the whole matrix.
-- The in-band reminder now names **the event as well as the day** (28).
+- `--verbose` prints **every built cell** — i.e. the whole `summary.cells` array, not a
+  day × event cartesian. On a 40-day window that is ~185 lines, not 400.
+- The in-band reminder now names **the event as well as the day** (28), which is why
+  `summary.inBand` is a list of cells rather than a counter.
 
 **The retention note (25).** Today it fires on `failures === 1 && firstFailure === days[0]`.
 Retention deletes a whole day, which is now up to ten cells at once, so the condition becomes
-**every failing cell is on the oldest day**. Leaving the old condition would silently stop
+**every failing cell is on `summary.oldestDay`**. Leaving the old condition would silently stop
 showing the note the moment the script started comparing more than one event.
+
+The note's **text** also needs one addition (L5). Today it reads "If D1 is higher than AE there,
+that is AE retention deleting it, not a write defect" (`compare-ae-d1.mjs:169`). Under the new
+zero rule, a *fully* retention-deleted oldest day gives AE 0 / D1 n → `zero-side`, a hard
+failure. The note must say so and point at the brief-86 sign-off route, or the reader is left
+to deduce it: **"A fully deleted day reads as AE 0 / D1 n — a `zero-side` failure, not a write
+defect. Re-run with a shorter `--days` to confirm."**
 
 **Exit codes (24, 58).** `summarise` returns `exitCode`: any failing cell → 1; otherwise 0.
 Exit 2 is "could not run" and is raised in `main()`, not in pure logic — a test asserts the
 rollup returns 1 for one failure among many passes, and 0 for all-clear.
 
 **The 2026-08-04 regression fixture (60).** One test, built from the real numbers, asserting
-the full formatted line:
+`formatCellLine` returns **exactly the canonical string given above** — character for
+character, including the `-9` and the words `same row count, sample weighting differs`. This is
+the single test that justifies the change: the old script could not express that distinction
+and a day was spent on the ambiguity.
 
-```
-AE 18 rows / 27 weighted · D1 18 rows / 18 weighted · backfilled
-```
-
-with a verdict naming a **sample-weighting** difference, not a missing-events one. This is the
-single test that justifies the change: the old script could not express that distinction and a
-day was spent on the ambiguity.
+**Done when:** the fixture matches the canonical string exactly, the rollup tests pass, and
+`main()` is still on the old path — this is the last task before the rewire.
 
 ---
 
@@ -228,8 +322,19 @@ day was spent on the ambiguity.
 
 **Implements:** brief 15, 18, 19, 20, 46, 77 (M2), 50.
 
-No unit tests here by design (brief 50): the network and the `execFileSync` are out of test
-scope, and this task is proved by the manual run in Task 7.
+**One test here, not none.** Brief 50 excluded "the network or the wrangler call" — it did not
+exclude `parseArgs`, which is pure. And what `parseArgs` now decides is brief item 7, the
+settled decision that made this work *replace* rather than *sit alongside*: a bare
+`node scripts/compare-ae-d1.mjs` covers every event instead of only `puzzle_start`
+(`compare-ae-d1.mjs:30` today). That is the defect class the entire change exists to close, and
+without a test the only thing catching a regression is Jamie noticing a header line.
+
+So: **`parseArgs` is exported (Task 1) and its defaults are asserted here** —
+`days === 30`, `host === 'clumeral.com'`, `event === undefined`, `verbose === false` — plus
+`--event puzzle_start` and `--verbose` being picked up. The `event === undefined` assertion is
+the one that matters.
+
+The network and the `execFileSync` remain untested and are proved by the manual run in Task 7.
 
 **One AE query per run** (15), not one per event:
 
@@ -245,6 +350,14 @@ GROUP BY day, event ORDER BY day ASC, event ASC
 `COUNT()` with **zero arguments** — `COUNT(*)` is rejected by AE, verified 2026-08-06 and
 already recorded in ANALYTICS.md (77). Both aggregates come back as **strings** and go through
 `Number()` (19, 77). The `row_count` alias avoids betting on `rows` being safe in AE's dialect.
+
+**Grouping and ordering by the `day` / `event` aliases is the idiom already proven against this
+API** — today's script does `toStartOfDay(timestamp) AS day … GROUP BY day ORDER BY day ASC`
+and works (`compare-ae-d1.mjs:63–68`), and ANALYTICS.md:211 records that the alias is the
+*safe* side of that particular trap. `blob1 AS event` is a plain rename, not an expression, so
+it is the easier case. **Flagged for Task 7's first run all the same**: if AE rejects
+`GROUP BY … event`, group and order by `blob1` directly and keep the alias in the projection
+only. That is a one-line change and not a plan revision.
 
 **One D1 query per run**, gaining `event` in the grouping and two new columns:
 
@@ -272,15 +385,22 @@ Neither mechanism changes (46): AE stays a plain `fetch`, D1 stays `execFileSync
 `CLOUDFLARE_API_TOKEN` message, the "database does not exist" message, exit 2 — moves into
 `main()` unchanged.
 
+**Done when:** `parseArgs` defaults are asserted, the old module-scope loop
+(`compare-ae-d1.mjs:127–179`) is gone, `npm test` is green, and `node -e` import check from
+Task 1 still prints `function`. The script's real behaviour is proved by Jamie's run in Task 7,
+not here.
+
 ---
 
 ### Task 6 — `docs/ANALYTICS.md`
 
 **Implements:** brief 47, 45, 28, 81 (M6), 86, 87, 44, and the in-band record.
 
-Six edits:
+Six edits. Anchors in the current file: **"Restarting a halted import"** at
+`docs/ANALYTICS.md:157`, **"Comparison gate (blocks PR 3)"** at `:244`, **"PR 3 removal
+checklist"** at `:261`.
 
-1. **"Comparison gate (blocks PR 3)"** — rewritten to describe what the gate now checks: the
+1. **"Comparison gate (blocks PR 3)"** (`:244`) — rewritten to describe what the gate now checks: the
    unit is the **(day, event) cell**, over full UTC days; the verdict is **weighted sum against
    weighted sum**, ±1% (of the AE value) or ±3, whichever is larger; a cell where one side is
    zero and the other is not is a **hard failure** whatever its size; **row counts are printed
@@ -289,7 +409,10 @@ Six edits:
    flags and the `--verbose` matrix are listed.
 2. **The in-band note** now says differences get recorded **with the day, the event and both
    counts** (28).
-3. **New record — 2026-08-04 `incorrect_guess`** (45). What it was: AE 27 weighted against D1
+3. **New record — 2026-08-04 `incorrect_guess`** (45), a new subsection placed immediately
+   **after** the rewritten "Comparison gate" section and before "PR 3 removal checklist", so
+   the gate description and the one thing that ever failed it read together.
+   What it was: AE 27 weighted against D1
    18. What it actually was: 18 rows on both sides; one imported row, `id = 7447`,
    `2026-08-04 17:30:26`, lost its `sample_interval = 10` and imported as 1. **No event was
    lost.** Corrected by Jamie on 2026-08-06 with `UPDATE analytics_events SET sample_interval =
@@ -298,17 +421,20 @@ Six edits:
    40). Mechanism recorded **as a hypothesis, not a finding** — `toImportRow`'s
    `… ? Math.trunc(interval) : 1` fallback would turn one unparseable `_sample_interval` into
    exactly this, and it cannot be proven after the fact because AE is not asked twice (41).
-4. **New record — in-band drifts, 2026-08-06** (brief, closing note): `puzzle_start` AE 91 /
+4. **New record — in-band drifts, 2026-08-06** (brief, closing note), appended to the same new
+   subsection as edit 3, under its own bold lead-in — the in-band log is a running list that
+   will gain entries, and it belongs next to the record of the one out-of-band case rather
+   than scattered. `puzzle_start` AE 91 /
    D1 90 (−1) and `route_change` AE 190 / D1 188 (−2). Both inside the ±3 floor, both on a live
    dual-write day, likely the documented fire-and-forget D1 write path losing the odd row.
    Recorded per the rule rather than passed silently.
-5. **"Restarting a halted import"** gains the row-7447 warning (M6, brief 44 and 81). That
+5. **"Restarting a halted import"** (`:157`) gains the row-7447 warning (M6, brief 44 and 81). That
    section documents the exact rewind that would destroy the correction: the backfill's
    `DELETE` is filtered to `backfilled = 1`, so re-importing 2026-08-04 deletes the corrected
    row and re-imports it with whatever interval AE returns that time. The re-fix `UPDATE` goes
    next to the warning. This is the doc someone will actually be reading when they do the
    damage.
-6. **PR 3 removal checklist** — the first item's wording updated to make clear the three clean
+6. **PR 3 removal checklist** (`:261`) — the first item's wording updated to make clear the three clean
    days are now over **every event**, plus the item-86 sign-off route stated next to it:
    *a `zero-side` failure may be signed off by Jamie without resetting the three-consecutive-
    clean-day streak, provided it is recorded here with the day, the event and both counts. No
@@ -358,10 +484,10 @@ first run becomes the real baseline.**
 
 Brief 63, restated against the tasks above:
 
-- [ ] Tasks 1–6 committed, each on its own
+- [ ] Tasks 1–6 committed, each on its own, each meeting its **Done when**
 - [ ] `npm test` green, covering brief items 54–60
-- [ ] The 2026-08-04 fixture (60) asserts `AE 18/27 · D1 18/18 · backfilled` and a
-      sample-weighting verdict
+- [ ] The 2026-08-04 fixture (60) asserts the canonical line from Task 4 **verbatim**:
+      `2026-08-04 · incorrect_guess · AE 18/27 · D1 18/18 · backfilled · -9 · same row count, sample weighting differs`
 - [ ] `docs/ANALYTICS.md` carries all six edits in Task 6
 - [ ] Jamie's manual run meets the Task 7 condition
 - [ ] `da-build` passed
@@ -389,7 +515,7 @@ Every numbered brief item, mapped to a task or marked as needing no code.
 | 20 | Task 5 (host escaped, events not interpolated) |
 | 21, 22 | Task 2 (tolerance, zero rule) |
 | 23 | Task 3 (partial days) |
-| 24 | Task 4 (exit codes) + Task 5 (exit 2 in `main()`) |
+| 24 | Task 4 (exit 0/1) + Task 5 (exit 2 in `main()`, untested — see 58) |
 | 25 | Task 4 (retention note condition widened) |
 | 26 | Task 4 (summary per event, failures in full, `--verbose`) |
 | 27 | Task 3 (both-zero cells dropped) |
@@ -403,14 +529,14 @@ Every numbered brief item, mapped to a task or marked as needing no code.
 | 46 | Task 5 (mechanisms unchanged) |
 | 47 | Task 6 (all six edits) |
 | 48, 49 | No code — asserted by the files-touched table |
-| 50 | Tasks 2–4 (pure logic tested), Task 5 (network not tested) |
+| 50 | Tasks 2–4 (pure logic tested), Task 5 (`parseArgs` tested; network not) |
 | 51 | Task 1, superseded in detail by 75 and 76 |
 | 52, 53 | Task 7 (QA level), corrected by 65–66 |
 | 54 | Task 2 |
 | 55 | Task 2 |
 | 56 | Task 3 |
 | 57 | Task 3 |
-| 58 | Task 4 |
+| 58 | Task 4 — **partially.** Exit 0 and exit 1 are tested through `summarise`. **Exit 2 ("an unreachable source") is a deliberate deferral:** it lives in `main()`, whose only trigger is a real wrangler failure, and faking that means mocking `execFileSync` — which is the network/shell boundary brief 50 put out of scope. Proved instead by Task 7's manual run, which fails this way whenever credentials are absent. |
 | 59, 60 | Task 4 (`describeDelta`, the 08-04 fixture) |
 | 61, 62 | Task 7 (manual run), refined by 79 and 80 |
 | 63 | Definition of done |
@@ -445,3 +571,81 @@ Three things the brief did not fix, decided here rather than during the build:
 
 None of these changes an observable behaviour the brief settled. If Jamie disagrees with any,
 it is a plan edit, not a brief reopen.
+
+Two more were added answering `da-plan` (below): `delta` is `d1Weighted - aeWeighted`, keeping
+today's sign convention; and `worstDelta` is the largest **absolute** delta, printed signed.
+
+## `da-plan` review — 2026-08-07
+
+Fresh-context review of the first draft. **2 High, 6 Medium, 5 Low. All thirteen fixed above;
+none deferred, none disputed.** The review also verified seven load-bearing facts against the
+code — the `lint-migrations.mjs:116` guard line and its `:104–115` comment, the module-scope
+`process.exit` calls at `compare-ae-d1.mjs:51–54`/`:115`/`:173` and the top-level `await` at
+`:129`, `vitest.config.ts:8`, `ci-smoke.yml:58–62`, the absence of a typecheck script,
+`migrations/analytics/0005:40`'s `backfilled` CHECK constraint, and `backfill.ts:313`'s
+`: 1` fallback — all confirmed as this plan states them.
+
+**H1 — the item-60 fixture string was specified three incompatible ways.** The line the plan
+calls "the single test that justifies the change" appeared as `AE 18/27 · D1 18/18` in one
+place and `AE 18 rows / 27 weighted · D1 18 rows / 18 weighted` in another, and the verdict
+text disagreed with `describeDelta`'s own return value. A zero-context agent writing that test
+first had to guess, and either guess broke a definition-of-done checkbox.
+**Fixed:** the canonical line is written **once**, in Task 4, and Task 4's fixture and the
+definition of done both quote it verbatim.
+
+**H2 — no task owned the `main()` rewire.** Task 1's *Done when* pinned behaviour to today's;
+Task 4 specified "what a run prints", which needs Task 5's queries; and Task 5 never mentioned
+replacing the old loop — and is the task with no tests. So Task 4 either shipped a broken
+script or Task 5 silently absorbed an untested rewrite.
+**Fixed:** a "Where `main()` moves" paragraph now states it once — Task 1 lifts the loop
+unchanged, **Tasks 2–4 add exported pure functions and tests only and do not touch `main()`**,
+Task 5 replaces the body and deletes `compare-ae-d1.mjs:127–179`. Every task gained a
+*Done when*.
+
+**M1 — the cell object could not express what `formatCellLine` printed.** `skipped` is decided
+by `summarise`, not present on the cell, so a skipped partial day was unrenderable with the
+specified signature — which blocked H1's fixture.
+**Fixed:** `summarise` enriches each cell with `skipped` and `verdict`; `formatCellLine` takes
+an enriched cell.
+
+**M2 — `summarise`'s return shape was named but never defined**, and brief 28's "name the event
+as well as the day" forces `inBand` to be a list of cells, not the integer counter it is today
+(`compare-ae-d1.mjs:133`). An agent reading `inBand` beside `failures` would have reached for a
+count. **Fixed:** the object literal is written out, with the list-not-counter point called out.
+
+**M3 — Task 1's test could not fail on the machine it runs on.** `.env` exists on the Pi and
+`loadEnv` reads it off disk before the token check, so the "delete the env vars" spec passed
+against the *un-refactored* module locally and would only have failed in CI — the exact
+regression it exists to pre-empt. (Also: ESM imports are hoisted, so deleting keys in a test
+body is decorative.) **Fixed:** the check is now a `node -e` dynamic import, which needs no
+`.env` handling — and which exercises the `process.argv[1] &&` limb of the copied guard for
+free, since `argv[1]` is undefined under `node -e`. **`.env` is never moved**; it holds the only
+copy of Jamie's token.
+
+**M4 — `withinTolerance` and `judgeCell` both owned the tolerance rule.** Two copies of
+`Math.max(3, ae * 0.01)` is how the ±3 floor gets applied on one path and not the other.
+**Fixed:** `judgeCell` calls `withinTolerance`, which is the sole home of the arithmetic, and
+each test now says which function it asserts against.
+
+**M5 — the headline behavioural change had no test.** Brief item 7 — `--event` stops being the
+default — landed in Task 5, which declared itself untested. But brief 50 excluded the network
+and the wrangler call, not `parseArgs`, which is pure. **Fixed:** `parseArgs` is exported and
+its defaults asserted, `event === undefined` being the one that matters.
+
+**M6 — "the whole matrix" was ambiguous**, and the both-zero rule guards a state the real
+queries cannot produce (both sides `GROUP BY`, so a key exists only if a row does).
+**Fixed:** `--verbose` is defined as every built cell, ~185 lines not 400; and the both-zero
+rule is now labelled a cheap invariant rather than a live safeguard, so nobody later mistakes
+the union logic for load-bearing there.
+
+**L1** — the `event` alias in `GROUP BY` was as unverified as `rows` was. Fixed: noted that
+aliasing is the idiom already proven for `day` (`compare-ae-d1.mjs:63–68`) and is the *safe*
+side of the ANALYTICS.md:211 trap, with a stated one-line fallback flagged for Task 7's first
+run. **L2** — exit 2 had no test; fixed by marking it a deliberate deferral in the traceability
+table with the reason. **L3** — Task 6 edits 3 and 4 had no anchors; fixed, all six now cite a
+line number. **L4** — "worst delta" was undefined as signed or absolute; fixed. **L5** — the
+retention note's text needed to connect a fully deleted oldest day to the new `zero-side` hard
+fail; fixed, with the replacement wording written out.
+
+**The review found nothing on** scope creep, reopened product decisions, architecture,
+dependencies, the `--remote` guard-hook constraint, or the PR-3-checklist non-goal.
