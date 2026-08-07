@@ -8,6 +8,9 @@ import {
   cellOrigin,
   buildCells,
   summarise,
+  describeDelta,
+  formatCellLine,
+  formatReport,
 } from '../scripts/compare-ae-d1.mjs';
 
 describe('compare-ae-d1 — importable without side effects', () => {
@@ -171,5 +174,175 @@ describe('summarise — partial days are skipped, not tolerated', () => {
   it('enriches every cell with skipped and verdict', () => {
     expect(summary.cells.map((c) => c.skipped)).toEqual([false, true]);
     expect(summary.cells[0].verdict).toBe('exact');
+  });
+});
+
+describe('describeDelta — missing records, or a missing multiplier', () => {
+  it('names sample weighting when the row counts agree', () => {
+    expect(describeDelta({ aeRows: 18, aeWeighted: 27, d1Rows: 18, d1Weighted: 18 }))
+      .toBe('same row count, sample weighting differs');
+  });
+
+  it('names both row counts when they disagree', () => {
+    expect(describeDelta({ aeRows: 12, aeWeighted: 27, d1Rows: 18, d1Weighted: 18 }))
+      .toBe('row counts differ (AE 12, D1 18)');
+  });
+
+  it('says exact when both agree', () => {
+    expect(describeDelta({ aeRows: 18, aeWeighted: 18, d1Rows: 18, d1Weighted: 18 })).toBe('exact');
+  });
+});
+
+describe('formatCellLine — the 2026-08-04 regression fixture', () => {
+  // The real numbers from the one cell that ever failed this gate. The old
+  // script could not express the difference between "9 events missing" and
+  // "one row imported without its sample interval", and a day went on the
+  // ambiguity. This assertion is why the change exists.
+  const cells = buildCells(
+    [aeRow('2026-08-04', 'incorrect_guess', 18, 27)],
+    [d1Row('2026-08-04', 'incorrect_guess', 18, 18, 18)],
+  );
+  const summary = summarise(cells, '2026-08-07');
+
+  it('renders the canonical line character for character', () => {
+    expect(formatCellLine(summary.cells[0])).toBe(
+      '2026-08-04 · incorrect_guess · AE 18/27 · D1 18/18 · backfilled · -9 · same row count, sample weighting differs',
+    );
+  });
+
+  it('fails the cell on the weighted sums', () => {
+    expect(summary.cells[0].verdict).toBe('out-of-tolerance');
+    expect(summary.exitCode).toBe(1);
+  });
+});
+
+describe('formatCellLine — the other positions', () => {
+  const line = (cells: unknown[], today: string) =>
+    formatCellLine(summarise(cells as never, today).cells[0]);
+
+  it('renders a skipped partial day in the verdict position', () => {
+    const cells = buildCells([aeRow('2026-08-07', 'puzzle_start', 5, 5)], []);
+    expect(line(cells, '2026-08-07')).toContain('· partial, skipped');
+  });
+
+  it('renders an unlabelled origin as an em dash', () => {
+    const cells = buildCells([aeRow('2026-07-01', 'puzzle_start', 5, 5)], []);
+    expect(line(cells, '2026-08-07')).toBe(
+      '2026-07-01 · puzzle_start · AE 5/5 · D1 0/0 · — · -5 · row counts differ (AE 5, D1 0)',
+    );
+  });
+
+  it('prints a positive delta signed', () => {
+    const cells = buildCells(
+      [aeRow('2026-07-01', 'puzzle_start', 90, 90)],
+      [d1Row('2026-07-01', 'puzzle_start', 92, 92, 0)],
+    );
+    expect(line(cells, '2026-08-07')).toContain('· live · +2 ·');
+  });
+});
+
+describe('summarise — the rollup', () => {
+  const cells = buildCells(
+    [
+      aeRow('2026-06-28', 'puzzle_start', 90, 90),
+      aeRow('2026-06-29', 'puzzle_start', 91, 91),
+      aeRow('2026-06-29', 'route_change', 190, 190),
+      aeRow('2026-06-30', 'route_change', 200, 200),
+    ],
+    [
+      d1Row('2026-06-28', 'puzzle_start', 90, 90),
+      d1Row('2026-06-29', 'puzzle_start', 90, 90),
+      d1Row('2026-06-29', 'route_change', 188, 188),
+      d1Row('2026-06-30', 'route_change', 150, 150),
+    ],
+  );
+  const summary = summarise(cells, '2026-08-07');
+
+  it('exits 1 for one failure among many passes', () => {
+    expect(summary.failures.map((c) => `${c.day} ${c.event}`)).toEqual(['2026-06-30 route_change']);
+    expect(summary.exitCode).toBe(1);
+  });
+
+  it('exits 0 when every cell is clear', () => {
+    const clear = buildCells(
+      [aeRow('2026-06-28', 'puzzle_start', 90, 90)],
+      [d1Row('2026-06-28', 'puzzle_start', 90, 90)],
+    );
+    expect(summarise(clear, '2026-08-07').exitCode).toBe(0);
+  });
+
+  it('rolls up one entry per event, sorted by name', () => {
+    expect(summary.perEvent.map((e) => e.event)).toEqual(['puzzle_start', 'route_change']);
+    expect(summary.perEvent[0]).toMatchObject({ days: 2, verdict: 'PASS' });
+    expect(summary.perEvent[1]).toMatchObject({ days: 2, verdict: 'FAIL' });
+  });
+
+  it('takes the worst delta by absolute value and keeps its sign', () => {
+    expect(summary.perEvent[0].worstDelta).toBe(-1);
+    expect(summary.perEvent[1].worstDelta).toBe(-50);
+  });
+
+  it('reports the oldest day, which the retention note reads', () => {
+    expect(summary.oldestDay).toBe('2026-06-28');
+  });
+});
+
+describe('formatReport', () => {
+  const report = (aes: unknown[], d1s: unknown[], verbose = false) =>
+    formatReport(summarise(buildCells(aes as never, d1s as never), '2026-08-07'), { verbose });
+
+  it('names the event as well as the day in the in-band reminder', () => {
+    const out = report(
+      [aeRow('2026-08-06', 'puzzle_start', 91, 91), aeRow('2026-08-06', 'route_change', 190, 190)],
+      [d1Row('2026-08-06', 'puzzle_start', 90, 90), d1Row('2026-08-06', 'route_change', 188, 188)],
+    );
+    expect(out).toContain('2026-08-06 · puzzle_start');
+    expect(out).toContain('2026-08-06 · route_change');
+    expect(out).toContain('docs/ANALYTICS.md');
+  });
+
+  it('shows the retention note only when every failure is on the oldest day', () => {
+    const onlyOldest = report(
+      [aeRow('2026-06-28', 'puzzle_start', 90, 90), aeRow('2026-06-29', 'puzzle_start', 90, 90)],
+      [d1Row('2026-06-28', 'puzzle_start', 40, 40), d1Row('2026-06-29', 'puzzle_start', 90, 90)],
+    );
+    expect(onlyOldest).toContain('2026-06-28');
+    expect(onlyOldest).toContain('AE retention');
+    // A fully deleted oldest day is a zero-side failure under the new rule, and
+    // the note has to say so or the reader is left to deduce it.
+    expect(onlyOldest).toContain('zero-side');
+
+    const alsoNewer = report(
+      [aeRow('2026-06-28', 'puzzle_start', 90, 90), aeRow('2026-06-29', 'puzzle_start', 90, 90)],
+      [d1Row('2026-06-28', 'puzzle_start', 40, 40), d1Row('2026-06-29', 'puzzle_start', 40, 40)],
+    );
+    expect(alsoNewer).not.toContain('AE retention');
+  });
+
+  it('prints every failing cell in full, and skipped days, but not passing cells', () => {
+    const out = report(
+      [
+        aeRow('2026-06-28', 'puzzle_start', 90, 90),
+        aeRow('2026-06-29', 'puzzle_start', 90, 90),
+        aeRow('2026-08-07', 'puzzle_start', 5, 5),
+      ],
+      [
+        d1Row('2026-06-28', 'puzzle_start', 90, 90),
+        d1Row('2026-06-29', 'puzzle_start', 40, 40),
+        d1Row('2026-08-07', 'puzzle_start', 1, 1),
+      ],
+    );
+    expect(out).toContain('2026-06-29 · puzzle_start · AE 90/90 · D1 40/40');
+    expect(out).toContain('2026-08-07 · puzzle_start · AE 5/5 · D1 1/1');
+    expect(out).not.toContain('2026-06-28 · puzzle_start · AE 90/90 · D1 90/90');
+  });
+
+  it('prints every built cell under --verbose', () => {
+    const args = [
+      [aeRow('2026-06-28', 'puzzle_start', 90, 90), aeRow('2026-06-29', 'puzzle_start', 90, 90)],
+      [d1Row('2026-06-28', 'puzzle_start', 90, 90), d1Row('2026-06-29', 'puzzle_start', 90, 90)],
+    ] as const;
+    expect(report(args[0], args[1], true)).toContain('2026-06-28 · puzzle_start · AE 90/90 · D1 90/90');
+    expect(report(args[0], args[1], false)).not.toContain('2026-06-28 · puzzle_start');
   });
 });
