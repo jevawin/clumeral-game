@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 // module scope when no token was found, which killed the vitest process during
 // collection on any machine without a .env — i.e. CI.
 import {
+  parseArgs,
   withinTolerance,
   judgeCell,
   cellOrigin,
@@ -16,6 +17,28 @@ import {
 describe('compare-ae-d1 — importable without side effects', () => {
   it('exports withinTolerance and runs nothing on import', () => {
     expect(typeof withinTolerance).toBe('function');
+  });
+});
+
+describe('parseArgs', () => {
+  it('compares every event by default', () => {
+    // The headline behavioural change: --event used to default to puzzle_start,
+    // so a bare run silently checked one event out of ten. This assertion is the
+    // only thing standing between that regression and a header line nobody reads.
+    expect(parseArgs([]).event).toBeUndefined();
+  });
+
+  it('defaults the window, the host and the verbosity', () => {
+    expect(parseArgs([])).toMatchObject({ days: 30, host: 'clumeral.com', verbose: false });
+  });
+
+  it('picks up the flags it is given', () => {
+    expect(parseArgs(['--event', 'puzzle_start']).event).toBe('puzzle_start');
+    expect(parseArgs(['--verbose']).verbose).toBe(true);
+    expect(parseArgs(['--days', '40', '--host', 'example.com'])).toMatchObject({
+      days: 40,
+      host: 'example.com',
+    });
   });
 });
 
