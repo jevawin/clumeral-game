@@ -383,8 +383,17 @@ describe('formatReport', () => {
       [aeRow('2026-07-01', 'htp_opened', 3, 3), aeRow('2026-07-02', 'puzzle_start', 90, 90)],
       [d1Row('2026-07-02', 'puzzle_start', 40, 40)],
     );
-    expect(out).toContain('Out of tolerance');
-    expect(out).toContain('Zero on one side');
+    // Assert each cell under its OWN heading, not merely that both headings
+    // appear: with the two filters swapped, an out-of-tolerance cell prints
+    // under "may be signed off by Jamie", which authorises exactly the sign-off
+    // the split exists to forbid.
+    const [, outOfTolerance, zeroSide] = out.split(
+      /^(?=Out of tolerance|Zero on one side)/m,
+    );
+    expect(outOfTolerance).toContain('2026-07-02 · puzzle_start');
+    expect(outOfTolerance).not.toContain('2026-07-01 · htp_opened');
+    expect(zeroSide).toContain('2026-07-01 · htp_opened');
+    expect(zeroSide).not.toContain('2026-07-02 · puzzle_start');
     expect(out).not.toContain('cell(s) outside tolerance');
   });
 

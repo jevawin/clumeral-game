@@ -202,14 +202,18 @@ export function formatCellLine(cell) {
 export function formatReport(summary, { verbose = false } = {}) {
   const out = [];
 
-  out.push('event                  days  worst delta  verdict');
-  out.push('-------------------------------------------------');
-  for (const e of summary.perEvent) {
-    out.push(
-      `${e.event.padEnd(21)} ${String(e.days).padStart(5)} ${signed(e.worstDelta).padStart(12)}  ${e.verdict}`,
-    );
+  // Suppressed entirely when there is nothing to roll up — a column header over
+  // a dashed rule over nothing reads as a table that failed to render.
+  if (summary.perEvent.length > 0) {
+    out.push('event                  days  worst delta  verdict');
+    out.push('-------------------------------------------------');
+    for (const e of summary.perEvent) {
+      out.push(
+        `${e.event.padEnd(21)} ${String(e.days).padStart(5)} ${signed(e.worstDelta).padStart(12)}  ${e.verdict}`,
+      );
+    }
+    out.push('');
   }
-  out.push('');
 
   if (verbose) {
     out.push(`Every cell compared (${summary.cells.length}):`);
@@ -224,9 +228,16 @@ export function formatReport(summary, { verbose = false } = {}) {
   }
 
   if (summary.comparedCount === 0) {
-    out.push('NO DATA: nothing was compared. This is a failure, not a pass.');
-    out.push('Check --host, --event and --days — a window or a filter matching no rows');
-    out.push('produces this, and a gate that checks nothing cannot be green.');
+    out.push('NO DATA: nothing was compared. This is a failure, not a pass —');
+    out.push('a gate that checks nothing cannot be green.');
+    if (summary.skipped.length > 0) {
+      out.push('');
+      out.push('Every cell found was a partial day, listed above. Re-run tomorrow, or');
+      out.push('widen --days so the window includes at least one full UTC day.');
+    } else {
+      out.push('');
+      out.push('Nothing matched at all. Check --host, --event and --days.');
+    }
     out.push('');
   } else if (summary.failures.length > 0) {
     out.push(`FAIL: ${summary.failures.length} failing cell(s). PR 3 is blocked.`);
@@ -315,22 +326,42 @@ async function fromAE({ days, host, event, token, account }) {
       ${event ? `AND blob1 = '${quote(event)}'` : ''}
     GROUP BY day, event ORDER BY day ASC, event ASC`;
 
-  const res = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${account}/analytics_engine/sql`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
-      body: sql,
-    },
-  );
-  // Exit 2, not 1: an expired token or an AE outage means the comparison could
-  // not run. Exiting 1 would report it as "ran, and D1 disagrees".
-  if (!res.ok) {
-    throw Object.assign(new Error(`AE query failed: ${res.status} ${await res.text()}`), {
-      exitCode: 2,
-    });
+  // Every way this can fail is "could not run", so every one of them prints its
+  // own detail and exits 2. Exiting 1 would report an expired token as "the
+  // comparison ran, and D1 disagrees" — and a tagged error is never printed by
+  // the guard, so anything thrown from here has to say its piece first.
+  const fail = (detail) => {
+    console.error('\nCould not read Analytics Engine.\n');
+    console.error(detail.trim());
+    console.error('');
+    return Object.assign(new Error('AE unreachable'), { exitCode: 2 });
+  };
+
+  let res;
+  try {
+    res = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${account}/analytics_engine/sql`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
+        body: sql,
+      },
+    );
+  } catch (err) {
+    // No network, DNS failure, TLS failure.
+    throw fail(String(err));
   }
-  const { data } = await res.json();
+  if (!res.ok) throw fail(`${res.status} ${await res.text()}`);
+
+  let data;
+  try {
+    ({ data } = await res.json());
+  } catch (err) {
+    throw fail(`The response was not JSON: ${err}`);
+  }
+  // A 200 with no rows array is not an empty result — it is a shape we do not
+  // understand, and treating it as zero rows would report a green gate.
+  if (!Array.isArray(data)) throw fail(`Expected a data array, got: ${JSON.stringify(data)}`);
   return data;
 }
 
@@ -374,7 +405,21 @@ function fromD1({ days, host, event }) {
     // Exit 2 is "could not run", as distinct from exit 1's "ran and failed".
     throw Object.assign(new Error('D1 unreachable'), { exitCode: 2 });
   }
-  const parsed = JSON.parse(out.slice(out.indexOf('[')));
+  // Inside its own guard: wrangler exiting 0 with output we cannot parse is
+  // still "could not read D1". Left bare, indexOf returning -1 made slice(-1)
+  // parse the last character of the output and throw an untagged SyntaxError,
+  // which the guard turned into exit 1 — a red gate blamed on the data.
+  let parsed;
+  try {
+    const start = out.indexOf('[');
+    if (start === -1) throw new Error('no JSON array in wrangler output');
+    parsed = JSON.parse(out.slice(start));
+  } catch (err) {
+    console.error('\nCould not read the remote D1.\n');
+    console.error(`wrangler succeeded but its output could not be parsed: ${err}`);
+    console.error('');
+    throw Object.assign(new Error('D1 unreachable'), { exitCode: 2 });
+  }
   return parsed[0]?.results ?? [];
 }
 
