@@ -364,6 +364,111 @@ Ledger: **Settled: Jamie 2026-08-07 (accepted all recommendations, CI corrected 
 68. A green `ci-smoke` on the `staging` PR is therefore part of the definition of done in
     item 63, rather than something separate. (assumed)
 
+## da-brief review — 2026-08-07
+
+Fresh-context review. 3 High, 7 Medium, 3 Low. Resolutions below; numbering continues.
+
+### H1 — the row-count check is wrong on live days (accepted, resolved in 70–72)
+
+70. **The finding, and it is correct.** `toImportRow` maps one AE row to one D1 row and
+    preserves the interval, so on **backfilled** days AE `COUNT()` equals D1 `COUNT(*)`. On
+    **live** days D1 writes one row per event at `sample_interval = 1` while AE stores sampled
+    rows — so on 2026-08-05 a row-count comparison reads **AE 819 against D1 1,053**, a 22%
+    gap that is entirely correct behaviour. Every day the PR 3 gate cares about from here is a
+    live day, so item 38 as written would fail the gate permanently on correct data. Item 60's
+    fixture is a backfilled day, so the tests would have enshrined the wrong semantics.
+71. **Resolution: row counts are diagnostic, never a verdict.** The pass/fail verdict stays
+    exactly as settled in items 21 and 22 — weighted sum against weighted sum, ±1%/±3, plus the
+    zero rule. Row counts are printed on every cell and **can never fail a run on their own.**
+    This still delivers what item 38 was for: the 2026-08-04 cell would have printed
+    `AE 18 rows / 27 weighted · D1 18 rows / 18 weighted`, which is unambiguous on sight.
+72. **The D1 query also returns `SUM(backfilled)` per cell**, so each cell can be labelled
+    `backfilled`, `live` or `mixed`. Without it the printed row counts are uninterpretable — an
+    AE/D1 row-count difference is a real import defect on a backfilled cell and expected
+    behaviour on a live one, and the reader cannot tell which without the label. One extra
+    column on a query already being run. (This is the cheap half of what da-brief offered as
+    option (b); the expensive half — failing the run on backfilled-cell row mismatches — is
+    deliberately not taken, because `backfilled` cells stop existing at PR 3.)
+
+### H2 — verdict semantics undefined (accepted, resolved by 71)
+
+73. Item 71 is the missing statement: the verdict is over weighted sums only. The ±1%/±3
+    tolerance and the item-22 zero rule apply to weighted sums and **not** to row counts.
+    Item 58's "any failing cell fails the run" now has a definition to test against.
+
+### H3 — the main-guard must cover module-scope `process.exit` (accepted)
+
+74. **`scripts/compare-ae-d1.mjs:45–54` calls `process.exit(1)` at module scope** when no token
+    is found. `ci-smoke.yml` runs `npm test` on every PR into `staging` and `main` with no
+    `.env` and no `CF_ANALYTICS_TOKEN` — so guarding only the comparison loop would kill the
+    vitest process during test collection, turning a required check red. Item 67 asserted the
+    opposite without noticing.
+75. **The module must be side-effect free on import.** argv parsing, `loadEnv()`, the token
+    check, the AE `fetch`, the `execFileSync`, every `console.log` and every `process.exit`
+    live inside a guarded `main()`. The pure functions are named exports. The spec imports
+    only those. This supersedes the looser wording of item 51.
+
+### Medium
+
+76. **M1 — use the repo's own main-guard idiom, not the naive one.** Item 51 proposed a form
+    this repo has already found and fixed bugs in. Copy `scripts/lint-migrations.mjs:116`
+    verbatim: `process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href`.
+    Three things have to line up and each has silently failed open before, per the comment at
+    `lint-migrations.mjs:105–115`: `pathToFileURL` rather than a template string (`import.meta.url`
+    is percent-encoded, so a checkout path containing a space made the naive compare false);
+    `realpathSync` (Node resolves symlinks in `import.meta.url` but not in `argv[1]`); and the
+    `process.argv[1] &&` guard (`argv[1]` is undefined under `node -e`, and without it
+    `pathToFileURL` throws and the module cannot be imported at all — which is exactly the
+    failure H3 is about). Copy the line, do not re-derive it.
+77. **M2 — AE rejects `COUNT(*)`.** It must be `COUNT()` with zero arguments — verified
+    2026-08-06, already recorded in ANALYTICS.md. The AE query shape is:
+    `SELECT toStartOfDay(timestamp) AS day, blob1 AS event, COUNT() AS rows, SUM(_sample_interval) AS weighted … GROUP BY day, event`.
+    Both aggregates come back as **strings** and need `Number()`.
+78. **M3 — the zero rule can make item 64's three-clean-day streak unpassable. Needs Jamie.**
+    The live path demonstrably loses 1–3 rows a day (2026-08-06: −1 and −2). Four of the ten
+    events run at 1–6/day, so one lost row on a 1/day event gives AE 1 / D1 0 → hard fail under
+    item 22 → the streak resets, possibly forever.
+    My rec: **keep item 22 as Jamie decided — a zero cell is a hard fail — and resolve it at
+    the streak instead.** A zero-rule failure is reportable and **Jamie may sign it off without
+    resetting the item-64 streak**, provided it is recorded in ANALYTICS.md with the day, event
+    and counts. Why this way round: it leaves the detector as sensitive as it was designed to
+    be and puts the judgement where a human already is, rather than silently widening the rule
+    until it stops firing.
+79. **M4 — item 61's acceptance figure needs the right command and a condition, not an
+    equality.** `--days` defaults to 30; the baseline is 40 days. Run
+    `node scripts/compare-ae-d1.mjs --days 40`. Acceptance is: **zero cells out of tolerance,
+    and the two known 2026-08-06 in-band drifts reported rather than swallowed.** The
+    185-cells-over-40-days figure is an as-of-2026-08-07 reference, not an assertion — cells
+    also disappear off the old end as AE's ~90-day retention deletes them.
+80. **M5 — the baseline came through a different read path than the script uses.** Items 29 and
+    61 took the D1 side from `/api/stats?period=all`; the script uses
+    `wrangler d1 execute --remote`. The queries are equivalent today — `getStats`'s `daily` is
+    the same `SUM(sample_interval)` grouped by day and event, filtered on hostname — but
+    `/api/stats` carries `Cache-Control: max-age=300` and is bounded by `period`, not `--days`.
+    Recorded here so that a first-run disagreement is attributable. **The script's own first
+    run is what becomes the real baseline**, not the hand-run figure.
+81. **M6 — the row 7447 warning must reach the doc someone will actually be reading.** Item 44's
+    warning currently lives only in this work file. ANALYTICS.md's "Restarting a halted import"
+    section documents the exact rewind that would destroy the correction. **Add that section to
+    item 47's list**, carrying the `id = 7447` warning and the re-fix `UPDATE`.
+82. **M7 — specify the output line, because item 60 is asserted against it.** Per cell:
+    `day · event · AE rows/weighted · D1 rows/weighted · origin · delta · verdict`, where
+    `origin` is the item-72 label. The 2026-08-04 fixture must produce
+    `AE 18/27 · D1 18/18 · backfilled` and a verdict naming a **sample-weighting** difference,
+    not a missing-events one. This refines item 26, which was settled before item 38 added a
+    second per-cell quantity.
+
+### Low — two fixed, one deferred
+
+83. **L1 — fixed.** Item 4's "ten event types" is right and item 31's "nine events" was wrong:
+    `VALID_EVENTS` (`src/worker/index.ts`) holds ten. 2026-08-05 happened to record nine of
+    them. Ten is the number.
+84. **L2 — fixed.** Item 65's CI list was incomplete: `ci-smoke.yml` runs
+    `npm run lint:migrations` **before** `npm test`, then the chromium smoke pass. No impact
+    here — no migrations are touched — but the list was presented as verified.
+85. **L3 — fixed.** Item 54's 1% is **1% of the AE value** (`Math.max(3, ae * 0.01)`, as
+    today), and the test asserts that side explicitly.
+
 ### Sign-off
 
 69. **Dave's acks waived by Jamie, 2026-08-07.** *"skip dave's acks it's not
