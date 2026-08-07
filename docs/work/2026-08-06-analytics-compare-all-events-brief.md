@@ -24,7 +24,7 @@ event at a time and defaults to `puzzle_start`, which matches exactly on every d
 
 ## 1. What it is
 
-Ledger: **Settled: Jamie 2026-08-06 · Ack: pending (Dave)**
+Ledger: **Settled: Jamie 2026-08-06 · Ack: Override: Jamie 2026-08-07 (Dave waived)**
 
 1. Two separable pieces of work, shipped together because they came from the same finding.
    (assumed — one branch, one PR, both small)
@@ -49,7 +49,7 @@ Ledger: **Settled: Jamie 2026-08-06 · Ack: pending (Dave)**
 
 ## 2. Out of scope
 
-Ledger: **Settled: Jamie 2026-08-06 · Ack: pending (Dave)**
+Ledger: **Settled: Jamie 2026-08-06 · Ack: Override: Jamie 2026-08-07 (Dave waived)**
 
 8. No `src/` changes. Nothing about what the Worker writes to either sink changes; this is a
    read-only measurement tool. (assumed — the dual write is what is being measured, so
@@ -81,7 +81,7 @@ Ledger: **Settled: Jamie 2026-08-06 · Ack: pending (Dave)**
 
 ## 3. How it works
 
-Ledger: **Settled: Jamie 2026-08-07 (22 yes, 26 rec, 37 fine, 38 yes) · Ack: pending (Dave)**
+Ledger: **Settled: Jamie 2026-08-07 (22 yes, 26 rec, 37 fine, 38 yes) · Ack: Override: Jamie 2026-08-07 (Dave waived)**
 
 ### Querying
 
@@ -259,7 +259,7 @@ occurrence unambiguous.
 
 ## 6. How it fits
 
-Ledger: **Settled: Jamie 2026-08-07 (accepted all recommendations) · Ack: pending (Dave)**
+Ledger: **Settled: Jamie 2026-08-07 (accepted all recommendations) · Ack: Override: Jamie 2026-08-07 (Dave waived)**
 
 46. **`scripts/compare-ae-d1.mjs` is the only code file touched.** The AE half stays a plain
     `fetch` to the Analytics Engine SQL API; the D1 half stays `execFileSync` of
@@ -293,7 +293,7 @@ logic only, in `tests/compare-ae-d1.spec.ts`; one file, guarded by a `import.met
 
 ## 11. Done / test plan
 
-Ledger: **Settled: pending · Ack: pending**
+Ledger: **Settled: Jamie 2026-08-07 (accepted all recommendations, CI corrected per item 65) · Ack: Override: Jamie 2026-08-07 (Dave waived)**
 
 ### QA level, agreed up front
 
@@ -344,3 +344,31 @@ Ledger: **Settled: pending · Ack: pending**
 64. **Explicit non-goal: this does not tick the PR 3 checklist.** Retiring AE stays a separate
     decision on separate evidence, and needs three consecutive clean days including a weekend
     — which this change makes measurable, not satisfied. (assumed)
+
+### Correction — CI, per Jamie 2026-08-07
+
+65. **Items 52 and 53 were wrong to say "no CI job".** Corrected against
+    `.github/workflows/`: CI runs automatically and this change cannot opt out of it.
+    - `ci-smoke.yml` — on pull requests to **`main` and `staging`**. Runs `npm test` (vitest)
+      then `npm run test:e2e:smoke` (chromium-desktop only).
+    - `ci-matrix.yml` — on pull requests to **`main` only**. The remaining engines, plus the
+      separate `legacy-chromium` spec set.
+66. **What that changes, in practice: nothing about the work, but the QA statement is now
+    honest.** The PR into `staging` will run vitest *and* a chromium Playwright smoke pass
+    whether or not this change needs one. The correct framing of item 52 is: **this change
+    adds unit tests and adds no e2e specs**, and Claude still never runs Playwright locally —
+    CI does it, on hardware that can.
+67. The new `tests/compare-ae-d1.spec.ts` is picked up by `npm test`, so it runs inside the
+    existing smoke gate with no workflow edit. (assumed — `vitest.config` includes
+    `tests/**/*.spec.ts`)
+68. A green `ci-smoke` on the `staging` PR is therefore part of the definition of done in
+    item 63, rather than something separate. (assumed)
+
+### Sign-off
+
+69. **Dave's acks waived by Jamie, 2026-08-07.** *"skip dave's acks it's not
+    maths/gameplay/feature related."* Recorded as **`Override: Jamie 2026-08-07`** on every
+    joint section, not as an ack from Dave — Dave has not seen this brief. The waiver is
+    sound on the facts: no maths, no gameplay, no user-facing behaviour, no new feature. If
+    any of those change during planning or build, the waiver does not carry over and Dave has
+    to be asked from scratch.
