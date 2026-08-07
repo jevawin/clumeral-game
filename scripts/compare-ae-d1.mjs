@@ -40,10 +40,29 @@ export function parseArgs(argv) {
   };
 }
 
-/** Within 1% or 3 events, whichever is larger. */
+// Within 1% of the AE value, or 3 events, whichever is larger.
+//
+// The SOLE home of this arithmetic. judgeCell calls it rather than repeating it:
+// two copies is how the ±3 floor ends up applied on one path and not the other.
 export function withinTolerance(ae, d1) {
   const allowed = Math.max(3, ae * 0.01);
   return Math.abs(ae - d1) <= allowed;
+}
+
+// The gate. Reads ONLY the weighted sums.
+//
+// Row counts are diagnostic and can never fail a run: on a live day AE stores
+// sampled rows while D1 writes one row per event, so an AE/D1 row-count gap on a
+// live cell is correct behaviour, and gating on it would fail forever on good data.
+//
+// zero-side is checked BEFORE tolerance, so AE 1 / D1 0 fails rather than sliding
+// under the ±3 floor. The asymmetry is deliberate: one side holding nothing at all
+// is a different kind of wrong from the two sides drifting.
+export function judgeCell(cell) {
+  const { aeWeighted: ae, d1Weighted: d1 } = cell;
+  if ((ae === 0) !== (d1 === 0)) return 'zero-side';
+  if (ae === d1) return 'exact';
+  return withinTolerance(ae, d1) ? 'in-band' : 'out-of-tolerance';
 }
 
 function loadEnv() {
