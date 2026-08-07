@@ -308,6 +308,21 @@ describe('summarise — the rollup', () => {
   it('reports the oldest day, which the retention note reads', () => {
     expect(summary.oldestDay).toBe('2026-06-28');
   });
+
+  it('fails a run that compared nothing rather than calling it a pass', () => {
+    // Zero failures out of zero cells is not a pass. A mistyped --host, an
+    // --event that does not exist, or a window outside the data would otherwise
+    // give a green gate on no evidence — and this gate retires a data source
+    // that cannot be recovered afterwards.
+    const nothing = summarise([], '2026-08-07');
+    expect(nothing.comparedCount).toBe(0);
+    expect(nothing.exitCode).toBe(1);
+  });
+
+  it('does not count skipped partial days as having been compared', () => {
+    const onlyToday = buildCells([aeRow('2026-08-07', 'puzzle_start', 5, 5)], []);
+    expect(summarise(onlyToday, '2026-08-07').exitCode).toBe(1);
+  });
 });
 
 describe('formatReport', () => {
@@ -358,6 +373,24 @@ describe('formatReport', () => {
     expect(out).toContain('2026-06-29 · puzzle_start · AE 90/90 · D1 40/40');
     expect(out).toContain('2026-08-07 · puzzle_start · AE 5/5 · D1 1/1');
     expect(out).not.toContain('2026-06-28 · puzzle_start · AE 90/90 · D1 90/90');
+  });
+
+  it('names which failure class each failing cell is in', () => {
+    // The PR 3 checklist lets Jamie sign off a zero-side failure without
+    // resetting the three-clean-day streak, and nothing else. If the output
+    // calls every failure "outside tolerance", that rule cannot be applied.
+    const out = report(
+      [aeRow('2026-07-01', 'htp_opened', 3, 3), aeRow('2026-07-02', 'puzzle_start', 90, 90)],
+      [d1Row('2026-07-02', 'puzzle_start', 40, 40)],
+    );
+    expect(out).toContain('Out of tolerance');
+    expect(out).toContain('Zero on one side');
+    expect(out).not.toContain('cell(s) outside tolerance');
+  });
+
+  it('says plainly when nothing was compared', () => {
+    expect(formatReport(summarise([], '2026-08-07'), { verbose: false }))
+      .toContain('NO DATA');
   });
 
   it('prints every built cell under --verbose', () => {

@@ -295,7 +295,14 @@ Flags: `--days` (default 30), `--host` (default `clumeral.com`), `--event NAME` 
 event — no longer a default), `--verbose` (print **every built cell**, not just the failures,
 the partial days and the in-band ones; ~185 lines on a 40-day window).
 
-Exit codes: **0** all clear, **1** at least one failing cell, **2** a source could not be read.
+Exit codes: **0** all clear, **1** at least one failing cell — **or nothing compared at all**,
+which is a failure and not a pass — **2** a source could not be read (no token, an Analytics
+Engine error, or wrangler unable to reach D1).
+
+Failing cells are printed under a heading naming their class, because the two are
+procedurally different: **out of tolerance** resets the three-clean-day streak, **zero on one
+side** is the only class Jamie may sign off. Reading the sign-off rule off the output is the
+point of the split.
 
 **Differences inside the tolerance get recorded here with the day, the event and both
 counts**, not silently passed.

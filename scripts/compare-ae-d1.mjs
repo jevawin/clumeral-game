@@ -163,7 +163,12 @@ export function summarise(cells, today) {
     inBand: counted.filter((c) => c.verdict === 'in-band'),
     skipped: cells.filter((c) => c.skipped),
     oldestDay: cells[0]?.day ?? null,
-    exitCode: failures.length > 0 ? 1 : 0,
+    comparedCount: counted.length,
+    // Zero failures out of zero cells is NOT a pass. A mistyped --host, an
+    // --event that does not exist, or a window outside the data would otherwise
+    // report green having checked nothing — and this gate is what retires a data
+    // source that cannot be recovered once it is gone.
+    exitCode: failures.length > 0 || counted.length === 0 ? 1 : 0,
   };
 }
 
@@ -218,11 +223,32 @@ export function formatReport(summary, { verbose = false } = {}) {
     out.push('');
   }
 
-  if (summary.failures.length > 0) {
-    out.push(`FAIL: ${summary.failures.length} cell(s) outside tolerance. PR 3 is blocked.`);
+  if (summary.comparedCount === 0) {
+    out.push('NO DATA: nothing was compared. This is a failure, not a pass.');
+    out.push('Check --host, --event and --days — a window or a filter matching no rows');
+    out.push('produces this, and a gate that checks nothing cannot be green.');
     out.push('');
-    for (const c of summary.failures) out.push(`  ${formatCellLine(c)}`);
+  } else if (summary.failures.length > 0) {
+    out.push(`FAIL: ${summary.failures.length} failing cell(s). PR 3 is blocked.`);
     out.push('');
+
+    // The two failure classes are procedurally different, so the output has to
+    // name which is which: the PR 3 checklist lets a zero-side cell be signed
+    // off without resetting the three-clean-day streak, and nothing else.
+    const outOfTolerance = summary.failures.filter((c) => c.verdict === 'out-of-tolerance');
+    const zeroSide = summary.failures.filter((c) => c.verdict === 'zero-side');
+
+    if (outOfTolerance.length > 0) {
+      out.push(`Out of tolerance (${outOfTolerance.length}) — resets the three-clean-day streak:`);
+      for (const c of outOfTolerance) out.push(`  ${formatCellLine(c)}`);
+      out.push('');
+    }
+    if (zeroSide.length > 0) {
+      out.push(`Zero on one side (${zeroSide.length}) — may be signed off by Jamie, but only if`);
+      out.push('recorded in docs/ANALYTICS.md with the day, the event and both counts:');
+      for (const c of zeroSide) out.push(`  ${formatCellLine(c)}`);
+      out.push('');
+    }
 
     // AE retains ~90 days and deletes continuously, so the oldest day in a long
     // window can be part-deleted on the AE side while D1 still holds all of it.
@@ -297,7 +323,13 @@ async function fromAE({ days, host, event, token, account }) {
       body: sql,
     },
   );
-  if (!res.ok) throw new Error(`AE query failed: ${res.status} ${await res.text()}`);
+  // Exit 2, not 1: an expired token or an AE outage means the comparison could
+  // not run. Exiting 1 would report it as "ran, and D1 disagrees".
+  if (!res.ok) {
+    throw Object.assign(new Error(`AE query failed: ${res.status} ${await res.text()}`), {
+      exitCode: 2,
+    });
+  }
   const { data } = await res.json();
   return data;
 }
@@ -358,7 +390,8 @@ async function main(argv) {
   const account = env.CF_ACCOUNT_ID || '06ff16a35fdefa6cae9e3463116086aa';
   if (!token) {
     console.error('No Analytics Read token found. Set CF_ANALYTICS_TOKEN (or CF_API_TOKEN) in .env at the repo root.');
-    return 1;
+    // 2, not 1: a missing token means the comparison could not run at all.
+    return 2;
   }
 
   const today = new Date().toISOString().slice(0, 10);
