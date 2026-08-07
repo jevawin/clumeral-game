@@ -469,6 +469,27 @@ Fresh-context review. 3 High, 7 Medium, 3 Low. Resolutions below; numbering cont
 85. **L3 — fixed.** Item 54's 1% is **1% of the AE value** (`Math.max(3, ae * 0.01)`, as
     today), and the test asserts that side explicitly.
 
+### M3 answered, and the brief closed
+
+86. **M3 answered as recommended — Jamie 2026-08-07.** Item 22 stands unchanged: a cell where
+    one side is zero and the other is not is a **hard failure**, whatever the magnitude. The
+    tension with item 64 is resolved at the streak, not at the rule:
+    **a zero-rule failure may be signed off by Jamie without resetting the three-consecutive-
+    clean-day streak, provided it is recorded in `docs/ANALYTICS.md` with the day, the event
+    and both counts.** No other failure class may be signed off this way — an out-of-tolerance
+    weighted cell resets the streak, full stop.
+    Why this way round: it keeps the detector as sensitive as it was designed to be and puts
+    the judgement where a human already is, instead of widening the rule until it stops firing.
+87. **Item 47 gains one more ANALYTICS.md edit** from item 86: the sign-off route and its
+    recording requirement belong next to the PR 3 checklist, or the next person to read a red
+    gate will not know the option exists.
+88. **H1 and H2 resolutions (items 71–73) and H3 (74–75) are adopted as written**, alongside
+    every Medium and Low above. No `da-brief` finding is deferred or disputed.
+
+**Brief closed 2026-08-07.** All five short-form sections settled by Jamie; Dave's acks waived
+by dev-lead override (item 69); `da-brief` run fresh-context, 3 High / 7 Medium / 3 Low, all
+resolved in items 70–88. Next stage: `planning`, working from this file.
+
 ### Sign-off
 
 69. **Dave's acks waived by Jamie, 2026-08-07.** *"skip dave's acks it's not
