@@ -198,3 +198,46 @@ inserted by hand. Both answers changed the picture, so items 10 and 22 are reope
     single dropped multiplier look like nine lost events and cost an afternoon. Counting rows
     on both sides separates "we are missing records" from "we are missing a multiplier" in
     the output itself, which is the distinction that actually matters when reading a red gate.
+
+### Resolved 2026-08-06 — cause (a), one row, nothing lost
+
+39. **Jamie ran the query against production `clumeral-analytics`. Cause (a) confirmed.** All
+    18 rows are present and all carry `backfilled = 1`. The row AE tagged with
+    `_sample_interval = 10` is there as **`id = 7447`, `2026-08-04 17:30:26`, uid
+    `ba034600-…`, `sample_interval = 1`**. **No event was lost.** One imported row carries the
+    wrong multiplier.
+40. **It is a one-off, not a systemic importer fault.** Checked every cell in the window where
+    AE's row count differs from its weighted sum — 13 of them, from 2026-07-09 to 2026-08-07.
+    **Twelve preserved the interval exactly** (including `2026-08-05 undo_used`, 119 rows
+    weighted to 329, and `2026-07-09 tooltip_opened`, 22 → 28). `2026-08-04 incorrect_guess`
+    is the only cell that landed on the raw row count. The mapping in `toImportRow`
+    (`backfill.ts:300`) is correct and demonstrably works.
+41. **Most likely mechanism, stated as a hypothesis rather than a finding.**
+    `toImportRow` ends `Number.isFinite(interval) && interval > 0 ? Math.trunc(interval) : 1`.
+    If `_sample_interval` were absent or unparseable in that one AE response, `Number(undefined)`
+    is `NaN`, the guard fails, and the row silently imports as 1 — which is exactly the
+    observed result. This cannot be proven after the fact: AE is not asked twice and the
+    original response is gone.
+42. **The design lesson, which outlives this bug.** That `: 1` fallback converts a bad read
+    into a silent undercount. A row-count check on both sides would have caught it
+    immediately and localised it to one row, instead of presenting as "9 missing events".
+    This is now the strongest argument for item 38 and it should be quoted in the plan.
+43. **The fix, for Jamie to run in the Cloudflare console.** `UPDATE … SET` is permitted by
+    CLAUDE.md; Claude cannot run it (`--remote` is blocked) and must not.
+    ```sql
+    UPDATE analytics_events SET sample_interval = 10 WHERE id = 7447;
+    ```
+    Verify with:
+    ```sql
+    SELECT SUM(sample_interval) FROM analytics_events
+    WHERE hostname = 'clumeral.com' AND event = 'incorrect_guess'
+      AND ts >= 1785801600000 AND ts < 1785888000000;   -- expect 27
+    ```
+44. **One caveat on the fix.** The backfill's `DELETE` is filtered to `backfilled = 1`, so if
+    anyone rewinds `backfill_state` and re-imports 2026-08-04, this correction is deleted and
+    re-imported from AE — with whatever interval AE returns that time. `done = 1` makes that
+    unlikely, and PR 3 removes the backfill entirely, but the correction is not permanent
+    until PR 3 lands.
+45. **Item 10's "record only" decision stands and is now cheap to honour** — the record is no
+    longer "an unexplained 9-event gap" but "one imported row lost its sample interval,
+    corrected on 2026-08-06, cause not reproducible". That is what goes in ANALYTICS.md.
