@@ -295,9 +295,11 @@ Flags: `--days` (default 30), `--host` (default `clumeral.com`), `--event NAME` 
 event — no longer a default), `--verbose` (print **every built cell**, not just the failures,
 the partial days and the in-band ones; ~185 lines on a 40-day window).
 
-Exit codes: **0** all clear, **1** at least one failing cell — **or nothing compared at all**,
-which is a failure and not a pass — **2** a source could not be read (no token, an Analytics
-Engine error, or wrangler unable to reach D1).
+Exit codes: **0** all clear, **1** the comparison ran and at least one cell failed, **2** it
+could not run — no token, an Analytics Engine error, wrangler unable to reach D1, **or nothing
+compared at all**. That last one is deliberate (Jamie, 2026-08-07): a window, host or event
+matching no full days is a red gate, and it belongs with "never ran" rather than with "D1
+disagrees", because a gate that checks nothing must never read green.
 
 Failing cells are printed under a heading naming their class, because the two are
 procedurally different: **out of tolerance** resets the three-clean-day streak, **zero on one

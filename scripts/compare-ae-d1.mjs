@@ -168,7 +168,11 @@ export function summarise(cells, today) {
     // --event that does not exist, or a window outside the data would otherwise
     // report green having checked nothing — and this gate is what retires a data
     // source that cannot be recovered once it is gone.
-    exitCode: failures.length > 0 || counted.length === 0 ? 1 : 0,
+    //
+    // It is 2, not 1, because 1 means "the comparison ran and D1 disagrees".
+    // Nothing ran here, so it belongs with the other could-not-run exits.
+    // Jamie's call, 2026-08-07.
+    exitCode: counted.length === 0 ? 2 : failures.length > 0 ? 1 : 0,
   };
 }
 

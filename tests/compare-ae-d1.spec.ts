@@ -314,14 +314,16 @@ describe('summarise — the rollup', () => {
     // --event that does not exist, or a window outside the data would otherwise
     // give a green gate on no evidence — and this gate retires a data source
     // that cannot be recovered afterwards.
+    // Exit 2, not 1: 1 means "the comparison ran and D1 disagrees", and nothing
+    // ran here. This is also the only test coverage exit 2 has.
     const nothing = summarise([], '2026-08-07');
     expect(nothing.comparedCount).toBe(0);
-    expect(nothing.exitCode).toBe(1);
+    expect(nothing.exitCode).toBe(2);
   });
 
   it('does not count skipped partial days as having been compared', () => {
     const onlyToday = buildCells([aeRow('2026-08-07', 'puzzle_start', 5, 5)], []);
-    expect(summarise(onlyToday, '2026-08-07').exitCode).toBe(1);
+    expect(summarise(onlyToday, '2026-08-07').exitCode).toBe(2);
   });
 });
 
