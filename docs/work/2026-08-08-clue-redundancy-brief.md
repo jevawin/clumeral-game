@@ -32,8 +32,8 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 
 | Section | State |
 |---|---|
-| 1. What it is | asked 2026-08-08 |
-| 2. Out of scope | not started |
+| 1. What it is | settled Dave 2026-08-08 · Ack: Jamie pending |
+| 2. Out of scope | asked 2026-08-08 |
 | 3. How it works | not started |
 | 4. Maths | not started |
 | 5. State & persistence | not started |
@@ -45,7 +45,7 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 11. Done / test plan | not started |
 
 ## 1. What it is
-Settled: pending · Ack: pending
+Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie pending
 
 1. The problem: the generator picks clues by how much each one narrows the field, never
    checking whether a clue is still needed once later clues land. Result: 77% of puzzles
@@ -65,3 +65,27 @@ Settled: pending · Ack: pending
    than 6 clues" the goal?
    My rec: both, with the clue count as the hard rule and no-redundancy as the method.
    Why: Dave's screen-fit problem is a hard constraint; redundancy is a quality one.
+
+   **Answers (Dave, 2026-08-08):** 4 — both daily and random. 5 — both goals, clue count
+   as the hard rule.
+
+## 2. Out of scope
+Settled: pending · Ack: pending
+
+6. Puzzles already in storage are never rewritten, including the three 7-clue ones
+   (#33, #49, #144). (assumed — KV is write-once, docs/ARCHITECTURE.md)
+7. No change to clue wording, no new clue types, no change to the six clue families.
+   (assumed — separate concern, and §8 covers wording if it comes up)
+8. The 15–40% narrowing band that picks each clue stays exactly as it is. The sweep works
+   downstream of it. (assumed — retuning the band is its own maths change with its own
+   consequences)
+9. Not solving the screen-fit problem by changing the game screen layout instead.
+   (assumed — Dave's constraint is that puzzles fit the current design)
+10. No difficulty levels, no difficulty tuning, no per-day difficulty curve.
+    (assumed — much bigger piece of work)
+11. The cron pre-generates tomorrow's puzzle the day before (`src/worker/daily-puzzle.ts`,
+    #257). So for up to one day after the merge, the live daily puzzle may still be an
+    old-style one. QUESTION — accept that one-day lag, or delete the pre-generated entry
+    by hand so it regenerates under the new rules?
+    My rec: accept the lag. Why: deleting a live storage entry is a manual production step
+    for a one-day cosmetic gain, and write-once is the rule that protects the archive.
