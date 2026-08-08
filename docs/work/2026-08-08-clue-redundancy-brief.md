@@ -34,7 +34,7 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 |---|---|
 | 1. What it is | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 2. Out of scope | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
-| 3. How it works | settled Dave 2026-08-08 · Ack: Jamie pending |
+| 3. How it works | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
 | 5. State & persistence | asked 2026-08-08 |
 | 6. How it fits | not started |
@@ -93,7 +93,7 @@ Settled: Dave 2026-08-08 (accepted all recommendations, incl. 11 accept the lag)
     **Answer (Dave, 2026-08-08):** 11 — accept the lag.
 
 ## 3. How it works
-Settled: Dave 2026-08-08 (16 → range 4-6; 19 → accept) · Ack: Jamie pending
+Settled: Dave 2026-08-08 (16 → range 4-6; 19 → accept) · Ack: Jamie 2026-08-08
 
 Second simulation, 3,000 puzzles, running the full proposed algorithm (trim, then reject
 and regenerate until the count is in range). Results referenced by the items below:
