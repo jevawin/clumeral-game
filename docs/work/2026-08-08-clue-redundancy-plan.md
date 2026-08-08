@@ -536,6 +536,25 @@ digit 27.6% against 30% (8.0%); containing a zero 22.0% against 23% (4.3%). Wort
 loud because it runs the reassuring way: the brief predicted the change would *narrow* the
 answer pool from 796 to 753, and the built code gives 812 — more variety than today, not less.
 
+**Dave's clue-mix question (asked 2026-08-08, after the build).** He wanted to know whether
+dropping redundant clues leans the puzzles towards `=` and "is a prime / square", away from
+the `<` and `>` clues that make you reason. `scripts/puzzle-stats.mjs` now reports it, old
+against new, over 3,000 puzzles — share of every clue a player sees:
+
+| Clue kind | old | new |
+|---|---|---|
+| `=` (numeric) | 25.2% | 26.4% |
+| `>` | 28.2% | 24.7% |
+| `<` | 24.3% | 21.5% |
+| "is a prime / square / …" | 15.9% | 20.2% |
+| "is not a …" | 5.0% | 5.1% |
+| `!=` (numeric) | 1.4% | 2.0% |
+
+So `<` and `>` together fall from 52.5% to 46.2%, and the boolean Specials rise from 20.9% to
+25.3%. The lean Dave was worried about is real but small — about six points — and it comes
+from the retries, not the sweep: a puzzle that trims below 4 clues is redrawn, and the draws
+that survive tend to carry the narrower boolean clues. `=` itself barely moved.
+
 **Still owed before the pull request to `main`:** the first affected puzzle number in
 `docs/ARCHITECTURE.md`, which currently reads `TO BE FILLED IN WHEN THE PULL REQUEST TO main IS
 OPENED`. It is `puzzleNumber(deploy date + 2)` and cannot be computed until the merge date is

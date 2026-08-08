@@ -3,9 +3,9 @@
 //
 //   node scripts/puzzle-stats.mjs [seeds]      (default 3000)
 //
-// Prints the clue-count spread, the redundancy check, the answer distribution,
-// the retry counts, and a timing comparison of the old generator against the
-// new one. Committed rather than thrown away after the pull request, so the
+// Prints the clue-count spread, the clue mix, the redundancy check, the answer
+// distribution, the retry counts, and a timing comparison of the old generator
+// against the new one. Committed rather than thrown away after the pull request, so the
 // numbers can be re-checked later instead of trusted from a PR body.
 //
 // EXITS NON-ZERO if any generated puzzle still has a removable clue. That is
@@ -32,6 +32,7 @@ import { pathToFileURL } from 'node:url';
 import {
   MAX_CLUES,
   MIN_CLUES,
+  PROPERTIES,
   generatePuzzleFromRng,
   makeRng,
   trimRedundantClues,
@@ -81,6 +82,19 @@ const answers = [];
 let stillRedundant = 0;
 let disagreements = 0;
 
+// Which KIND of clue players get, old against new. Dave's question: does
+// dropping redundant clues push the puzzles towards "=" and "is / is not a
+// prime", and away from the "<" and ">" clues that make you reason rather than
+// look up? A clue is "is / is not" when its property is a boolean Special.
+const mix = { old: new Map(), new: new Map() };
+const kindOf = ({ propKey, operator }) => {
+  if (PROPERTIES[propKey].type === 'text') return operator === '=' ? 'is' : 'is not';
+  return `numeric ${operator}`;
+};
+const tally = (into, clues) => {
+  for (const clue of clues) into.set(kindOf(clue), (into.get(kindOf(clue)) ?? 0) + 1);
+};
+
 for (let seed = 1; seed <= SEEDS; seed++) {
   const puzzle = generatePuzzleFromRng(makeRng(seed));
 
@@ -95,6 +109,9 @@ for (let seed = 1; seed <= SEEDS; seed++) {
   attemptCounts.push(attempts);
   answers.push(puzzle.answer);
   if (trimRedundantClues(puzzle.clues).length !== puzzle.clues.length) stillRedundant++;
+
+  tally(mix.new, puzzle.clues);
+  tally(mix.old, baseline.runFilterLoop(makeRng(seed)).clues);
 }
 
 // ─── Clue counts ──────────────────────────────────────────────────────────────
@@ -104,6 +121,21 @@ for (const n of [...clueCounts.keys()].sort((a, b) => a - b)) {
   const count = clueCounts.get(n);
   const flag = n < MIN_CLUES || n > MAX_CLUES ? '   ← outside the 4–6 range' : '';
   console.log(`  ${n} clues  ${String(count).padStart(6)}  ${pct(count, SEEDS).padStart(6)}${flag}`);
+}
+
+// ─── Clue mix ─────────────────────────────────────────────────────────────────
+
+const totalOld = [...mix.old.values()].reduce((a, b) => a + b, 0);
+const totalNew = [...mix.new.values()].reduce((a, b) => a + b, 0);
+const kinds = [...new Set([...mix.old.keys(), ...mix.new.keys()])]
+  .sort((a, b) => (mix.new.get(b) ?? 0) - (mix.new.get(a) ?? 0));
+
+console.log('\nClue mix — share of all clues shown to a player');
+console.log('                    old      new');
+for (const kind of kinds) {
+  const before = pct(mix.old.get(kind) ?? 0, totalOld);
+  const after = pct(mix.new.get(kind) ?? 0, totalNew);
+  console.log(`  ${kind.padEnd(14)} ${before.padStart(7)}  ${after.padStart(7)}`);
 }
 
 // ─── Redundancy ───────────────────────────────────────────────────────────────
