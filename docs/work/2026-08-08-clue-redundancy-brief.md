@@ -2,7 +2,9 @@
 
 Date: 2026-08-08 · Branch: `dev/clue-redundancy` · Author: Claude (clumeral dev bot)
 
-Status: all 11 sections settled. Waiting on Dave's acks for sections 6, 7, 8, 10 and 11, then da-brief.
+Status: all 11 sections settled. Sections 6, 7, 8, 10 and 11 were never acked by Dave;
+Jamie overrode as dev lead on 2026-08-08 ("review i'm sure dave's happy with all that").
+Recorded as an override, not as an ack — Dave has not seen those five sections.
 
 ## Background evidence (gathered 2026-08-08, before the brief)
 
@@ -37,12 +39,12 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 3. How it works | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
 | 5. State & persistence | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 |
-| 6. How it fits | settled Jamie 2026-08-08 · Ack: Dave pending |
-| 7. How it looks | settled Jamie 2026-08-08 · Ack: Dave pending |
-| 8. Copy & wording | settled Jamie 2026-08-08 · Ack: Dave pending |
+| 6. How it fits | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+| 7. How it looks | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+| 8. Copy & wording | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
 | 9. Accessibility | settled Jamie 2026-08-08 (owner) · Ack: n/a |
-| 10. Analytics | settled Jamie 2026-08-08 · Ack: Dave pending |
-| 11. Done / test plan | settled Jamie 2026-08-08 · Ack: Dave pending |
+| 10. Analytics | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+| 11. Done / test plan | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
 
 ## 1. What it is
 Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie 2026-08-08
@@ -233,7 +235,7 @@ Settled: Jamie 2026-08-08 (35 → export the trimming step) · Ack: Dave pending
     name in the module's public surface.
 
 ## 7. How it looks
-Settled: Jamie 2026-08-08 (38 → no layout changes, 4 clues looks good) · Ack: Dave pending
+Settled: Jamie 2026-08-08 (38 → no layout changes, 4 clues looks good) · Override: Jamie 2026-08-08
 
 36. No new UI, no new components, no CSS change. Clue rows are already rendered from the
     list whatever its length. (assumed — verified in §5 item 28)
@@ -249,7 +251,7 @@ Settled: Jamie 2026-08-08 (38 → no layout changes, 4 clues looks good) · Ack:
     look on a phone before it is settled.
 
 ## 8. Copy & wording
-Settled: Jamie 2026-08-08 (nothing to write) · Ack: Dave pending
+Settled: Jamie 2026-08-08 (nothing to write) · Override: Jamie 2026-08-08
 
 39. No copy changes anywhere. Clue wording comes from the generator's own labels, which
     §2 item 7 puts out of scope, and no new message, error or empty state appears — there
@@ -276,7 +278,7 @@ Settled: Jamie 2026-08-08 (43 → no special screen-reader check) · Ack: n/a (J
     only a more frequent one.
 
 ## 10. Analytics
-Settled: Jamie 2026-08-08 (46 → leave it out, no analytics change) · Ack: Dave pending
+Settled: Jamie 2026-08-08 (46 → leave it out, no analytics change) · Override: Jamie 2026-08-08
 
 44. No new events. The one question this change raises — did the shorter puzzles make the
     game too hard? — is already answerable from what is recorded: `puzzle_start`,
@@ -297,7 +299,7 @@ Settled: Jamie 2026-08-08 (46 → leave it out, no analytics change) · Ack: Dav
     Logged as its own ticket: https://github.com/jevawin/clumeral-game/issues/306
 
 ## 11. Done / test plan
-Settled: Jamie 2026-08-08 (accepted all recommendations, incl. 53 QA level) · Ack: Dave pending
+Settled: Jamie 2026-08-08 (accepted all recommendations, incl. 53 QA level) · Override: Jamie 2026-08-08
 
 47. Unit tests on the exported trimming step: a puzzle with a known spare clue loses exactly
     that clue; a puzzle where every clue is needed comes back untouched; the answer is
