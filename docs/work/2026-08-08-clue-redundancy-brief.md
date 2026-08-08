@@ -2,7 +2,7 @@
 
 Date: 2026-08-08 · Branch: `dev/clue-redundancy` · Author: Claude (clumeral dev bot)
 
-Status: in progress — section 1 asked.
+Status: all 11 sections settled. Waiting on Dave's acks for sections 6, 7, 8, 10 and 11, then da-brief.
 
 ## Background evidence (gathered 2026-08-08, before the brief)
 
@@ -41,8 +41,8 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 7. How it looks | settled Jamie 2026-08-08 · Ack: Dave pending |
 | 8. Copy & wording | settled Jamie 2026-08-08 · Ack: Dave pending |
 | 9. Accessibility | settled Jamie 2026-08-08 (owner) · Ack: n/a |
-| 10. Analytics | asked 2026-08-08 |
-| 11. Done / test plan | not started |
+| 10. Analytics | settled Jamie 2026-08-08 · Ack: Dave pending |
+| 11. Done / test plan | settled Jamie 2026-08-08 · Ack: Dave pending |
 
 ## 1. What it is
 Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie 2026-08-08
@@ -276,7 +276,7 @@ Settled: Jamie 2026-08-08 (43 → no special screen-reader check) · Ack: n/a (J
     only a more frequent one.
 
 ## 10. Analytics
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-08 (46 → leave it out, no analytics change) · Ack: Dave pending
 
 44. No new events. The one question this change raises — did the shorter puzzles make the
     game too hard? — is already answerable from what is recorded: `puzzle_start`,
@@ -292,3 +292,30 @@ Settled: pending · Ack: pending
     My rec: leave it out of this one. Why: it touches the client as well as the worker,
     it needs its own decision about what the values are, and this change is server-only.
     It deserves its own issue — say the word and I will write one for you to check.
+
+    **Answer (Jamie, 2026-08-08):** leave it out, no analytics change in this piece of work.
+    Logged as its own ticket: https://github.com/jevawin/clumeral-game/issues/306
+
+## 11. Done / test plan
+Settled: Jamie 2026-08-08 (accepted all recommendations, incl. 53 QA level) · Ack: Dave pending
+
+47. Unit tests on the exported trimming step: a puzzle with a known spare clue loses exactly
+    that clue; a puzzle where every clue is needed comes back untouched; the answer is
+    unchanged in both cases. (assumed)
+48. A sweep over a few hundred seeds asserting three things at once — every puzzle has 4 to
+    6 clues, every puzzle has exactly one answer, and no single clue can be removed while
+    still leaving one answer. The third is the real definition of done. (assumed)
+49. Determinism: the same seed twice produces an identical puzzle, clues and answer.
+    (assumed)
+50. Agreement between the two answer paths: for a spread of seeds, the answer produced when
+    the puzzle is generated equals the answer produced by re-running the generator from the
+    same seed. This is the §6 item 31 failure mode — the one that would mark correct guesses
+    wrong — so it gets its own test rather than being assumed. (assumed)
+51. Existing tests, the type check and the linter all still pass. (assumed)
+52. Before the pull request, run the generator over a few thousand seeds locally and put the
+    resulting clue-count spread and redundancy check into the pull request description, so
+    the real numbers are on the record rather than a claim. (assumed)
+53. QA level: nothing beyond what CI already runs by itself — the chromium smoke test on the
+    staging pull request and the full set on the main pull request. Why: server-only change,
+    no interface change, and the risk lives entirely in generation, which unit tests cover
+    far better than a browser can. (assumed — QA level agreed up front per CLAUDE.md)
