@@ -146,6 +146,11 @@ Update the respective doc if it's incorrect or your work makes it outdated.
 Things owed that no test or CI job will remind anyone about. Surfaced when the topic comes
 up in conversation — **there is no scheduled reminder and Claude cannot send one unprompted.**
 
+- **2026-08-08 — did the shorter puzzles make the game too hard? (#193).** Watch
+  `incorrect_guess` divided by `puzzle_complete` on production for a fortnight after the merge.
+  Baseline for the 30 days to 2026-08-08: 285 / 466 = **0.61**. If it holds at **0.85 or above
+  for a week**, reopen the 4–6 clue range with Jamie and Dave. Read it from `/stats` or
+  `clumeral-analytics`; the caveats on that ratio are in [docs/ANALYTICS.md](docs/ANALYTICS.md).
 - **2026-08-04 — compare D1 analytics against Analytics Engine before retiring AE.** Jamie:
   "we'll look at d1, ask you to compare vs ae in a few days." Run
   `node scripts/compare-ae-d1.mjs`; the pass condition and the PR 3 removal checklist are in
