@@ -37,8 +37,8 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 3. How it works | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
 | 5. State & persistence | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 |
-| 6. How it fits | asked 2026-08-08 |
-| 7. How it looks | not started |
+| 6. How it fits | settled Jamie 2026-08-08 · Ack: Dave pending |
+| 7. How it looks | asked 2026-08-08 |
 | 8. Copy & wording | not started |
 | 9. Accessibility | not started |
 | 10. Analytics | not started |
@@ -200,7 +200,7 @@ Settled: Jamie 2026-08-08 (29 → no marker) · Ack: Dave 2026-08-08
     docs/ARCHITECTURE.md instead — that costs nothing and is easy to read.
 
 ## 6. How it fits
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-08 (35 → export the trimming step) · Ack: Dave pending
 
 30. The change lives in `src/worker/puzzle.ts`, inside `runFilterLoop`. Three callers pick
     it up with no edit: `generatePuzzle` in `src/worker/daily-puzzle.ts` (the cron and the
@@ -231,3 +231,19 @@ Settled: pending · Ack: pending
     directly ("give it a puzzle with a known spare clue, check that clue goes") is far
     clearer than inferring behaviour from whole generated puzzles. The cost is one more
     name in the module's public surface.
+
+## 7. How it looks
+Settled: pending · Ack: pending
+
+36. No new UI, no new components, no CSS change. Clue rows are already rendered from the
+    list whatever its length. (assumed — verified in §5 item 28)
+37. What does change: most puzzles will show fewer clue rows. Four clues becomes the
+    commonest case at about 60%, where today it is 1.3%. Six drops from 34% to 6%.
+    (assumed — measured)
+38. QUESTION — does the game screen look right with only four clues, and does it look
+    unbalanced against a six-clue one? Two live 4-clue puzzles already exist to judge it
+    on: puzzle #45 (2026-04-21) and #102 (2026-06-17), against today's 6-clue #154.
+    My rec: no layout work needed. Why: the two existing 4-clue puzzles have been live for
+    months without a complaint, and the screen was rebuilt to be uncluttered — fewer rows
+    should suit it. But this is a UI call and it is yours, both of you, not mine. Worth one
+    look on a phone before it is settled.
