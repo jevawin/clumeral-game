@@ -34,9 +34,9 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 |---|---|
 | 1. What it is | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 2. Out of scope | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
-| 3. How it works | asked 2026-08-08 — 16 and 19 still open |
-| 4. Maths | asked 2026-08-08 |
-| 5. State & persistence | not started |
+| 3. How it works | settled Dave 2026-08-08 · Ack: Jamie pending |
+| 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
+| 5. State & persistence | asked 2026-08-08 |
 | 6. How it fits | not started |
 | 7. How it looks | not started |
 | 8. Copy & wording | not started |
@@ -93,7 +93,7 @@ Settled: Dave 2026-08-08 (accepted all recommendations, incl. 11 accept the lag)
     **Answer (Dave, 2026-08-08):** 11 — accept the lag.
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Dave 2026-08-08 (16 → range 4-6; 19 → accept) · Ack: Jamie pending
 
 Second simulation, 3,000 puzzles, running the full proposed algorithm (trim, then reject
 and regenerate until the count is in range). Results referenced by the items below:
@@ -156,7 +156,7 @@ and regenerate until the count is in range). Results referenced by the items bel
     of daily / archive / random, so this is answerable next time.**
 
 ## 4. Maths
-Settled: pending · Ack: pending
+Settled: Dave 2026-08-08 (23 → shift acceptable) · Ack: n/a (Dave owns maths)
 
 Dave owns this section — his sign-off is blocking.
 
@@ -179,3 +179,22 @@ Dave owns this section — his sign-off is blocking.
 24. The check is exact, not sampled: each test re-derives the surviving numbers from all
     900 candidates. Cost is negligible (900 numbers × a handful of clues, a few times per
     puzzle). (assumed)
+
+## 5. State & persistence
+Settled: pending · Ack: pending
+
+25. Nothing new is stored in the browser. The whole change lives in puzzle generation on
+    the server. (assumed)
+26. Daily puzzles keep the same stored shape in KV — answer, clues, puzzle number — and are
+    still written once and never updated (`StoredPuzzle` in `src/worker/daily-puzzle.ts`).
+    (assumed)
+27. A player's saved in-progress game and their history are unaffected, because the puzzle
+    they point at never changes once written. (assumed)
+28. Nothing in the client or the stylesheet assumes a particular number of clues — checked
+    `src/tailwind.css`, `src/app.ts`, `src/storage.ts`, `src/walkthrough.ts`. Clue rows are
+    rendered from the list, whatever its length. (assumed — verified 2026-08-08)
+29. QUESTION — should puzzles made by the new generator carry a marker saying so?
+    My rec: no. Why: the changeover is a single merge, so the date already separates old
+    from new, and a field added to a write-once store can never be removed or corrected
+    later. If we want it findable, record the first affected puzzle number in
+    docs/ARCHITECTURE.md instead — that costs nothing and is easy to read.
