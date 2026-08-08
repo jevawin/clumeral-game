@@ -32,10 +32,10 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 
 | Section | State |
 |---|---|
-| 1. What it is | settled Dave 2026-08-08 · Ack: Jamie pending |
-| 2. Out of scope | settled Dave 2026-08-08 · Ack: Jamie pending |
-| 3. How it works | asked 2026-08-08 |
-| 4. Maths | not started |
+| 1. What it is | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
+| 2. Out of scope | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
+| 3. How it works | asked 2026-08-08 — 16 and 19 still open |
+| 4. Maths | asked 2026-08-08 |
 | 5. State & persistence | not started |
 | 6. How it fits | not started |
 | 7. How it looks | not started |
@@ -45,7 +45,7 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 11. Done / test plan | not started |
 
 ## 1. What it is
-Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie pending
+Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie 2026-08-08
 
 1. The problem: the generator picks clues by how much each one narrows the field, never
    checking whether a clue is still needed once later clues land. Result: 77% of puzzles
@@ -70,7 +70,7 @@ Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie pending
    as the hard rule.
 
 ## 2. Out of scope
-Settled: Dave 2026-08-08 (accepted all recommendations, incl. 11 accept the lag) · Ack: Jamie pending
+Settled: Dave 2026-08-08 (accepted all recommendations, incl. 11 accept the lag) · Ack: Jamie 2026-08-08
 
 6. Puzzles already in storage are never rewritten, including the three 7-clue ones
    (#33, #49, #144). (assumed — KV is write-once, docs/ARCHITECTURE.md)
@@ -139,3 +139,28 @@ and regenerate until the count is in range). Results referenced by the items bel
     My rec: accept it. Why: the window is the few minutes around a deploy, it affects only
     random puzzles in progress, and the fixes (versioning the token, or putting the answer
     inside it) are permanent complexity plus a new way to leak the answer, for a one-off.
+
+## 4. Maths
+Settled: pending · Ack: pending
+
+Dave owns this section — his sign-off is blocking.
+
+20. The sweep can never change the answer. The answer satisfies every clue, so it always
+    survives any subset of them; removing a clue can only ever widen the surviving set. A
+    clue is removed only when the set is still exactly one number, and that number must
+    therefore still be the answer. (assumed — checked against all 100 live random puzzles,
+    every derived answer confirmed by the server)
+21. Uniqueness is preserved by construction, so no puzzle can end up with two valid
+    answers. The trimming test *is* the uniqueness test. (assumed — follows from 20)
+22. Reject-and-regenerate barely shifts which numbers become answers. Across 3,000
+    puzzles: distinct answers 753 of 900 versus 796 today; mean answer 514 versus 528;
+    answers with a repeated digit 30% versus 34%; answers containing a zero 23% versus
+    27%. (assumed — measured)
+23. QUESTION (Dave) — is that shift acceptable? It comes from discarding puzzles that trim
+    below 4 clues, and those are more often puzzles with an easily-pinned answer.
+    My rec: yes, accept it. Why: the movement is a few percentage points on every measure,
+    and no answer becomes common enough to be guessable — the most frequent answer came up
+    23 times in 3,000.
+24. The check is exact, not sampled: each test re-derives the surviving numbers from all
+    900 candidates. Cost is negligible (900 numbers × a handful of clues, a few times per
+    puzzle). (assumed)
