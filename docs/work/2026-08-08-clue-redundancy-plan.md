@@ -555,6 +555,13 @@ So `<` and `>` together fall from 52.5% to 46.2%, and the boolean Specials rise 
 from the retries, not the sweep: a puzzle that trims below 4 clues is redrawn, and the draws
 that survive tend to carry the narrower boolean clues. `=` itself barely moved.
 
+**Dave accepted the six-point shift, 2026-08-08**, after Jamie confirmed the change is cheap to
+undo later. Two facts settled that: the clue range and the retry cap are three constants in one
+file, so re-widening the range is a one-line change rather than an unpick; and puzzles already
+frozen in KV keep whatever generator made them, so the archive will carry a permanent band of
+4–6 clue puzzles either way. Nothing breaks. The `CLAUDE.md` watch on the wrong-guess rate is
+what would trigger that conversation.
+
 **Still owed before the pull request to `main`:** the first affected puzzle number in
 `docs/ARCHITECTURE.md`, which currently reads `TO BE FILLED IN WHEN THE PULL REQUEST TO main IS
 OPENED`. It is `puzzleNumber(deploy date + 2)` and cannot be computed until the merge date is
