@@ -2,9 +2,10 @@
 
 Date: 2026-08-08 · Branch: `dev/clue-redundancy` · Author: Claude (clumeral dev bot)
 
-Status: all 11 sections settled. Sections 6, 7, 8, 10 and 11 were never acked by Dave;
-Jamie overrode as dev lead on 2026-08-08 ("review i'm sure dave's happy with all that").
-Recorded as an override, not as an ack — Dave has not seen those five sections.
+Status: CLOSED 2026-08-08. All 11 sections settled, da-brief run and its High and Medium
+findings fixed, and every open item resolved. Dave later read §6 items 30-32 directly and
+confirmed them; sections 7, 8, 10 and 11 carry Jamie's override rather than Dave's ack, which
+is recorded honestly in the ledger. Ready for planning.
 da-brief run 2026-08-08: 1 High, 9 Medium, 7 Low, 3 process findings. All High and Medium
 fixed in the items above; see the log at the foot of this file.
 
@@ -41,7 +42,7 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 3. How it works | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
 | 5. State & persistence | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 |
-| 6. How it fits | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+| 6. How it fits | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 (items 30-32) |
 | 7. How it looks | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
 | 8. Copy & wording | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
 | 9. Accessibility | settled Jamie 2026-08-08 (owner) · Ack: n/a |
@@ -248,7 +249,7 @@ Settled: Jamie 2026-08-08 (29 → no marker) · Ack: Dave 2026-08-08
     docs/ARCHITECTURE.md instead — that costs nothing and is easy to read.
 
 ## 6. How it fits
-Settled: Jamie 2026-08-08 (35 → export the trimming step) · Override: Jamie 2026-08-08
+Settled: Jamie 2026-08-08 (35 → export the trimming step) · Ack: Dave 2026-08-08 (items 30-32, item 31 confirmed as a build requirement)
 
 30. The change lives in `src/worker/puzzle.ts`, at the generator entry point. **Four**
     callers pick it up with no edit: `generatePuzzle` in `src/worker/daily-puzzle.ts` (the
@@ -453,17 +454,16 @@ and then attacked the mechanism claims (three of which did not hold).
 
 ## Open after the review — needs a word from Jamie and Dave
 
-60. **Dave has not seen §6.** The override covered it, but §6 holds items 31 and 32 — the
-    answer-mismatch argument this brief calls the single biggest way the change could go
-    wrong, and the determinism argument for the retry. Both are logic claims on Dave's side
-    of the line, and both drew findings. Recommend a targeted look from Dave at items 30-32
-    specifically, rather than a general ack.
+60. **Dave has now seen §6 items 30-32.** CLOSED — Dave 2026-08-08: "31 is concerning.
+    Definitely do the fix." The invariant in item 31 — nothing may reach the untrimmed
+    generator, so the guess checker can never disagree with the puzzle a player was shown —
+    is confirmed by the maths owner and is a build requirement, not a preference.
 61. **§7 item 38 asked for one look on a phone.** CLOSED — Jamie 2026-08-08: "we've seen
     MANY 4-clue puzzles and we are happy with them, 100% confirmed." The look happened; it
     is not a gate on §11.
 62. **The 4-6 range is an asymmetry, and it is now written down as one.** Jamie 2026-08-08:
     **above 6 is a hard rule** (the screen cannot lay it out); **below 4 is a soft rule**, and
-    Jamie is happy with 4 as the floor but has handed Dave the final call — if Dave wants to
-    allow puzzles below 4 clues, that overrules. **Open: Dave's decision on the lower bound.**
-    If the floor drops, the measured consequence is 3-clue puzzles at 26.3% and 2-clue at
-    4.9%; the upper bound and item 15's directional fallback are unaffected either way.
+    Jamie is happy with 4 as the floor but handed Dave the final call. **CLOSED — Dave
+    2026-08-08: "Minimum clue count of 4 sounds good."** The range is 4 to 6, with the upper
+    bound hard and the lower bound soft-but-agreed. For the record, dropping the floor would
+    have meant 3-clue puzzles at 26.3% and 2-clue at 4.9%.
