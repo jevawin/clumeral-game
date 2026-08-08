@@ -83,6 +83,13 @@ export const PROPERTY_GROUPS: Record<string, string[]> = {
 
 // ─── Filter engine ────────────────────────────────────────────────────────────
 
+export interface Clue {
+  propKey: string;
+  label: string;
+  operator: string;
+  value: number | boolean;
+}
+
 // Target: each clue keeps 15–40% of current candidates
 const KEEP_MIN = 0.15;
 const KEEP_MAX = 0.40;
@@ -174,6 +181,46 @@ export function runFilterLoop(rng: () => number = Math.random) {
   }
 
   return { answer: candidates[0], clues };
+}
+
+// ─── Redundant-clue sweep (#193) ──────────────────────────────────────────────
+
+/** Which of the 900 candidates satisfy every clue in the list. Exact, never
+ *  sampled — 900 candidates is small enough that approximation buys nothing and
+ *  costs certainty. An empty list returns all 900. */
+export function survivorsFor(clues: Clue[]): number[] {
+  let candidates: number[] = Array.from({ length: 900 }, (_, i) => i + 100);
+  for (const { propKey, operator, value } of clues) {
+    candidates = applyFilter(candidates, propKey, operator, value);
+  }
+  return candidates;
+}
+
+/** Drop every clue the puzzle does not need, one at a time, earliest first.
+ *
+ *  ONE AT A TIME IS THE WHOLE POINT. Each candidate removal is tested against
+ *  the clues still REMAINING, not against the original list. Ask the original
+ *  list instead and you find several clues that are each individually
+ *  removable, drop them all, and publish a puzzle with several valid answers —
+ *  the exact failure this change exists to prevent (see the fixture in
+ *  tests/puzzle-redundancy.spec.ts, where the naive version leaves 15 answers).
+ *
+ *  Removal is by object IDENTITY, not by index: `kept` shrinks as clues go, so
+ *  an index into `clues` stops pointing at the same clue the moment one is
+ *  dropped. Getting that wrong drops the wrong clue and still passes any test
+ *  that only checks the final length.
+ *
+ *  One pass is enough. Removing a clue can only widen the surviving set, so a
+ *  clue that was not removable cannot become removable later.
+ *
+ *  The input array is never mutated — every step builds a new array. */
+export function trimRedundantClues(clues: Clue[]): Clue[] {
+  let kept = [...clues];
+  for (const clue of clues) {
+    const trial = kept.filter(x => x !== clue);
+    if (survivorsFor(trial).length === 1) kept = trial;
+  }
+  return kept;
 }
 
 // ─── RNG + date helpers ───────────────────────────────────────────────────────
