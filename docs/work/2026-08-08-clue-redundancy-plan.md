@@ -506,6 +506,41 @@ One commit per task, tests first inside each.
 After Task 3: run the verification list, show Jamie the diff, then `da-build` fresh-context,
 then push and open the pull request against `staging`.
 
+## Build notes (2026-08-08)
+
+Written during the build so they survive the context clear. Tasks 1–3 are committed;
+`da-build` has not run yet.
+
+**One deviation from the plan, and why.** The plan said `scripts/puzzle-stats.mjs` would have
+"no side effects beyond printing". It has one: it writes a copy of the baseline `puzzle.ts` to
+a temp directory, imports it, and removes it again. The plan asked for old-against-new timing
+in the same run, but Task 2 made the old generator private, so there is nothing left to import.
+The script therefore reads `puzzle.ts` as it stands on `main` via `git show`. No repo file is
+touched and nothing is left behind. This also bought a free correctness check: the baseline
+draw is injected into the new generator as `draw`, so the script asserts on every seed that
+`drawClues` really is `runFilterLoop` renamed. Zero disagreements over 3,000 seeds.
+
+**Measured, 3,000 seeds, this Pi, 2026-08-08** — `node scripts/puzzle-stats.mjs 3000`:
+
+- Clue counts: 4 clues 60.5%, 5 clues 34.8%, 6 clues 4.7%. Matches the plan exactly.
+- Zero puzzles with a removable clue. Zero baseline disagreements.
+- Retries: 68.9% accepted first draw, mean 1.45 draws, worst case 7.
+- Timing: old mean 4.6 ms / p99 21.6 ms; new mean 8.2 ms / p99 31.3 ms. **1.77× on the mean,
+  1.45× on the p99** — well inside the 3× stop condition, which the script now enforces itself
+  and exits non-zero on.
+
+**The brief item 22 check: all four numbers are inside the one-tenth tolerance, so this does
+not go back to Dave.** Measured against the brief's simulation: distinct answers 812 against
+753 predicted (7.8%, the largest of the four); mean answer 511.5 against 514 (0.5%); repeated
+digit 27.6% against 30% (8.0%); containing a zero 22.0% against 23% (4.3%). Worth saying out
+loud because it runs the reassuring way: the brief predicted the change would *narrow* the
+answer pool from 796 to 753, and the built code gives 812 — more variety than today, not less.
+
+**Still owed before the pull request to `main`:** the first affected puzzle number in
+`docs/ARCHITECTURE.md`, which currently reads `TO BE FILLED IN WHEN THE PULL REQUEST TO main IS
+OPENED`. It is `puzzleNumber(deploy date + 2)` and cannot be computed until the merge date is
+known.
+
 ## da-plan review — findings and what was done (2026-08-08)
 
 Fresh-context review of this file against the brief. It prototyped the proposed algorithm
