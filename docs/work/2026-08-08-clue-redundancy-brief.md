@@ -39,9 +39,9 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 5. State & persistence | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 |
 | 6. How it fits | settled Jamie 2026-08-08 · Ack: Dave pending |
 | 7. How it looks | settled Jamie 2026-08-08 · Ack: Dave pending |
-| 8. Copy & wording | asked 2026-08-08 |
-| 9. Accessibility | asked 2026-08-08 |
-| 10. Analytics | not started |
+| 8. Copy & wording | settled Jamie 2026-08-08 · Ack: Dave pending |
+| 9. Accessibility | settled Jamie 2026-08-08 (owner) · Ack: n/a |
+| 10. Analytics | asked 2026-08-08 |
 | 11. Done / test plan | not started |
 
 ## 1. What it is
@@ -249,7 +249,7 @@ Settled: Jamie 2026-08-08 (38 → no layout changes, 4 clues looks good) · Ack:
     look on a phone before it is settled.
 
 ## 8. Copy & wording
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-08 (nothing to write) · Ack: Dave pending
 
 39. No copy changes anywhere. Clue wording comes from the generator's own labels, which
     §2 item 7 puts out of scope, and no new message, error or empty state appears — there
@@ -257,7 +257,7 @@ Settled: pending · Ack: pending
     difference is that there are fewer clue lines. (assumed — nothing to write)
 
 ## 9. Accessibility
-Settled: pending · Ack: n/a (Jamie owns accessibility — blocking sign-off)
+Settled: Jamie 2026-08-08 (43 → no special screen-reader check) · Ack: n/a (Jamie owns it)
 
 40. The clue list is already marked up as a labelled list (`data-clue-list`, `role="list"`,
     `aria-label="Puzzle clues"` in index.html) with each clue a list item, so a screen
@@ -274,3 +274,21 @@ Settled: pending · Ack: n/a (Jamie owns accessibility — blocking sign-off)
     My rec: no special check beyond the normal pass. Why: 4-clue puzzles already exist live
     (#45, #102) and go through the same rendering path, so this is not a new shape of page,
     only a more frequent one.
+
+## 10. Analytics
+Settled: pending · Ack: pending
+
+44. No new events. The one question this change raises — did the shorter puzzles make the
+    game too hard? — is already answerable from what is recorded: `puzzle_start`,
+    `puzzle_complete` and `incorrect_guess`. Watch them for a fortnight after the merge.
+    (assumed)
+45. Baseline to compare against, production, the 30 days to 2026-08-08: 1,104
+    `puzzle_start`, 466 `puzzle_complete`, 285 `incorrect_guess`, 443 `undo_used`.
+    **Caveat, so nobody misreads it later:** starts include random and archive plays and
+    restored games skip the event, so starts-to-completions is not a clean completion rate.
+    It is only meaningful compared with itself before and after. (assumed — measured)
+46. QUESTION — do we add the daily / archive / random label to `puzzle_start` as part of
+    this change (raised at §3 item 19), or leave it as its own piece of work?
+    My rec: leave it out of this one. Why: it touches the client as well as the worker,
+    it needs its own decision about what the values are, and this change is server-only.
+    It deserves its own issue — say the word and I will write one for you to check.
