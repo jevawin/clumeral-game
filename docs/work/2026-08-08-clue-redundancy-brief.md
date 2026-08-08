@@ -33,8 +33,8 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | Section | State |
 |---|---|
 | 1. What it is | settled Dave 2026-08-08 · Ack: Jamie pending |
-| 2. Out of scope | asked 2026-08-08 |
-| 3. How it works | not started |
+| 2. Out of scope | settled Dave 2026-08-08 · Ack: Jamie pending |
+| 3. How it works | asked 2026-08-08 |
 | 4. Maths | not started |
 | 5. State & persistence | not started |
 | 6. How it fits | not started |
@@ -70,7 +70,7 @@ Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie pending
    as the hard rule.
 
 ## 2. Out of scope
-Settled: pending · Ack: pending
+Settled: Dave 2026-08-08 (accepted all recommendations, incl. 11 accept the lag) · Ack: Jamie pending
 
 6. Puzzles already in storage are never rewritten, including the three 7-clue ones
    (#33, #49, #144). (assumed — KV is write-once, docs/ARCHITECTURE.md)
@@ -89,3 +89,53 @@ Settled: pending · Ack: pending
     by hand so it regenerates under the new rules?
     My rec: accept the lag. Why: deleting a live storage entry is a manual production step
     for a one-day cosmetic gain, and write-once is the rule that protects the archive.
+
+    **Answer (Dave, 2026-08-08):** 11 — accept the lag.
+
+## 3. How it works
+Settled: pending · Ack: pending
+
+Second simulation, 3,000 puzzles, running the full proposed algorithm (trim, then reject
+and regenerate until the count is in range). Results referenced by the items below:
+
+- Both drop orders converge once the reject-and-regenerate loop is in place:
+  earliest-first gives 4 clues 59.6% / 5 clues 34.4% / 6 clues 6.0%; latest-first gives
+  59.0% / 35.0% / 6.0%.
+- Clue mix after: "is exactly" 46% (41% today), prime/square/cube family 26% (21% today).
+- Regenerations: 68% of puzzles pass on the first attempt, average 0.46 extra attempts,
+  worst case seen 5. No puzzle failed to produce a result within 50 attempts.
+
+12. The sweep: after the generator produces its clues, walk them and drop any clue whose
+    removal still leaves exactly one possible answer. Repeat until nothing more can be
+    dropped. (assumed — this is the mechanism, and it is what was measured)
+13. Drop order does not matter and is not worth a rule. Earliest-first and latest-first
+    give the same distribution and the same clue mix, to within noise. (assumed — measured
+    above)
+14. If the trimmed puzzle falls outside the allowed clue range, discard it and generate
+    again from a deterministically derived next seed, then trim again. (assumed — the only
+    way to make the range a guarantee rather than a statistic)
+15. Retry cap: 50 attempts. If every attempt somehow fell outside the range, publish the
+    trimmed candidate closest to the range rather than failing. (assumed — the daily cron
+    must always produce a puzzle; never hit in 3,000 simulated puzzles, worst case was 5)
+16. QUESTION — what is the allowed clue range? Jamie proposed 4, 5 or 6. Dave said 2-clue
+    puzzles could be good for variation, depending how many happen. Measured: with no
+    minimum, 4.9% come out at 2 clues and 26.3% at 3.
+    My rec: 4 to 6, as Jamie proposed. Why: 2-clue puzzles at 1-in-20 would be a novelty,
+    but 3-clue at 1-in-4 is every fourth day, and both take away the sense of working
+    through a body of evidence. **Tie-break if they disagree: Dave, this is gameplay maths.**
+17. Consequence to accept knowingly: puzzles get shorter and therefore harder. Today's
+    daily is 5 clues 62% / 6 clues 34%; after this it is 4 clues 60% / 5 clues 34% /
+    6 clues 6%. Every clue will be load-bearing, so there is no slack for a player who
+    misreads one. (assumed — flagged, not hidden)
+18. The generator stays deterministic: the same seed always produces the same puzzle,
+    retries included. (assumed — the random-puzzle token stores only the seed and re-runs
+    the generator to check a guess, and the daily puzzle is seeded from its date)
+19. QUESTION — the deploy-moment wrinkle. A random puzzle's token holds only the seed;
+    when the player guesses, the worker re-runs the generator from that seed to work out
+    the answer. If the new version goes live while someone has a random puzzle open, their
+    clues came from the old code but their guess is checked against the new code's answer,
+    so a correct guess can be marked wrong. Daily puzzles are unaffected — their answer is
+    stored with the clues.
+    My rec: accept it. Why: the window is the few minutes around a deploy, it affects only
+    random puzzles in progress, and the fixes (versioning the token, or putting the answer
+    inside it) are permanent complexity plus a new way to leak the answer, for a one-off.
