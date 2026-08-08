@@ -139,6 +139,21 @@ and regenerate until the count is in range). Results referenced by the items bel
     My rec: accept it. Why: the window is the few minutes around a deploy, it affects only
     random puzzles in progress, and the fixes (versioning the token, or putting the answer
     inside it) are permanent complexity plus a new way to leak the answer, for a one-off.
+    A player who is bitten gets it back by reloading — a reload mints a fresh puzzle from
+    the new code.
+
+    **Evidence gathered 2026-08-08 (Jamie's question — how much is /random used?):**
+    It cannot currently be answered. `/random` deliberately boots without the router
+    (`src/app.ts` ~1402), so it never emits a `route_change`, and it is absent from the
+    analytics entirely — that is silence, not a zero. `puzzle_start` fires on the random
+    path but carries no source, so it cannot be separated from daily and archive starts.
+    Production totals, last 30 days: route_change 2,256 (welcome 702, play 529, solved 466,
+    the rest archive), puzzle_start 1,104, puzzle_complete 466. Subtracting the routes that
+    can lead to a daily start leaves only a small remainder for random, but that arithmetic
+    is loose (restores skip `puzzle_start`, replays add extra ones) and should not be quoted
+    as a measurement. Per-path request counts are not reachable: the analytics token is
+    account-scoped and has no zone access. **Candidate for §10: give `puzzle_start` a source
+    of daily / archive / random, so this is answerable next time.**
 
 ## 4. Maths
 Settled: pending · Ack: pending
