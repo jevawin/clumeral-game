@@ -90,8 +90,8 @@ Settled: Dave 2026-08-08 (accepted all recommendations, incl. 11 accept the lag)
 11. The cron pre-generates tomorrow's puzzle the day before (`src/worker/daily-puzzle.ts`,
     #257). The cron freezes **today and tomorrow**, so a merge on day D finds D and D+1
     already written under the old generator and the first new-style daily is **D+2** — up
-    to two days, not one (corrected after da-brief M7). QUESTION — accept that one-day lag, or delete the pre-generated entry
-    by hand so it regenerates under the new rules?
+    to two days, not one (corrected after da-brief M7). QUESTION — accept that lag, or delete
+    the pre-generated entries by hand so they regenerate under the new rules?
     My rec: accept the lag. Why: deleting a live storage entry is a manual production step
     for a one-day cosmetic gain, and write-once is the rule that protects the archive.
 
