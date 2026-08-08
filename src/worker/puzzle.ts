@@ -129,9 +129,14 @@ function findGoodClues(candidates: number[], propKey: string) {
   return good;
 }
 
-export function runFilterLoop(rng: () => number = Math.random) {
+// PRIVATE, and deliberately so (#193). This draws clues but does not trim them,
+// so a puzzle straight out of here can carry clues nobody needs. Every caller
+// goes through generatePuzzleFromRng instead — including the guess checker,
+// which re-runs generation from the seed. A caller reaching a different
+// generator than the one the player was shown would mark correct guesses wrong.
+function drawClues(rng: () => number = Math.random): { answer: number; clues: Clue[] } {
   let candidates: number[] = Array.from({ length: 900 }, (_, i) => i + 100);
-  const clues: { propKey: string; label: string; operator: string; value: number | boolean }[] = [];
+  const clues: Clue[] = [];
   const triedGroups = new Set();
   const groupNames = Object.keys(PROPERTY_GROUPS);
   let iterations = 0;
@@ -185,6 +190,13 @@ export function runFilterLoop(rng: () => number = Math.random) {
 
 // ─── Redundant-clue sweep (#193) ──────────────────────────────────────────────
 
+/** Soft bound. Fewer than four clues is a taste judgement, not a defect. */
+export const MIN_CLUES = 4;
+/** Hard bound. The game screen cannot lay out more than six clue rows. */
+export const MAX_CLUES = 6;
+/** Draws to try before publishing the best out-of-range puzzle seen. */
+export const MAX_ATTEMPTS = 10;
+
 /** Which of the 900 candidates satisfy every clue in the list. Exact, never
  *  sampled — 900 candidates is small enough that approximation buys nothing and
  *  costs certainty. An empty list returns all 900. */
@@ -221,6 +233,73 @@ export function trimRedundantClues(clues: Clue[]): Clue[] {
     if (survivorsFor(trial).length === 1) kept = trial;
   }
   return kept;
+}
+
+/** Is `candidate` a better fallback than `incumbent`? Both are out of range.
+ *
+ *  Preference order, so the result is deterministic:
+ *    1. Anything beats no incumbent.
+ *    2. Under range always beats over range. Above MAX_CLUES the screen cannot
+ *       lay the puzzle out; below MIN_CLUES it merely looks thin.
+ *    3. Among under-range candidates, more clues wins.
+ *    4. Among over-range candidates, fewer clues wins.
+ *    5. On a tie, the first one seen is kept. */
+export function betterFallback(
+  candidate: { clues: Clue[] },
+  incumbent: { clues: Clue[] } | null,
+): boolean {
+  if (incumbent === null) return true;
+
+  const candidateIsUnder = candidate.clues.length < MIN_CLUES;
+  const incumbentIsUnder = incumbent.clues.length < MIN_CLUES;
+  if (candidateIsUnder !== incumbentIsUnder) return candidateIsUnder;
+
+  return candidateIsUnder
+    ? candidate.clues.length > incumbent.clues.length
+    : candidate.clues.length < incumbent.clues.length;
+}
+
+/** The generator every caller uses. Draws, trims, and retries until the puzzle
+ *  lands in the 4–6 clue range with exactly one valid answer.
+ *
+ *  Deterministic: `rng` is threaded through every attempt and holds its
+ *  position, so the same seed replays the same draws, the same rejections and
+ *  the same result. That is what makes the guess checker agree with the puzzle
+ *  the player was shown.
+ *
+ *  `draw` is injectable purely so the fallback branch can be tested — whatever
+ *  it returns is still trimmed, range-checked and uniqueness-checked, so it is
+ *  not a route to an untrimmed puzzle. */
+export function generatePuzzleFromRng(
+  rng: () => number = Math.random,
+  draw: (rng: () => number) => { answer: number; clues: Clue[] } = drawClues,
+): { answer: number; clues: Clue[] } {
+  let fallback: { answer: number; clues: Clue[] } | null = null;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const trimmed = trimRedundantClues(draw(rng).clues);
+    const survivors = survivorsFor(trimmed);
+
+    // The tiebreaker sweep in drawClues has no post-condition, so a draw can
+    // come back with more than one valid answer. Never publish one.
+    if (survivors.length !== 1) continue;
+
+    const puzzle = { answer: survivors[0], clues: trimmed };
+    if (trimmed.length >= MIN_CLUES && trimmed.length <= MAX_CLUES) return puzzle;
+    if (betterFallback(puzzle, fallback)) fallback = puzzle;
+  }
+
+  // Every attempt produced several valid answers. Unreachable in 3,000 measured
+  // seeds, and it should be reached LOUDLY if it ever is: a random puzzle just
+  // fails one request, but a daily is seeded from its date, so this would be a
+  // visible outage on that date. That beats silently telling correct players
+  // they are wrong, which is the failure this whole module exists to prevent.
+  if (fallback === null) {
+    throw new Error(`clumeral: generator produced no uniquely-solvable puzzle in ${MAX_ATTEMPTS} attempts`);
+  }
+
+  console.warn(`clumeral: generator hit the ${MAX_ATTEMPTS}-attempt cap, publishing a ${fallback.clues.length}-clue puzzle`);
+  return fallback;
 }
 
 // ─── RNG + date helpers ───────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { FIBONACCIS, PROPERTIES, PROPERTY_GROUPS, runFilterLoop, makeRng } from '../src/worker/puzzle.ts';
+import { FIBONACCIS, PROPERTIES, PROPERTY_GROUPS, generatePuzzleFromRng, makeRng } from '../src/worker/puzzle.ts';
 
 // ─── Fibonacci special (#81) ──────────────────────────────────────────────────
 //
@@ -96,7 +96,7 @@ describe('filter loop with the extra properties', () => {
     // run a spread of seeds and assert every one yields a single answer whose
     // clues all actually hold for it.
     for (let seed = 1; seed <= 60; seed++) {
-      const result = runFilterLoop(makeRng(seed));
+      const result = generatePuzzleFromRng(makeRng(seed));
       expect(result, `seed ${seed} produced no puzzle`).toBeTruthy();
 
       const { answer, clues } = result as { answer: number; clues: Array<{ propKey: string; operator: string; value: number | boolean }> };
@@ -115,9 +115,18 @@ describe('filter loop with the extra properties', () => {
   it('can draw a Fibonacci clue at least once across those seeds', () => {
     // Guards against the new properties being registered but never reachable —
     // e.g. dropped from PROPERTY_GROUPS, which is what the loop actually reads.
+    //
+    // Since #193 this runs through generatePuzzleFromRng, so it guards
+    // "reachable AND survives the redundant-clue sweep", which is a slightly
+    // weaker statement about PROPERTY_GROUPS than the raw draw gave. Keeping it
+    // on the raw draw would mean exporting drawClues for tests, which is the
+    // door #193 exists to shut. In practice the guard got stronger, not weaker:
+    // measured over 300 seeds, the raw draw hits a Fibonacci clue in 33 of them
+    // (first at seed 8), and this path hits 39 (first at seed 4), because
+    // regeneration draws more often. The span is 300 for headroom.
     let sawFib = false;
-    for (let seed = 1; seed <= 200 && !sawFib; seed++) {
-      const result = runFilterLoop(makeRng(seed)) as { clues: Array<{ propKey: string }> } | null;
+    for (let seed = 1; seed <= 300 && !sawFib; seed++) {
+      const result = generatePuzzleFromRng(makeRng(seed)) as { clues: Array<{ propKey: string }> } | null;
       if (result?.clues.some((c) => c.propKey.includes('IsFib'))) sawFib = true;
     }
     expect(sawFib).toBe(true);

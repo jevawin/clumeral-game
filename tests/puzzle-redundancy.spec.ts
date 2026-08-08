@@ -1,5 +1,18 @@
-import { describe, it, expect } from 'vitest';
-import { PROPERTIES, survivorsFor, trimRedundantClues, type Clue } from '../src/worker/puzzle.ts';
+import { describe, it, expect, vi } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import {
+  MAX_ATTEMPTS,
+  MAX_CLUES,
+  MIN_CLUES,
+  PROPERTIES,
+  betterFallback,
+  generatePuzzleFromRng,
+  makeRng,
+  survivorsFor,
+  trimRedundantClues,
+  type Clue,
+} from '../src/worker/puzzle.ts';
 
 // ─── Redundant-clue sweep (#193) ──────────────────────────────────────────────
 //
@@ -24,6 +37,32 @@ import { PROPERTIES, survivorsFor, trimRedundantClues, type Clue } from '../src/
 const A: Clue = { propKey: 'sumFT',   label: PROPERTIES.sumFT.label,   operator: '=', value: 6 };
 const B: Clue = { propKey: 'diffFT',  label: PROPERTIES.diffFT.label,  operator: '=', value: 0 };
 const C: Clue = { propKey: 'prodAll', label: PROPERTIES.prodAll.label, operator: '=', value: 18 };
+
+// FIXTURE TWO — irredundant, 3 clues, BELOW the accepted range. Answer 899,
+// the trimmed output of seed 1. Dropping each clue in turn leaves 10, 60 and 2
+// survivors, so nothing is removable and the sweep returns it unchanged.
+// Verified against all 900 candidates on 2026-08-08.
+const FIXTURE_TWO: Clue[] = [
+  { propKey: 'diffST',        label: PROPERTIES.diffST.label,        operator: '=', value: 0 },
+  { propKey: 'sumFS',         label: PROPERTIES.sumFS.label,         operator: '=', value: 17 },
+  { propKey: 'firstIsSquare', label: PROPERTIES.firstIsSquare.label, operator: '=', value: false },
+];
+
+// FIXTURE THREE — irredundant, 4 clues, INSIDE the accepted range. Answer 323,
+// the trimmed output of seed 2. Dropping each clue in turn leaves 4, 2, 5 and 2
+// survivors. Verified against all 900 candidates on 2026-08-08.
+const FIXTURE_THREE: Clue[] = [
+  { propKey: 'diffST',        label: PROPERTIES.diffST.label,        operator: '=', value: 1 },
+  { propKey: 'sumFT',         label: PROPERTIES.sumFT.label,         operator: '=', value: 6 },
+  { propKey: 'prodFT',        label: PROPERTIES.prodFT.label,        operator: '=', value: 9 },
+  { propKey: 'secondIsPrime', label: PROPERTIES.secondIsPrime.label, operator: '=', value: true },
+];
+
+/** A stub draw that always hands back the same clue list, and counts its calls. */
+const stubDraw = (clues: Clue[]) => {
+  const draw = vi.fn(() => ({ answer: survivorsFor(clues)[0], clues: [...clues] }));
+  return draw;
+};
 
 describe('survivorsFor', () => {
   it('returns all 900 candidates for an empty clue list', () => {
@@ -77,5 +116,145 @@ describe('trimRedundantClues', () => {
     const input: Clue[] = [A, B, C];
     trimRedundantClues(input);
     expect(input).toEqual([A, B, C]);
+  });
+});
+
+// ─── The generator every caller uses ──────────────────────────────────────────
+
+describe('generatePuzzleFromRng across seeds', () => {
+  // One pass over 300 seeds, generating each puzzle once, asserting all three
+  // properties. Measured at about 2.4 seconds here; vitest.config.ts sets no
+  // testTimeout, so the 5-second default is too close for a slower machine.
+  it('produces puzzles that are in range, unique, and carry no spare clue', { timeout: 30_000 }, () => {
+    for (let seed = 1; seed <= 300; seed++) {
+      const { answer, clues } = generatePuzzleFromRng(makeRng(seed));
+
+      expect(clues.length, `seed ${seed} clue count`).toBeGreaterThanOrEqual(MIN_CLUES);
+      expect(clues.length, `seed ${seed} clue count`).toBeLessThanOrEqual(MAX_CLUES);
+
+      const survivors = survivorsFor(clues);
+      expect(survivors, `seed ${seed} survivors`).toEqual([answer]);
+
+      expect(trimRedundantClues(clues), `seed ${seed} still has a spare clue`).toEqual(clues);
+    }
+  });
+
+  it('gives the same puzzle for the same seed, every time', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const first = generatePuzzleFromRng(makeRng(seed));
+      const second = generatePuzzleFromRng(makeRng(seed));
+      expect(second, `seed ${seed}`).toEqual(first);
+    }
+  });
+
+  it('gives the same answer when the guess checker re-runs it', { timeout: 30_000 }, () => {
+    // handleGuess does not store a random puzzle's answer — it re-runs the
+    // generator from the seed in the token. If generation and re-generation
+    // could disagree, a correct guess would be marked wrong. That is the
+    // failure this whole change was at risk of introducing, so it is pinned
+    // on its own rather than left to the determinism test above.
+    for (let seed = 1; seed <= 100; seed++) {
+      const shown = generatePuzzleFromRng(makeRng(seed));
+      const checked = generatePuzzleFromRng(makeRng(seed));
+      expect(checked.answer, `seed ${seed}`).toBe(shown.answer);
+    }
+  });
+});
+
+describe('nothing reaches the untrimmed generator', () => {
+  // Comments are stripped before matching. This codebase documents heavily, and
+  // a guard that fails because someone WROTE DOWN the rule it enforces is worse
+  // than no guard. Lifted from daily-puzzle.spec.ts, which makes the same
+  // argument about KV writes.
+  const stripComments = (src: string): string =>
+    src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+
+  const workerDir = resolve(__dirname, '../src/worker');
+  const sources = readdirSync(workerDir)
+    .filter(f => f.endsWith('.ts'))
+    .map(f => ({ file: f, src: stripComments(readFileSync(resolve(workerDir, f), 'utf8')) }));
+
+  it('no worker module outside puzzle.ts names the raw draw', () => {
+    // Repo-wide, not just the files this change edited: a call added in any
+    // other worker module would publish untrimmed puzzles just as effectively,
+    // and scoping the guard to the file we happened to be editing is how the
+    // next one slips through.
+    const leaked = sources
+      .filter(s => s.file !== 'puzzle.ts' && /\bdrawClues\b/.test(s.src))
+      .map(s => s.file);
+    expect(leaked).toEqual([]);
+  });
+});
+
+// ─── The fallback branch ──────────────────────────────────────────────────────
+//
+// Driven by a stub draw. No real seed reaches any of this — 3,000 seeds
+// measured on 2026-08-08 all landed in range within 10 attempts, worst case 7.
+
+describe('generatePuzzleFromRng fallback', () => {
+  it('publishes the best out-of-range puzzle after the attempt cap, and warns', () => {
+    const draw = stubDraw(FIXTURE_TWO);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { answer, clues } = generatePuzzleFromRng(makeRng(1), draw);
+
+    expect(answer).toBe(899);
+    expect(clues).toEqual(FIXTURE_TWO);
+    expect(draw).toHaveBeenCalledTimes(MAX_ATTEMPTS);
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    warn.mockRestore();
+  });
+
+  it('ranks fallback candidates so the result is deterministic', () => {
+    // Tested directly on plain objects. Building an irredundant 7-clue puzzle
+    // by hand is not worth it — they are about 0.1% of the population.
+    const of = (n: number) => ({ clues: Array(n).fill(A) as Clue[] });
+
+    expect(betterFallback(of(3), null)).toBe(true);      // anything beats nothing
+    expect(betterFallback(of(3), of(2))).toBe(true);     // under range: more clues wins
+    expect(betterFallback(of(2), of(3))).toBe(false);
+    expect(betterFallback(of(3), of(7))).toBe(true);     // under range beats over range
+    expect(betterFallback(of(7), of(3))).toBe(false);
+    expect(betterFallback(of(7), of(8))).toBe(true);     // over range: fewer clues wins
+    expect(betterFallback(of(8), of(7))).toBe(false);
+    expect(betterFallback(of(5), of(5))).toBe(false);    // a tie keeps the first one seen
+  });
+
+  it('never publishes a puzzle with more than one valid answer', () => {
+    // Fixture ONE's [A,B] pair has 10 survivors and no removable clue, so no
+    // attempt can rescue it. Throwing is loud and fixable; publishing would
+    // silently tell correct players they are wrong.
+    const draw = stubDraw([A, B]);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(() => generatePuzzleFromRng(makeRng(1), draw)).toThrow();
+    expect(warn).not.toHaveBeenCalled();
+
+    warn.mockRestore();
+  });
+
+  it('stops at the first in-range draw rather than using all its attempts', () => {
+    const draw = stubDraw(FIXTURE_THREE);
+
+    const { answer, clues } = generatePuzzleFromRng(makeRng(1), draw);
+
+    expect(answer).toBe(323);
+    expect(clues).toEqual(FIXTURE_THREE);
+    expect(draw).toHaveBeenCalledTimes(1);
+  });
+
+  it('trims whatever the draw hands it, fallback included', () => {
+    // The injectable draw is a test seam, not a back door: a redundant clue set
+    // fed straight in still comes back trimmed.
+    const draw = stubDraw([A, B, C]);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { answer, clues } = generatePuzzleFromRng(makeRng(1), draw);
+
+    expect(clues).toEqual([B, C]);
+    expect(answer).toBe(323);
+
+    warn.mockRestore();
   });
 });

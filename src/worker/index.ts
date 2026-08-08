@@ -1,7 +1,7 @@
 // Worker entry point — serves API routes for puzzle data and guess validation.
 // The answer is never sent to the client.
 
-import { runFilterLoop, makeRng, todayUTC, puzzleNumber, puzzleDate } from './puzzle.ts';
+import { generatePuzzleFromRng, makeRng, todayUTC, puzzleNumber, puzzleDate } from './puzzle.ts';
 import { readDailyPuzzle, runDailyCron, type StoredPuzzle } from './daily-puzzle.ts';
 import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
@@ -93,7 +93,7 @@ async function handleGetPuzzle(env: Env, url: URL): Promise<Response> {
 async function handleGetRandomPuzzle(env: Env): Promise<Response> {
   const seed = Math.floor(Math.random() * 0xFFFFFFFF);
   const rng = makeRng(seed);
-  const { clues } = runFilterLoop(rng);
+  const { clues } = generatePuzzleFromRng(rng);
   const token = await signToken(seed, env.HMAC_SECRET);
   return json({ isRandom: true, clues, token });
 }
@@ -117,7 +117,7 @@ async function handleGuess(request: Request, env: Env): Promise<Response> {
     if (seed === null) return json({ error: 'Invalid token' }, 400);
 
     const rng = makeRng(seed);
-    const { answer } = runFilterLoop(rng);
+    const { answer } = generatePuzzleFromRng(rng);
     return json({ correct: guess === answer });
   }
 
@@ -281,7 +281,7 @@ export default {
         const seed = await verifyToken(token, env.HMAC_SECRET);
         if (seed === null) return json({ error: 'Invalid token' }, 400);
         const rng = makeRng(seed);
-        const { answer } = runFilterLoop(rng);
+        const { answer } = generatePuzzleFromRng(rng);
         return json({ answer });
       }
       const today = todayUTC();
