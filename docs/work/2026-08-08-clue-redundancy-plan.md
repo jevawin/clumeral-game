@@ -5,8 +5,9 @@ Brief: [2026-08-08-clue-redundancy-brief.md](2026-08-08-clue-redundancy-brief.md
 (closed 2026-08-08; all 11 sections settled, `da-brief` run with 1 High and 9 Medium fixed,
 items 60–62 closed by Dave and Jamie). Issue: [#193](https://github.com/jevawin/clumeral-game/issues/193).
 
-Status: **awaiting Jamie's approval.** `da-plan` run fresh-context 2026-08-08 — 1 High,
-4 Medium, 9 Low, all resolved (see the review log at the end).
+Status: **approved by Jamie, 2026-08-08.** `da-plan` run fresh-context before approval —
+1 High, 4 Medium, 9 Low, all resolved (see the review log at the end). Next stage: Build,
+starting at Task 1.
 
 ---
 
