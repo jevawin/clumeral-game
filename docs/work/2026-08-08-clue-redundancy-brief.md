@@ -458,11 +458,12 @@ and then attacked the mechanism claims (three of which did not hold).
     wrong, and the determinism argument for the retry. Both are logic claims on Dave's side
     of the line, and both drew findings. Recommend a targeted look from Dave at items 30-32
     specifically, rather than a general ack.
-61. **§7 item 38 asked for one look on a phone.** Jamie settled it as "4 clues looks good",
-    but it is not recorded whether the look actually happened, and nothing in §11 makes it a
-    gate. Worth a yes or no.
-62. **The 4-6 range was never examined as an asymmetry.** Above 6 breaks the screen — a hard
-    constraint. Below 4 is a taste judgement, and nobody was asked whether a 3-clue puzzle is
-    actually worse than a 7-clue one. The range stands as settled; this is recorded because
-    the review was right that it was decided as though both bounds were the same kind of
-    bound, and item 15's fallback now depends on their being different.
+61. **§7 item 38 asked for one look on a phone.** CLOSED — Jamie 2026-08-08: "we've seen
+    MANY 4-clue puzzles and we are happy with them, 100% confirmed." The look happened; it
+    is not a gate on §11.
+62. **The 4-6 range is an asymmetry, and it is now written down as one.** Jamie 2026-08-08:
+    **above 6 is a hard rule** (the screen cannot lay it out); **below 4 is a soft rule**, and
+    Jamie is happy with 4 as the floor but has handed Dave the final call — if Dave wants to
+    allow puzzles below 4 clues, that overrules. **Open: Dave's decision on the lower bound.**
+    If the floor drops, the measured consequence is 3-clue puzzles at 26.3% and 2-clue at
+    4.9%; the upper bound and item 15's directional fallback are unaffected either way.
