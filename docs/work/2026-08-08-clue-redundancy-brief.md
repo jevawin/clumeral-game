@@ -36,8 +36,8 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 2. Out of scope | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 3. How it works | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
 | 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
-| 5. State & persistence | asked 2026-08-08 |
-| 6. How it fits | not started |
+| 5. State & persistence | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 |
+| 6. How it fits | asked 2026-08-08 |
 | 7. How it looks | not started |
 | 8. Copy & wording | not started |
 | 9. Accessibility | not started |
@@ -181,7 +181,7 @@ Dave owns this section — his sign-off is blocking.
     puzzle). (assumed)
 
 ## 5. State & persistence
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-08 (29 → no marker) · Ack: Dave 2026-08-08
 
 25. Nothing new is stored in the browser. The whole change lives in puzzle generation on
     the server. (assumed)
@@ -198,3 +198,36 @@ Settled: pending · Ack: pending
     from new, and a field added to a write-once store can never be removed or corrected
     later. If we want it findable, record the first affected puzzle number in
     docs/ARCHITECTURE.md instead — that costs nothing and is easy to read.
+
+## 6. How it fits
+Settled: pending · Ack: pending
+
+30. The change lives in `src/worker/puzzle.ts`, inside `runFilterLoop`. Three callers pick
+    it up with no edit: `generatePuzzle` in `src/worker/daily-puzzle.ts` (the cron and the
+    daily read), `handleGetRandomPuzzle` in `src/worker/index.ts`, and — critically —
+    `handleGuess` in the same file, which re-runs the generator from the token's seed to
+    work out a random puzzle's answer. (assumed)
+31. **Why it must go inside `runFilterLoop` rather than in a new wrapper.** Trimming alone
+    never changes the answer, but the reject-and-regenerate loop does: a rejected puzzle is
+    replaced by a different one with a different answer. If the random endpoint used a
+    trimming wrapper and `handleGuess` still called the raw `runFilterLoop`, then every
+    random puzzle that needed a regeneration — about a third of them — would be marked
+    against the wrong answer. Putting it inside the one function all three already call
+    removes the possibility of that mismatch by construction. (assumed — this is the single
+    biggest way this change could go wrong)
+32. Retries continue drawing from the same random stream rather than deriving fresh seeds.
+    `runFilterLoop` already takes a random-number generator, and it holds its position
+    between calls, so generating again just continues the sequence. Same seed still gives
+    the same puzzle, and the function signature does not change. (assumed — simpler than
+    seed arithmetic and keeps every caller as it is)
+33. No change to any API response shape, no client change, no database migration, no new
+    wrangler binding. (assumed)
+34. One existing test file touches the generator, `tests/puzzle-fibonacci.spec.ts`, and it
+    asserts on clue contents rather than clue counts, so it should keep passing. §11 covers
+    what gets added. (assumed — read 2026-08-08)
+35. QUESTION — should the trimming step be exported on its own, so tests can drive it
+    directly, or kept private inside the module?
+    My rec: export it. Why: it is the part with the real logic in it, and testing it
+    directly ("give it a puzzle with a known spare clue, check that clue goes") is far
+    clearer than inferring behaviour from whole generated puzzles. The cost is one more
+    name in the module's public surface.
