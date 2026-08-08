@@ -38,9 +38,9 @@ local simulation of 2,000 generated puzzles. Answers verified against `/api/gues
 | 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
 | 5. State & persistence | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 |
 | 6. How it fits | settled Jamie 2026-08-08 · Ack: Dave pending |
-| 7. How it looks | asked 2026-08-08 |
-| 8. Copy & wording | not started |
-| 9. Accessibility | not started |
+| 7. How it looks | settled Jamie 2026-08-08 · Ack: Dave pending |
+| 8. Copy & wording | asked 2026-08-08 |
+| 9. Accessibility | asked 2026-08-08 |
 | 10. Analytics | not started |
 | 11. Done / test plan | not started |
 
@@ -233,7 +233,7 @@ Settled: Jamie 2026-08-08 (35 → export the trimming step) · Ack: Dave pending
     name in the module's public surface.
 
 ## 7. How it looks
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-08 (38 → no layout changes, 4 clues looks good) · Ack: Dave pending
 
 36. No new UI, no new components, no CSS change. Clue rows are already rendered from the
     list whatever its length. (assumed — verified in §5 item 28)
@@ -247,3 +247,30 @@ Settled: pending · Ack: pending
     months without a complaint, and the screen was rebuilt to be uncluttered — fewer rows
     should suit it. But this is a UI call and it is yours, both of you, not mine. Worth one
     look on a phone before it is settled.
+
+## 8. Copy & wording
+Settled: pending · Ack: pending
+
+39. No copy changes anywhere. Clue wording comes from the generator's own labels, which
+    §2 item 7 puts out of scope, and no new message, error or empty state appears — there
+    is no moment where a player is shown anything they have not seen before. The only
+    difference is that there are fewer clue lines. (assumed — nothing to write)
+
+## 9. Accessibility
+Settled: pending · Ack: n/a (Jamie owns accessibility — blocking sign-off)
+
+40. The clue list is already marked up as a labelled list (`data-clue-list`, `role="list"`,
+    `aria-label="Puzzle clues"` in index.html) with each clue a list item, so a screen
+    reader announces the count from the markup. A shorter list is announced correctly with
+    no change from us. (assumed — read index.html and `renderClues` in src/app.ts)
+41. The grey loading placeholders in index.html are a fixed three rows whatever the real
+    count, and they are hidden from assistive technology (`aria-hidden="true"`). This work
+    does not change that, for better or worse. (assumed)
+42. Nothing about focus order, keyboard interaction or live announcements changes: no
+    element is added to or removed from the screen's structure, only the number of rows in
+    a list that was already variable-length. (assumed)
+43. QUESTION (Jamie, blocking) — is there anything you want checked with a screen reader
+    before this ships, given the commonest puzzle becomes four clues instead of five or six?
+    My rec: no special check beyond the normal pass. Why: 4-clue puzzles already exist live
+    (#45, #102) and go through the same rendering path, so this is not a new shape of page,
+    only a more frequent one.
