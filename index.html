@@ -305,16 +305,26 @@
               <button data-submit class="btn btn-solid w-full" type="button"><svg aria-hidden="true"><use href="/sprites.svg#icon-tick"/></svg>Submit answer</button>
             </div>
 
-            <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css) -->
-            <div data-save class="items-center gap-1.5 mt-3.5 text-base text-text font-[Quicksand]">
-              <input type="checkbox" checked id="cw-ck" data-save-check />
-              <label for="cw-ck" class="flex items-center gap-1.5 cursor-pointer">
-                <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
-                <svg class="ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
-                Keep my score in a
-                <svg class="inline" width="13" height="13" aria-hidden="true"><use href="/sprites.svg#icon-cookie"/></svg>
-                cookie
-              </label>
+            <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css).
+                 The checkbox keeps its own label permanently; the warning and the countdown
+                 appear as two lines underneath it, left-aligned with the label's text (P-02).
+                 Swapping the label for the warning would leave the control not saying what it
+                 does, and would fail WCAG 2.5.3 Label in Name, which voice control depends on. -->
+            <div data-save class="flex-col mt-3.5 text-base text-text font-[Quicksand]">
+              <div class="flex items-center gap-1.5">
+                <input type="checkbox" checked id="cw-ck" data-save-check aria-describedby="cw-save-warning" />
+                <label for="cw-ck" class="flex items-center gap-1.5 cursor-pointer">
+                  <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
+                  <svg class="ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
+                  Save my scores on this device
+                </label>
+              </div>
+              <!-- Always in the layout, driven by text content: a live region toggled in and
+                   out of the layout is unreliably announced (VoiceOver in particular). -->
+              <p data-save-warning id="cw-save-warning" class="save-note save-note--warn" role="status" aria-live="polite"></p>
+              <!-- Deliberately NOT live — five announcements in five seconds is noise. -->
+              <p data-save-countdown class="save-note"></p>
+              <p data-save-live class="sr-only" role="status" aria-live="polite"></p>
             </div>
 
             <!-- Feedback -->

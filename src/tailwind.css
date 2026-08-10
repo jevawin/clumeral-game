@@ -420,6 +420,29 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     display: flex;
   }
 
+  /* The untick warning and the submit countdown. Indented to line up with the
+     label's TEXT rather than with the tick box, so the three lines read as one
+     block with a gap under the box (Jamie's layout, 2026-08-10). The indent is
+     the icon's 16px plus the row's 0.375rem gap. */
+  .save-note {
+    padding-inline-start: calc(1rem + 0.375rem);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+  /* Margin only when there is something to show — the elements stay in the
+     layout permanently so their live regions announce reliably. */
+  .save-note:not(:empty) { margin-block-start: 0.25rem; }
+  /* The only red the palette has, and it already flips between light and dark. */
+  .save-note--warn { color: var(--color-error); }
+
+  /* Submit while the countdown holds it. WCAG 1.4.3 and 1.4.11 both exempt
+     inactive controls from their contrast minimums, and these five seconds are
+     exactly when the control is inactive — so the dimming is allowed. Recorded
+     so a later reader does not "fix" it. */
+  [data-submit][aria-disabled="true"] {
+    opacity: 0.5;
+  }
+
   /* ─── Save checkbox icon toggle ─── */
   #cw-ck { position: absolute; opacity: 0; pointer-events: none; }
   #cw-ck:not(:checked) ~ label .ck-on { display: none; }

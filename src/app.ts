@@ -6,6 +6,7 @@ import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
 import { createPlayTimer } from './play-timer.ts';
+import { createSaveWarning, WARNING_TEXT } from './save-warning.ts';
 import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
@@ -87,6 +88,9 @@ const dom = {
   // which aria-describedby needs as IDREF targets — see CONVENTIONS.md.
   undoDesc: $('[data-undo-desc]') as HTMLElement | null,
   resetDesc: $('[data-reset-desc]') as HTMLElement | null,
+  saveWarning: $('[data-save-warning]') as HTMLElement | null,
+  saveCountdown: $('[data-save-countdown]') as HTMLElement | null,
+  saveLive: $('[data-save-live]') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -948,6 +952,10 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
 async function handleGuess() {
   if (gameState.solved || submitting) return;
   if (!possibles.every((s) => s.size === 1)) return;
+  // The five-second hold after unticking "save my scores". aria-disabled leaves
+  // the button focusable and clickable, so the handler is what has to no-op —
+  // this is the same contract undo and reset already work to.
+  if (!saveWarning.state().submitAvailable) return;
 
   // The last interaction of the game, and the one that ends the clock: whatever
   // gap preceded it is banked here, before the answer is checked.
@@ -1161,11 +1169,70 @@ dom.resetBtn?.addEventListener("click", () => {
   if (resetBoard()) track("reset_used", undefined, "button");
 });
 
-// Save checkbox
+// ─── Save-my-scores checkbox, warning and countdown ──────────────────────────
+//
+// Unticking says what submitting will cost and holds submit for five seconds.
+// Nothing is deleted here — the deletion happens on the next solve, read from
+// the stored preference (brief 65). Re-ticking puts everything back.
+
+const saveWarning = createSaveWarning();
+
+// Repaints the countdown while it runs. Cleared the moment submit is available
+// again, so nothing ticks on a quiet screen.
+let saveWarningTimer: ReturnType<typeof setInterval> | undefined;
+let submitWasAvailable = true;
+
+function renderSaveWarning(): void {
+  const s = saveWarning.state();
+
+  if (dom.saveWarning) dom.saveWarning.textContent = s.warning ? WARNING_TEXT : '';
+  if (dom.saveCountdown) {
+    dom.saveCountdown.textContent =
+      s.warning && s.secondsLeft > 0 ? `Submit enabled in ${s.secondsLeft}` : '';
+  }
+
+  // aria-disabled, never the native disabled attribute — the browser blurs a
+  // natively-disabled element, and a player who has tabbed to submit during the
+  // five seconds must not be thrown back to the top of the document. The house
+  // rule the keypad's hundreds-box 0 and the undo/reset controls already follow.
+  if (dom.submitBtn) {
+    if (s.submitAvailable) {
+      dom.submitBtn.removeAttribute('aria-disabled');
+      dom.submitBtn.removeAttribute('aria-label');
+    } else {
+      dom.submitBtn.setAttribute('aria-disabled', 'true');
+      // The remaining seconds go in the accessible name, so a screen-reader user
+      // is not left pressing a button that silently does nothing.
+      dom.submitBtn.setAttribute(
+        'aria-label',
+        `Submit answer — available in ${s.secondsLeft} ${s.secondsLeft === 1 ? 'second' : 'seconds'}`,
+      );
+    }
+  }
+
+  // Announced once when it becomes available. The warning line announces itself
+  // when it appears; the countdown line is deliberately not live.
+  if (s.submitAvailable && !submitWasAvailable && dom.saveLive) {
+    dom.saveLive.textContent = 'Submit is now available.';
+  }
+  if (!s.submitAvailable && dom.saveLive) dom.saveLive.textContent = '';
+  submitWasAvailable = s.submitAvailable;
+
+  if (s.submitAvailable && saveWarningTimer !== undefined) {
+    clearInterval(saveWarningTimer);
+    saveWarningTimer = undefined;
+  }
+}
+
 if (dom.saveCheck) {
   dom.saveCheck.addEventListener("change", () => {
     saveScore = dom.saveCheck!.checked;
     persistPrefs(saveScore);
+    saveWarning.setChecked(saveScore);
+    // Four ticks a second, so the number never sits a whole second stale. The
+    // state itself is read from the clock, so a missed tick costs nothing.
+    if (saveWarningTimer === undefined) saveWarningTimer = setInterval(renderSaveWarning, 250);
+    renderSaveWarning();
   });
 }
 
