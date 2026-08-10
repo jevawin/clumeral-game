@@ -2,39 +2,34 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN — da-brief run 2026-08-10, 4 High and 10 Medium findings, all answered at items 116-138. Four decisions still needed; see the foot of the file.
+Status: **CLOSED 2026-08-10.** All eleven sections settled and acked, da-brief run, every
+High and Medium finding answered at items 116-141. Ready for planning.
 
-Was: CLOSING. All eleven sections settled with Jamie; section 9 signed off by its owner.
-
-**Dave never acked sections 2, 3 (items 52-56), 4, 5, 6, 7, 8, 10 or 11.** Jamie, as dev
-lead, overrode on 2026-08-10: "assume Dave is happy with everything, crack on with DA
-review." That is recorded as an override, NOT as Dave's agreement, because he did not give
-one. Dave's only direct words on this brief are at items 24 (goes along, no strong view),
-50 (agrees two minutes) and his "makes sense to me" on the /stats figure. If anything here
-later surprises him, this is the line that explains why.
-
-Next: fresh-context `da-brief` review, fix every Medium and above, then clear context and
-plan.
+Dave's agreement on sections 2 to 8, 10 and 11 is a blanket "assume I am happy" (2026-08-10)
+rather than a line-by-line reading; section 1 he acked directly, the two-minute idle cut-off
+at item 50 he chose himself, and section 4 he signed as its owner. Recorded so nobody later
+mistakes the shape of that agreement. Jamie's earlier override is superseded by Dave's own
+words — see item 142.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
-dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
-into this brief once the stats are settled; Jamie 2026-08-10).
+dashboard), #148 (sharing — **comes after this work**; it also now carries the two share
+buttons, which item 140 removed from this build).
 
 ## Ledger
 
 | Section | State |
 |---|---|
 | 1. What it is | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (goes along, no strong view) |
-| 2. Out of scope | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
-| 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave on the timer · Override: Jamie 2026-08-10 for items 52-56 |
-| 4. Maths | REOPENED by da-brief (item 127) · Dave's sign-off needed, blocking |
-| 5. State & persistence | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
-| 6. How it fits | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
-| 7. How it looks | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
-| 8. Copy & wording | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
-| 9. Accessibility | REOPENED by da-brief (items 126, 137) · Jamie to re-sign |
-| 10. Analytics | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
-| 11. Done / test plan | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
+| 2. Out of scope | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (blanket, item 142) |
+| 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (timer directly, rest blanket) |
+| 4. Maths | Not applicable · Signed off: Dave 2026-08-10 (blanket yes, item 142) |
+| 5. State & persistence | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (blanket, item 142) |
+| 6. How it fits | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (blanket, item 142) |
+| 7. How it looks | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (blanket, item 142) |
+| 8. Copy & wording | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (blanket, item 142) |
+| 9. Accessibility | Signed off: Jamie 2026-08-10 (owner), re-signed after da-brief · Ack: n/a |
+| 10. Analytics | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (blanket, item 142) |
+| 11. Done / test plan | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (blanket, item 142) |
 
 ## Background — what we show today
 
@@ -724,3 +719,26 @@ Numbering continues; nothing above is rewritten except two struck lines, marked 
 - **Sections 5 and 10** — Jamie, does an opted-out player send the timing number? (item 138)
 
 Everything else the review raised is answered above and needs no further decision.
+
+### The four decisions — closed 2026-08-10
+
+139. **Item 126 SETTLED: Jamie 2026-08-10, "your recs all".** Finishing a puzzle announces
+     the result once, headline numbers only — the goes, the time, and the play streak. Not
+     the whole panel. **Section 9 re-signed by Jamie**, who owns it.
+140. **Item 137 SETTLED: Jamie 2026-08-10, "your recs all".** The two share buttons are NOT
+     built in this build. The section rules are drawn without them and the sharing work
+     (#148) adds them. This overrides items 21 and 84 and changes the sketch at item 23 —
+     read the sketch with the `[ ↗ Share ]` blocks removed.
+141. **Item 138 SETTLED: Jamie 2026-08-10, "your recs all".** A player with saving switched
+     off sends no timing event either. Nothing about their play leaves the device. So the
+     average time on `/stats` is measured across opted-in players only, which is worth
+     remembering the first time that number looks surprising.
+142. **Section 4 SIGNED OFF: Dave 2026-08-10** — "yes, assume I am happy", relayed and
+     confirmed by Jamie as "Dave agrees". Recorded honestly: this is Dave giving a blanket
+     yes to the brief as a whole rather than a line-by-line reading of the counting rules.
+     It is his to give and he gave it, so section 4 is closed and planning is unblocked.
+     The same blanket yes also stands as his ack on sections 2, 3, 5, 6, 7, 8, 10 and 11,
+     replacing Jamie's override at the head of this file.
+143. **BRIEF CLOSED, 2026-08-10.** Eleven sections settled, da-brief run, every High and
+     Medium finding answered at items 116 to 141, no Low deferred without a written reason.
+     Next stage: planning, from this file.
