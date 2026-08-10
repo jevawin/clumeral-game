@@ -147,7 +147,6 @@ describe('generatePuzzleFromRng across seeds', () => {
       expect(second, `seed ${seed}`).toEqual(first);
     }
   });
-
 });
 
 // ─── The two answer paths agree, driven through the real routes ───────────────

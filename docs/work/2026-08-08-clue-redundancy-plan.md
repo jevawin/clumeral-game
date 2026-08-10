@@ -589,7 +589,8 @@ and `makeRng` are untouched. Nothing from the brief's out-of-scope section was b
   must by finding the numbers that satisfy all of them, then `POST /api/guess` with the
   returned token and assert it is accepted — 25 times, plus a wrong-guess check so an endpoint
   that always said "correct" could not pass, plus a contract check on the served clues. The
-  handlers need no storage, so a two-field env drives them in the existing test project.
+  handlers need no storage at all, so a single-field env drives them in the existing test
+  project.
   **Verified by mutation**: pointing `handleGetRandomPuzzle` at a different seed fails the new
   test and leaves all 18 others green. The shipped code was correct; this was coverage.
 
@@ -612,6 +613,30 @@ and `makeRng` are untouched. Nothing from the brief's out-of-scope section was b
   generator change also affects any past date never frozen (#235). Caveat added.
 - Nits — the unreachable `Math.random` default on `drawClues` removed; the fallback test now
   asserts the warning fired rather than only silencing it.
+
+### da-build re-review of the fixes (2026-08-08)
+
+Second fresh-context pass, over the fix commit only. **The Medium is confirmed closed.** The
+reviewer mutated `index.ts` three separate ways — a different seed on the serve path, an
+advanced generator on the check path, and an extra redundant clue served — and the new
+round-trip test caught all three. It also quantified the one thing worth knowing about that
+test: it seeds from `Math.random`, so it is not deterministic, and the chance of a spurious
+failure is about **1 in 100,000 runs**. That is the fallback rate, and it is acceptable.
+
+Two Lows found and fixed:
+
+- The honesty fix had been applied to the code comment but not to `docs/ARCHITECTURE.md`, which
+  still read as if 4–6 clues were guaranteed or it fails loudly. That is the document people
+  are pointed at, so it now states the fallback rate and what it publishes.
+- The new paragraph in `docs/notes/restore-early-puzzles.md` claimed pinning the generator
+  would make early dates comparable. It will not: #254 added the Fibonacci special in July, and
+  the CSV era predates git history, so early entries diverge anyway. Reworded to say what
+  pinning actually buys — it stops #193 adding a *second* source of divergence on top.
+
+Also corrected: the fallback comment cited the wrong plan decision number and put the odds at
+1e30 when the measured figure is about 1e28. And `scripts/puzzle-stats.mjs` no longer applies
+its 3× timing gate below 1,000 seeds — at 200 seeds the 99th percentile is one or two
+measurements, and it was failing on noise and telling the reader to escalate.
 
 ## da-plan review — findings and what was done (2026-08-08)
 

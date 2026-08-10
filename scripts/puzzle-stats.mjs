@@ -47,6 +47,10 @@ const REPO = resolve(import.meta.dirname, '..');
 // at about 1.8x on 2026-08-08, so there is real headroom.
 const SLOWDOWN_LIMIT = 3;
 
+// Below this many seeds the timing figures are too noisy to judge, so the
+// slowdown gate is skipped rather than fired on noise.
+const TIMING_MIN_SEEDS = 1000;
+
 const pct = (n, of) => `${((n / of) * 100).toFixed(1)}%`;
 const ms = n => `${n.toFixed(1)} ms`;
 const quantile = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
@@ -232,8 +236,17 @@ console.log('  branch builds to pre-prod.');
 const failures = [];
 if (stillRedundant > 0) failures.push(`${stillRedundant} puzzles still have a removable clue`);
 if (disagreements > 0) failures.push(`${disagreements} puzzles differ when the baseline draw is injected`);
-if (now.mean / old.mean > SLOWDOWN_LIMIT) failures.push(`mean time is ${(now.mean / old.mean).toFixed(2)}x the old generator, over the ${SLOWDOWN_LIMIT}x limit`);
-if (now.p99 / old.p99 > SLOWDOWN_LIMIT) failures.push(`p99 time is ${(now.p99 / old.p99).toFixed(2)}x the old generator, over the ${SLOWDOWN_LIMIT}x limit`);
+// The timing gate only runs on a big enough sample. At a few hundred seeds the
+// 99th percentile is one or two measurements and swings wildly — `200` reported
+// 3.08x and failed where `3000` reports 1.50x and passes. A spurious failure
+// that tells the reader to escalate to Jamie and Dave is worse than no gate.
+if (SEEDS >= TIMING_MIN_SEEDS) {
+  if (now.mean / old.mean > SLOWDOWN_LIMIT) failures.push(`mean time is ${(now.mean / old.mean).toFixed(2)}x the old generator, over the ${SLOWDOWN_LIMIT}x limit`);
+  if (now.p99 / old.p99 > SLOWDOWN_LIMIT) failures.push(`p99 time is ${(now.p99 / old.p99).toFixed(2)}x the old generator, over the ${SLOWDOWN_LIMIT}x limit`);
+} else {
+  console.log(`\n  Timing not checked against the ${SLOWDOWN_LIMIT}x limit — that needs at least`);
+  console.log(`  ${TIMING_MIN_SEEDS} seeds to be stable, and this run used ${SEEDS}.`);
+}
 
 if (failures.length > 0) {
   console.log('\nFAIL');

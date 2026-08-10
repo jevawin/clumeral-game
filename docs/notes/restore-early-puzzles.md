@@ -86,6 +86,13 @@ early date look divergent and tell you nothing. Read `src/worker/puzzle.ts` at c
 `9b4a1ae` and use its `runFilterLoop` — `scripts/puzzle-stats.mjs` already does
 exactly that and can be copied.
 
+That reproduces what was **served between 2026-07-18 and the #193 merge**, not what the
+CSV era produced. #254 added the Fibonacci special on 2026-07-18, and the CSV-to-computed
+switch predates git history entirely, so genuinely early KV entries will still diverge
+from `9b4a1ae`'s output. That divergence is the thing step 1 is looking for. The point of
+pinning the generator is to stop #193 adding a second, unrelated source of divergence on
+top and blurring the boundary you are trying to find.
+
 ### 3. If KV is missing/incorrect — recover the original data
 
 The old CSV / generator is not in this repo's history. Look for it in:
