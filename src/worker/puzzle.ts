@@ -134,7 +134,7 @@ function findGoodClues(candidates: number[], propKey: string) {
 // goes through generatePuzzleFromRng instead — including the guess checker,
 // which re-runs generation from the seed. A caller reaching a different
 // generator than the one the player was shown would mark correct guesses wrong.
-function drawClues(rng: () => number = Math.random): { answer: number; clues: Clue[] } {
+function drawClues(rng: () => number): { answer: number; clues: Clue[] } {
   let candidates: number[] = Array.from({ length: 900 }, (_, i) => i + 100);
   const clues: Clue[] = [];
   const triedGroups = new Set();
@@ -243,7 +243,15 @@ export function trimRedundantClues(clues: Clue[]): Clue[] {
  *       lay the puzzle out; below MIN_CLUES it merely looks thin.
  *    3. Among under-range candidates, more clues wins.
  *    4. Among over-range candidates, fewer clues wins.
- *    5. On a tie, the first one seen is kept. */
+ *    5. On a tie, the first one seen is kept.
+ *
+ *  READ RULE 4 HONESTLY. On this path MAX_CLUES is a strong preference, not a
+ *  guarantee: if all MAX_ATTEMPTS draws came back over range, the code publishes
+ *  the smallest of them, and that could be a 7-clue puzzle the screen lays out
+ *  badly. The alternative was to throw, which on a daily is a dated outage. That
+ *  trade is plan-level decision 4 and Jamie approved it. It needs ten
+ *  consecutive irredundant draws of 7 or more clues, which is around 1 in 1e30 —
+ *  the guarantee holds everywhere a real puzzle has ever been. */
 export function betterFallback(
   candidate: { clues: Clue[] },
   incumbent: { clues: Clue[] } | null,

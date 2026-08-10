@@ -13,8 +13,9 @@
 //
 // THE BASELINE COMES FROM GIT. The old generator was `runFilterLoop`, which is
 // now the private `drawClues` and deliberately unreachable — a bare "new"
-// number cannot be judged, but a ratio can, so the script reads puzzle.ts as it
-// stands on main, writes it to a temp directory, imports it, and removes it
+// number cannot be judged, but a ratio can. So the script reads puzzle.ts at a
+// PINNED commit (the last one before the sweep, overridable with
+// CLUMERAL_BASELINE), writes it to a temp directory, imports it, and removes it
 // again. No repo file is touched and nothing is left behind. Node 22 imports
 // TypeScript directly, so there is no build step and no dependency.
 //
@@ -50,14 +51,39 @@ const pct = (n, of) => `${((n / of) * 100).toFixed(1)}%`;
 const ms = n => `${n.toFixed(1)} ms`;
 const quantile = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))];
 
-/** puzzle.ts as it stands on main, imported from a temp copy that is then removed. */
+/** The pre-#193 generator, imported from a temp copy that is then removed.
+ *
+ *  PINNED TO A COMMIT ON PURPOSE. The obvious choice is `git merge-base HEAD
+ *  origin/main`, and it works exactly once: the moment #193 lands on main, the
+ *  merge-base for any later branch is a commit whose puzzle.ts has no
+ *  runFilterLoop, and this script dies. The whole reason it is committed rather
+ *  than thrown away is that the numbers can be re-checked later, so the baseline
+ *  is the last commit before the sweep and stays that way.
+ *
+ *  Override with CLUMERAL_BASELINE=<commit-ish> to compare against something
+ *  else. */
+const DEFAULT_BASELINE = '9b4a1ae0b61d0eb79c9ca06b4ad3ca94980d00a2';
+
 function loadBaseline() {
-  const base = execFileSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: REPO, encoding: 'utf8' }).trim();
-  const src = execFileSync('git', ['show', `${base}:src/worker/puzzle.ts`], { cwd: REPO, encoding: 'utf8', maxBuffer: 1 << 24 });
+  const base = process.env.CLUMERAL_BASELINE || DEFAULT_BASELINE;
+  let src;
+  try {
+    src = execFileSync('git', ['show', `${base}:src/worker/puzzle.ts`], { cwd: REPO, encoding: 'utf8', maxBuffer: 1 << 24, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch {
+    console.error(`Could not read src/worker/puzzle.ts at ${base}.`);
+    console.error('Is this a full clone with history? Set CLUMERAL_BASELINE to a commit that has it.');
+    process.exit(2);
+  }
+
   const dir = mkdtempSync(join(tmpdir(), 'clumeral-baseline-'));
-  const file = join(dir, 'puzzle.ts');
-  writeFileSync(file, src);
-  return { file, dir, base };
+  try {
+    const file = join(dir, 'puzzle.ts');
+    writeFileSync(file, src);
+    return { file, dir, base };
+  } catch (err) {
+    rmSync(dir, { recursive: true, force: true });
+    throw err;
+  }
 }
 
 const { file, dir, base } = loadBaseline();

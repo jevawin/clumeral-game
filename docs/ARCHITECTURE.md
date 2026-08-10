@@ -89,6 +89,8 @@ If no attempt produces a uniquely-solvable puzzle, generation **throws** rather 
 
 **The cutover.** Puzzles before this change often carried a clue nobody needed, and 7-clue puzzles existed. The first daily generated under the new rules is the deploy date **plus two** — the cron freezes today and tomorrow, so both are already written under the old generator when the merge lands. That puzzle number is TO BE FILLED IN WHEN THE PULL REQUEST TO `main` IS OPENED, since that is when the deploy happens. The archive page's "Clues" column shows a visible step down at that point; nothing breaks.
 
+**One caveat on "plus two".** It holds for every date already frozen in KV, which is what a player sees in the archive. A generator change also affects **any past date that was never frozen** — see the bullet above and [#235](https://github.com/jevawin/clumeral-game/issues/235), which records that some early dates may be missing. Any such date starts serving a 4–6 clue puzzle immediately on merge, not at the cutover. Nothing is rewritten; those dates simply had nothing stored to rewrite.
+
 One accepted rough edge: a **random** puzzle held open in a backgrounded tab across the deploy can have its correct guess marked wrong, because the token carries the seed and no generator version. A reload fixes it and nothing is persisted.
 
 ### Write authority (cron-only, #257)

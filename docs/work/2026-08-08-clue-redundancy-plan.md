@@ -567,6 +567,52 @@ what would trigger that conversation.
 OPENED`. It is `puzzleNumber(deploy date + 2)` and cannot be computed until the merge date is
 known.
 
+## da-build review — findings and what was done (2026-08-08)
+
+Fresh-context review of the built code against the brief and this plan. It re-derived every
+pinned fixture rather than trusting the comments, and swept 45,000 seeds — 20,000 sequential
+and 25,004 random 32-bit including 0 and 0xFFFFFFFF. Zero out of range, zero non-unique, zero
+with a removable clue, zero fallbacks, zero throws. Brief item 31 confirmed closed: `drawClues`
+is unexported, so the compiler enforces it rather than the guard test, and the injectable
+`draw` is not a way round it. `PROPERTIES`, `PROPERTY_GROUPS`, the 15–40% band, `EPOCH_DATE`
+and `makeRng` are untouched. Nothing from the brief's out-of-scope section was built.
+
+**Medium — fixed**
+
+- **M1 — the test guarding the highest-risk failure could not fail independently, and nothing
+  tested the wiring.** "The two answer paths agree" called the generator twice and compared
+  answers, which is strictly weaker than the determinism test above it and never touched
+  `index.ts` at all. The real risk is not that the generator is non-deterministic; it is that
+  the two ROUTES stop pointing at the same generator, and every correct guess on a random
+  puzzle then comes back wrong with the suite still green. Replaced with a round trip through
+  the actual worker handlers: fetch `GET /api/puzzle/random`, solve the clues the way a player
+  must by finding the numbers that satisfy all of them, then `POST /api/guess` with the
+  returned token and assert it is accepted — 25 times, plus a wrong-guess check so an endpoint
+  that always said "correct" could not pass, plus a contract check on the served clues. The
+  handlers need no storage, so a two-field env drives them in the existing test project.
+  **Verified by mutation**: pointing `handleGetRandomPuzzle` at a different seed fails the new
+  test and leaves all 18 others green. The shipped code was correct; this was coverage.
+
+**Low — all fixed**
+
+- L1 — the fallback can publish a 7-clue puzzle, which the comment read as forbidding. This is
+  plan-level decision 4, approved, and needs ten consecutive irredundant draws of 7+ clues
+  (~1 in 1e30) — but the comment now says plainly that `MAX_CLUES` is a strong preference on
+  that path and not a guarantee, and why throwing was rejected.
+- L2, L3 — `scripts/puzzle-stats.mjs` had a shelf life of exactly one merge: its baseline was
+  `git merge-base HEAD origin/main`, which stops containing `runFilterLoop` the moment this
+  lands. That defeats the stated reason for committing it. The baseline is now pinned to
+  `9b4a1ae`, overridable with `CLUMERAL_BASELINE`, with a readable message instead of a stack
+  trace when the history is missing, and the temp directory is removed even if the write fails.
+- L4 — `docs/notes/restore-early-puzzles.md` told the next person to recompute early puzzles
+  with `runFilterLoop`, which is now private AND gives a different answer than the pre-merge
+  code — the exact comparison that note exists to make. It now says to use the pinned pre-#193
+  generator.
+- L5 — the ARCHITECTURE cutover paragraph said "deploy date plus two" without the caveat that a
+  generator change also affects any past date never frozen (#235). Caveat added.
+- Nits — the unreachable `Math.random` default on `drawClues` removed; the fallback test now
+  asserts the warning fired rather than only silencing it.
+
 ## da-plan review — findings and what was done (2026-08-08)
 
 Fresh-context review of this file against the brief. It prototyped the proposed algorithm
