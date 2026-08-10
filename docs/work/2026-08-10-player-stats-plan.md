@@ -1194,3 +1194,92 @@ delete.
   countdown sit underneath. Accessibility is his to sign and he has signed it.
 - **Jamie's approval of the plan as a whole:** given 2026-08-10 — "update that then I'll new
   and build". No open questions remain. **Ready for Build.**
+
+---
+
+## Build record — 2026-08-10
+
+All thirteen tasks built, one commit each, on `dev/player-stats`. Unit suite: 738 passing
+across 37 files. Production build clean. Playwright not run — it never runs on the Pi; CI
+runs chromium on the pull request and the full matrix into main.
+
+Where the build departed from the plan, and why. Nothing here changes a decision Jamie or
+Dave made; each is a place the plan contradicted itself or could not be built as written.
+
+### B-01 — the warning line stays while the box is unticked. **NEEDS JAMIE.**
+
+Task 5 said "Submit enabled in 5, counting 5, 4, 3, 2, 1, then **both lines go**". Built so
+that only the *countdown* line goes; the warning stays for as long as the box is unticked.
+
+Why: the deletion happens on submit, which can be minutes after the countdown ends. If the
+warning has vanished by then, the destructive action is unlabelled at the moment it
+happens. The plan's own reasoning three paragraphs later is that "the pause **plus the
+visible warning**" is what stands between a mis-tap and a deletion, and Jamie's own message
+(2026-08-10, "Warning line. But clearer. Second line, 'Submit enabled in 5 (4 3 2 1)'")
+answers where the countdown lives, not when the warning disappears.
+
+**This is the one build decision that changes what a player sees, and it is Jamie's to
+confirm or reverse.** Reversing it is a two-line change in `renderSaveWarning`.
+
+### B-02 — `deleteHistory` writes its marker unconditionally
+
+Task 1 test 13 said the marker is written only when the deleted history held a row for that
+date. Task 8's only caller runs at solve time with saving **off**, where no row was ever
+written — `recordGame` never ran. The conditional version would leave that player with
+nothing, `hasPlayerData()` would be false, and today's puzzle would be replayable: the exact
+bug the plan's own H1 finding added the marker to prevent. Built unconditional, with the
+reasoning in the function's doc comment and a test pinning it both ways.
+
+### B-03 — `recordSolve` in `storage.ts`, so Task 8's rule is testable
+
+Task 8's test list (`tests/save-pref.spec.ts`) describes behaviour that lives in `app.ts`,
+which has no unit-test harness in this repo and cannot get one cheaply — it fetches, boots
+the router and caches DOM at import. So the rule itself moved into one exported function
+next to `recordGame`, `recordMarker` and `deleteHistory`, which is where brief 75 puts
+storage's three new jobs anyway. `app.ts` calls it. The rule is now stated once, in one
+place, and thirteen tests drive it directly.
+
+### B-04 — `playTimeToSend` in `play-timer.ts`, for the same reason
+
+Task 10's four conditions were specified as an `if` in the solve path, which is untestable
+here and where a quietly dropped condition would be invisible — the event would simply start
+arriving from somewhere it should not. Extracted to a pure function with seven tests.
+
+### B-05 — `show()` resumes the clock for a player who had already started
+
+Task 3's test list did not say what `show()` does to the clock. Brief 26 says "coming back
+resumes it", so it resumes — but only for a player who has already acted, or opening a tab,
+switching away and coming back would start counting before their first action, against
+brief 27. The idle cut-off still covers someone who comes back and then wanders off.
+
+### B-06 — `tests/archive-stats.spec.ts` rewritten rather than deleted
+
+It asserted against the four stat boxes Task 7 removes. Its two real-world scenarios move to
+`player-stats.ts`, the layer that now owns those rules, rather than being lost.
+
+### B-07 — the explanatory line is a second `<dd>`, not inside the first
+
+Task 6 said the line sits "in the same `<dd>`, after the number". A single `<dt>` may have
+several `<dd>`s, so it is its own `<dd class="stat-note">` — valid HTML, reads in the right
+order ("Plays, 128, Daily puzzles you have finished"), and lays out as a full-width row
+underneath rather than squeezed into the right-hand column. The point of the plan's wording
+— that it is text under the stat and never a tooltip — is unchanged.
+
+### B-08 — three live regions, each with one job
+
+The plan asked for the warning to announce when it appears, and for a second announcement
+when submit becomes available, without the countdown announcing five times. Built as: the
+warning paragraph is `role="status"` and announces itself; the countdown paragraph is not
+live; a small screen-reader-only region announces "Submit is now available." once. Appending
+to the warning region instead would have re-announced the whole warning.
+
+### Not built, deliberately
+
+- The share buttons (brief 140).
+- Anything about score saving on the completion panel (P-01) — pinned by an explicit test,
+  because brief 53, 65 and 90 all ask for something there and the brief is what a builder
+  reads first.
+
+### Next
+
+Human review, then `da-build` on the diff, then push and open the pull request.
