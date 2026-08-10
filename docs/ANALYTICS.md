@@ -43,6 +43,40 @@ That is now belt-and-braces rather than the isolation mechanism, and it costs no
 `.catch`, so the event POST always answers 202. A D1 outage costs rows, never responses —
 and, deliberately, raises nothing visible. See "Known limitations" below.
 
+## `puzzle_time` — how long a puzzle took
+
+Sent once when today's daily puzzle is solved. Value is the counted play seconds; source is
+`clean`, or `idle-N` where N is how many times the two-minute idle cut-off fired that game.
+
+**Counted, not wall-clock.** `src/play-timer.ts` accumulates the gap between real
+interactions — a digit toggle, undo, reset, submit. A gap longer than two minutes is thrown
+away entirely and raises the idle count; time while the tab is hidden is never counted. So
+"opened at 9am, came back at 11am and finished" reads as minutes, not two hours.
+
+**Four things stop it being sent**, and all four are in `playTimeToSend`:
+
+- random puzzles and archive replays, which are not daily play;
+- a player with score saving switched off — nothing about their play leaves the device;
+- a counted time outside 0–86400 whole seconds, which is treated as unknown.
+
+**So the average is measured over opted-in players only**, which is nearly everyone but
+not everyone. Worth remembering the first time that number looks surprising.
+
+**Give-ups are invisible.** A puzzle started and abandoned sends `puzzle_start` with no
+`puzzle_complete` and no `puzzle_time`; that difference is how to count them.
+
+The average on `/stats` is `SUM(value * sample_interval) / SUM(sample_interval)`, weighted
+like every other figure here. Every `puzzle_time` row is one we wrote ourselves, so its
+interval is 1 and the weighting changes nothing today — it is written weighted because that
+is the house rule, and it protects the figure if sampling ever starts. It reads `null`, and
+renders a dash, when there are no rows: "no data" and "everybody solves it instantly" are
+different things.
+
+**The `idle-N` label is the measurement we promised ourselves.** Two minutes was a guess —
+nobody has measured how long players actually sit still. The share of games reporting
+anything other than `clean` is what says whether two minutes was right, and changing it is
+a one-line change to `IDLE_TIMEOUT_MS`.
+
 ## Sampling — read this before trusting any number
 
 Analytics Engine sampled our data. Measured 2026-08-04 across all hostnames:

@@ -8,6 +8,9 @@ Vite + TypeScript. Cloudflare Worker via `@cloudflare/vite-plugin`. REST API —
 src/
   app.ts         Client UI, guess handling, game flow
   storage.ts     localStorage helpers (prefs, history)
+  player-stats.ts  The counting rules — history rows in, displayed figures out (pure)
+  play-timer.ts    Counted play time: event-driven accumulator, injected clock (pure)
+  save-warning.ts  The untick warning and the five-second submit countdown (pure)
   modals.ts      How-to-Play, toast, feedback modals
   theme.ts       Light/dark toggle, dot-grid canvas bg
   colours.ts     Accent colour picker, icon swap
@@ -125,9 +128,19 @@ Inspect a stored puzzle: `wrangler kv key get "YYYY-MM-DD" --binding PUZZLES --r
 
 ## localStorage keys
 
-- `dlng_history` — `[{date, tries, answer?, archived?}]` (`archived: true` = a past/archive solve, excluded from daily stats)
+- `dlng_history` — `[{date, tries, answer?, archived?, seconds?, marker?}]`
+  - `archived: true` = a past/archive solve, excluded from every stat
+  - `seconds` = counted play time, 0–86400. **Absent means unknown, never 0** — pre-launch
+    rows, opted-out players, and values that failed validation. A valid time above 1800
+    still shows on its own panel but is left out of the average and of fastest.
+  - `marker: true` = the day-only marker a player with score saving off leaves behind.
+    `tries` is `0` and means nothing. Every figure filters markers out *before* counting,
+    and four places that read `entry.tries` pass `null` for one rather than showing the 0.
 - `dlng_prefs` — `{saveScore}`
-- `dlng_active` — in-progress puzzle state (mid-game restore; validated on load)
+- `dlng_active` — in-progress puzzle state (mid-game restore; validated on load). Also
+  carries `elapsed?` and `idles?` — the play clock, so a refresh does not reset your time.
+  Both are optional and an invalid value drops **that field**, never the board. `v` stays
+  at `1`: bumping it would throw away the in-progress board of every player mid-puzzle.
 - `dlng_theme` — `"light"|"dark"`
 - `dlng_colour` — accent colour name (e.g. `"Lime"`)
 - `dlng_uid` — anonymous analytics id
