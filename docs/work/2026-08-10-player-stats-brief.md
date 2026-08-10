@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Section 1 asked.
+Status: OPEN. Section 1 settled. Section 3 (timer) asked. Section 2 still to do.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -12,9 +12,9 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 
 | Section | State |
 |---|---|
-| 1. What it is | Ack: Dave 2026-08-10 (goes along, no strong view) · awaiting Jamie's settle |
+| 1. What it is | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (goes along, no strong view) |
 | 2. Out of scope | not started |
-| 3. How it works | not started |
+| 3. How it works | asked 2026-08-10 (timer only) |
 | 4. Maths | not started |
 | 5. State & persistence | not started |
 | 6. How it fits | not started |
@@ -198,5 +198,42 @@ grid, and said the layout does not have to stay a grid:
     that worry as live in §7 rather than closed. His maths sign-off is not needed here;
     section 4 is not applicable.
 
-Still needed to close section 1: **Jamie's settle** on items 5, 12, 13, 17, 18, 19, 20, 21
-and 23.
+25. **Section 1 SETTLED: Jamie 2026-08-10, "yep"** — items 12, 13, 17, 18, 19, 20, 21 and 23
+    all accepted as recommended, on top of the settles at items 5, 6 and 16. Dave's ack is
+    item 24.
+
+## 3. How it works — the timer
+
+Section 2 (out of scope) is still to do; timing was taken next at Jamie's request,
+2026-08-10. Jamie's stated goal: a best-effort *"the player is actually here solving it"*
+measure, not wall-clock. His example of what must NOT happen — "opened at 9am, closed two
+minutes later, came back at 11am and finished, so it took two hours".
+
+26. **Count only while the tab is visible.** Switching tabs, backgrounding the app or
+    locking the phone pauses the clock; coming back resumes it. Use the browser's own
+    page-visibility signal rather than window focus, which is unreliable on phones.
+    (assumed — already agreed in #148)
+27. **Start on the first real action, not on page load.** Reading the clues before you
+    touch anything is not solving. (assumed — already agreed in #148)
+28. **Visibility alone does not deliver what Jamie asked for.** On a laptop a tab stays
+    "visible" while you wander off, make coffee, or read something in another window that
+    does not cover the tab. That is the two-hour puzzle all over again, just with the tab
+    left open. So we also need an idle cut-off.
+29. **How long with no taps or key presses before we stop the clock?**
+    My rec: **three minutes**. Pause after three minutes of nothing, resume on the next
+    action, and throw the gap away entirely. Why: staring at a Clumeral board and thinking
+    for three straight minutes without touching anything is rare, and the cost of getting it
+    slightly wrong is small — worst case someone's honest thinking time is under-counted by
+    a few minutes, which is much better than a two-hour "solve".
+30. **The clock survives a reload.** Elapsed time is saved with the in-progress board, so a
+    refresh or an iOS app-switch does not reset it to zero. Reload is a common accidental
+    gesture and losing your time would look broken. (assumed — mechanism decided in §5)
+31. **A silly time does not poison the averages.** If a single game somehow records more
+    than 30 minutes of counted time, keep it on that game but leave it out of the average
+    time and out of fastest one-go win.
+    My rec: yes, do this. Why: one bad measurement would otherwise sit in your average for
+    hundreds of games, and averages are the stat people trust least when they look wrong.
+32. **The clock is never visible during play.** No ticking, no pressure — it only appears at
+    the end. (assumed — Jamie's original ask and #148)
+33. **Time is never used to break a streak or gate anything.** It is a stat, nothing more.
+    (assumed)
