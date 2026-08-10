@@ -2,7 +2,9 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: CLOSING. All eleven sections settled with Jamie; section 9 signed off by its owner.
+Status: OPEN — da-brief run 2026-08-10, 4 High and 10 Medium findings, all answered at items 116-138. Four decisions still needed; see the foot of the file.
+
+Was: CLOSING. All eleven sections settled with Jamie; section 9 signed off by its owner.
 
 **Dave never acked sections 2, 3 (items 52-56), 4, 5, 6, 7, 8, 10 or 11.** Jamie, as dev
 lead, overrode on 2026-08-10: "assume Dave is happy with everything, crack on with DA
@@ -25,12 +27,12 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 1. What it is | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (goes along, no strong view) |
 | 2. Out of scope | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 | 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave on the timer · Override: Jamie 2026-08-10 for items 52-56 |
-| 4. Maths | not applicable · Override: Jamie 2026-08-10 (Dave never confirmed directly) |
+| 4. Maths | REOPENED by da-brief (item 127) · Dave's sign-off needed, blocking |
 | 5. State & persistence | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 | 6. How it fits | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 | 7. How it looks | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 | 8. Copy & wording | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
-| 9. Accessibility | Signed off: Jamie 2026-08-10 (owner) · Ack: n/a |
+| 9. Accessibility | REOPENED by da-brief (items 126, 137) · Jamie to re-sign |
 | 10. Analytics | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 | 11. Done / test plan | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 
@@ -91,8 +93,12 @@ Everything Jamie asked for is computable from the history we already store, **ex
 
 ### Reopened after Jamie's reply, 2026-08-10
 
-Item 5 is open with Dave. Jamie proposed grouping the stats in three blocks instead of one
-grid, and said the layout does not have to stay a grid:
+*(Struck 2026-08-10 after the da-brief review: this line said "Item 5 is open with Dave".
+Item 5 is settled at item 5 and item 11's shape is superseded by item 17. Left visible
+rather than deleted, because the numbering is append-only.)*
+
+Jamie proposed grouping the stats in three blocks instead of one grid, and said the layout
+does not have to stay a grid:
 
 11. **Proposed grouping (Jamie 2026-08-10, awaiting Dave):**
     - *This game:* tries · time to complete
@@ -502,7 +508,7 @@ Jamie owns this section outright; his sign-off is blocking.
      new browser tests join the existing suite and ride the existing gates: the panel after a
      solve showing the right numbers, a brand-new player, a player with saving turned off,
      and the delete flow. No new workflow, no new gate. Ack from Dave still needed.
-115. **Done means:** the panel shows the agreed numbers for a normal player, a new player, a
+115. **Done means (extended at item 134):** the panel shows the agreed numbers for a normal player, a new player, a
      player with saving off and a random puzzle; the timer behaves as items 26 to 35 say;
      turning saving off deletes the history after a warning; `/stats` shows the average time;
      and the timing event reaches the database with its clean-or-idle label. (assumed)
@@ -569,3 +575,152 @@ anonymous id, a free-text `source`, a whole-number `value`, and the hostname.
     weight each row by its sampling column, not treat every row as one game. An unweighted
     average would be wrong by roughly the same 1.70% measured on 2026-08-04, and worse if
     sampling ever bites harder. (assumed — consequence of item 49)
+
+---
+
+## da-brief review — findings and fixes, 2026-08-10
+
+Fresh-context review run 2026-08-10 against this file and the repo. Result: **4 High,
+10 Medium, 6 Low. Gate not passable as written.** Every High and Medium is answered below.
+Numbering continues; nothing above is rewritten except two struck lines, marked as struck.
+
+### Housekeeping first (the Low findings)
+
+116. **Numbering slipped once.** There is no item 112 — it was overwritten while items 113
+     to 115 were added. Recorded rather than reused, so "item 112" means nothing anywhere.
+117. **Item 57 overstated Dave's agreement.** It said the timer rules were "agreed by both
+     at items 26 to 35 and 50". Items 26 to 35 are my assumptions; item 50 is the only one
+     Dave confirmed in his own words. Corrected here rather than in place.
+118. **Item 51's reasoning is wrong, though its instruction stands.** The 1.70% under-count
+     came from rows imported from the old analytics system. `puzzle_time` is brand new and
+     will never be imported, so every row of it counts as one and the weighting changes
+     nothing today. Keep the weighting anyway — it is the house rule and it protects us if
+     sampling ever starts — but item 110 must not assert a difference it cannot see.
+119. **This file's sections are out of order** (1, 3, 4, 5, 6, 7, 8, 9, 11, 10, 2) because
+     Jamie asked for them out of order. Anyone reading for scope: §2 is at the foot, and
+     item 49 inside it puts one figure *into* scope rather than out of it.
+120. **Two tabs on the same puzzle both run a clock and both save the board; the last one to
+     write wins.** Accepted, not fixed. It is rare, it costs a player at most one game's
+     time, and guarding it properly means coordinating tabs for no real gain.
+
+### High findings
+
+121. **H2 — the saved board carries a version number, and the fix must not bump it.**
+     `src/storage.ts` discards a saved board whose version does not match, by design.
+     My rec: **do not bump it.** Add the elapsed time as an optional field, and treat a
+     board that has none as zero elapsed. Why: bumping the version throws away the
+     in-progress board of every player mid-puzzle at the moment we deploy, to save writing
+     one `if`. That is a real cost to real people for no gain.
+122. **The elapsed time must be validated like everything else in that store.** Saved boards
+     are editable by anyone who wants to edit them, which is why every other field is
+     checked. Rule: accept only a whole number of seconds between 0 and 1800; anything else
+     (missing, negative, fractional, absurd, not a number) means the time for that game is
+     unknown. An unknown time shows as no time, sends no event, and never becomes a fastest
+     win. (fixes the hole the review found in item 31, which capped the top end only)
+123. **H3 — the day-only marker needs a defined shape, and it has a second reader.**
+     My rec: the marker is a normal history row with `tries: 0` and a flag saying it is a
+     marker. Every figure filters markers out *before* counting, so they change no total, no
+     average and no streak. Why a flag rather than a missing field: the code that averages
+     goes adds `tries` up, and a missing number there poisons the whole average silently.
+124. **The archive page reads this same history directly** (`src/worker/puzzles.ts` fills its
+     "goes" column from it), which item 72 missed — it was true only of the panel.
+     My rec: a marker day shows a dash in that column, not a blank and not a zero. It means
+     "you played, we did not keep the score", which is exactly what happened. `src/worker/
+     puzzles.ts` joins the list of files this build touches.
+125. **The redirect that sends a returning player to the puzzle rather than the welcome
+     screen also reads this history**, so markers must keep it working: a marker counts as
+     "this person has played before". (assumed — it is the plain reading, but it must be
+     tested, so it joins item 108)
+126. **H4 — REOPENS SECTION 9, which Jamie has already signed.** Item 99 said the panel must
+     not announce itself because "we already tell people they solved it". **We do not.** The
+     review checked: finishing a puzzle changes text on screen and moves nothing to a screen
+     reader. So as written, section 9 bans the only thing that would tell a blind player
+     they had won.
+     **Question for Jamie, who owns this section:** should finishing a puzzle announce the
+     result — something like "Solved in 2, 3 minutes 41 seconds. Play streak 14" — read out
+     once when the panel appears?
+     My rec: yes. Why: without it, the moment the whole screen exists for is silent for
+     anyone not looking at it. One announcement, the headline numbers only, not the whole
+     panel.
+127. **H1 — REOPENS SECTION 4. The maths section is Dave's to sign, and he has not signed
+     it.** Jamie's override at the top of this file closed the joint sections; it cannot
+     close an owned one. Nothing here touches puzzle generation, so "not applicable" is very
+     likely right — but the streak walks, the outlier rule, the percentage and the weighted
+     average are all counting rules, and counting rules are where the June streak bug lived.
+     **Dave's call, and it blocks planning.**
+
+### Medium findings
+
+128. **M1 — three more files this build touches, missing from section 6.**
+     - There is no reusable "are you sure?" dialogue in the codebase today, so the delete
+       warning needs one built (`src/modals.ts` has toasts and the feedback form, nothing
+       else).
+     - The average time on `/stats` needs both the reading code and the page that draws it
+       (`src/worker/analytics-db.ts`, `src/worker/stats.ts`).
+     - The shared type definitions change — the history row and the saved board.
+       **Jamie owns types**, so that is named here rather than left to the plan.
+129. **M2 — the existing checkbox on the play screen still says "Keep my score in a 🍪
+     cookie", with a biscuit icon.** Item 70 dropped the word "cookie"; item 90 only
+     rewrote the new one. Both controls change: same words, "Save my scores on this device",
+     and the biscuit goes. Otherwise we ship one setting wearing two different labels.
+130. **M3 — when does deleting actually happen on the completion panel?** Jamie's rule was
+     written for the play screen, where there is a submit to hang it on. There is no submit
+     on the completion panel.
+     My rec: unticking there warns immediately, and deleting happens when they confirm the
+     warning — not on some later action. Ticking it on saves that game straight away. Why:
+     an unconfirmed destructive change that fires later is the kind of thing people cannot
+     predict, and there is no later action here to fire on.
+131. **A player who has just switched saving on has exactly one game of history.** Item 19
+     hides the streak and all-time blocks until the third game, so they will see them
+     appear two games later.
+     My rec: show them the same "your stats start building" line as a new player, worded
+     the same. It is the same situation.
+132. **M4 — archive replays must send no timing event either.** Item 52 excluded random
+     puzzles and item 54 said nothing about archive, but the existing complete event fires
+     on all three paths, so archive replays would silently mix into the average time on
+     `/stats`. Only today's daily puzzle sends `puzzle_time`.
+133. **M5 — the goes chart needs a top bucket, because nothing caps how many goes a player
+     can take.** My rec: rows for 1, 2, 3, 4, 5 and "6 or more". Why: the tail is real but
+     thin, and a chart that grows a new row for someone's 20-go day is a chart that breaks.
+134. **M6 — item 88 was wrong that nothing can show hours.** A game over thirty minutes is
+     excluded from the *average* and from *fastest*, but it still shows its own time on the
+     panel. My rec: show `1h 04m` above an hour, `3:41` below it.
+135. **M7 — the explanatory lines are the whole point of this build, so here they are**
+     rather than "with the design":
+     - Play streak — "Days in a row you have finished the puzzle."
+     - First-go streak — "Days in a row you got it on your first guess."
+     - Plays — "Daily puzzles you have finished."
+     - First-go wins — "Puzzles you got on your first guess."
+     - Average goes — "Your average number of guesses."
+     - Average time — "How long you usually take."
+     - Fastest first-go win — "Your quickest win on a first guess."
+     Streaks also carry, under the pair: "Miss a day and the streak starts again."
+136. **M8 — item 115's "done" list left out three things we agreed.** Done also requires the
+     goes chart (item 18), the explanatory lines (item 135), and whatever we decide about
+     the share buttons at item 137.
+137. **M9 — the two share buttons would be drawn but dead, and section 9 says nothing about
+     them.** A focusable button that silently does nothing is exactly the trap that section
+     exists to catch.
+     **Question for Jamie:** leave the buttons out of this build entirely and add them with
+     the sharing work?
+     My rec: leave them out. Why: the layout work is done either way, and a button that
+     does nothing is worse than no button — people tap it, nothing happens, and they assume
+     the site is broken. The alternative, drawing them disabled, means shipping a permanent
+     "coming soon" on our best screen.
+138. **M10 — does a player with saving switched off still send the anonymous timing number?**
+     Item 63 says the timing event is the only thing that leaves the device; item 65 says we
+     save nothing. The two have never been reconciled, and a reasonable person could go
+     either way.
+     My rec: send nothing. Why: "save nothing" is a promise people will read broadly, and
+     the event is tied to an anonymous id we keep on their machine. The cost is that our
+     average time is measured over opted-in players only, which is nearly everyone.
+     **Question for Jamie.**
+
+### What is still open after these fixes
+
+- **Section 4** — Dave's sign-off. Blocking. (item 127)
+- **Section 9** — Jamie, does finishing a puzzle announce the result? (item 126)
+- **Section 7 and 9** — Jamie, share buttons in or out of this build? (item 137)
+- **Sections 5 and 10** — Jamie, does an opted-out player send the timing number? (item 138)
+
+Everything else the review raised is answered above and needs no further decision.
