@@ -499,11 +499,51 @@ with an injected clock, so it can be tested without waiting five real seconds:
 **Implementation** — `src/save-warning.ts` holds the state machine; `src/app.ts` wires it to
 the real checkbox and submit button; `index.html` gains the warning paragraph.
 
-- Warning copy: **"Your existing stats will be deleted when you submit."** Jamie's own
-  wording, given 2026-08-10 and used verbatim. It replaces brief 91's dialogue text, which
-  described buttons that no longer exist.
-- The warning paragraph is `role="status"` `aria-live="polite"`, so unticking announces the
-  consequence rather than leaving it visual-only.
+**The design, as Jamie specified it 2026-08-10.** Two lines, appearing when the box is
+unticked:
+
+```
+[ ] Your existing stats will be deleted when you submit.     ← --color-error
+    Submit enabled in 5                                       ← --color-text
+```
+
+- Line one is the warning, in `--color-error`. That is the existing berry-red token, built
+  from the cherry chroma at the accent lightness, and it already flips between light and dark
+  on its own. **No new colour** (brief 83). There is no token called "berry"; `--color-error`
+  is the one Jamie means, and it is the only red the palette has.
+- Line two is the countdown, in `--color-text` — the primary text colour for whichever mode
+  is active, again flipping on its own.
+- Countdown wording: **"Submit enabled in 5"**, counting 5, 4, 3, 2, 1, then both lines go.
+- The tick box sits against the top line. The two lines are left-aligned with each other, so
+  the second line starts under the first line's text and there is a gap beneath the tick box.
+- The submit button is visually dimmed to `opacity: 0.5` while it is unavailable.
+
+**On dimming the button — permitted, and recorded so a later reader does not "fix" it.**
+`.btn-solid` is `--color-accent` behind `--color-bg` text, whose tightest pairing in the
+palette is 5.36:1. At half opacity that falls below the 3:1 that `docs/CONVENTIONS.md` asks
+of UI components. WCAG 1.4.3 and 1.4.11 both exempt inactive controls, so this is allowed,
+and the five seconds are precisely when the control is inactive. `tests/palette-contrast.spec.ts`
+tests the palette rather than component states, so it does not need a case for this.
+
+Warning copy is **"Your existing stats will be deleted when you submit."** — Jamie's own
+wording, used verbatim. It replaces brief 91's dialogue text, which described buttons that no
+longer exist.
+- The warning line is `role="status"` `aria-live="polite"`, so unticking announces the
+  consequence rather than leaving it visual-only. **The countdown line is not live** — five
+  announcements in five seconds is noise. It is announced once when it appears and once when
+  submit becomes available.
+
+**P-02 — open, for Jamie, who owns accessibility.** In Jamie's sketch the warning occupies
+the line the checkbox's label is on today. If the label text itself is what swaps, the
+checkbox stops saying what it does: a screen reader announces "Your existing stats will be
+deleted when you submit, checkbox, not checked", and someone coming back to the screen later
+sees a red sentence and a box with no idea what the box is for. Keeping the visible text and
+the accessible name different fails WCAG 2.5.3 Label in Name, which voice control depends on.
+
+My recommendation: the checkbox keeps "Save my scores on this device" as its label,
+permanently, and the warning and countdown are two lines underneath it — three lines rather
+than two while the warning is up. Same layout rules Jamie gave, one line further down.
+**Awaiting his call; the rest of this task is settled.**
 - **Submit uses `aria-disabled`, never the native `disabled` attribute**, and its handler
   no-ops while unavailable. This is the house rule at `docs/CONVENTIONS.md` — browsers blur a
   natively-disabled element, and the keypad's hundreds-box `0` and the undo/reset controls
