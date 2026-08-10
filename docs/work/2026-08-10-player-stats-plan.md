@@ -57,8 +57,8 @@ New files:
 
 | File | Job |
 |---|---|
-| `src/player-stats.ts` | Pure. History rows in, every displayed figure out. No DOM. |
-| `src/play-timer.ts` | Pure counting core for the timer. Injected clock, no DOM, no globals. |
+| `src/player-stats.ts` | Pure. Shared constants, plus history rows in and every displayed figure out. No DOM. |
+| `src/play-timer.ts` | Pure counting core for the timer. Injected clock, no DOM, no globals. Imports `IDLE_TIMEOUT_MS` from `player-stats.ts` — its only dependency. |
 | `src/confirm-dialog.ts` | The one reusable "are you sure?" dialogue the codebase lacks. |
 
 Changed files:
@@ -88,21 +88,47 @@ rows in `analytics-db.ts`, independently of `player-stats.ts`.
 
 ## Shared rules, defined once
 
-These live in `src/player-stats.ts` and everything else imports them.
+These live in `src/player-stats.ts` and everything else imports them. They are created in
+**Task 1**, ahead of the rest of that module, so `src/storage.ts` and `src/play-timer.ts` can
+import them rather than hardcoding numbers that then have to be revisited.
 
-- **`MAX_COUNTED_SECONDS = 1800`** — brief 31, 122.
+- **`MAX_STORED_SECONDS = 86_400`** — the *validity* bound. See below.
+- **`OUTLIER_SECONDS = 1800`** — thirty minutes. The *exclusion* threshold. See below.
 - **`IDLE_TIMEOUT_MS = 120_000`** — two minutes, brief 34 and 50.
 - **`REVEAL_AFTER_GAMES = 2`** — streak and all-time blocks appear from the third countable
-  game. Brief 19, 131.
+  game. The comparison is `countableGames > REVEAL_AFTER_GAMES`, so games 1 and 2 are
+  hidden and game 3 reveals. Brief 19, 131.
 - **`GOES_BUCKETS = [1, 2, 3, 4, 5, '6+']`** — brief 133.
 
 **Countable** means: not `archived`, not a `marker`. Everything — totals, averages, streaks,
 the chart — filters to countable rows *before* counting anything. Brief 16, 123, 71.
 
-**A valid stored time** is an integer between 0 and 1800 inclusive. Anything else — missing,
-negative, fractional, absurd, not a number — means the time for that game is **unknown**.
-Unknown shows as no time, never counts as zero, never enters an average, never becomes a
-fastest win. Brief 61, 122.
+### Two numbers, not one — resolving brief 122 against brief 31 and 134
+
+The brief names a single figure, 1800 seconds, for two different jobs, and the two jobs
+disagree. Brief 122 uses it as a validity ceiling: anything above it is "unknown", which
+renders a dash. Brief 31 and 134 use it as an outlier threshold: a game over thirty minutes
+**keeps its own time on the panel** — shown as `1h 04m` — while being excluded from the
+average and from fastest. Both cannot hold at 1800: a game of 65 minutes either shows
+`1h 05m` (brief 134) or shows a dash (brief 122), and it is one or the other.
+
+**This plan splits them, following the behaviour the brief actually decided.**
+
+- **`MAX_STORED_SECONDS = 86_400`** is the validity bound. A stored time must be an integer
+  from 0 to 86 400 inclusive. Anything else — missing, negative, fractional, absurd, not a
+  number — means the time for that game is **unknown**: it shows as a dash, sends no event,
+  never counts as zero, never enters an average, never becomes a fastest win. This is what
+  brief 122 was protecting against, and a day is comfortably absurd enough to catch a forged
+  value while leaving a real long game alone.
+- **`OUTLIER_SECONDS = 1800`** is the exclusion threshold. A valid time above it still shows
+  on its own panel, formatted with hours, and is left out of the average time and out of
+  fastest first-go win. This is brief 31 and 134, unchanged.
+
+Why this reading and not the other: brief 134 is an explicit statement of what a player sees
+("show `1h 04m` above an hour"), and brief 122's ceiling was chosen to close a forgery hole,
+not to decide a display. Reading 122 literally deletes a decision; reading it as a validity
+bound with a different number keeps every decision the brief made. **Flagged for Jamie in the
+summary — it changes what one rare player sees, and I would rather he knew I had chosen.**
 
 ---
 
@@ -112,27 +138,39 @@ Each task is a commit. Tests are written before the implementation within each t
 
 ---
 
-### Task 1 — types and the storage layer
+### Task 1 — types, shared constants, and the storage layer
 
 **Implements:** brief 59, 60, 61, 71, 75, 121, 122, 123, 128.
+
+This task also creates `src/player-stats.ts` holding **only** the shared constants above and
+`validSeconds()`. Task 2 fills in the rest of the module. Splitting it this way keeps each
+task a working commit: `storage.ts` validates against `MAX_STORED_SECONDS` and
+`play-timer.ts` reads `IDLE_TIMEOUT_MS`, and neither should hardcode a number that a later
+task then has to hunt down.
 
 **Tests first** — `tests/storage-history.spec.ts` (extend), `tests/storage-active.spec.ts`
 (extend):
 
 1. `recordGame` stores `seconds` when given, and omits the key entirely when not.
 2. A history entry written before this change (no `seconds`) round-trips unchanged.
-3. `recordMarker(date)` writes exactly `{ date, tries: 0, marker: true }`, plus
-   `archived: true` when told the solve was an archive replay.
+3. `recordMarker(date)` writes exactly `{ date, tries: 0, marker: true }` — `tries` is
+   present and zero, per brief 123, because the code that averages goes would otherwise sum
+   an `undefined`. Plus `archived: true` when told the solve was an archive replay.
 4. `recordMarker` replaces an existing row for the same date, like `recordGame` does.
 5. `deleteHistory()` removes `dlng_history` and leaves `dlng_prefs` and `dlng_active` alone.
 6. `loadActive` accepts a board carrying `elapsed: 240` and returns it.
 7. `loadActive` accepts a board with **no** `elapsed` — it must not be discarded, and
    `elapsed` reads as absent. This is the guard against brief item 121.
-8. `loadActive` rejects the *field*, not the board, for each of: `-1`, `12.5`, `1801`,
+8. `loadActive` rejects the *field*, not the board, for each of: `-1`, `12.5`, `86401`,
    `"240"`, `NaN`, `null`. The board still loads; the elapsed time is treated as unknown
    and restarts at zero.
 9. Same eight cases for `idles`, bounded 0–1000.
 10. `ActiveState.v` is still `1`. A test asserts the literal, so bumping it fails CI loudly.
+11. `validSeconds` returns the number for `0`, `221` and `86_400`; returns `null` for
+    `-1`, `12.5`, `86_401`, `'221'`, `NaN`, `undefined` and `null`.
+12. `validSeconds(2000)` returns `2000` — above the outlier threshold is still **valid**.
+    The exclusion happens in Task 2, not here. This test is the guard against the two
+    numbers being collapsed back into one.
 
 **Implementation** — `src/types.ts`:
 
@@ -142,8 +180,10 @@ export interface HistoryEntry {
   tries: number;
   answer?: number;
   archived?: boolean;
-  /** Counted play seconds, 0–1800. Absent = unknown: pre-launch rows, opted-out
-   *  players, and rows whose stored value failed validation. Never read as 0. */
+  /** Counted play seconds, 0–86400. Absent = unknown: pre-launch rows, opted-out
+   *  players, and rows whose stored value failed validation. Never read as 0.
+   *  A valid value above OUTLIER_SECONDS still shows on its own panel but is
+   *  excluded from the average and from fastest (brief 31, 134). */
   seconds?: number;
   /** Day-only marker (brief 71): the player finished this day with saving off.
    *  tries is 0 and means nothing. Filtered out of every figure before counting. */
@@ -173,9 +213,23 @@ export interface ActiveState {
   object, because a fourth positional flag is a bug waiting to happen. One call site in
   `src/app.ts`; test call sites updated in this task.
 - `recordMarker(dateStr: string, archived = false)` — writes the shape at brief 123.
-- `deleteHistory(): void` — `localStorage.removeItem('dlng_history')`, wrapped in
-  try/catch like every other write here. **Named `deleteHistory`, not `clearHistory`** —
+- `deleteHistory(keepMarkerFor?: string): void` — removes `dlng_history`, then, when given a
+  date that the deleted history had a row for, writes a marker back for that date. Wrapped
+  in try/catch like every other write here. **Named `deleteHistory`, not `clearHistory`** —
   `src/app.ts` already has a module-private `clearHistory()` for the undo stack.
+
+**Why `deleteHistory` can write a row back, which looks contradictory:** it is the fix for
+the hole the plan review found. `hasPlayerData()` (`src/storage.ts:142`) returns true only if
+`dlng_history` exists or a mid-game board does — and solving clears the mid-game board
+(`src/app.ts:986`). So deleting history after solving today leaves neither, the router sends
+the player to `/welcome`, and today's puzzle becomes replayable. That is precisely the bug
+brief 66 exists to prevent, arrived at by a different route. The marker written back holds
+the date and nothing else, which is exactly what brief 71 says a player who has opted out
+gets, so it honours the request rather than working around it. Test 13 below pins it.
+
+13. `deleteHistory('2026-08-10')` on a history containing that date leaves exactly one row:
+    `{ date: '2026-08-10', tries: 0, marker: true }`. Called with no argument, or with a
+    date the history had no row for, it leaves `dlng_history` absent entirely.
 - `loadActive` gains two optional-field checks. Both follow the file's existing pattern:
   an out-of-range value drops that field rather than the whole board, because a forged
   `elapsed` must not cost a player their in-progress game.
@@ -209,11 +263,13 @@ outcome than losing the timing for that game.
 10. `firstGoWins` counts `tries === 1` among countable rows; percentage rounds to a whole
     number and reads `23 (18%)` — brief 20.
 11. `avgGoes` to one decimal place, matching today's `toFixed(1)`.
-12. `avgTime` ignores rows with no `seconds`, rather than reading them as 0 — brief 61.
-13. `avgTime` ignores a row with `seconds: 1801`, and `fastestFirstGo` does too — brief 31.
-14. `avgTime` is `null`, not `0`, when no countable row has a valid time. The panel renders
-    a dash, not `0:00`.
-15. `fastestFirstGo` only considers rows with `tries === 1` — brief 13.
+12. `avgTimeSeconds` ignores rows with no `seconds`, rather than reading them as 0 —
+    brief 61.
+13. `avgTimeSeconds` ignores a row with `seconds: 1801`, and `fastestFirstGoSeconds` does
+    too — brief 31. The row itself is still counted in `plays`; only its *time* is excluded.
+14. `avgTimeSeconds` is `null`, not `0`, when no countable row has a valid time. The panel
+    renders a dash, not `0:00`.
+15. `fastestFirstGoSeconds` only considers rows with `tries === 1` — brief 13.
 
 *Exclusions*
 16. An `archived: true` row changes no figure at all — brief 16.
@@ -225,7 +281,14 @@ outcome than losing the timing for that game.
 19. `goesDistribution` returns exactly six buckets, in order, zeros included, with 7 goes
     and 12 goes both landing in `6+` — brief 133.
 20. `formatDuration`: `221 → "3:41"`, `48 → "0:48"`, `3840 → "1h 04m"`, `null → "—"` —
-    brief 88, 134.
+    brief 88, 134. The hour branch is reachable precisely because `MAX_STORED_SECONDS` is a
+    day rather than thirty minutes.
+21. `speakDuration`: `221 → "3 minutes 41 seconds"`, `48 → "48 seconds"`,
+    `60 → "1 minute"`, `3840 → "1 hour 4 minutes"`. Used only by the announcement.
+22. `countableGames` counts countable rows, and the reveal gate is
+    `countableGames > REVEAL_AFTER_GAMES` — 2 games hides, 3 reveals. An explicit test,
+    because this is a one-off-by-one away from showing the wrong thing on the day a player
+    is most likely to be paying attention.
 
 **Implementation:**
 
@@ -248,10 +311,8 @@ export interface PlayerStats {
 
 export function computePlayerStats(history: HistoryEntry[], today: string): PlayerStats
 export function formatDuration(seconds: number | null): string
-export function validSeconds(value: unknown): number | null
-export const MAX_COUNTED_SECONDS: number
-export const IDLE_TIMEOUT_MS: number
-export const REVEAL_AFTER_GAMES: number
+export function speakDuration(seconds: number | null): string   // "3 minutes 41 seconds"
+// Constants and validSeconds() ship in Task 1; Task 2 adds everything above them.
 ```
 
 Move the existing streak walk out of `computeStats` in `src/completion.ts` rather than
@@ -296,8 +357,10 @@ or in a share-image path without dragging both along.
 8. `hide()` after an over-long gap banks nothing and counts an idle.
 9. `seconds()` is a whole number, floored, and never negative even if the clock jumps
    backwards.
-10. `seconds()` is capped at `MAX_COUNTED_SECONDS` on read, so a stored value is always in
-    range — brief 31, 122.
+10. `seconds()` is capped at `MAX_STORED_SECONDS` on read, so what the timer hands to
+    storage is always storable. It is **not** capped at `OUTLIER_SECONDS`: a genuinely long
+    game keeps its real time and is excluded from the averages later, per brief 31 and 134.
+    A test asserts a 40-minute game reads 2 400, not 1 800.
 11. Restoring with `{ elapsed: 240, idles: 1 }` and adding 30 s reads 270 with 1 idle —
     brief 30.
 12. `idleLabel()` returns `'clean'` at zero idles and `'idle-2'` at two — brief 38.
@@ -338,6 +401,13 @@ gap is thrown away, not merely paused.
 **Known and accepted (brief 120):** two tabs on the same puzzle each run their own timer and
 the last save wins. Not guarded. Recorded here so a later reader does not treat it as a bug.
 
+**One note on the opted-out player:** `buildActiveState` persists `elapsed` and `idles` even
+when saving is switched off, because the mid-game board is persisted then too — that is the
+existing behaviour brief 70 explicitly kept, on Jamie's reasoning that saving your current
+play state is core functionality. Nothing about that game is written to history and no event
+is sent (brief 65, 141). `clearActive()` on solve removes it. Recorded because "we save
+nothing" deserves an honest footnote rather than a surprise.
+
 ---
 
 ### Task 4 — wire the timer into play
@@ -376,14 +446,36 @@ implementation detail of item 38, not a change to it.
 
 **Implements:** brief 68, 91, 101, 128.
 
-**Tests first** — `tests/confirm-dialog.spec.ts`, new (jsdom):
+**The test environment cannot do `<dialog>`, and the plan has to work around that.** This
+repo is on `jsdom@25.0.1` (`package.json:42`), where `HTMLDialogElement.prototype.showModal`
+and `.close` are `undefined` — dialog support landed in jsdom 26. Verified by running it.
+That is why `src/modals.ts` has no unit test today. Bumping jsdom is a dependency change with
+its own fallout across twenty-odd existing test files, and it is not this build's job.
 
-1. Opening moves focus into the dialogue.
-2. Escape resolves as cancelled and does not run the confirm action.
-3. The confirm button resolves as confirmed; the cancel button as cancelled.
-4. Focus returns to the element that opened it, in both outcomes.
-5. Button labels come from the caller and are rendered verbatim.
-6. Clicking the backdrop cancels (matching the feedback modal's behaviour).
+So the coverage splits:
+
+**Tests first** — `tests/confirm-dialog.spec.ts`, new (jsdom, with `showModal` and `close`
+stubbed in `beforeEach`). These cover the logic that is ours:
+
+1. The confirm button resolves the promise `true`; the cancel button resolves it `false`.
+2. Escape resolves `false` and never runs the caller's action.
+3. Button labels and the message come from the caller and are rendered verbatim.
+4. The promise resolves exactly once, even if a second button press lands after the first.
+5. Calling it twice in a row does not leave two dialogues in the DOM.
+
+**Browser tests** — added to `e2e/specs/player-stats.spec.ts` in Task 13. These cover the
+behaviours only a real browser has, and they are exactly the accessibility requirements at
+brief 101:
+
+6. Opening moves focus into the dialogue.
+7. Escape closes it without deleting.
+8. Focus returns to the checkbox that opened it, on both outcomes.
+9. Clicking the backdrop cancels.
+
+**Why not simply drop `<dialog>` to make it unit-testable:** `<dialog>` gives focus
+trapping, the top layer, and Escape handling for free, and hand-rolling those is how modal
+accessibility bugs get written. Brief 101 asks for real dialogue behaviour, so the element
+that provides it wins over the convenience of the test runner.
 
 **Implementation** — `src/confirm-dialog.ts`:
 
@@ -431,6 +523,15 @@ it needs no new contrast case.
 
 - **No share buttons.** Brief 140 removed them from this build; the section rules are drawn
   without them. Read the sketch at brief 23 with the `[ ↗ Share ]` blocks deleted.
+- **The *All time* block always ends with the save-my-scores checkbox**, in every mode where
+  that block exists — ticked when saving is on, unticked with the invitation line above it
+  when saving is off. The sketch at brief 23 does not show it, because brief 65 only ever
+  described the switched-off state. But brief 67 requires the two controls to stay in step,
+  and the play-screen one is unreachable after a solve: `[data-save]` is only visible
+  alongside the submit row (`index.html:308`), and the player is on `/solved` by then.
+  Without a ticked checkbox here there is nothing to untick, and brief 65's whole flow —
+  untick, warn, delete — has no control to operate. This is the plan filling a gap the brief
+  left, not changing a decision it made.
 - Each block is a `<section>` with its own heading, so a screen reader can jump between them.
 - Each stat is a `<dl>` pair — term is the label, definition is the number — so nothing is
   read as a loose figure (brief 97). The explanatory line sits in the same `<dd>`, after the
@@ -468,38 +569,78 @@ patched, keeping its streak scenarios as data.
 4. **Just switched saving on, one countable game**: identical to the new-player state, with
    the same wording — brief 131.
 5. **Saving off**: *This game* renders; the *All time* heading renders with "Turn on score
-   saving to see your all-time stats" and the checkbox in place of the numbers; the streak
-   block is absent — brief 53, 65, 90.
+   saving to see your all-time stats" and the unticked checkbox in place of the numbers; the
+   streak block is absent — brief 53, 65, 90.
 6. **Random puzzle**: *This game* only, plus "Random puzzles don't count towards your
    stats" — brief 52, 93.
 7. **Archive replay** (`activeDate !== todayLocal`): the minimal existing panel, no streaks,
    no totals, no timing — brief 54.
-8. Each of the seven explanatory lines at brief 135 appears verbatim under its stat, and
-   "Miss a day and the streak starts again" appears under the streak pair.
-9. The goes chart renders six rows in order with counts as text — brief 133.
-10. A game with no valid time shows a dash in the *This game* line, not `0:00` — brief 61.
-11. A game of 3 900 seconds shows `1h 05m` on the panel while being absent from the average
-    and from fastest — brief 31, 134.
-12. **The announcement**: the live region reads exactly
+8. **Full mode carries a ticked checkbox** at the foot of *All time*, and it reflects
+   `dlng_prefs.saveScore` rather than being hardcoded checked.
+9. **Reload after a saving-off solve** (`'marker'` mode): today's row is a marker, so the
+   number of goes and the time are both unknowable. The hero line reads "Solved!" with no
+   number and no time — never "Solved in 0". This is the mode the marker forces into
+   existence and it is the sharpest edge in the build.
+10. Each of the seven explanatory lines at brief 135 appears verbatim under its stat, and
+    "Miss a day and the streak starts again" appears under the streak pair.
+11. The goes chart renders six rows in order with counts as text — brief 133.
+12. A game with no valid time shows a dash in the *This game* line, not `0:00` — brief 61.
+13. A game of 3 900 seconds shows `1h 05m` on the panel while being absent from the average
+    and from fastest — brief 31, 134. This is the case the two-constant split at the head of
+    this plan exists to make possible.
+14. **The announcement**: the live region reads exactly
     `Solved in 2. 3 minutes 41 seconds. Play streak 14.` — goes, time, play streak, and
     nothing else — brief 139.
-13. The announcement omits the time when it is unknown, and omits the play streak on the
+15. The announcement omits the time when it is unknown, and omits the play streak on the
     new-player and saving-off states, where no streak is shown.
-14. The live region is written **once** per render, not on every subsequent re-render of the
-    same solve.
+16. Re-rendering the same solve does not write the live region a second time. A module-level
+    flag, reset when a new puzzle starts, not a comparison of the text.
 
 **Implementation** — `src/completion.ts`:
 
 - `computeStats` and its `Stats` interface are **deleted**. `renderCompletion` calls
   `computePlayerStats(loadHistory(), todayKey())` and renders what it gets. Everything on
   the panel is recomputed on each render, never stored as a running total (brief 55).
-- A `PanelMode` decides which blocks exist: `'random' | 'archive' | 'new' | 'saving-off' |
-  'full'`. One function, one switch, so the five states cannot drift apart.
-- The announcement is built from the same values the panel renders, spelled out for speech:
-  `3:41` becomes `3 minutes 41 seconds`. A screen reader saying "three colon forty-one" is
-  the reason this is not the display string.
-- The hero line reads `Solved in 2 · 3:41` (brief 88). `renderCompletion`'s signature is
-  unchanged apart from the seconds for this game, which arrives in `RenderCompletionOpts`.
+- A `PanelMode` decides which blocks exist: `'random' | 'archive' | 'marker' | 'new' |
+  'saving-off' | 'full'`. One function, one switch, so the six states cannot drift apart.
+- The announcement is built from the same values the panel renders, spelled out for speech
+  by `speakDuration`: `3:41` becomes `3 minutes 41 seconds`. A screen reader saying "three
+  colon forty-one" is the reason this is not the display string.
+- The hero line reads `Solved in 2 · 3:41` (brief 88).
+
+**`renderCompletion` gains one optional field, and all four call sites are specified.**
+`RenderCompletionOpts` gains `seconds?: number`. The four callers in `src/app.ts`:
+
+| Call site | Passes |
+|---|---|
+| `:1005` today's live solve | `timer.seconds()` |
+| `:998` random solve | `timer.seconds()` — shown, but never stored and never sent (brief 52) |
+| `:902` archive replay of a solved day | `entry.seconds` — usually absent, which renders a dash |
+| `:1376` boot pre-render of today's solved state | `entry.seconds` from history, or nothing if the row is a marker |
+
+**When the announcement is written, and why it is not at render time.** `renderCompletion`
+runs *before* the screen becomes visible — at `src/app.ts:1005` the very next statement is
+`replaceRoute('/solved')`, and at `:998` it is `showScreen('completion')`. At that moment the
+completion `<section>` still carries `aria-hidden="true"` (`index.html:334`, cleared by
+`src/screens.ts` during the transition). A live region inside an `aria-hidden` subtree is not
+spoken, so writing it at render time would announce nothing at all — which is the exact
+failure brief 126 was raised to fix. So `renderCompletion` *prepares* the announcement text
+and `src/screens.ts`'s transition writes it once the completion screen is shown and
+`aria-hidden` has been cleared. Task 13's browser tests are what actually prove this works;
+the jsdom test can only prove the text is right.
+
+**Avoiding the second announcement (brief 99).** `[data-feedback]` on the play screen carries
+`aria-live="assertive"` (`index.html:321`) and `renderFeedback("correct", …)` writes
+"Correct! That's puzzle #N." into it on every solve (`src/app.ts:368`). Left alone, a player
+would now get that *and* the completion announcement — two voices, which is what brief 99
+forbids. So `renderFeedback` gains an `announce` option, defaulting true:
+
+- **daily solve** and **random solve** → `announce: false`. Both move to the completion
+  screen, which does the announcing. The visual text is unchanged; only the live region is
+  suppressed, by setting `aria-live="off"` on the element before writing and restoring
+  `"assertive"` in `resetPuzzleUI`.
+- **archive solve** → `announce: true`. It stays on `/play` and reaches no completion
+  announcement, so this is its only one.
 
 **Why blocks are absent rather than hidden:** a `hidden` block is still in the accessibility
 tree in some combinations, and a screen-reader user tabbing into an empty *All time* heading
@@ -519,17 +660,25 @@ is the confirmation, on both screens.
 1. Unticking either checkbox opens the confirm dialogue and changes nothing yet.
 2. "Keep them" → the checkbox goes back to ticked, `dlng_prefs.saveScore` stays `true`,
    history is untouched.
-3. "Delete my stats" → `saveScore` becomes `false`, `dlng_history` is removed, both
+3. "Delete my stats" → `saveScore` becomes `false`, every real result is gone, and both
    checkboxes read unticked — brief 67.
-4. Ticking either checkbox sets `saveScore` true immediately, with no dialogue, and does not
+4. **"Delete my stats" after solving today leaves a marker for today, and nothing else.**
+   `hasPlayerData()` still returns true and today's puzzle is still not replayable — brief
+   66, 125. This is the plan-review hole; see the reasoning under `deleteHistory` in Task 1.
+5. "Delete my stats" *before* solving today removes `dlng_history` entirely, and the
+   mid-game board in `dlng_active` still keeps `hasPlayerData()` true, so the player is not
+   thrown back to `/welcome` mid-puzzle.
+6. Ticking either checkbox sets `saveScore` true immediately, with no dialogue, and does not
    resurrect deleted history — brief 130.
-5. The two checkboxes stay in step: changing one updates the other — brief 67.
-6. With saving off, solving today writes a marker and nothing else: no `tries`, no `answer`,
-   no `seconds` — brief 65, 71.
-7. With saving off, an archive solve writes a marker carrying `archived: true`.
-8. With saving off, no `puzzle_time` event is sent — brief 141.
-9. A marker for today still makes `hasPlayerData()` true, so the returning-player redirect
-   keeps working — brief 125.
+7. The two checkboxes stay in step: changing one updates the other — brief 67.
+8. With saving off, solving today writes a marker and nothing else: `tries` is 0, no
+   `answer`, no `seconds` — brief 65, 71, 123.
+9. With saving off, an archive solve writes a marker carrying `archived: true`.
+10. With saving off, no `puzzle_time` event is sent — brief 141.
+11. A marker for today still makes `hasPlayerData()` true, so the returning-player redirect
+    keeps working — brief 125.
+12. **Reloading after a saving-off solve renders "Solved!", never "Solved in 0 tries".**
+    One case per reader, listed below.
 
 **Implementation:**
 
@@ -541,16 +690,27 @@ is the confirmation, on both screens.
     it is on screen. Immediate, no dialogue.
   - **Unticking** → `confirmAction({ message: 'This deletes the stats you have saved so far.
     It cannot be undone.', confirmLabel: 'Delete my stats', cancelLabel: 'Keep them' })`
-    (brief 91). Confirmed → `persistPrefs(false)`, `deleteHistory()`, sync both checkboxes,
-    re-render. Cancelled → put the tick back, nothing else.
+    (brief 91). Confirmed → `persistPrefs(false)`, `deleteHistory(solvedDateOrUndefined)`,
+    sync both checkboxes, re-render. Cancelled → put the tick back, nothing else.
 - The solve path in `handleGuess` splits on the preference:
   - saving **on** → `recordGame(date, tries, { answer, archived, seconds })`
   - saving **off** → `recordMarker(date, archived)` — brief 65, 71, 123.
-- `showCompletedState` must not read a marker's `tries`. A marker row means we do not know
-  the count, so the solved-replay line reads "Solved!" with no number and the answer digits
-  are not revealed, because neither was stored. **This is a real bug the marker introduces**:
-  as the code stands today, `startDailyPuzzle` would find the marker and render "Solved in 0
-  tries!". A unit case covers it.
+
+**Every reader of `entry.tries` has to learn about markers — there are four, not one.**
+Adding a row whose `tries` is 0 and meaningless to a codebase that reads `entry.tries`
+straight out of history is the sharpest edge in this build. All four, with what each does:
+
+| `src/app.ts` | Today | With a marker |
+|---|---|---|
+| `:827` `showCompletedState(entry.tries)` | "Solved in 2 tries!" | "Solved!" — no number, and no answer digits revealed, because neither was stored |
+| `:897` `showCompletedState(entry.tries, date)` (archive) | same | same |
+| `:902` `renderCompletion(num, entry.tries, …)` (archive) | archive panel | `'marker'` mode, per Task 7 test 9 |
+| `:1376` `renderCompletion(_num, _todayHistoryAtBoot.tries, false)` (boot) | full panel | `'marker'` mode |
+
+`showCompletedState(tries: number | null)` — `null` means "played, not recorded". A single
+`entry.marker ? null : entry.tries` at each of the four call sites, and one branch inside
+`showCompletedState`. Small, but it has to be done at all four or the fifth reload of the
+day says "Solved in 0 tries".
 
 **Why the marker carries `archived` too:** an archive solve with saving off still needs the
 archive page and the replay check to know the day was played. Every figure filters markers
@@ -562,7 +722,17 @@ out first, so the extra flag costs nothing and keeps both readers working (brief
 
 **Implements:** brief 124.
 
-**Tests first** — `tests/archive-stats.spec.ts` (extend):
+**Tests first** — `tests/archive-goes-column.spec.ts`, **new**. Not
+`tests/archive-stats.spec.ts`: that file tests `completion.ts`'s stat boxes, not the archive
+page, and it is itself rewritten in Task 7 when those boxes are deleted. (Task 7's test list
+covers what it was testing — that an archived solve changes no daily figure — so nothing is
+lost, but the file must not simply be left to fail.)
+
+The column is populated by hand-written ES5 inside a template string in
+`src/worker/puzzles.ts:337`, which has no build step and no test harness. The new spec makes
+one: render the page with `renderPuzzlesPage`, parse it into a jsdom document, seed
+`localStorage`, then execute the page's own inline script text against that document. That
+tests the shipped code rather than a copy of it.
 
 1. A normal row shows its number of goes.
 2. A marker row shows `—`, not a blank and not a `0`.
@@ -593,7 +763,9 @@ one line long; duplicating a whole module here is what brief 73 was avoiding, an
 **Tests first** — `tests/worker/` (extend the existing event tests):
 
 1. `VALID_EVENTS` contains `puzzle_time`, so the Worker accepts it — brief 76.
-2. `recordEvent` stores its value as whole seconds and its source verbatim.
+2. `tests/worker/analytics-db.spec.ts:79` asserts `VALID_EVENTS.size === 10`. It becomes 11.
+   Named here because a bare count assertion fails with no clue as to why.
+3. `recordEvent` stores its value as whole seconds and its source verbatim.
 
 And in `tests/save-pref.spec.ts` / a new `tests/analytics-events.spec.ts` (jsdom, `fetch`
 stubbed):
@@ -639,14 +811,26 @@ accepted — they are read as a `puzzle_start` with no `puzzle_complete` (brief 
 **Implementation:**
 
 - `src/worker/analytics-db.ts`: `StatsResult` gains `avgTimeSeconds: number | null`, and
-  `getStats`'s batch gains an eighth statement:
+  `getStats`'s batch gains an **eighth statement, built through the existing `q()` helper**:
 
-```sql
-SELECT SUM(value * sample_interval) AS total, SUM(sample_interval) AS n
-FROM analytics_events WHERE hostname = ? AND ts >= ? AND event = 'puzzle_time'
+```ts
+q(`SELECT SUM(value * sample_interval) AS total, SUM(sample_interval) AS n
+   FROM analytics_events ${where} AND event = 'puzzle_time'`),
 ```
 
-  Returning `null` when `n` is 0, so the page can tell "no data" from "zero seconds".
+  **It must use `${where}`, never a hardcoded `WHERE hostname = ? AND ts >= ?`.** `getStats`
+  builds `where` with the time clause omitted for all-time and binds `args` of matching
+  length (`analytics-db.ts:152-158`) — the comment there explains why all-time drops the
+  clause rather than passing a zero cutoff. A hardcoded second placeholder would have two
+  bind slots and one argument on `?period=all`, and the page would throw. Test 5 below is
+  what catches it.
+
+  It goes **last** in the batch array, after `first`, and is destructured last — the batch is
+  read positionally at `:163`, so inserting it anywhere else silently reassigns every result
+  after it. The "Seven statements, batched" line in the doc comment above `getStats` becomes
+  eight.
+
+  Returns `null` when `n` is 0, so the page can tell "no data" from "zero seconds".
 
 - `src/worker/stats.ts`: one more card in the existing grid, formatted `m:ss`. No chart and
   no new range controls (brief 49).
@@ -658,9 +842,7 @@ the figure if sampling ever starts. Test 1 asserts the *SQL shape*, using rows s
 an interval above 1 — it does **not** claim the live number differs, which is the assertion
 brief 118 warns against.
 
-`docs/ANALYTICS.md` gains a short note: what `puzzle_time` is, what `clean` and `idle-N`
-mean, and that the average covers opted-in players only (brief 141) — which is worth knowing
-the first time that number looks surprising.
+The `docs/ANALYTICS.md` note lands in Task 12 with the rest of the documentation, not here.
 
 ---
 
@@ -671,7 +853,9 @@ the first time that number looks surprising.
 - `docs/ARCHITECTURE.md` — the `dlng_history` line gains `seconds?` and `marker?`; the
   `dlng_active` line notes the two optional fields and that `v` stays at 1; the Files list
   gains `player-stats.ts`, `play-timer.ts` and `confirm-dialog.ts`.
-- `docs/ANALYTICS.md` — the `puzzle_time` note described in Task 11.
+- `docs/ANALYTICS.md` — what `puzzle_time` is, what `clean` and `idle-N` mean, that the
+  average is weighted by `sample_interval` per the house rule, and that it covers opted-in
+  players only (brief 141) — worth knowing the first time that number looks surprising.
 - `docs/DESIGN-SYSTEM.md` — the three-block panel and the goes chart, noting no new tokens.
 
 Documentation is its own task and its own commit so it cannot be quietly dropped when the
@@ -696,15 +880,26 @@ new gate** (brief 113). Playwright never runs on the Pi (brief 111).
 3. **Saving turned off.** Seed `{ saveScore: false }`. Solve. Assert *This game*, the
    *All time* invitation and its checkbox, no streak block — and that `dlng_history` holds a
    marker with no `tries` and no `answer`.
-4. **The delete flow, end to end.** Seed history and solve. Untick the box → the warning
-   appears. "Keep them" → history intact, box re-ticked. Untick again → "Delete my stats" →
-   `dlng_history` gone, both checkboxes unticked. Then reload and confirm the redirect still
-   treats the player as having played today (brief 125) — the marker written by that solve
-   is what keeps it working.
+4. **The delete flow, end to end.** Seed history and solve. Untick the box on the completion
+   panel → the warning appears; focus is inside it; Escape closes it and deletes nothing;
+   focus returns to the checkbox (brief 101, and Task 5's tests 6–9). Untick again → "Keep
+   them" → history intact, box re-ticked. Untick a third time → "Delete my stats" → the
+   seeded results are gone and both checkboxes read unticked. Then **reload and confirm the
+   player is not sent to `/welcome` and today's puzzle is not replayable** — what keeps that
+   working is the marker `deleteHistory` writes back for the day just solved, per Task 1.
 
-`e2e/pages/completion.page.ts` gains locators for the three blocks, the chart, the checkbox
-and the live region. `e2e/helpers/storage.ts`'s `HistoryEntry` gains `seconds?` and
-`marker?` so scenarios can be seeded.
+**Existing browser tests that Task 6 breaks, and which this task must update:**
+
+- `e2e/specs/completion.spec.ts:30-34` asserts `stat("Played") === "3"`,
+  `stat("Avg tries") === "3.0"`, and `toHaveCount(4)` on `[data-completion-stats] > div`.
+  All three describe the four-box grid that Task 6 removes. Rewritten against the new blocks.
+- `e2e/pages/completion.page.ts:17` locates `[data-completion-stats]`, which no longer
+  exists. Replaced with locators for the three blocks, the chart, the checkbox and the live
+  region.
+
+`e2e/helpers/storage.ts`'s `HistoryEntry` gains `seconds?`, `marker?` **and `archived?`** —
+it is missing the last one today, and the marker-plus-archive scenarios cannot be seeded
+without it.
 
 `e2e/specs/stats-chart.spec.ts` gains one assertion: the average-time card is present on
 `/stats` (brief 110). It asserts presence and format only — not a weighting difference,
@@ -821,10 +1016,64 @@ both describe what the other twelve actually did.
 4. **The two-minute cut-off is a guess.** Nobody has measured how long players actually sit
    still. That is why brief 36 asks for the `idle-N` label: the first fortnight of data tells
    us whether two minutes was right, and changing it later is a one-line change.
+5. **Deleting history makes a long-standing player look new to analytics.** `src/app.ts:44`
+   computes `isNewUser = !localStorage.getItem("dlng_history")` once at module load, and
+   every event carries it. After a delete, that player's next visit reports `newUser: true`,
+   nudging the new-user figure on `/stats` upward. Accepted, not fixed: it is a handful of
+   players at most, the alternative is keeping a "you used to have stats" flag on a device
+   whose owner just asked us to forget them, and that trade is the wrong way round. Recorded
+   so the figure is not later read as growth.
 
 ---
 
 ## Review record
 
-- **da-plan:** *pending*
+### da-plan — run 2026-08-10, all findings answered
+
+Fresh-context review against this file, the brief and the repo. Result: **5 High, 11 Medium,
+7 Low.** Every High and Medium is fixed in place above rather than appended, so a builder
+reading a task reads the corrected version. What changed:
+
+**High**
+
+1. **Deleting history left today's puzzle replayable.** `hasPlayerData()` needs either
+   history or a mid-game board, and solving clears the board — so a delete after solving
+   left neither. `deleteHistory` now writes a marker back for the solved day. Task 1, Task 8
+   tests 4 and 5, Task 13 test 4.
+2. **The confirm dialogue could not be unit-tested.** jsdom 25 has no `<dialog>` support —
+   verified by running it. Coverage split: promise and label logic in jsdom with the methods
+   stubbed, focus and Escape behaviour in Playwright. Task 5, Task 13.
+3. **The thirty-minute rule contradicted itself across three tasks.** Brief 122's validity
+   ceiling and brief 31/134's outlier threshold were the same number doing two jobs, which
+   made brief 134's hour format unreachable. Split into `MAX_STORED_SECONDS` and
+   `OUTLIER_SECONDS`, with the reasoning written out at the head of the plan.
+4. **The `/stats` query would have thrown on `?period=all`.** The plan's literal SQL
+   hardcoded a time clause that `getStats` deliberately omits for all-time, giving two bind
+   placeholders and one argument. Now built through the existing `q()` helper. Task 11.
+5. **There was no checkbox to untick when saving was on.** The completion panel only rendered
+   one in the switched-off state, and the play-screen one is unreachable after a solve — so
+   brief 65's whole delete flow had no control. The *All time* block now always ends with
+   it. Task 6, Task 7 test 8.
+
+**Medium** — the marker's `tries: 0` has four readers, not one (Task 8, with all four
+tabulated); Task 9 targeted a test file that tests something else, and needs a new harness
+for the archive page's inline script; existing browser tests and the completion page object
+assert against the four boxes Task 6 deletes (Task 13); `VALID_EVENTS.size` is asserted as a
+literal (Task 10); the announcement would have been written while the screen was still
+`aria-hidden`, so nothing would have been spoken (Task 7); the play screen's assertive
+"Correct!" would have made two announcements, which brief 99 forbids (Task 7); the marker
+shape was stated two ways (Task 1 test 3); shared constants were used a task before they
+existed (now created in Task 1); `avgTime`/`avgTimeSeconds` name drift (Task 2); the four
+`renderCompletion` call sites are now tabulated (Task 7).
+
+**Low** — all seven fixed: the new-user skew after a delete is now risk 5; the opted-out
+player's persisted `elapsed` has a note in Task 3; the eighth statement's position in the
+batch is specified; Task 7's re-render test says what it means; the e2e `HistoryEntry` gains
+`archived?`; the reveal comparison is written out; the `ANALYTICS.md` note lives in Task 12
+only.
+
+The review confirmed brief coverage is complete — it walked all 143 items independently and
+found none missing or misfiled.
+
+- **da-plan:** passed, 2026-08-10, after the fixes above.
 - **Jamie's approval:** *pending* — and P-01 above needs his answer.
