@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Section 1 settled. Section 3 (timer) asked. Section 2 still to do.
+Status: OPEN. Section 1 settled. Sections 3 (timer) and 10 asked. Section 2 still to do.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -21,7 +21,7 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 7. How it looks | not started |
 | 8. Copy & wording | not started |
 | 9. Accessibility | not started |
-| 10. Analytics | not started |
+| 10. Analytics | asked 2026-08-10 |
 | 11. Done / test plan | not started |
 
 ## Background — what we show today
@@ -237,3 +237,41 @@ minutes later, came back at 11am and finished, so it took two hours".
     the end. (assumed — Jamie's original ask and #148)
 33. **Time is never used to break a streak or gate anything.** It is a stat, nothing more.
     (assumed)
+34. **Item 29 CHANGED to two minutes: Jamie 2026-08-10** — "3m without any movement feels
+    quite long… 3m staring at the screen not touching a thing is unlikely when the point is
+    to interact with the boxes. Change to 2 unless Dave disagrees or proposes something
+    else." **Two minutes it is, unless Dave says otherwise.** Awaiting Dave.
+35. **Jamie's reasoning on the desktop case, recorded 2026-08-10:** most play is on phones;
+    on a laptop people navigate away, sleep the machine or close the lid, and screensavers
+    kick in, so the idle cut-off should fire rarely. Which is the point of item 36 — we will
+    measure whether that holds.
+
+## 10. Analytics
+
+Brought forward at Jamie's request, 2026-08-10, because the timer decision depends on being
+able to check it. Background: every event lands in `analytics_events` with an event name, an
+anonymous id, a free-text `source`, a whole-number `value`, and the hostname.
+
+36. **Jamie's ask: how many plays, and what share of plays, hit the idle cut-off.**
+    (recorded — Jamie 2026-08-10)
+37. **We cannot put the time inside the existing `puzzle_complete` event.** Its `value`
+    already holds the number of goes, and the goes-distribution chart on `/stats` reads
+    exactly that. Overwriting it would silently break a chart we already rely on.
+38. **Recommendation: one new event, `puzzle_time`, and nothing else.**
+    - `value` = the counted time in whole seconds.
+    - `source` = `clean` if the idle cut-off never fired, or `idle-N` where N is how many
+      times it fired.
+    That single event answers all three questions at once: average time on real traffic,
+    what share of plays ever went idle, and whether people go idle once or repeatedly.
+    Why one event and not three: it fires once per finished puzzle, so it adds about the
+    same volume as `puzzle_complete` — small against the daily write ceiling — and it needs
+    no change to the events we already have.
+39. **Nothing else gets added.** No per-pause events, no timer start/stop events. They would
+    multiply with every game and answer nothing we have asked. (assumed)
+40. **Whoever reads this later must add up the sampling column, not count rows.** Measured
+    2026-08-04, plain counting under-reported by 1.70%. Recorded here because the person
+    reading these numbers in three months will not be in this conversation.
+    (assumed — existing house rule in `docs/ANALYTICS.md`)
+41. **A player who never finishes records no time at all.** We only send the event on a
+    correct answer, so abandoned puzzles are invisible to the timing numbers. (assumed —
+    accepted; measuring give-ups is a different question)
