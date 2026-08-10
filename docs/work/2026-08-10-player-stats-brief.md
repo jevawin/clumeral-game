@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1, 2, 3 and 10 settled with Jamie. Sections 4 and 5 asked. Dave's ack outstanding on 2, 3, 4 and 10.
+Status: OPEN. Sections 1, 2, 3, 5 and 10 settled with Jamie. Sections 4 and 6 asked. Dave's ack outstanding on 2, 3, 4, 5 and 10.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -16,8 +16,8 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 2. Out of scope | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave on the timer only, rest pending |
 | 4. Maths | proposed not applicable 2026-08-10 · Dave to confirm |
-| 5. State & persistence | asked 2026-08-10 |
-| 6. How it fits | not started |
+| 5. State & persistence | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
+| 6. How it fits | asked 2026-08-10 |
 | 7. How it looks | not started |
 | 8. Copy & wording | not started |
 | 9. Accessibility | not started |
@@ -334,6 +334,40 @@ decision, because the new panel is mostly history.
     My rec: keep it plain but true — "Save my scores on this device". Why: "cookie" makes
     people think of tracking and of something that leaves their machine, and neither is
     true here. Decide properly in section 8.
+70. **Section 5 SETTLED: Jamie 2026-08-10** — "yes to both, change the language to drop
+    cookie, keep the day's data so they can refresh." So: day-only marker stays when saving
+    is off, and the word "cookie" goes from the copy. Jamie's reasoning, recorded as his:
+    *"I think that's within the PECR / cookie rules given it's about core functionality
+    (saving your current play state)."* Ack from Dave still needed.
+71. **What "day-only marker" means exactly, so the build cannot get it wrong:** with saving
+    off we keep the date and nothing else — no number of goes, no time, no answer. It exists
+    only so a refresh does not hand you today's puzzle again. It is never counted in any
+    all-time figure and never in a streak. (assumed — the point of item 66)
+
+## 6. How it fits
+
+72. **The stats panel is rendered in one place only** — `src/completion.ts`. Checked
+    2026-08-10: nothing in the Worker draws this panel, so there is no second copy to keep
+    in step. That matters because #221 exists precisely because other views do have two.
+    (assumed)
+73. **Should the stat rules move into their own small module now, instead of living inside
+    the completion screen?**
+    My rec: yes, move them. Why: two queued pieces of work need the same numbers — streaks
+    on the main game screen (#163) and the share picture (#148). If the rules stay inside
+    the completion screen, both will copy them, and copied streak rules drift. We are
+    rewriting these rules anyway, so the extra cost now is small. The counter-argument is
+    that it is a bit more churn in a build that already touches a lot.
+74. **The timer is its own small piece**, driven from `src/app.ts` where play already
+    happens, and saved through `src/storage.ts` with the rest of the in-progress board.
+    (assumed)
+75. **`src/storage.ts` gains three jobs:** store the time on a history entry, write the
+    day-only marker, and delete the history when someone turns saving off. (assumed)
+76. **The new event needs no database change.** It fits the existing analytics table as it
+    stands — a name, a number and a short label — so there is no migration in this build. It
+    does need adding to the Worker's list of accepted event names, or it will be rejected.
+    (assumed — checked against `src/worker/index.ts` and the analytics table, 2026-08-10)
+77. **`/stats` gains one figure** through the existing read path, not a new page.
+    (assumed — item 49)
 
 ## 10. Analytics
 
