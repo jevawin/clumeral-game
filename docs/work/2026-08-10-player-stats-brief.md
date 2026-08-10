@@ -302,6 +302,39 @@ decision, because the new panel is mostly history.
 64. **The extra storage is tiny** — one number per game, on a history that is one row a day.
     (assumed)
 
+### Jamie's decision on score saving, 2026-08-10
+
+65. **Item 62 SETTLED: Jamie 2026-08-10, "nope, if they turn off save… we save nothing".**
+    With saving off we store no time and no results. Plus the behaviour he set out:
+    - Under the *All time* heading, in place of the numbers: "Turn on score saving to see
+      your all time stats", and the checkbox "Save my scores in a cookie".
+    - Ticking it saves that game and every game after it, until they turn it off again.
+    - If they untick it during a later game, warn them it will delete their history.
+    - If they then submit with it unticked, delete the stored history.
+66. **This conflicts with why we record the day today, and the conflict is real.** Right now
+    `recordGame` still writes an entry when saving is off — deliberately, so a reload can
+    tell you already solved today (`src/app.ts`, marked WR-02). Store literally nothing and
+    a refresh lets you replay today's puzzle, and the archive's "goes" column loses the day
+    too.
+    My rec: keep a **day-only marker** — the date and nothing else. No goes, no time, no
+    answer. That is not a result, so it honours what the player asked for, and today's
+    puzzle still cannot be replayed. Say so plainly in the copy: we remember that you
+    finished today, and nothing else.
+    The alternative is to accept that turning saving off lets you replay today's puzzle,
+    which I think is a bug people will report.
+67. **There will now be two checkboxes for one setting** — the existing one during play
+    (`dom.saveCheck`) and the new one on the stats panel. They must read and write the same
+    stored preference and stay in step, or a player will tick one and see the other unticked.
+    (assumed — one setting, two controls)
+68. **Deleting history is not undoable and needs the warning to say so.** Wording lands in
+    section 8; the behaviour is Jamie's, item 65. (assumed)
+69. **"Cookie" is not what we actually use** — the setting and the history live in the
+    browser's local storage, which unlike a cookie is never sent to our servers and does not
+    expire. Jamie's draft copy says cookie.
+    My rec: keep it plain but true — "Save my scores on this device". Why: "cookie" makes
+    people think of tracking and of something that leaves their machine, and neither is
+    true here. Decide properly in section 8.
+
 ## 10. Analytics
 
 Brought forward at Jamie's request, 2026-08-10, because the timer decision depends on being
