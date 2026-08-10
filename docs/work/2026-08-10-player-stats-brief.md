@@ -246,6 +246,32 @@ minutes later, came back at 11am and finished, so it took two hours".
     kick in, so the idle cut-off should fire rarely. Which is the point of item 36 — we will
     measure whether that holds.
 
+### The rest of section 3 — who sees which blocks, asked 2026-08-10
+
+Two cases in the existing code mean some players have no history to show. Both need a
+decision, because the new panel is mostly history.
+
+52. **Random puzzles are never written to history** (`src/app.ts`: "Random puzzles are never
+    written to history"). So a random solve has no streak, adds no total, and records no
+    time.
+    My rec: after a random puzzle show the *This game* block only — goes and time — and one
+    plain line saying random puzzles do not count towards your stats. Why: showing streaks
+    that did not move looks broken, and silently showing nothing looks broken too. Also send
+    no `puzzle_time` event for randoms, so the tracking measures real daily play.
+53. **A player can turn off "save my score"** — the game still records the day so it knows
+    you solved it, but keeps no answer. That player's all-time numbers are thin by choice.
+    My rec: show *This game* plus a short line offering to turn stats back on, and hide the
+    streak and all-time blocks. Why: nagging is worse than useless, but a person who forgot
+    they switched it off will otherwise think the feature is broken.
+54. **Archive solves keep the minimal panel they have today** — no streaks, no totals, no
+    timing. (assumed — existing behaviour, and item 16 keeps archive separate)
+55. **Everything on the panel is worked out fresh each time it is shown**, from the stored
+    history, rather than kept as running totals. Why: a running total drifts the moment one
+    write is missed, and this history is small enough that recomputing costs nothing.
+    (assumed — matches how `computeStats` works today)
+56. **Nothing on this panel blocks the celebration animation or the countdown to tomorrow.**
+    (assumed — existing behaviour stays)
+
 ## 10. Analytics
 
 Brought forward at Jamie's request, 2026-08-10, because the timer decision depends on being
