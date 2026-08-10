@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1, 2 and 10 settled. Section 3 part-done (timer agreed).
+Status: OPEN. Sections 1, 2, 3 and 10 settled with Jamie. Sections 4 and 5 asked. Dave's ack outstanding on 2, 3, 4 and 10.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -14,9 +14,9 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 |---|---|
 | 1. What it is | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (goes along, no strong view) |
 | 2. Out of scope | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 3. How it works | timer rules agreed by both 2026-08-10 · rest of section not yet asked |
-| 4. Maths | not started |
-| 5. State & persistence | not started |
+| 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave on the timer only, rest pending |
+| 4. Maths | proposed not applicable 2026-08-10 · Dave to confirm |
+| 5. State & persistence | asked 2026-08-10 |
 | 6. How it fits | not started |
 | 7. How it looks | not started |
 | 8. Copy & wording | not started |
@@ -271,6 +271,36 @@ decision, because the new panel is mostly history.
     (assumed — matches how `computeStats` works today)
 56. **Nothing on this panel blocks the celebration animation or the countdown to tomorrow.**
     (assumed — existing behaviour stays)
+57. **Section 3 SETTLED: Jamie 2026-08-10, "me too, happy"** — items 52 to 56 as
+    recommended, on top of the timer rules already agreed by both at items 26 to 35 and 50.
+    Dave's ack on items 52 to 56 still needed.
+
+## 4. Maths — not applicable
+
+58. **Nothing here touches puzzle generation, clue filtering or the answer check.** The only
+    arithmetic is counting days, counting games and averaging. Recorded as not applicable
+    rather than skipped, so the next reader knows it was considered. Dave, say if you
+    disagree. (assumed — 2026-08-10)
+
+## 5. State and persistence
+
+59. **The clock for the game in progress is saved with the board** (`saveActive`), so a
+    refresh, a phone call or an app-switch does not reset your time to zero.
+    (assumed — item 30, and reload is a common accidental gesture)
+60. **The finished time is stored on the history entry**, next to the date and the number of
+    goes, because every all-time figure is recomputed from history (item 55).
+    (assumed)
+61. **Entries written before this ships have no time, and the code must treat that as
+    "unknown", not zero.** A missing time must never count as a 0-second game in the average
+    or become the fastest win. (assumed — this is the classic way an average goes wrong)
+62. **If a player has turned "save my score" off, do we still store their time?**
+    My rec: no. Record the day, as we do now so the game knows you solved it, and store no
+    time. Why: they asked us not to keep their results, and a stored time is a result. The
+    panel already shows them this-game numbers from memory, so they lose nothing on screen.
+63. **Nothing new is stored on our servers.** Stats stay in the player's own browser; the
+    only thing that leaves the device is the anonymous timing event. (assumed — item 44)
+64. **The extra storage is tiny** — one number per game, on a history that is one row a day.
+    (assumed)
 
 ## 10. Analytics
 
