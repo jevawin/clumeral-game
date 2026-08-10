@@ -56,8 +56,9 @@ Everything Jamie asked for is computable from the history we already store, **ex
    one-go plays, time to complete, average time to complete. (assumed — his message,
    2026-08-10)
 5. **We currently show four boxes: Played, Avg tries, Streak, Best streak. Which of the old
-   ones survive?**
-   My rec: keep *Played* (renamed) and drop *Avg tries* — "one-go plays" says the same thing
+   ones survive?** — **SETTLED: Jamie 2026-08-10, "keep it".** Average tries stays, demoted
+   into the All time block per item 17. Played survives as "Plays". Best streaks per item 12.
+   My rec was: keep *Played* (renamed) and drop *Avg tries* — "one-go plays" says the same thing
    in a way people actually feel. Keep a *best* figure for each streak, but as small text
    under the streak rather than its own box. Why: six headline numbers is already a lot on a
    phone, and two of the four old boxes are re-expressed by the new ones.
