@@ -499,12 +499,9 @@ with an injected clock, so it can be tested without waiting five real seconds:
 **Implementation** — `src/save-warning.ts` holds the state machine; `src/app.ts` wires it to
 the real checkbox and submit button; `index.html` gains the warning paragraph.
 
-- Warning copy: **"Your saved stats will be deleted when you submit."** This replaces brief
-  91's dialogue wording, which described buttons that no longer exist. It says what will
-  happen and when, in the order it happens. Jamie's draft was "Existing progression will be
-  lost on submit" — I have used "your saved stats" over "existing progression" because
-  "progression" is a game-design word, and "deleted" over "lost" because lost sounds like an
-  accident when this is a choice they just made. Same meaning, plainer words.
+- Warning copy: **"Your existing stats will be deleted when you submit."** Jamie's own
+  wording, given 2026-08-10 and used verbatim. It replaces brief 91's dialogue text, which
+  described buttons that no longer exist.
 - The warning paragraph is `role="status"` `aria-live="polite"`, so unticking announces the
   consequence rather than leaving it visual-only.
 - **Submit uses `aria-disabled`, never the native `disabled` attribute**, and its handler
