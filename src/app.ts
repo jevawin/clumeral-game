@@ -5,6 +5,7 @@ import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
+import { createPlayTimer } from './play-timer.ts';
 import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
@@ -94,6 +95,11 @@ let gameState: GameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
 let submitting = false; // guard against double-submit during API call
 
+// How long the player has actually been here solving this puzzle. Replaced
+// wholesale on every fresh start and on restore — never reset in place, so a
+// half-updated timer cannot outlive the game it was counting.
+let timer = createPlayTimer();
+
 let possibles: Set<number>[] = startingBoard();
 let activeBox: number | null = null; // 0 | 1 | 2 | null
 
@@ -159,8 +165,20 @@ function buildActiveState(): ActiveState {
     guesses: [...gameState.guesses],
     activeBox,
     feedbackKey: null,
+    // The clock rides with the board, so a refresh or an app-switch does not
+    // reset it to zero (brief 30, 59). Persisted even when score saving is off,
+    // because the board itself is — saving your current play state is core
+    // functionality (brief 70). Nothing of that game reaches history and no
+    // event is sent; clearActive() on solve removes it.
+    elapsed: timer.seconds(),
+    idles: timer.idles(),
   };
 }
+
+// The idle count is persisted alongside the time on purpose. The analytics label
+// is `idle-N` for that GAME (brief 38); drop the counter on reload and a game
+// that went idle twice with a refresh in between reports `clean`, which is the
+// one reading that would make us trust the number when we should not.
 
 // Persist the starting board the moment the player is actually on /play, so a
 // refresh before they have touched anything still resumes the game rather than
@@ -495,6 +513,10 @@ function closeKeypad() {
 // Single mutation path for both keypad click and keyboard — prevents double-firing
 function toggleDigit(digit: number): void {
   if (activeBox === null) return;
+  // A real interaction — both the keypad and the keyboard land here (brief 27).
+  // Opening a box, hovering, scrolling and the theme or menu controls do not:
+  // reading the clues is not solving.
+  timer.activity();
   renderFeedback(null);
   const s = possibles[activeBox];
   if (s.has(digit)) {
@@ -628,6 +650,7 @@ function undoLast(): EntryKind | null {
   const kind = boardHistory.nextKind();   // read BEFORE the pop
   const previous = boardHistory.undo();
   if (previous === null) return null;
+  timer.activity();       // after the guard — a dead press is not an interaction
   applyBoard(previous);   // persists the popped stack against the restored board
   // Non-null whenever undo() was: nextKind() and undo() share the empty-stack guard.
   return kind;
@@ -636,6 +659,7 @@ function undoLast(): EntryKind | null {
 // Returns true if the board was actually reset.
 function resetBoard(): boolean {
   if (gameState.solved || isStartingBoard(possibles)) return false;
+  timer.activity();       // after the guard — a dead press is not an interaction
   // One entry, tagged so the Undo control can label itself "Undo reset". A
   // single press restores the whole pre-reset board.
   pushHistory('reset');
@@ -785,6 +809,10 @@ function showCompletedState(tries: number, replayDate?: string): void {
 }
 
 function resetPuzzleUI() {
+  // A fresh puzzle gets a fresh clock. Every fresh-start path — today's daily,
+  // random and archive replay — comes through here; the mid-game restore path
+  // does not, and rebuilds the timer from the saved board instead.
+  timer = createPlayTimer();
   renderFeedback(null);
   renderHistory([]);
   dom.stats?.classList.add("hidden");
@@ -835,6 +863,9 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
     gameState = { answer: null, guesses: draft.guesses, solved: false, puzzleNum: num, date };
     // Rebuild possibles from the stored arrays (Array → Set per box).
     possibles = draft.possibles.map((arr) => new Set(arr));
+    // And rebuild the clock from the same board, so a refresh does not hand the
+    // player a time of zero for a game they are halfway through (brief 30).
+    timer = createPlayTimer({ elapsed: draft.elapsed, idles: draft.idles });
     // Restore the undo stack alongside the board (#251). gameState is already
     // assigned above, so undoScope() reads the right date. loadUndo returns null
     // for a missing, forged or wrong-puzzle payload, in which case the stack
@@ -917,6 +948,10 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
 async function handleGuess() {
   if (gameState.solved || submitting) return;
   if (!possibles.every((s) => s.size === 1)) return;
+
+  // The last interaction of the game, and the one that ends the clock: whatever
+  // gap preceded it is banked here, before the answer is checked.
+  timer.activity();
 
   const guessStr = possibles.map((s) => [...s][0]).join("");
   const guess = Number(guessStr);
@@ -1092,6 +1127,14 @@ if ('serviceWorker' in navigator) {
 }
 
 // ─── Event listeners (module-level) ───────────────────────────────────────────
+
+// The play clock follows the tab, not the window (brief 26). Page visibility is
+// the reliable signal on phones; window focus is not. Module level, never inside
+// startDailyPuzzle — a listener registered per puzzle would stack up.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) timer.hide();
+  else timer.show();
+});
 
 // Digit box clicks
 for (let i = 0; i < 3; i++) {
