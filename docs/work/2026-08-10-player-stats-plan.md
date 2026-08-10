@@ -11,30 +11,45 @@ Related tickets: #252, #163, #143, #148 (sharing, comes after this work).
 
 ---
 
-## One open question for Jamie
+## P-01 — settled by Jamie, 2026-08-10
 
-**P-01. Brief items 65 and 130 disagree about when history is actually deleted, and I have
-not resolved it on my own.**
+The question was whether history is deleted when a player confirms a warning, or later when
+they submit. **Jamie's answer: delete on submit, exactly as brief item 65 says. No confirm
+dialogue anywhere.** His mechanism, in his words:
 
-- Brief item 65 (Jamie, play screen): untick the box → warn; *delete when they submit*.
-- Brief item 130 (M3, completion panel): there is no submit on the completion panel, so
-  untick → warn → *delete when they confirm the warning*.
+> Untick → change message → "❌ Existing progression will be lost on submit". That way the
+> mechanism is purely CSS, change the text (or JS) and we don't actually delete anything
+> until they submit. I would also disable submit, add a 5s countdown before submit becomes
+> clickable again.
 
-Read literally, the same checkbox behaves differently depending on which screen it is on:
-on the play screen a confirmed warning changes nothing until you finish the puzzle, and it
-is undefined what happens if you re-tick the box, or never finish, in between.
+**And the saving control does not appear on the stats screen at all** (Jamie, 2026-08-10):
 
-**My recommendation, which this plan is written to:** one behaviour on both screens. The
-warning dialogue *is* the confirmation — "Delete my stats" turns the setting off and deletes
-the stored history there and then; "Keep them" puts the tick back and changes nothing.
-Ticking the box on saves from that game onward, immediately.
+> Don't introduce saving on or off to the stats screen at all, keep it isolated to where it
+> is now as that's the action of saving — it's where the "cookie" setting takes place. It's
+> where we need consent.
 
-Why: item 130 already says an unconfirmed destructive change that fires later is
-unpredictable, and that reasoning applies to the play screen just as much. One rule is also
-one thing to test and one thing to explain.
+This **overrides brief items 53, 65 and 90** on one point only: the *All time* block still
+explains itself when saving is off, but it carries **no checkbox**. Everything else in those
+items stands.
 
-If Jamie prefers item 65 as written, Task 8 changes and nothing else does. **This supersedes
-item 65's "delete on submit" only if he agrees.**
+It also settles the plan review's H5 finding — "there is no checkbox to untick when saving is
+on" — by removing the requirement rather than adding a control. There is no delete flow on
+the completion panel because there is no control on the completion panel.
+
+**What this deletes from the plan:** `src/confirm-dialog.ts` and its tests are gone. Task 5
+becomes the warning-and-countdown mechanism instead. The `<dialog>` element is no longer used,
+so the jsdom limitation the review found (H2) no longer applies to anything.
+
+### Logged for later, not built now
+
+Jamie's alternative — move the setting to the menu after first submit, as a
+"👀 Disable tracking" option, with the first-play message gaining "(Opt out in ≡ menu)".
+
+**Not worth folding into this build,** and the reason is the one we just spent a round on:
+the menu has no submit button either. A menu toggle would need its own answer to "when does
+the deletion actually happen", which is the exact problem Jamie's play-screen mechanism
+solves by hanging on submit. So it is not a cheap add — it reopens the settled question in a
+new place. Filed as its own issue.
 
 ---
 
@@ -59,7 +74,7 @@ New files:
 |---|---|
 | `src/player-stats.ts` | Pure. Shared constants, plus history rows in and every displayed figure out. No DOM. |
 | `src/play-timer.ts` | Pure counting core for the timer. Injected clock, no DOM, no globals. Imports `IDLE_TIMEOUT_MS` from `player-stats.ts` — its only dependency. |
-| `src/confirm-dialog.ts` | The one reusable "are you sure?" dialogue the codebase lacks. |
+| `src/save-warning.ts` | The untick warning and the submit countdown. Pure state, no DOM. |
 
 Changed files:
 
@@ -442,63 +457,54 @@ implementation detail of item 38, not a change to it.
 
 ---
 
-### Task 5 — the confirm dialogue
+### Task 5 — the untick warning and the submit countdown
 
-**Implements:** brief 68, 91, 101, 128.
+**Implements:** brief 68, 91 (reworded), 100, 101, 130 — all as settled at P-01.
 
-**The test environment cannot do `<dialog>`, and the plan has to work around that.** This
-repo is on `jsdom@25.0.1` (`package.json:42`), where `HTMLDialogElement.prototype.showModal`
-and `.close` are `undefined` — dialog support landed in jsdom 26. Verified by running it.
-That is why `src/modals.ts` has no unit test today. Bumping jsdom is a dependency change with
-its own fallout across twenty-odd existing test files, and it is not this build's job.
+Jamie's mechanism: unticking the box swaps the message and disables submit for five seconds.
+Nothing is deleted until the player submits. No dialogue, no confirm button, and re-ticking
+the box puts everything back.
 
-So the coverage splits:
+**Tests first** — `tests/save-warning.spec.ts`, new. The countdown is a small state machine
+with an injected clock, so it can be tested without waiting five real seconds:
 
-**Tests first** — `tests/confirm-dialog.spec.ts`, new (jsdom, with `showModal` and `close`
-stubbed in `beforeEach`). These cover the logic that is ours:
+1. Ticked → no warning text, submit available.
+2. Unticking → the warning text appears and submit is unavailable.
+3. Four seconds in, submit is still unavailable and the countdown reads `1`.
+4. At five seconds submit becomes available and the countdown text is gone.
+5. Re-ticking **before** the five seconds are up clears the warning and makes submit
+   available immediately — the countdown does not hold a player hostage for a change they
+   have already undone.
+6. Unticking, re-ticking, then unticking again restarts a full five seconds rather than
+   resuming the first one.
+7. The countdown never leaves submit unavailable permanently if the tab is hidden across the
+   five seconds: availability is computed from the clock on the next check, not from a timer
+   that may not have fired.
 
-1. The confirm button resolves the promise `true`; the cancel button resolves it `false`.
-2. Escape resolves `false` and never runs the caller's action.
-3. Button labels and the message come from the caller and are rendered verbatim.
-4. The promise resolves exactly once, even if a second button press lands after the first.
-5. Calling it twice in a row does not leave two dialogues in the DOM.
+**Implementation** — `src/save-warning.ts` holds the state machine; `src/app.ts` wires it to
+the real checkbox and submit button; `index.html` gains the warning paragraph.
 
-**Browser tests** — added to `e2e/specs/player-stats.spec.ts` in Task 13. These cover the
-behaviours only a real browser has, and they are exactly the accessibility requirements at
-brief 101:
+- Warning copy: **"Your saved stats will be deleted when you submit."** This replaces brief
+  91's dialogue wording, which described buttons that no longer exist. It says what will
+  happen and when, in the order it happens. Jamie's draft was "Existing progression will be
+  lost on submit" — I have used "your saved stats" over "existing progression" because
+  "progression" is a game-design word, and "deleted" over "lost" because lost sounds like an
+  accident when this is a choice they just made. Same meaning, plainer words.
+- The warning paragraph is `role="status"` `aria-live="polite"`, so unticking announces the
+  consequence rather than leaving it visual-only.
+- **Submit uses `aria-disabled`, never the native `disabled` attribute**, and its handler
+  no-ops while unavailable. This is the house rule at `docs/CONVENTIONS.md` — browsers blur a
+  natively-disabled element, and the keypad's hundreds-box `0` and the undo/reset controls
+  already work this way. Focus is on the checkbox rather than submit at the moment of the
+  change, so nothing is stolen today, but a player who tabs to submit during the five seconds
+  must not be thrown to the top of the document.
+- The remaining seconds are in the button's accessible name, so a screen-reader user is not
+  left pressing a button that silently does nothing.
 
-6. Opening moves focus into the dialogue.
-7. Escape closes it without deleting.
-8. Focus returns to the checkbox that opened it, on both outcomes.
-9. Clicking the backdrop cancels.
-
-**Why not simply drop `<dialog>` to make it unit-testable:** `<dialog>` gives focus
-trapping, the top layer, and Escape handling for free, and hand-rolling those is how modal
-accessibility bugs get written. Brief 101 asks for real dialogue behaviour, so the element
-that provides it wins over the convenience of the test runner.
-
-**Implementation** — `src/confirm-dialog.ts`:
-
-```ts
-export function confirmAction(opts: {
-  message: string;
-  confirmLabel: string;
-  cancelLabel: string;
-  trigger?: HTMLElement | null;
-}): Promise<boolean>
-```
-
-A single `<dialog data-confirm-modal>` in `index.html`, following `src/modals.ts`'s existing
-feedback-modal pattern: `showModal()`, an `open` class for the transition, `cancel` handled
-so Escape closes cleanly. Focus returns to `opts.trigger` on close.
-
-**Why a new module rather than adding to `src/modals.ts`:** `modals.ts` is the feedback form
-and toasts, and it is already 234 lines of one specific form. A general confirm belongs on
-its own, and #148 will want it too.
-
-**Why not `window.confirm`:** it cannot be styled, it cannot say "Delete my stats" and
-"Keep them" (brief 91), and Safari has historically let a page suppress it — a destructive
-confirmation that can vanish is worse than none.
+**Why five seconds is worth having at all:** it is the whole confirmation step. There is no
+second click to catch a mis-tap, so the pause plus the visible warning is what stands between
+an accidental tap and a deletion. Recorded because a later reader will be tempted to remove
+it as friction, and it is load-bearing.
 
 ---
 
@@ -523,15 +529,9 @@ it needs no new contrast case.
 
 - **No share buttons.** Brief 140 removed them from this build; the section rules are drawn
   without them. Read the sketch at brief 23 with the `[ ↗ Share ]` blocks deleted.
-- **The *All time* block always ends with the save-my-scores checkbox**, in every mode where
-  that block exists — ticked when saving is on, unticked with the invitation line above it
-  when saving is off. The sketch at brief 23 does not show it, because brief 65 only ever
-  described the switched-off state. But brief 67 requires the two controls to stay in step,
-  and the play-screen one is unreachable after a solve: `[data-save]` is only visible
-  alongside the submit row (`index.html:308`), and the player is on `/solved` by then.
-  Without a ticked checkbox here there is nothing to untick, and brief 65's whole flow —
-  untick, warn, delete — has no control to operate. This is the plan filling a gap the brief
-  left, not changing a decision it made.
+- **No saving checkbox anywhere on this panel**, in any mode — P-01. The setting lives on the
+  play screen, where the consent and the action both are. When saving is off the *All time*
+  block explains itself in words and points at the play screen; it offers no control.
 - Each block is a `<section>` with its own heading, so a screen reader can jump between them.
 - Each stat is a `<dl>` pair — term is the label, definition is the number — so nothing is
   read as a loose figure (brief 97). The explanatory line sits in the same `<dd>`, after the
@@ -568,15 +568,15 @@ patched, keeping its streak scenarios as data.
 3. **Second game**: same as above. **Third game**: all three blocks — brief 19.
 4. **Just switched saving on, one countable game**: identical to the new-player state, with
    the same wording — brief 131.
-5. **Saving off**: *This game* renders; the *All time* heading renders with "Turn on score
-   saving to see your all-time stats" and the unticked checkbox in place of the numbers; the
-   streak block is absent — brief 53, 65, 90.
-6. **Random puzzle**: *This game* only, plus "Random puzzles don't count towards your
+5. **Saving off**: *This game* renders; the *All time* heading renders with the explanation
+   in place of the numbers; the streak block is absent — brief 53, 65, 90 as amended by
+   P-01.
+6. **Saving off renders no checkbox and no control of any kind.** An explicit test, because
+   brief 65 asked for one and P-01 removed it, and the brief is what a builder reads first.
+7. **Random puzzle**: *This game* only, plus "Random puzzles don't count towards your
    stats" — brief 52, 93.
-7. **Archive replay** (`activeDate !== todayLocal`): the minimal existing panel, no streaks,
+8. **Archive replay** (`activeDate !== todayLocal`): the minimal existing panel, no streaks,
    no totals, no timing — brief 54.
-8. **Full mode carries a ticked checkbox** at the foot of *All time*, and it reflects
-   `dlng_prefs.saveScore` rather than being hardcoded checked.
 9. **Reload after a saving-off solve** (`'marker'` mode): today's row is a marker, so the
    number of goes and the time are both unknowable. The hero line reads "Solved!" with no
    number and no time — never "Solved in 0". This is the mode the marker forces into
@@ -607,6 +607,12 @@ patched, keeping its streak scenarios as data.
   by `speakDuration`: `3:41` becomes `3 minutes 41 seconds`. A screen reader saying "three
   colon forty-one" is the reason this is not the display string.
 - The hero line reads `Solved in 2 · 3:41` (brief 88).
+- **The saving-off copy changes, because there is no longer a checkbox beside it.** Brief 90's
+  "Turn on score saving to see your all-time stats" sat directly above the control that did
+  it; with the control gone it tells someone to do a thing without saying where. It becomes
+  **"Turn on score saving to see your all-time stats. The setting is on the puzzle screen,
+  under the answer box."** Two sentences: what they get, and where to go. This is the only
+  copy change P-01 forces, and it is flagged for Jamie in the summary.
 
 **`renderCompletion` gains one optional field, and all four call sites are specified.**
 `RenderCompletionOpts` gains `seconds?: number`. The four callers in `src/app.ts`:
@@ -657,44 +663,54 @@ is the confirmation, on both screens.
 
 **Tests first** — `tests/save-pref.spec.ts`, new (jsdom):
 
-1. Unticking either checkbox opens the confirm dialogue and changes nothing yet.
-2. "Keep them" → the checkbox goes back to ticked, `dlng_prefs.saveScore` stays `true`,
-   history is untouched.
-3. "Delete my stats" → `saveScore` becomes `false`, every real result is gone, and both
-   checkboxes read unticked — brief 67.
-4. **"Delete my stats" after solving today leaves a marker for today, and nothing else.**
-   `hasPlayerData()` still returns true and today's puzzle is still not replayable — brief
-   66, 125. This is the plan-review hole; see the reasoning under `deleteHistory` in Task 1.
-5. "Delete my stats" *before* solving today removes `dlng_history` entirely, and the
-   mid-game board in `dlng_active` still keeps `hasPlayerData()` true, so the player is not
-   thrown back to `/welcome` mid-puzzle.
-6. Ticking either checkbox sets `saveScore` true immediately, with no dialogue, and does not
-   resurrect deleted history — brief 130.
-7. The two checkboxes stay in step: changing one updates the other — brief 67.
-8. With saving off, solving today writes a marker and nothing else: `tries` is 0, no
+1. Unticking the box deletes nothing. `dlng_history` is byte-for-byte unchanged until a
+   submit happens — the single most important test in this task.
+2. Unticking persists `saveScore: false` immediately, as it does today. The preference and
+   the deletion are separate events.
+3. Re-ticking before submitting leaves history untouched and saves that game normally.
+4. **Submitting a correct answer with the box unticked deletes the stored results** —
+   brief 65, as settled at P-01.
+5. **After that deletion, a marker remains for the day just solved**, so `hasPlayerData()`
+   is still true and today's puzzle is not replayable — brief 66, 125. See the reasoning
+   under `deleteHistory` in Task 1.
+6. Submitting an **incorrect** answer with the box unticked deletes nothing. Deletion happens
+   on a solve, not on any press of the button — otherwise a wrong guess silently destroys the
+   history of a player who was about to change their mind.
+7. Unticking and then abandoning the puzzle deletes nothing. The next game they solve with
+   the box still unticked does delete, because the rule is evaluated at solve time from the
+   stored preference, not from a flag armed earlier in a session that no longer exists.
+8. Ticking the box sets `saveScore` true immediately and does not resurrect deleted history.
+9. With saving off, solving today writes a marker and nothing else: `tries` is 0, no
    `answer`, no `seconds` — brief 65, 71, 123.
-9. With saving off, an archive solve writes a marker carrying `archived: true`.
-10. With saving off, no `puzzle_time` event is sent — brief 141.
-11. A marker for today still makes `hasPlayerData()` true, so the returning-player redirect
+10. With saving off, an archive solve writes a marker carrying `archived: true`.
+11. With saving off, no `puzzle_time` event is sent — brief 141.
+12. A marker for today still makes `hasPlayerData()` true, so the returning-player redirect
     keeps working — brief 125.
-12. **Reloading after a saving-off solve renders "Solved!", never "Solved in 0 tries".**
+13. **Reloading after a saving-off solve renders "Solved!", never "Solved in 0 tries".**
     One case per reader, listed below.
+
+**The rule, stated once so it cannot drift:** at the moment a correct answer lands, if
+`saveScore` is false, delete the stored history and write a day-only marker for the puzzle
+just solved. That is the whole mechanism. It holds no state between sessions, needs no
+"pending deletion" flag, and reads identically to brief 65's own sentence — "if they submit
+with it unticked, remove the storage entry".
 
 **Implementation:**
 
 - `index.html`: the play-screen checkbox label becomes **"Save my scores on this device"**
-  and the biscuit icon goes (brief 129). The completion panel's checkbox uses the identical
-  label. Both are real `<input type="checkbox">` with real `<label for>` (brief 100).
-- `src/app.ts` gains one handler used by both controls:
-  - **Ticking on** → `persistPrefs(true)`, sync the other checkbox, re-render the panel if
-    it is on screen. Immediate, no dialogue.
-  - **Unticking** → `confirmAction({ message: 'This deletes the stats you have saved so far.
-    It cannot be undone.', confirmLabel: 'Delete my stats', cancelLabel: 'Keep them' })`
-    (brief 91). Confirmed → `persistPrefs(false)`, `deleteHistory(solvedDateOrUndefined)`,
-    sync both checkboxes, re-render. Cancelled → put the tick back, nothing else.
+  and the biscuit icon goes (brief 129). It stays a real `<input type="checkbox">` with a
+  real `<label for>`, as it is today (brief 100). It is the only such control in the app.
+- `src/app.ts`'s existing checkbox handler (`:1122`) keeps calling `persistPrefs`, and gains
+  the warning-and-countdown wiring from Task 5. It does **not** delete anything.
 - The solve path in `handleGuess` splits on the preference:
   - saving **on** → `recordGame(date, tries, { answer, archived, seconds })`
-  - saving **off** → `recordMarker(date, archived)` — brief 65, 71, 123.
+  - saving **off** → `deleteHistory(date)`, which removes the stored results and leaves the
+    marker for the day just solved — brief 65, 66, 71, 123.
+
+  `deleteHistory(date)` replaces the `recordMarker(date, archived)` call the previous draft
+  had here: writing a marker on top of history that is about to be deleted, and then deleting
+  it, would be two steps that have to agree. One call that does both cannot disagree with
+  itself. `recordMarker` still exists and is what `deleteHistory` uses internally.
 
 **Every reader of `entry.tries` has to learn about markers — there are four, not one.**
 Adding a row whose `tries` is 0 and meaningless to a codebase that reads `entry.tries`
@@ -852,7 +868,7 @@ The `docs/ANALYTICS.md` note lands in Task 12 with the rest of the documentation
 
 - `docs/ARCHITECTURE.md` — the `dlng_history` line gains `seconds?` and `marker?`; the
   `dlng_active` line notes the two optional fields and that `v` stays at 1; the Files list
-  gains `player-stats.ts`, `play-timer.ts` and `confirm-dialog.ts`.
+  gains `player-stats.ts`, `play-timer.ts` and `save-warning.ts`.
 - `docs/ANALYTICS.md` — what `puzzle_time` is, what `clean` and `idle-N` mean, that the
   average is weighted by `sample_interval` per the house rule, and that it covers opted-in
   players only (brief 141) — worth knowing the first time that number looks surprising.
@@ -878,15 +894,19 @@ new gate** (brief 113). Playwright never runs on the Pi (brief 111).
 2. **Brand-new player.** No history. Solve. Assert *This game* only and the
    "starts from your third game" line.
 3. **Saving turned off.** Seed `{ saveScore: false }`. Solve. Assert *This game*, the
-   *All time* invitation and its checkbox, no streak block — and that `dlng_history` holds a
-   marker with no `tries` and no `answer`.
-4. **The delete flow, end to end.** Seed history and solve. Untick the box on the completion
-   panel → the warning appears; focus is inside it; Escape closes it and deletes nothing;
-   focus returns to the checkbox (brief 101, and Task 5's tests 6–9). Untick again → "Keep
-   them" → history intact, box re-ticked. Untick a third time → "Delete my stats" → the
-   seeded results are gone and both checkboxes read unticked. Then **reload and confirm the
-   player is not sent to `/welcome` and today's puzzle is not replayable** — what keeps that
-   working is the marker `deleteHistory` writes back for the day just solved, per Task 1.
+   *All time* explanation, **no checkbox on the panel**, no streak block — and that
+   `dlng_history` holds a marker with `tries: 0` and no `answer`.
+4. **The delete flow, end to end, on the play screen.** Seed history, start today's puzzle,
+   untick the box. Assert the warning text appears and submit is unavailable; wait out the
+   five seconds and assert submit becomes available again; assert `dlng_history` is still
+   untouched at that point. Solve. Assert the seeded results are gone and a marker remains
+   for today. Then **reload and confirm the player is not sent to `/welcome` and today's
+   puzzle is not replayable** — what keeps that working is the marker `deleteHistory` writes
+   back for the day just solved, per Task 1.
+
+   This is the one test that genuinely needs the five-second wait, so it takes five seconds
+   longer than the others. Worth it: it is the only destructive thing in the build, and the
+   pause is the only thing standing between a mis-tap and a deletion.
 
 **Existing browser tests that Task 6 breaks, and which this task must update:**
 
@@ -919,8 +939,8 @@ Brief 115, extended by 136:
 - The panel shows the agreed numbers for a normal player, a new player, a player with saving
   off, and after a random puzzle.
 - The timer behaves as brief 26–35 and 50 describe.
-- Turning saving off deletes the history, after the warning, and writes a day-only marker
-  from then on.
+- Unticking the box shows the warning and holds submit for five seconds; the deletion happens
+  on the next solve, not before, and leaves a day-only marker behind.
 - The goes chart renders — brief 18, 133.
 - The explanatory lines at brief 135 are on screen.
 - `/stats` shows the average time to complete.
@@ -952,13 +972,15 @@ context or corrections that need nothing built.
 | 43, 44, 45, 47, 48 | no code — out of scope |
 | 49, 110 | 11, 13 |
 | 52, 93 | 7, 10 |
-| 53, 90 | 7, 8 |
+| 53, 90 | 7 — checkbox removed from the panel at P-01; the explanation stays and is reworded |
 | 54 | 7 |
 | 55 | 2, 7 |
 | 56 | no code — existing behaviour unchanged |
 | 57, 58, 78, 86, 96, 105, 114, 142, 143 | no code — sign-offs |
 | 59, 60, 75 | 1, 4 |
-| 62, 65, 66, 67, 68, 70, 71, 130 | 8 |
+| 62, 66, 70, 71 | 8 |
+| 65, 68, 130 | 5, 8 — mechanism settled at P-01: warning, countdown, delete on submit |
+| 67 | no longer applicable — P-01 leaves one checkbox, so there are no two to keep in step |
 | 63, 64 | no code — consequences of 1 and 10 |
 | 69, 129 | 8 (copy on both checkboxes) |
 | 72, 73 | 2 (the module move) |
@@ -968,7 +990,7 @@ context or corrections that need nothing built.
 | 79–83, 85 | 6 |
 | 87, 88, 94, 95, 134, 135 | 6, 7 |
 | 89 | 6, 7 — "first go" throughout |
-| 91, 101 | 5, 8 |
+| 91, 101 | 5 — reworded at P-01: the dialogue is replaced by a warning and a countdown |
 | 97, 98, 102, 104 | 6 |
 | 99, 103, 126, 139 | 6, 7 — one polite announcement, no counting animation |
 | 100 | 8 |
@@ -992,6 +1014,10 @@ context or corrections that need nothing built.
 ---
 
 ## Order and why
+
+Task 5 no longer blocks Task 8 the way the confirm dialogue did — the warning is presentation
+and the deletion is a solve-path rule, so they touch different code. They stay adjacent
+because they are the same feature to a player.
 
 Tasks 1 → 2 → 3 are the foundations and have no UI, so they can be built and tested with
 nothing on screen. Task 4 wires the timer to real play. Tasks 5 → 6 → 7 build the panel,
@@ -1075,5 +1101,23 @@ only.
 The review confirmed brief coverage is complete — it walked all 143 items independently and
 found none missing or misfiled.
 
+### P-01 settled, 2026-08-10 — what changed after the review
+
+Jamie answered P-01 after da-plan had run, and his answer removed work rather than adding it.
+The confirm dialogue is gone, and with it `src/confirm-dialog.ts`, its spec, and the jsdom
+`<dialog>` problem the review raised as H2 — that finding is now moot rather than fixed. The
+review's H5 (no checkbox to untick when saving is on) is resolved by P-01 removing the
+control from the panel entirely, rather than by the extra checkbox the earlier fix added.
+
+Task 5 was rewritten from the dialogue to the warning and countdown. Tasks 6, 7, 8 and 13
+were amended. Two copy changes fall out of it and are flagged to Jamie: the saving-off line
+now says where the setting is, and the warning wording is plainer than his draft.
+
+Nothing in Tasks 1, 2, 3, 4, 9, 10, 11 or 12 changed, so the review's findings against those
+stand as fixed. The marker-writing behaviour of `deleteHistory` — the review's H1 — matters
+more under P-01, not less: it is now the only thing keeping today's puzzle unplayable after a
+delete.
+
 - **da-plan:** passed, 2026-08-10, after the fixes above.
-- **Jamie's approval:** *pending* — and P-01 above needs his answer.
+- **P-01:** settled by Jamie, 2026-08-10.
+- **Jamie's approval of the plan as a whole:** *pending*.
