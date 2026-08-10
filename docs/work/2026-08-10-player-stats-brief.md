@@ -2,7 +2,11 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1, 2, 3, 5, 6, 7, 8, 9 and 10 settled with Jamie. Sections 4 and 11 asked. Dave's ack outstanding on 2, 3, 4, 5, 6, 7, 8 and 10.
+Status: OPEN — every section is settled with Jamie, and section 9 is signed off by its
+owner. The brief CANNOT close until Dave acks the joint sections: **2, 3 (items 52-56), 4,
+5, 6, 7, 8, 10 and 11.** Asked 2026-08-10. Silence is not consent; no timeout applies.
+Next step once acked: fresh-context `da-brief` review, fix every Medium and above, then
+clear context and plan.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -22,7 +26,7 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 8. Copy & wording | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 9. Accessibility | Signed off: Jamie 2026-08-10 (owner) · Ack: n/a |
 | 10. Analytics | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 11. Done / test plan | asked 2026-08-10 |
+| 11. Done / test plan | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 
 ## Background — what we show today
 
@@ -482,7 +486,17 @@ Jamie owns this section outright; his sign-off is blocking.
      (item 51). (assumed)
 111. **Playwright runs in CI, never on the Pi.** (assumed — house rule; the Pi cannot run the
      engines CI covers)
-112. **Done means:** the panel shows the agreed numbers for a normal player, a new player, a
+113. **Item 109 was the wrong question, corrected by Jamie 2026-08-10:** "you can't browser
+     test here so we rely on e2e smoke, chromium on staging, everything on main." The level
+     of browser testing is already fixed by the workflows — `ci-smoke.yml` runs chromium on
+     every pull request into staging and main, `ci-matrix.yml` runs the remaining engines
+     into main. There was nothing to decide about the level; the real question was which new
+     tests to add.
+114. **Section 11 SETTLED: Jamie 2026-08-10, "agreed on those updates to e2e then".** Four
+     new browser tests join the existing suite and ride the existing gates: the panel after a
+     solve showing the right numbers, a brand-new player, a player with saving turned off,
+     and the delete flow. No new workflow, no new gate. Ack from Dave still needed.
+115. **Done means:** the panel shows the agreed numbers for a normal player, a new player, a
      player with saving off and a random puzzle; the timer behaves as items 26 to 35 say;
      turning saving off deletes the history after a warning; `/stats` shows the average time;
      and the timing event reaches the database with its clean-or-idle label. (assumed)
