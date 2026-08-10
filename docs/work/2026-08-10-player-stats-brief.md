@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1 and 10 settled. Sections 2 and 3 asked.
+Status: OPEN. Sections 1, 2 and 10 settled. Section 3 part-done (timer agreed).
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -13,8 +13,8 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | Section | State |
 |---|---|
 | 1. What it is | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (goes along, no strong view) |
-| 2. Out of scope | asked 2026-08-10 |
-| 3. How it works | asked 2026-08-10 (timer only) |
+| 2. Out of scope | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
+| 3. How it works | timer rules agreed by both 2026-08-10 · rest of section not yet asked |
 | 4. Maths | not started |
 | 5. State & persistence | not started |
 | 6. How it fits | not started |
@@ -293,8 +293,18 @@ anonymous id, a free-text `source`, a whole-number `value`, and the hostname.
     panel. (assumed)
 48. **No back-filling.** Games played before this ships have no time recorded and never
     will. (assumed — item 9)
-49. **Does the team's own `/stats` dashboard get the new timing numbers in this build?**
-    My rec: no. Store the event now, read it with a one-off query when we want it, and add a
+49. **Does the team's own `/stats` dashboard get the new timing numbers in this build?** —
+    **SETTLED against my recommendation: Jamie 2026-08-10, "show avg time to complete in
+    /stats as a single number, no graph".** So `/stats` gains one figure: average time to
+    complete across the selected range. No chart, no extra range controls. It is in scope
+    for this build.
+    My rec was: no. Store the event now, read it with a one-off query when we want it, and add a
     chart later once we know the numbers are sane. Why: it is a separate screen with its own
     accessibility and contrast work, and adding it here doubles the review surface for
     something only the two of you look at.
+50. **Item 34 CONFIRMED by Dave, 2026-08-10: "I agree on 2 mins."** The idle cut-off is two
+    minutes. Both are agreed, so it is closed.
+51. **One figure on `/stats` still carries the sampling rule** (item 40): the average must
+    weight each row by its sampling column, not treat every row as one game. An unweighted
+    average would be wrong by roughly the same 1.70% measured on 2026-08-04, and worse if
+    sampling ever bites harder. (assumed — consequence of item 49)
