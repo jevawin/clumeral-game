@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1, 2, 3, 5, 6, 7 and 10 settled with Jamie. Sections 4 and 8 asked. Dave's ack outstanding on 2, 3, 4, 5, 6, 7 and 10.
+Status: OPEN. Sections 1, 2, 3, 5, 6, 7, 8 and 10 settled with Jamie. Sections 4 and 9 asked. Dave's ack outstanding on 2, 3, 4, 5, 6, 7, 8 and 10.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -19,8 +19,8 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 5. State & persistence | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 6. How it fits | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 7. How it looks | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 8. Copy & wording | asked 2026-08-10 |
-| 9. Accessibility | not started |
+| 8. Copy & wording | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
+| 9. Accessibility | asked 2026-08-10 (Jamie owns, blocking) |
 | 10. Analytics | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 11. Done / test plan | not started |
 
@@ -420,6 +420,38 @@ decision, because the new panel is mostly history.
 95. **Every stat that needs explaining gets one short line under it, not a tooltip.** The
     whole point of this build is that "streak" currently explains nothing. (assumed —
     item 1; exact lines land with the design)
+96. **Section 8 SETTLED: Jamie 2026-08-10, "first go good".** Item 89 resolved: "first go"
+    throughout — "First-go streak", "First-go wins", "Solved in one". Ack from Dave still
+    needed.
+
+## 9. Accessibility
+
+Jamie owns this section outright; his sign-off is blocking.
+
+97. **Every number is read out with its label attached**, so a screen reader says "play
+    streak, 14, best 21" rather than three loose numbers. The panel is a list of pairs, and
+    it should be built as one. (assumed)
+98. **The goes chart carries the same numbers in text**, so nothing in it is available only
+    as a picture. The counts are already beside each bar for everyone. (assumed — a chart
+    that only works visually fails for the people most likely to be using our archive)
+99. **The panel does not announce itself over the existing win announcement.** We already
+    tell people they solved it; two announcements talking at once is worse than one.
+    (assumed — check against the current celebration behaviour during the build)
+100. **The save-my-scores control is a real checkbox with a real label**, reachable and
+     operable by keyboard, and it says the same thing as the one during play. (assumed —
+     item 67)
+101. **The delete warning is a proper dialogue:** focus moves into it, Escape closes it
+     without deleting, and focus returns to the checkbox afterwards. Its buttons say
+     "Delete my stats" and "Keep them". (assumed — items 68 and 91)
+102. **Colour is never the only signal**, and everything uses the existing tokens, whose
+     contrast is already measured. No new colours (item 83). (assumed)
+103. **Should the numbers count up when the panel appears?**
+     My rec: no animation at all — the numbers are simply there. Why: a counting animation
+     delays the information for everyone, needs a reduced-motion alternative, and is one
+     more thing to get wrong on a screen people see every single day. The celebration
+     animation already carries the moment.
+104. **The panel works at 200% text and 320 pixels wide** (item 85), which mainly means the
+     two-column streak block stacks rather than squeezing. (assumed)
 
 ## 10. Analytics
 
