@@ -285,6 +285,61 @@ describe('getStats', () => {
       guessDistribution: [],
       sourceSplit: [],
       firstTs: null,
+      // null, never 0 — "no data" and "everybody solves it instantly" are
+      // different things and the dashboard renders them differently.
+      avgTimeSeconds: null,
+    });
+  });
+
+  // Every puzzle_time row we write ourselves carries sample_interval 1, so the
+  // weighting changes nothing today. These seed intervals above 1 to assert the
+  // SQL SHAPE — they do not claim the live number differs (brief 118).
+  describe('avgTimeSeconds', () => {
+    async function seedTime(rows: { value: number; interval: number; ts?: number; hostname?: string }[]) {
+      for (const r of rows) {
+        await db()
+          .prepare(
+            'INSERT INTO analytics_events (ts, event, uid, source, hostname, value, new_user, sample_interval) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          )
+          .bind(r.ts ?? NOW, 'puzzle_time', 'u', 'clean', r.hostname ?? 'clumeral.com', r.value, 0, r.interval)
+          .run();
+      }
+    }
+
+    it('weights by sample_interval rather than taking a plain mean', async () => {
+      // Plain mean of 100 and 200 is 150. Weighted 1:3 it is 175.
+      await seedTime([
+        { value: 100, interval: 1 },
+        { value: 200, interval: 3 },
+      ]);
+      const stats = await getStats(db(), { all: true }, 'clumeral.com', NOW);
+      expect(stats.avgTimeSeconds).toBe(175);
+    });
+
+    it('excludes other hostnames', async () => {
+      await seedTime([
+        { value: 100, interval: 1 },
+        { value: 9000, interval: 1, hostname: 'preprod.example' },
+      ]);
+      const stats = await getStats(db(), { all: true }, 'clumeral.com', NOW);
+      expect(stats.avgTimeSeconds).toBe(100);
+    });
+
+    it('excludes rows outside the selected range', async () => {
+      await seedTime([
+        { value: 100, interval: 1 },
+        { value: 9000, interval: 1, ts: NOW - 60 * 86_400_000 },
+      ]);
+      const stats = await getStats(db(), { days: 7 }, 'clumeral.com', NOW);
+      expect(stats.avgTimeSeconds).toBe(100);
+    });
+
+    it('does not throw on ?period=all, where the time clause is omitted entirely', async () => {
+      // The all-time branch binds one argument, not two. A hardcoded time clause
+      // in this statement would leave two placeholders and one argument.
+      await seedTime([{ value: 240, interval: 1 }]);
+      const stats = await getStats(db(), { all: true }, 'clumeral.com', NOW);
+      expect(stats.avgTimeSeconds).toBe(240);
     });
   });
 });

@@ -41,6 +41,9 @@ export interface StatsResult {
   sourceSplit: { event: string; source: string | null; count: number }[];
   /** Epoch ms of the earliest stored row for this host, or null when there are none. */
   firstTs: number | null;
+  /** Mean puzzle_time value in whole seconds, or null when there are no rows —
+   *  so the page can tell "no data" from "zero seconds". */
+  avgTimeSeconds: number | null;
 }
 
 const DAY_MS = 86_400_000;
@@ -137,7 +140,7 @@ const DAY_EXPR = "strftime('%Y-%m-%d', ts / 1000, 'unixepoch')";
 /**
  * Every figure the dashboard shows, in one round trip.
  *
- * Seven statements, batched. The seventh (firstTs) exists because the period label
+ * Eight statements, batched. The seventh (firstTs) exists because the period label
  * and the chart's lower bound both need the earliest stored day when the range is
  * "all", and deriving it from the daily rows would be wrong: the renderer filters
  * those to puzzle_start, so a day holding only route_change events would move the
@@ -160,7 +163,10 @@ export async function getStats(
 
   const q = (sql: string) => db.prepare(sql).bind(...args);
 
-  const [events, daily, uniqueUsers, newUsers, guessDistribution, sourceSplit, first] = await db.batch([
+  // The batch is read POSITIONALLY below, so a new statement goes last and is
+  // destructured last — inserting one anywhere else silently reassigns every
+  // result after it.
+  const [events, daily, uniqueUsers, newUsers, guessDistribution, sourceSplit, first, avgTime] = await db.batch([
     q(`SELECT event, SUM(sample_interval) AS count FROM analytics_events ${where} GROUP BY event ORDER BY count DESC`),
     q(
       `SELECT ${DAY_EXPR} AS day, event, SUM(sample_interval) AS count FROM analytics_events ${where} GROUP BY day, event ORDER BY day ASC`,
@@ -181,6 +187,15 @@ export async function getStats(
     // Deliberately not time-filtered: this is "when did collection start for this
     // host", which is a property of the archive, not of the selected range.
     db.prepare('SELECT MIN(ts) AS first_ts FROM analytics_events WHERE hostname = ?').bind(hostname),
+    // Weighted by sample_interval, like every other count here. Every
+    // puzzle_time row is one we wrote ourselves, so its interval is 1 and the
+    // weighting changes nothing today — it is written weighted anyway because
+    // that is the house rule, and it protects the figure if sampling ever
+    // starts. Built through q(), never with a hardcoded time clause: getStats
+    // OMITS that clause for all-time, so a second placeholder here would leave
+    // two bind slots and one argument, and ?period=all would throw.
+    q(`SELECT SUM(value * sample_interval) AS total, SUM(sample_interval) AS n
+       FROM analytics_events ${where} AND event = 'puzzle_time'`),
   ]);
 
   const rows = <T>(r: D1Result) => (r.results ?? []) as T[];
@@ -205,5 +220,10 @@ export async function getStats(
       count: num(r.count),
     })),
     firstTs: rows<{ first_ts: number | null }>(first)[0]?.first_ts ?? null,
+    avgTimeSeconds: (() => {
+      const r = rows<{ total: number | null; n: number | null }>(avgTime)[0];
+      const n = num(r?.n);
+      return n > 0 ? Math.round(num(r?.total) / n) : null;
+    })(),
   };
 }
