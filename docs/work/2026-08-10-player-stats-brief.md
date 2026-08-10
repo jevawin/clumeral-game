@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1, 2, 3, 5 and 10 settled with Jamie. Sections 4 and 6 asked. Dave's ack outstanding on 2, 3, 4, 5 and 10.
+Status: OPEN. Sections 1, 2, 3, 5, 6 and 10 settled with Jamie. Sections 4 and 7 asked. Dave's ack outstanding on 2, 3, 4, 5, 6 and 10.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -17,8 +17,8 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave on the timer only, rest pending |
 | 4. Maths | proposed not applicable 2026-08-10 · Dave to confirm |
 | 5. State & persistence | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 6. How it fits | asked 2026-08-10 |
-| 7. How it looks | not started |
+| 6. How it fits | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
+| 7. How it looks | asked 2026-08-10 |
 | 8. Copy & wording | not started |
 | 9. Accessibility | not started |
 | 10. Analytics | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
@@ -368,6 +368,29 @@ decision, because the new panel is mostly history.
     (assumed — checked against `src/worker/index.ts` and the analytics table, 2026-08-10)
 77. **`/stats` gains one figure** through the existing read path, not a new page.
     (assumed — item 49)
+78. **Section 6 SETTLED: Jamie 2026-08-10, "definitely yes, consolidate."** The stat rules
+    move into one shared module that the completion screen reads, so #163 and #148 can use
+    the same rules instead of copying them. Ack from Dave still needed.
+
+## 7. How it looks
+
+79. **Three blocks in this order: This game, Streaks, All time**, per the sketch at item 23.
+    (settled at item 17)
+80. **This game is the hero** — one line, largest type on the panel. (settled at item 17)
+81. **Should the All time block be folded away behind a tap by default?** It is the longest
+    block, and Dave's worry at item 22 was the sheer number of figures.
+    My rec: no — keep it open, but make it visually quiet: smaller type, muted colour, plain
+    rows rather than boxes. Why: a folded block is a block nobody opens, and these numbers
+    are the reason a returning player scrolls at all. Density is better solved by making
+    them quiet than by hiding them. Scrolling on a phone costs nothing.
+82. **The goes chart sits at the foot of the All time block**, small, using the existing
+    accent colour for the bars. (assumed — item 18)
+83. **No new colours and no new type sizes.** Everything uses the tokens already in the
+    design system. (assumed — house rule, and the palette is deliberately under 15 tokens)
+84. **The two share buttons sit on the section rules**, as Jamie drew them at item 21.
+    They are drawn now and do nothing until #148. (settled at item 21)
+85. **The panel keeps working at 320 pixels wide and at 200% text size** without the numbers
+    colliding. (assumed — the streak block is two columns, so it needs to stack)
 
 ## 10. Analytics
 
