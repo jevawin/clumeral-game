@@ -348,8 +348,18 @@
           <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
           <p data-completion-subheading class="text-base text-text"></p>
 
-          <!-- Stats grid -->
-          <div data-completion-stats class="grid grid-cols-2 gap-4 w-full"></div>
+          <!-- Stat blocks — This game, Streaks, All time. Each block is written by
+               completion.ts and is ABSENT rather than hidden when it does not apply:
+               a hidden block can still reach the accessibility tree, and a screen
+               reader landing on an empty "All time" heading is exactly the
+               "looks broken" impression the reveal gate exists to avoid. -->
+          <div data-completion-panel class="w-full flex flex-col gap-6 text-left"></div>
+
+          <!-- One polite announcement of the result. Written by screens.ts once the
+               completion screen is visible — a live region inside an aria-hidden
+               subtree is not spoken, and this screen is still aria-hidden at the
+               moment renderCompletion runs. -->
+          <p data-completion-live class="sr-only" role="status" aria-live="polite"></p>
 
           <!-- Countdown -->
           <p data-completion-countdown class="text-base text-text"></p>
