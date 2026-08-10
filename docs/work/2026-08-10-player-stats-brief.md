@@ -2,11 +2,17 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN — every section is settled with Jamie, and section 9 is signed off by its
-owner. The brief CANNOT close until Dave acks the joint sections: **2, 3 (items 52-56), 4,
-5, 6, 7, 8, 10 and 11.** Asked 2026-08-10. Silence is not consent; no timeout applies.
-Next step once acked: fresh-context `da-brief` review, fix every Medium and above, then
-clear context and plan.
+Status: CLOSING. All eleven sections settled with Jamie; section 9 signed off by its owner.
+
+**Dave never acked sections 2, 3 (items 52-56), 4, 5, 6, 7, 8, 10 or 11.** Jamie, as dev
+lead, overrode on 2026-08-10: "assume Dave is happy with everything, crack on with DA
+review." That is recorded as an override, NOT as Dave's agreement, because he did not give
+one. Dave's only direct words on this brief are at items 24 (goes along, no strong view),
+50 (agrees two minutes) and his "makes sense to me" on the /stats figure. If anything here
+later surprises him, this is the line that explains why.
+
+Next: fresh-context `da-brief` review, fix every Medium and above, then clear context and
+plan.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -17,16 +23,16 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | Section | State |
 |---|---|
 | 1. What it is | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (goes along, no strong view) |
-| 2. Out of scope | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave on the timer only, rest pending |
-| 4. Maths | proposed not applicable 2026-08-10 · Dave to confirm |
-| 5. State & persistence | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 6. How it fits | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 7. How it looks | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 8. Copy & wording | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
+| 2. Out of scope | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
+| 3. How it works | Settled: Jamie 2026-08-10 · Ack: Dave on the timer · Override: Jamie 2026-08-10 for items 52-56 |
+| 4. Maths | not applicable · Override: Jamie 2026-08-10 (Dave never confirmed directly) |
+| 5. State & persistence | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
+| 6. How it fits | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
+| 7. How it looks | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
+| 8. Copy & wording | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 | 9. Accessibility | Signed off: Jamie 2026-08-10 (owner) · Ack: n/a |
-| 10. Analytics | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 11. Done / test plan | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
+| 10. Analytics | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
+| 11. Done / test plan | Settled: Jamie 2026-08-10 · Override: Jamie 2026-08-10 (not a Dave ack) |
 
 ## Background — what we show today
 
