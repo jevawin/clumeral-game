@@ -5,7 +5,8 @@ Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev b
 Source of truth: [`docs/work/2026-08-10-player-stats-brief.md`](2026-08-10-player-stats-brief.md),
 closed 2026-08-10 at brief item 143. Every task below cites the brief items it implements.
 
-Status: **DRAFT — awaiting da-plan, then Jamie's approval.**
+Status: **APPROVED 2026-08-10.** da-plan run and every High and Medium fixed; P-01 and P-02
+settled by Jamie; plan approved by Jamie as dev lead. Ready for Build.
 
 Related tickets: #252, #163, #143, #148 (sharing, comes after this work).
 
@@ -485,6 +486,8 @@ with an injected clock, so it can be tested without waiting five real seconds:
 
 1. Ticked → no warning text, submit available.
 2. Unticking → the warning text appears and submit is unavailable.
+2a. **The checkbox's label reads "Save my scores on this device" throughout** — before,
+    during and after the warning. Its accessible name never becomes the warning text (P-02).
 3. Four seconds in, submit is still unavailable and the countdown reads `1`.
 4. At five seconds submit becomes available and the countdown text is gone.
 5. Re-ticking **before** the five seconds are up clears the warning and makes submit
@@ -499,13 +502,9 @@ with an injected clock, so it can be tested without waiting five real seconds:
 **Implementation** — `src/save-warning.ts` holds the state machine; `src/app.ts` wires it to
 the real checkbox and submit button; `index.html` gains the warning paragraph.
 
-**The design, as Jamie specified it 2026-08-10.** Two lines, appearing when the box is
-unticked:
-
-```
-[ ] Your existing stats will be deleted when you submit.     ← --color-error
-    Submit enabled in 5                                       ← --color-text
-```
+**The design, as Jamie specified it 2026-08-10.** Two lines appear beneath the checkbox when
+it is unticked. The checkbox keeps its own label — see P-02 below, which settles that and
+carries the final layout.
 
 - Line one is the warning, in `--color-error`. That is the existing berry-red token, built
   from the cherry chroma at the accent lightness, and it already flips between light and dark
@@ -533,17 +532,33 @@ longer exist.
   announcements in five seconds is noise. It is announced once when it appears and once when
   submit becomes available.
 
-**P-02 — open, for Jamie, who owns accessibility.** In Jamie's sketch the warning occupies
-the line the checkbox's label is on today. If the label text itself is what swaps, the
-checkbox stops saying what it does: a screen reader announces "Your existing stats will be
-deleted when you submit, checkbox, not checked", and someone coming back to the screen later
-sees a red sentence and a box with no idea what the box is for. Keeping the visible text and
-the accessible name different fails WCAG 2.5.3 Label in Name, which voice control depends on.
+**P-02 — SETTLED: Jamie 2026-08-10, "agreed, I wondered about that earlier."** Accessibility
+is his to sign and he has signed it.
 
-My recommendation: the checkbox keeps "Save my scores on this device" as its label,
-permanently, and the warning and countdown are two lines underneath it — three lines rather
-than two while the warning is up. Same layout rules Jamie gave, one line further down.
-**Awaiting his call; the rest of this task is settled.**
+The question was whether the warning replaces the checkbox's label. It does not. **The
+checkbox keeps "Save my scores on this device" as its label permanently**, and the warning
+and countdown appear as two lines underneath — three lines in total while the warning is up,
+rather than the two in Jamie's original sketch.
+
+Why: if the label text swapped, the control would stop saying what it does. A screen reader
+would announce "Your existing stats will be deleted when you submit, checkbox, not checked",
+and anyone returning to the screen would see a red sentence beside a box with no idea what
+the box was for. It would also fail WCAG 2.5.3 Label in Name, which voice control depends on.
+
+So the layout, superseding the sketch above:
+
+```
+[ ] Save my scores on this device                            ← --color-text
+    Your existing stats will be deleted when you submit.     ← --color-error
+    Submit enabled in 5                                      ← --color-text
+```
+
+Jamie's layout rules are unchanged and simply move down a line: the tick box sits against its
+own label, and the two new lines are left-aligned with that label's text, leaving a gap
+beneath the tick box.
+
+The warning line is tied to the checkbox with `aria-describedby`, so unticking it announces
+the label, the state, and then the consequence — in that order.
 - **Submit uses `aria-disabled`, never the native `disabled` attribute**, and its handler
   no-ops while unavailable. This is the house rule at `docs/CONVENTIONS.md` — browsers blur a
   natively-disabled element, and the keypad's hundreds-box `0` and the undo/reset controls
@@ -1173,5 +1188,9 @@ more under P-01, not less: it is now the only thing keeping today's puzzle unpla
 delete.
 
 - **da-plan:** passed, 2026-08-10, after the fixes above.
-- **P-01:** settled by Jamie, 2026-08-10.
-- **Jamie's approval of the plan as a whole:** *pending*.
+- **P-01:** settled by Jamie, 2026-08-10 — delete on submit, no dialogue, nothing about
+  saving on the completion panel.
+- **P-02:** settled by Jamie, 2026-08-10 — the checkbox keeps its label; the warning and
+  countdown sit underneath. Accessibility is his to sign and he has signed it.
+- **Jamie's approval of the plan as a whole:** given 2026-08-10 — "update that then I'll new
+  and build". No open questions remain. **Ready for Build.**
