@@ -30,6 +30,33 @@ export interface PlayTimer {
   idleLabel(): string;
 }
 
+/**
+ * Does this solve send a `puzzle_time` event?
+ *
+ * Its own function because the four conditions are the whole of brief 52, 132,
+ * 141 and 122, and a condition quietly dropped from an `if` in the solve path
+ * would be invisible — the event would simply start arriving from somewhere it
+ * should not, and nobody would notice until the average looked wrong.
+ *
+ * Returns the seconds to send, or null to send nothing.
+ */
+export function playTimeToSend(opts: {
+  isRandom: boolean;
+  isArchiveSolve: boolean;
+  saveScore: boolean;
+  seconds: number;
+}): number | null {
+  // Randoms and archive replays are not daily play, so they stay out of the
+  // average (brief 52, 132).
+  if (opts.isRandom || opts.isArchiveSolve) return null;
+  // Nothing about an opted-out player's play leaves the device (brief 141). The
+  // cost is that the average is measured over opted-in players only, which is
+  // worth remembering the first time that number looks surprising.
+  if (!opts.saveScore) return null;
+  // A junk value must not reach a number we will quote (brief 122).
+  return validSeconds(opts.seconds);
+}
+
 export function createPlayTimer(opts: {
   now?: () => number;
   elapsed?: number;

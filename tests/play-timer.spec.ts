@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createPlayTimer } from '../src/play-timer.ts';
+import { createPlayTimer, playTimeToSend } from '../src/play-timer.ts';
 import { MAX_STORED_SECONDS } from '../src/player-stats.ts';
 
 // An injected clock, so nothing here waits on real time. `at` is the fake now.
@@ -193,5 +193,38 @@ describe('coming back to the tab', () => {
     timer.activity();
     expect(timer.seconds()).toBe(20);
     expect(timer.idles()).toBe(1);
+  });
+});
+
+describe('which solves send a puzzle_time event', () => {
+  const base = { isRandom: false, isArchiveSolve: false, saveScore: true, seconds: 221 };
+
+  it("sends today's daily solve with its counted seconds", () => {
+    expect(playTimeToSend(base)).toBe(221);
+  });
+
+  it('sends nothing for a random puzzle (brief 52)', () => {
+    expect(playTimeToSend({ ...base, isRandom: true })).toBeNull();
+  });
+
+  it('sends nothing for an archive replay (brief 132)', () => {
+    expect(playTimeToSend({ ...base, isArchiveSolve: true })).toBeNull();
+  });
+
+  it('sends nothing for a player with saving off (brief 141)', () => {
+    expect(playTimeToSend({ ...base, saveScore: false })).toBeNull();
+  });
+
+  it('sends nothing when the counted time is not storable (brief 122)', () => {
+    expect(playTimeToSend({ ...base, seconds: -1 })).toBeNull();
+    expect(playTimeToSend({ ...base, seconds: 1.5 })).toBeNull();
+  });
+
+  it('still sends a long game — the outlier is excluded from averages, not from the event', () => {
+    expect(playTimeToSend({ ...base, seconds: 2400 })).toBe(2400);
+  });
+
+  it('sends a zero-second game rather than swallowing it', () => {
+    expect(playTimeToSend({ ...base, seconds: 0 })).toBe(0);
   });
 });

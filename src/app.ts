@@ -5,7 +5,7 @@ import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordSolve, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
-import { createPlayTimer } from './play-timer.ts';
+import { createPlayTimer, playTimeToSend } from './play-timer.ts';
 import { createSaveWarning, WARNING_TEXT } from './save-warning.ts';
 import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
@@ -1053,6 +1053,21 @@ async function handleGuess() {
           seconds: timer.seconds(),
         });
       }
+
+      // How long that took, with a label saying whether the idle cut-off ever
+      // fired. All four conditions earn their place and none is redundant:
+      // daily-only keeps randoms and archive replays out of the average (brief
+      // 52, 132); saving-on honours brief 141, so nothing about an opted-out
+      // player's play leaves the device; and a valid time keeps a junk value out
+      // of a number we will quote. Give-ups stay invisible and that is accepted
+      // — they read as a puzzle_start with no puzzle_complete.
+      const countedSeconds = playTimeToSend({
+        isRandom: !!gameState.isRandom,
+        isArchiveSolve,
+        saveScore,
+        seconds: timer.seconds(),
+      });
+      if (countedSeconds !== null) track("puzzle_time", countedSeconds, timer.idleLabel());
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();
 

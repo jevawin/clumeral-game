@@ -75,8 +75,11 @@ describe('recordEvent', () => {
     });
   });
 
-  it('accepts all ten documented events', () => {
-    expect(VALID_EVENTS.size).toBe(10);
+  // A bare count fails with no clue as to why, so: adding an event name is meant
+  // to change this number, and removing one is meant to be noticed.
+  it('accepts all eleven documented events', () => {
+    expect(VALID_EVENTS.size).toBe(11);
+    expect(VALID_EVENTS.has('puzzle_time')).toBe(true);
   });
 
   it('normalises an empty source to NULL', async () => {
