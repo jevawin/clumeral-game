@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1, 2, 3, 5, 6 and 10 settled with Jamie. Sections 4 and 7 asked. Dave's ack outstanding on 2, 3, 4, 5, 6 and 10.
+Status: OPEN. Sections 1, 2, 3, 5, 6, 7 and 10 settled with Jamie. Sections 4 and 8 asked. Dave's ack outstanding on 2, 3, 4, 5, 6, 7 and 10.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -18,8 +18,8 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 4. Maths | proposed not applicable 2026-08-10 · Dave to confirm |
 | 5. State & persistence | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 6. How it fits | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 7. How it looks | asked 2026-08-10 |
-| 8. Copy & wording | not started |
+| 7. How it looks | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
+| 8. Copy & wording | asked 2026-08-10 |
 | 9. Accessibility | not started |
 | 10. Analytics | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 11. Done / test plan | not started |
@@ -391,6 +391,35 @@ decision, because the new panel is mostly history.
     They are drawn now and do nothing until #148. (settled at item 21)
 85. **The panel keeps working at 320 pixels wide and at 200% text size** without the numbers
     colliding. (assumed — the streak block is two columns, so it needs to stack)
+86. **Section 7 SETTLED: Jamie 2026-08-10, "agreed"** — all time stays open and quiet, not
+    folded. Ack from Dave still needed.
+
+## 8. Copy and wording
+
+87. **Section headings: "This game", "Streaks", "All time".** (assumed — Jamie's own words)
+88. **Hero line: "Solved in 2 · 3:41".** Times under an hour read as minutes and seconds;
+    nothing shows hours, because a game that long is excluded anyway (item 31). (assumed)
+89. **Which phrase do we use for getting it right first time?** It appears about six times —
+    a streak, a total, a record and the chart.
+    My rec: **"first go"** throughout — "First-go streak", "First-go wins", "Solved in one".
+    Why: it is what a person says out loud, it survives translation better than "1-go", and
+    a digit in the middle of a label reads like a number the player has scored. Jamie's own
+    shorthand was "1-go", which is why this is a question and not an assumption.
+90. **All-time block when saving is off:** "Turn on score saving to see your all-time stats",
+    with the checkbox **"Save my scores on this device"** — no mention of cookies.
+    (settled at items 65, 69 and 70)
+91. **The warning when someone turns saving off mid-game:** "This deletes the stats you have
+    saved so far. It cannot be undone." Buttons say what they do — "Delete my stats" and
+    "Keep them" — rather than OK and Cancel. (assumed — a destructive action needs a plain
+    warning, per item 68)
+92. **New player, first two games:** "Your streaks and all-time stats start from your third
+    game." (assumed — item 19, and it explains the empty space instead of hiding it)
+93. **After a random puzzle:** "Random puzzles don't count towards your stats."
+    (assumed — item 52)
+94. **The chart is labelled "How many goes you take".** (assumed — item 18)
+95. **Every stat that needs explaining gets one short line under it, not a tooltip.** The
+    whole point of this build is that "streak" currently explains nothing. (assumed —
+    item 1; exact lines land with the design)
 
 ## 10. Analytics
 
