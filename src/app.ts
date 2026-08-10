@@ -3,7 +3,7 @@
 
 import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
-import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
+import { loadPrefs, persistPrefs, loadHistory, recordSolve, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
 import { createPlayTimer } from './play-timer.ts';
 import { createSaveWarning, WARNING_TEXT } from './save-warning.ts';
@@ -769,15 +769,20 @@ function checkSubmit() {
 
 // ─── Game ─────────────────────────────────────────────────────────────────────
 
-function showCompletedState(tries: number, replayDate?: string): void {
+// `tries` is null when the day was played but not recorded — the day-only
+// marker a player with score saving off leaves behind. Neither the number of
+// goes nor the answer was stored, so neither is shown, and it must never read
+// "Solved in 0 tries" (brief 71, 123).
+function showCompletedState(tries: number | null, replayDate?: string): void {
   // /play in solved-replay mode is the same minimal view for today and archive:
   // clues + revealed digits + "Solved in N tries!" + a context-specific link.
   // Stats panel never appears here — it lives on /solved.
   // Finalised: the keypad is no longer usable, so hide it (issue #194).
   closeKeypad();
-  const t = tries === 1 ? "1 try" : `${tries} tries`;
+  const solvedText =
+    tries === null ? "Solved!" : `Solved in ${tries === 1 ? "1 try" : `${tries} tries`}!`;
   if (dom.feedback) {
-    dom.feedback.innerHTML = `${ICON_CHECK} Solved in ${t}!`;
+    dom.feedback.innerHTML = `${ICON_CHECK} ${solvedText}`;
     dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-success font-[Quicksand]";
     dom.feedback.classList.remove("hidden");
   }
@@ -865,8 +870,9 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 
   const entry = todayEntry();
   if (entry) {
-    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entry.tries, puzzleNum: num, date };
-    showCompletedState(entry.tries);
+    const entryTries = entry.marker ? null : entry.tries;
+    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entryTries, puzzleNum: num, date };
+    showCompletedState(entryTries);
     return;
   }
 
@@ -938,8 +944,9 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
         }
       } catch { /* leave as null */ }
     }
-    gameState = { answer, guesses: [], solved: true, tries: entry.tries, puzzleNum: num, date };
-    showCompletedState(entry.tries, date);
+    const entryTries = entry.marker ? null : entry.tries;
+    gameState = { answer, guesses: [], solved: true, tries: entryTries, puzzleNum: num, date };
+    showCompletedState(entryTries, date);
     showBanner();
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
     // when the user reaches the completion screen via /archive/<date>. The renderCompletion
@@ -1039,8 +1046,9 @@ async function handleGuess() {
       // read dlng_history by date). isArchiveSolve is computed above, where the
       // announcement decision also needs it.
       if (!gameState.isRandom && gameState.date) {
-        recordGame(gameState.date, tries, {
-          answer: saveScore ? guess : undefined,
+        recordSolve(gameState.date, tries, {
+          saveScore,
+          answer: guess,
           archived: isArchiveSolve,
           seconds: timer.seconds(),
         });
@@ -1105,7 +1113,7 @@ async function handleGuess() {
 async function loadPuzzle() {
   const isRandom = window.location.pathname === '/random';
   // Send the browser-LOCAL date so the worker serves the puzzle for the player's
-  // local day, not UTC today. This keeps the served puzzle, recordGame, and
+  // local day, not UTC today. This keeps the served puzzle, recordSolve, and
   // todayEntry all keyed on the same date (todayKey) — without it, a UTC+offset
   // player in the local/UTC-midnight window gets a mismatched day (the
   // not-completed / stats-bounce / streak-reset bugs).
@@ -1601,7 +1609,9 @@ document.addEventListener('screens:enter', (e) => {
 
 document.addEventListener('screens:enter', (e) => {
   const screen = (e as CustomEvent).detail?.screen;
-  if (screen !== 'game' || !gameState.solved || gameState.tries == null) return;
+  // `=== undefined`, not `== null`: null is a real value here — a marker day,
+  // where the solved view still renders, just without a number.
+  if (screen !== 'game' || !gameState.solved || gameState.tries === undefined) return;
   // replayDate is only meaningful on /archive/<date>. On /play the puzzle is today's daily, even if
   // gameState still holds a previous archive date because the user navigated without reloading.
   const onArchiveDate = location.pathname.startsWith('/archive/');

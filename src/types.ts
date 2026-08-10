@@ -9,7 +9,9 @@ export interface GameState {
   answer: number | null;
   guesses: number[];
   solved: boolean;
-  tries?: number;
+  /** null means "played, not recorded" — a day-only marker. undefined means the
+   *  puzzle is not solved. The two are different and the solved view reads both. */
+  tries?: number | null;
   puzzleNum?: number;
   isRandom?: boolean;
   date?: string;

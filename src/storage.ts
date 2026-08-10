@@ -133,6 +133,32 @@ export function deleteHistory(keepMarkerFor?: string, archived = false): void {
   } catch { /* private mode / disabled storage — nothing to delete */ }
 }
 
+/**
+ * The save-my-scores rule, stated once so it cannot drift.
+ *
+ * At the moment a correct answer lands: saving on records the game; saving off
+ * deletes the stored history and leaves a day-only marker for the puzzle just
+ * solved. That is the whole mechanism (brief 65). It holds no state between
+ * sessions and needs no "pending deletion" flag — the rule is read at solve time
+ * from the stored preference, not from something armed earlier in a session that
+ * no longer exists.
+ *
+ * One call rather than two, because writing a marker on top of history that is
+ * about to be deleted and then deleting it would be two steps that have to
+ * agree. One call that does both cannot disagree with itself.
+ */
+export function recordSolve(
+  dateStr: string,
+  tries: number,
+  opts: { saveScore: boolean; answer?: number; archived?: boolean; seconds?: number },
+): void {
+  if (opts.saveScore) {
+    recordGame(dateStr, tries, { answer: opts.answer, archived: opts.archived, seconds: opts.seconds });
+    return;
+  }
+  deleteHistory(dateStr, opts.archived === true);
+}
+
 
 // ─── Active mid-game state (D-06 / D-07) ──────────────────────────────────────
 // Persists the board state between page loads so a player can resume mid-game.
