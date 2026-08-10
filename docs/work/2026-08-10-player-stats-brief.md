@@ -146,4 +146,49 @@ grid, and said the layout does not have to stay a grid:
     My rec: both, as "23 (18%)". Why: the count is the brag, the percentage is the one that
     stays meaningful after 400 games, when everyone's counts are large.
 
-Open with Dave: items 5, 12, 13, 17, 18, 19, 20.
+### Layout sketch and share buttons, 2026-08-10
+
+21. **Two share buttons, one per section header — "This game" and "All time".** (Jamie
+    2026-08-10: "probably share all time, but we could give them both options", with the
+    button sitting on the section rule.)
+    My rec: two buttons, not three. The streaks block shares as part of *All time*, because
+    a streak with no totals around it is a thin thing to post, and a third button starts to
+    look like a toolbar. Sharing itself is still #148 and comes after this build — this
+    brief only fixes where the buttons live so the layout does not have to change twice.
+22. **Dave's concern, 2026-08-10: "what would people show or share because that looks a
+    lot?"** Fair. Two answers: the sections are collapsible in reading order, so the eye
+    lands on this game first; and the shared picture is a deliberate subset — roughly five
+    numbers — not a screenshot of the whole panel. The panel is for you, the picture is for
+    other people. To be settled properly in §7 and in #148.
+23. **Screen sketch (phone width), 2026-08-10:**
+
+```
+        Puzzle #157 — solved!
+
+  THIS GAME ───────────── [ ↗ Share ]
+
+        2 goes         3:41
+
+  STREAKS ─────────────────────────
+
+     Play streak     One-go streak
+          14               3
+       best 21           best 7
+
+  ALL TIME ────────────── [ ↗ Share ]
+
+     Plays                     128
+     One-go plays          23 (18%)
+     Average goes              2.4
+     Average time             4:12
+     Fastest one-go win       0:48
+
+     How many goes you take
+     1  ███░░░░░░░░░  23
+     2  ████████████  61
+     3  ██████░░░░░░  34
+     4  █░░░░░░░░░░░   8
+     5  ░░░░░░░░░░░░   2
+```
+
+Open with Dave: items 5, 12, 13, 17, 18, 19, 20, 21, 22, 23.
