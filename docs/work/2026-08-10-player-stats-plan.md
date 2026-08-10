@@ -28,9 +28,24 @@ dialogue anywhere.** His mechanism, in his words:
 > is now as that's the action of saving — it's where the "cookie" setting takes place. It's
 > where we need consent.
 
-This **overrides brief items 53, 65 and 90** on one point only: the *All time* block still
-explains itself when saving is off, but it carries **no checkbox**. Everything else in those
-items stands.
+**Amended again by Jamie the same day, and this is the version to build:**
+
+> Don't mention it on the stats screen — defer that to the "menu = opt out" ticket. Only on
+> play before submitting score, with the existing tick box, reworded.
+
+So the completion panel says **nothing at all** about score saving: no checkbox, and no line
+inviting anyone to turn it back on. A player with saving off sees the *This game* block and
+nothing below it.
+
+This **overrides brief items 53, 65 and 90** on the completion panel entirely. Those items
+put an explanation and a control under an *All time* heading; both are gone. Brief 65's
+deletion rule is untouched and still governs the play screen.
+
+**The trade-off, recorded rather than argued:** brief 53's reasoning was that someone who had
+forgotten they switched saving off would otherwise think the panel was broken. That is still
+true, and Jamie has weighed it and chosen to defer the fix to the menu ticket (#309), where
+the opt-out will be discoverable from any screen. Noted here so a later reader knows the
+silence is deliberate and where its replacement is going.
 
 It also settles the plan review's H5 finding — "there is no checkbox to untick when saving is
 on" — by removing the requirement rather than adding a control. There is no delete flow on
@@ -529,9 +544,9 @@ it needs no new contrast case.
 
 - **No share buttons.** Brief 140 removed them from this build; the section rules are drawn
   without them. Read the sketch at brief 23 with the `[ ↗ Share ]` blocks deleted.
-- **No saving checkbox anywhere on this panel**, in any mode — P-01. The setting lives on the
-  play screen, where the consent and the action both are. When saving is off the *All time*
-  block explains itself in words and points at the play screen; it offers no control.
+- **Nothing about score saving appears on this panel at all** — no checkbox and no
+  explanation, in any mode (P-01). The setting and everything said about it live on the play
+  screen. When saving is off, the *All time* block is simply not rendered.
 - Each block is a `<section>` with its own heading, so a screen reader can jump between them.
 - Each stat is a `<dl>` pair — term is the label, definition is the number — so nothing is
   read as a loose figure (brief 97). The explanatory line sits in the same `<dd>`, after the
@@ -568,11 +583,12 @@ patched, keeping its streak scenarios as data.
 3. **Second game**: same as above. **Third game**: all three blocks — brief 19.
 4. **Just switched saving on, one countable game**: identical to the new-player state, with
    the same wording — brief 131.
-5. **Saving off**: *This game* renders; the *All time* heading renders with the explanation
-   in place of the numbers; the streak block is absent — brief 53, 65, 90 as amended by
-   P-01.
-6. **Saving off renders no checkbox and no control of any kind.** An explicit test, because
-   brief 65 asked for one and P-01 removed it, and the brief is what a builder reads first.
+5. **Saving off**: *This game* renders and nothing else. No streak block, no *All time*
+   block, no heading, no explanation — brief 53, 65 and 90 as overridden by P-01.
+6. **Saving off renders no mention of score saving anywhere on the panel** — no checkbox, and
+   no text matching "saving". An explicit test, because brief 53, 65 and 90 all ask for
+   something here and P-01 removed all three, and the brief is what a builder reads first.
+   The line that used to explain this is deferred to #309.
 7. **Random puzzle**: *This game* only, plus "Random puzzles don't count towards your
    stats" — brief 52, 93.
 8. **Archive replay** (`activeDate !== todayLocal`): the minimal existing panel, no streaks,
@@ -607,12 +623,11 @@ patched, keeping its streak scenarios as data.
   by `speakDuration`: `3:41` becomes `3 minutes 41 seconds`. A screen reader saying "three
   colon forty-one" is the reason this is not the display string.
 - The hero line reads `Solved in 2 · 3:41` (brief 88).
-- **The saving-off copy changes, because there is no longer a checkbox beside it.** Brief 90's
-  "Turn on score saving to see your all-time stats" sat directly above the control that did
-  it; with the control gone it tells someone to do a thing without saying where. It becomes
-  **"Turn on score saving to see your all-time stats. The setting is on the puzzle screen,
-  under the answer box."** Two sentences: what they get, and where to go. This is the only
-  copy change P-01 forces, and it is flagged for Jamie in the summary.
+- **Brief 90's copy is deleted, not reworded.** P-01 removes the whole *All time* block for a
+  saving-off player, so there is no line to write. The new-player line at brief 92 is
+  **not** shown to them either: "your streaks and all-time stats start from your third game"
+  would be a promise we are not going to keep, since with saving off no third game ever
+  accumulates. They see the *This game* block and nothing else.
 
 **`renderCompletion` gains one optional field, and all four call sites are specified.**
 `RenderCompletionOpts` gains `seconds?: number`. The four callers in `src/app.ts`:
@@ -893,9 +908,9 @@ new gate** (brief 113). Playwright never runs on the Pi (brief 111).
    goes chart.
 2. **Brand-new player.** No history. Solve. Assert *This game* only and the
    "starts from your third game" line.
-3. **Saving turned off.** Seed `{ saveScore: false }`. Solve. Assert *This game*, the
-   *All time* explanation, **no checkbox on the panel**, no streak block — and that
-   `dlng_history` holds a marker with `tries: 0` and no `answer`.
+3. **Saving turned off.** Seed `{ saveScore: false }`. Solve. Assert *This game* renders and
+   that the streak block, the *All time* block and any mention of saving are all absent from
+   the panel — and that `dlng_history` holds a marker with `tries: 0` and no `answer`.
 4. **The delete flow, end to end, on the play screen.** Seed history, start today's puzzle,
    untick the box. Assert the warning text appears and submit is unavailable; wait out the
    five seconds and assert submit becomes available again; assert `dlng_history` is still
@@ -972,7 +987,7 @@ context or corrections that need nothing built.
 | 43, 44, 45, 47, 48 | no code — out of scope |
 | 49, 110 | 11, 13 |
 | 52, 93 | 7, 10 |
-| 53, 90 | 7 — checkbox removed from the panel at P-01; the explanation stays and is reworded |
+| 53, 90 | no code — P-01 removes the checkbox *and* the explanation from the panel; deferred to #309 |
 | 54 | 7 |
 | 55 | 2, 7 |
 | 56 | no code — existing behaviour unchanged |
@@ -1110,8 +1125,10 @@ review's H5 (no checkbox to untick when saving is on) is resolved by P-01 removi
 control from the panel entirely, rather than by the extra checkbox the earlier fix added.
 
 Task 5 was rewritten from the dialogue to the warning and countdown. Tasks 6, 7, 8 and 13
-were amended. Two copy changes fall out of it and are flagged to Jamie: the saving-off line
-now says where the setting is, and the warning wording is plainer than his draft.
+were amended. One copy change falls out of it: the warning wording is plainer than Jamie's
+draft. Jamie then amended P-01 a second time — nothing about score saving appears on the
+completion panel at all, not even an explanation — so brief items 53 and 90 now need no code
+and the saving-off panel is the *This game* block on its own.
 
 Nothing in Tasks 1, 2, 3, 4, 9, 10, 11 or 12 changed, so the review's findings against those
 stand as fixed. The marker-writing behaviour of `deleteHistory` — the review's H1 — matters
