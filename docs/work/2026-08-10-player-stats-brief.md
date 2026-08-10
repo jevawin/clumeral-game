@@ -62,8 +62,9 @@ Everything Jamie asked for is computable from the history we already store, **ex
    under the streak rather than its own box. Why: six headline numbers is already a lot on a
    phone, and two of the four old boxes are re-expressed by the new ones.
 6. **Does the answer-in-one streak break on a day you don't play, or only on a day you play
-   and miss?**
-   My rec: it breaks on both — it is a run of consecutive days that you each got first go.
+   and miss?** — **SETTLED: Jamie 2026-08-10, "both, since it's partly a come-back-and-play
+   function".** A run of consecutive days each answered first go; missing a day breaks it.
+   My rec was: it breaks on both — it is a run of consecutive days that you each got first go.
    Why: it is one sentence to explain, and a streak you can pause by not playing is not a
    streak. The alternative (only counting days you played) is kinder but confusing.
 7. **Archive puzzles stay excluded from the daily streaks.** (assumed — existing deliberate
@@ -76,3 +77,29 @@ Everything Jamie asked for is computable from the history we already store, **ex
    their times build from zero while their other stats carry over. (assumed — unavoidable)
 10. **Not part of this work:** the share link and preview picture (#148), and any
     leaderboard. Both come after. (assumed — Jamie, 2026-08-10)
+
+### Reopened after Jamie's reply, 2026-08-10
+
+Item 5 is open with Dave. Jamie proposed grouping the stats in three blocks instead of one
+grid, and said the layout does not have to stay a grid:
+
+11. **Proposed grouping (Jamie 2026-08-10, awaiting Dave):**
+    - *This game:* tries · time to complete
+    - *Streak:* play streak · one-go streak
+    - *All time:* plays · one-go plays · average attempts · average time · fastest game
+    (recorded as proposed, not settled — item 5 asks Dave whether average attempts stays)
+12. **The proposed list drops "best streak", which we show today.**
+    My rec: keep both bests, as small text under each streak — "best 14". Why: players have
+    already earned those numbers, and removing them makes the panel feel like a downgrade.
+    A best streak is also the only stat that still means something after a streak breaks,
+    which is exactly the moment we want someone to come back.
+13. **"Fastest game completed" rewards a lucky guess as much as skill.** A one-go correct
+    guess on your first look could be five seconds.
+    My rec: keep it, but only count games you got right first go, so it reads as "fastest
+    one-go win". Why: it stays a real record instead of a luck record. Alternative is to
+    drop it.
+14. Item 8 (do archive plays count towards total plays and one-go plays?) is **still
+    unanswered** — asked 2026-08-10, no reply yet.
+15. No record anywhere of suggestions from Emma — nothing in the repo, the docs, the issues
+    or the feedback. If there were any, they were only ever said out loud. (noted
+    2026-08-10)
