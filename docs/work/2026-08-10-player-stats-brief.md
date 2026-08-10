@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Section 1 settled. Sections 3 (timer) and 10 asked. Section 2 still to do.
+Status: OPEN. Sections 1 and 10 settled. Sections 2 and 3 asked.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -13,7 +13,7 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | Section | State |
 |---|---|
 | 1. What it is | Settled: Jamie 2026-08-10 · Ack: Dave 2026-08-10 (goes along, no strong view) |
-| 2. Out of scope | not started |
+| 2. Out of scope | asked 2026-08-10 |
 | 3. How it works | asked 2026-08-10 (timer only) |
 | 4. Maths | not started |
 | 5. State & persistence | not started |
@@ -21,7 +21,7 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 7. How it looks | not started |
 | 8. Copy & wording | not started |
 | 9. Accessibility | not started |
-| 10. Analytics | asked 2026-08-10 |
+| 10. Analytics | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 11. Done / test plan | not started |
 
 ## Background — what we show today
@@ -275,3 +275,26 @@ anonymous id, a free-text `source`, a whole-number `value`, and the hostname.
 41. **A player who never finishes records no time at all.** We only send the event on a
     correct answer, so abandoned puzzles are invisible to the timing numbers. (assumed —
     accepted; measuring give-ups is a different question)
+42. **Section 10 SETTLED: Jamie 2026-08-10, "yep, give ups indicated by start without
+    finish".** One new `puzzle_time` event, nothing else. Give-ups are read as the gap
+    between `puzzle_start` and `puzzle_complete`, both of which we already record, so this
+    build adds no event for them. Ack from Dave still needed.
+
+## 2. Out of scope
+
+43. **No leaderboard.** (assumed — Jamie 2026-08-10, it comes "if and when")
+44. **No accounts and no syncing between devices** (#162). Your stats stay in this browser
+    on this device, exactly as today. Clearing your browser data still wipes them.
+    (assumed — a big piece of work in its own right)
+45. **No sharing** (#148) — buttons are drawn in their places but do nothing yet.
+    (assumed — Jamie 2026-08-10, stats first)
+46. **No archive stats and no archive leaderboard** (#160, #161). (assumed — item 16)
+47. **No streaks on the main game screen** (#163). This build only changes the end-of-puzzle
+    panel. (assumed)
+48. **No back-filling.** Games played before this ships have no time recorded and never
+    will. (assumed — item 9)
+49. **Does the team's own `/stats` dashboard get the new timing numbers in this build?**
+    My rec: no. Store the event now, read it with a one-off query when we want it, and add a
+    chart later once we know the numbers are sane. Why: it is a separate screen with its own
+    accessibility and contrast work, and adding it here doubles the review surface for
+    something only the two of you look at.
