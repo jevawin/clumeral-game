@@ -98,8 +98,52 @@ grid, and said the layout does not have to stay a grid:
     My rec: keep it, but only count games you got right first go, so it reads as "fastest
     one-go win". Why: it stays a real record instead of a luck record. Alternative is to
     drop it.
-14. Item 8 (do archive plays count towards total plays and one-go plays?) is **still
-    unanswered** — asked 2026-08-10, no reply yet.
+14. Item 8 (do archive plays count towards total plays and one-go plays?) was unanswered at
+    the time of writing — **now settled at item 16.**
 15. No record anywhere of suggestions from Emma — nothing in the repo, the docs, the issues
     or the feedback. If there were any, they were only ever said out loud. (noted
     2026-08-10)
+
+### Jamie's second reply, 2026-08-10 — archive settled, full list requested
+
+16. **Item 8 SETTLED: Jamie 2026-08-10 — "archive is separate, separate stats separate
+    leaderboard if and when we do leaderboard".** Archive plays are excluded from every
+    stat in this brief, totals included. Archive gets its own stats later, out of scope
+    here. This also matches the existing `archived: true` behaviour, so nothing changes in
+    how history is tagged.
+
+17. **Recommended list and grouping (Claude, 2026-08-10 — replaces the shape in item 11).**
+    Reasoning: at the end of a game people want two things — how did I just do, and is my
+    run still alive. Wordle shows only four numbers plus a guess-distribution chart, and the
+    chart, not the averages, is the part players talk about. Averages move so slowly they
+    become invisible, so they belong lower down as reference, not up top as the headline.
+
+    **Block 1 — This game (the hero, biggest type):** solved in *n* · time.
+    One line, not two boxes. It is the only thing that changed in the last ten seconds.
+
+    **Block 2 — Streaks (the return hook, two numbers, best underneath each):**
+    play streak (best *n*) · one-go streak (best *n*).
+    Keeping both bests — see item 12. This block is what brings people back tomorrow, so it
+    sits above the all-time block, not below it.
+
+    **Block 3 — All time (smaller, reference):** plays · one-go plays · average tries ·
+    average time · fastest one-go win.
+    Keeping average tries (item 5) — it is the closest thing we have to a skill measure and
+    it costs nothing to show once it is demoted out of the headline. "Fastest one-go win"
+    per item 13.
+
+18. **Add a tries distribution — a small bar chart of how many goes you have taken across
+    all your games.**
+    My rec: yes, include it. Why: it is the single most-copied element of Wordle's stats
+    screen, and it answers the question a newcomer actually has, which is "is 3 goes good?"
+    We already store tries per game, so there is no new data to collect. It is extra design
+    and build work though, so it is a fair thing to cut.
+19. **What does a first-time player see?** Every all-time number is 0 or 1 on day one, which
+    makes the panel look broken rather than promising.
+    My rec: on your first two games show only "This game" and a line saying the rest starts
+    building tomorrow. Reveal the streak and all-time blocks from the third game.
+20. **Show one-go plays as a count, or as a percentage of games?**
+    My rec: both, as "23 (18%)". Why: the count is the brag, the percentage is the one that
+    stays meaningful after 400 games, when everyone's counts are large.
+
+Open with Dave: items 5, 12, 13, 17, 18, 19, 20.
