@@ -562,10 +562,10 @@ frozen in KV keep whatever generator made them, so the archive will carry a perm
 4–6 clue puzzles either way. Nothing breaks. The `CLAUDE.md` watch on the wrong-guess rate is
 what would trigger that conversation.
 
-**Still owed before the pull request to `main`:** the first affected puzzle number in
-`docs/ARCHITECTURE.md`, which currently reads `TO BE FILLED IN WHEN THE PULL REQUEST TO main IS
-OPENED`. It is `puzzleNumber(deploy date + 2)` and cannot be computed until the merge date is
-known.
+**The first affected puzzle number, recorded 2026-08-10.** Jamie confirmed the merge to `main`
+happens today, so the cron has already frozen #156 (2026-08-10) and #157 (2026-08-11) under the
+old generator, and the first daily made under the new rules is **#158, 2026-08-12**. Written
+into `docs/ARCHITECTURE.md` with a note that all three shift by a day if the merge slips.
 
 ## da-build review — findings and what was done (2026-08-08)
 
