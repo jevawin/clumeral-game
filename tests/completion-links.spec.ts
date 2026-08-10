@@ -5,7 +5,8 @@ function setupDOM(): void {
     <div data-completion-octo></div>
     <h2 data-completion-heading></h2>
     <p data-completion-subheading></p>
-    <div data-completion-stats></div>
+    <div data-completion-panel></div>
+    <p data-completion-live></p>
     <p data-completion-countdown></p>
     <button data-completion-feedback></button>
     <div data-completion-links></div>

@@ -8,11 +8,12 @@ import { freezeDate } from "../helpers/clock.ts";
 const NOW = "2026-06-08T12:00:00Z";
 const TODAY = "2026-06-08";
 
-// Three consecutive days ending today: played=3, avg=(2+4+3)/3=3.0, streak=3.
+// Three consecutive days ending today: plays=3, avg goes=(2+4+3)/3=3.0, streak=3.
+// Three is also the reveal gate, so all three blocks render.
 const HISTORY = [
-  { date: "2026-06-08", tries: 2 },
-  { date: "2026-06-07", tries: 4 },
-  { date: "2026-06-06", tries: 3 },
+  { date: "2026-06-08", tries: 2, seconds: 221 },
+  { date: "2026-06-07", tries: 4, seconds: 300 },
+  { date: "2026-06-06", tries: 3, seconds: 100 },
 ];
 
 async function gotoCompletion(page: import("@playwright/test").Page) {
@@ -26,12 +27,14 @@ async function gotoCompletion(page: import("@playwright/test").Page) {
 test.describe("completion screen", () => {
   test("stats render from seeded history", async ({ page }) => {
     await gotoCompletion(page);
-    const stat = (label: string) =>
-      page.locator("[data-completion-stats] > div").filter({ hasText: label }).locator("span.font-mono");
+    const completion = new CompletionPage(page);
 
-    await expect(stat("Played")).toHaveText("3");
-    await expect(stat("Avg tries")).toHaveText("3.0");
-    await expect(page.locator("[data-completion-stats] > div")).toHaveCount(4);
+    await expect(completion.thisGame).toBeVisible();
+    await expect(completion.streaks).toBeVisible();
+    await expect(completion.allTime).toBeVisible();
+    await expect(completion.stat("Plays")).toHaveText("3");
+    await expect(completion.stat("Average goes")).toHaveText("3.0");
+    await expect(completion.stat("Play streak")).toHaveText("3");
   });
 
   test("countdown shows the time until the next puzzle, derived from the clock", async ({ page }) => {
