@@ -13,6 +13,7 @@ import {
   trimRedundantClues,
   type Clue,
 } from '../src/worker/puzzle.ts';
+import worker from '../src/worker/index.ts';
 
 // ─── Redundant-clue sweep (#193) ──────────────────────────────────────────────
 //
@@ -147,17 +148,79 @@ describe('generatePuzzleFromRng across seeds', () => {
     }
   });
 
-  it('gives the same answer when the guess checker re-runs it', { timeout: 30_000 }, () => {
-    // handleGuess does not store a random puzzle's answer — it re-runs the
-    // generator from the seed in the token. If generation and re-generation
-    // could disagree, a correct guess would be marked wrong. That is the
-    // failure this whole change was at risk of introducing, so it is pinned
-    // on its own rather than left to the determinism test above.
-    for (let seed = 1; seed <= 100; seed++) {
-      const shown = generatePuzzleFromRng(makeRng(seed));
-      const checked = generatePuzzleFromRng(makeRng(seed));
-      expect(checked.answer, `seed ${seed}`).toBe(shown.answer);
+});
+
+// ─── The two answer paths agree, driven through the real routes ───────────────
+//
+// A random puzzle's answer is never stored. The player is shown clues from
+// `GET /api/puzzle/random`, and `POST /api/guess` re-derives the answer by
+// re-running the generator from the seed inside the signed token. If those two
+// routes ever reach DIFFERENT generators, every correct guess on a random
+// puzzle comes back wrong.
+//
+// This drives the actual worker handlers rather than calling the generator
+// twice from the test. Calling it twice only proves the generator is
+// deterministic, which the test above already proves — it says nothing about
+// how the two routes are WIRED, which is the thing that can rot. Point
+// handleGetRandomPuzzle at a new generator and leave handleGuess alone, and
+// this test fails while a generator-level test stays green.
+//
+// The env is the two routes' whole dependency: no KV, no database, no
+// analytics. HMAC_SECRET only has to be consistent between the two calls.
+
+describe('a correct guess on a random puzzle is accepted (#193)', () => {
+  const env = { HMAC_SECRET: 'test-secret-for-token-signing' } as never;
+  const ctx = {} as never;
+
+  const randomPuzzle = async () => {
+    const res = await worker.fetch(new Request('https://clumeral.com/api/puzzle/random'), env, ctx);
+    expect(res.status).toBe(200);
+    return (await res.json()) as { clues: Clue[]; token: string };
+  };
+
+  const submit = async (guess: number, token: string) => {
+    const res = await worker.fetch(
+      new Request('https://clumeral.com/api/guess', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ guess, token }),
+      }),
+      env,
+      ctx,
+    );
+    expect(res.status).toBe(200);
+    return (await res.json()) as { correct: boolean };
+  };
+
+  it('accepts the number the clues actually describe, 25 times over', { timeout: 30_000 }, async () => {
+    for (let run = 1; run <= 25; run++) {
+      const { clues, token } = await randomPuzzle();
+
+      // The clues are all the player gets, so solve them the way a player would
+      // have to: find the numbers that satisfy every clue. Exactly one should.
+      const solutions = survivorsFor(clues);
+      expect(solutions, `run ${run} had ${solutions.length} valid answers`).toHaveLength(1);
+
+      expect((await submit(solutions[0], token)).correct, `run ${run}`).toBe(true);
     }
+  });
+
+  it('still rejects a wrong guess', async () => {
+    // Without this, an endpoint that always said "correct" would pass the test
+    // above and the real check would be worthless.
+    const { clues, token } = await randomPuzzle();
+    const answer = survivorsFor(clues)[0];
+    const wrong = answer === 999 ? 998 : answer + 1;
+
+    expect((await submit(wrong, token)).correct).toBe(false);
+  });
+
+  it('serves a puzzle that obeys the generator contract', async () => {
+    const { clues } = await randomPuzzle();
+
+    expect(clues.length).toBeGreaterThanOrEqual(MIN_CLUES);
+    expect(clues.length).toBeLessThanOrEqual(MAX_CLUES);
+    expect(trimRedundantClues(clues)).toEqual(clues);
   });
 });
 
@@ -254,6 +317,9 @@ describe('generatePuzzleFromRng fallback', () => {
 
     expect(clues).toEqual([B, C]);
     expect(answer).toBe(323);
+    // Two clues is under range, so this came back via the fallback and must
+    // have warned. Without this the spy would just be silencing the output.
+    expect(warn).toHaveBeenCalledTimes(1);
 
     warn.mockRestore();
   });
