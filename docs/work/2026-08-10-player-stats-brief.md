@@ -2,7 +2,7 @@
 
 Date: 2026-08-10 · Branch: `dev/player-stats` · Author: Claude (clumeral dev bot)
 
-Status: OPEN. Sections 1, 2, 3, 5, 6, 7, 8 and 10 settled with Jamie. Sections 4 and 9 asked. Dave's ack outstanding on 2, 3, 4, 5, 6, 7, 8 and 10.
+Status: OPEN. Sections 1, 2, 3, 5, 6, 7, 8, 9 and 10 settled with Jamie. Sections 4 and 11 asked. Dave's ack outstanding on 2, 3, 4, 5, 6, 7, 8 and 10.
 
 Related tickets: #252 (streak tidy-up), #163 (streaks on the main screen), #143 (stats
 dashboard), #148 (sharing — **comes after this work**, and its sharing sections get folded
@@ -20,9 +20,9 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 | 6. How it fits | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 7. How it looks | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
 | 8. Copy & wording | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 9. Accessibility | asked 2026-08-10 (Jamie owns, blocking) |
+| 9. Accessibility | Signed off: Jamie 2026-08-10 (owner) · Ack: n/a |
 | 10. Analytics | Settled: Jamie 2026-08-10 · Ack: pending (Dave) |
-| 11. Done / test plan | not started |
+| 11. Done / test plan | asked 2026-08-10 |
 
 ## Background — what we show today
 
@@ -452,6 +452,40 @@ Jamie owns this section outright; his sign-off is blocking.
      animation already carries the moment.
 104. **The panel works at 200% text and 320 pixels wide** (item 85), which mainly means the
      two-column streak block stacks rather than squeezing. (assumed)
+105. **Section 9 SIGNED OFF: Jamie 2026-08-10, "no count no animation".** Item 103 resolved:
+     the numbers appear as they are, with no counting and no animation, so there is no
+     reduced-motion branch to get wrong. Accessibility is Jamie's to sign and he has signed
+     it, so this section needs no ack from Dave.
+
+## 11. Done and how we test it
+
+106. **The stat rules get proper unit tests, because they are the part that has gone wrong
+     before.** Each rule gets its own case: a missed day breaks both streaks; a first-go
+     streak breaks on a day you played and missed; a run that ended more than a day ago
+     reports zero; archive solves change no daily figure; a game with no stored time counts
+     as unknown, never as zero seconds; a game over thirty minutes is left out of the
+     average and out of the fastest win; the day-only marker counts towards nothing.
+     (assumed — the June streak under-count is exactly this class of bug)
+107. **The timer gets its own tests:** it starts on the first action and not on load, it
+     stops while the page is hidden, it stops after two minutes with no input, it starts
+     again on the next input, and it survives a reload. (assumed)
+108. **The delete flow is tested end to end:** warning appears, "Keep them" leaves the
+     history untouched, "Delete my stats" removes it, and the two checkboxes agree with each
+     other afterwards. (assumed — it is the only destructive thing in this build)
+109. **What level of browser testing does this warrant?**
+     My rec: a focused set, not the full suite. Cover the panel appearing with the right
+     numbers after a solve, the new-player state, the saving-off state, and the delete flow.
+     Leave the long regression run for the release that carries sharing. Why: this build
+     changes one screen and the storage under it, so a targeted set catches what matters;
+     a forty-minute battering costs an hour and tells us about screens we did not touch.
+110. **`/stats` gets a check that the average time appears and weights the sampling column**
+     (item 51). (assumed)
+111. **Playwright runs in CI, never on the Pi.** (assumed — house rule; the Pi cannot run the
+     engines CI covers)
+112. **Done means:** the panel shows the agreed numbers for a normal player, a new player, a
+     player with saving off and a random puzzle; the timer behaves as items 26 to 35 say;
+     turning saving off deletes the history after a warning; `/stats` shows the average time;
+     and the timing event reaches the database with its clean-or-idle label. (assumed)
 
 ## 10. Analytics
 
