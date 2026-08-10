@@ -71,12 +71,27 @@ wrangler kv key get "2026-03-08" --binding PUZZLES
 Build a small throwaway script (Node, importing `src/worker/puzzle.ts`) that, for
 each date from `2026-03-08` to ~`2026-04-01`:
 
-- recomputes the puzzle via `runFilterLoop(makeRng(dateSeedInt(date)))`, and
+- recomputes the puzzle via the generator, and
 - compares against the KV-stored object (dump KV with
   `wrangler kv key list --binding PUZZLES`).
 
 Output a table of `date | puzzleNumber | kv.answer | recomputed.answer | match?`
 so the affected range is unambiguous.
+
+**Recompute with the PRE-#193 generator, not today's.** `runFilterLoop` was renamed
+to the private `drawClues` and wrapped in `generatePuzzleFromRng`, which sweeps out
+redundant clues and redraws until the puzzle has 4–6 clues. Today's generator
+therefore gives a *different* puzzle for the same date, so using it would make every
+early date look divergent and tell you nothing. Read `src/worker/puzzle.ts` at commit
+`9b4a1ae` and use its `runFilterLoop` — `scripts/puzzle-stats.mjs` already does
+exactly that and can be copied.
+
+That reproduces what was **served between 2026-07-18 and the #193 merge**, not what the
+CSV era produced. #254 added the Fibonacci special on 2026-07-18, and the CSV-to-computed
+switch predates git history entirely, so genuinely early KV entries will still diverge
+from `9b4a1ae`'s output. That divergence is the thing step 1 is looking for. The point of
+pinning the generator is to stop #193 adding a second, unrelated source of divergence on
+top and blurring the boundary you are trying to find.
 
 ### 3. If KV is missing/incorrect — recover the original data
 

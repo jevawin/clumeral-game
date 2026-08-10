@@ -1,0 +1,469 @@
+# Brief — remove redundant clues from generated puzzles
+
+Date: 2026-08-08 · Branch: `dev/clue-redundancy` · Author: Claude (clumeral dev bot)
+
+Status: CLOSED 2026-08-08. All 11 sections settled, da-brief run and its High and Medium
+findings fixed, and every open item resolved. Dave later read §6 items 30-32 directly and
+confirmed them; sections 7, 8, 10 and 11 carry Jamie's override rather than Dave's ack, which
+is recorded honestly in the ledger. Ready for planning.
+da-brief run 2026-08-08: 1 High, 9 Medium, 7 Low, 3 process findings. All High and Medium
+fixed in the items above; see the log at the foot of this file.
+
+## Background evidence (gathered 2026-08-08, before the brief)
+
+Measured on 100 live `/api/puzzle/random` puzzles and all 154 archive puzzles, plus a
+local simulation of 2,000 generated puzzles. Answers verified against `/api/guess` and
+`/api/puzzle/:num/solution`.
+
+- Clue counts today (archive, 154 puzzles): 4 clues 1.3%, 5 clues 62%, 6 clues 34%,
+  7 clues 2% (#33, #49, #144).
+- Local simulation of 2,000 puzzles shows the generator can also emit **8- and 9-clue
+  puzzles** (0.2% and 0.3%) — rarer than 7 but real, and none has happened yet by luck.
+- 77% of random puzzles contain at least one clue that can be deleted with the puzzle
+  still having exactly one answer. 27% of all clues are individually droppable.
+- Average clues needed 4.1 against 5.3 given.
+- Redundancy is concentrated in the early clues (first two clues redundant ~46% of the
+  time; fifth 6%) and in inequality clues ("greater/less than" 38% redundant, "is exactly"
+  13%).
+- Simulated trimming sweep (drop any clue whose removal still leaves one answer):
+  resulting counts 1 clue 0.1%, 2 clues 4.9%, 3 clues 26%, 4 clues 42%, 5 clues 22%,
+  6 clues 4.0%, 7 clues 0.1%. **A sweep alone does not eliminate 7-clue puzzles.**
+- Effect on clue mix (Dave's concern): "is exactly" clues rise 41% → 51%; the
+  prime/square/cube/triangular/Fibonacci family rises 21% → 23%. Real but modest.
+- Drop order barely matters: dropping earliest-first vs latest-first gives near-identical
+  distributions.
+
+## Ledger
+
+| Section | State |
+|---|---|
+| 1. What it is | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
+| 2. Out of scope | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
+| 3. How it works | settled Dave 2026-08-08 · Ack: Jamie 2026-08-08 |
+| 4. Maths | settled Dave 2026-08-08 (owner) · Ack: n/a |
+| 5. State & persistence | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 |
+| 6. How it fits | settled Jamie 2026-08-08 · Ack: Dave 2026-08-08 (items 30-32) |
+| 7. How it looks | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+| 8. Copy & wording | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+| 9. Accessibility | settled Jamie 2026-08-08 (owner) · Ack: n/a |
+| 10. Analytics | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+| 11. Done / test plan | settled Jamie 2026-08-08 · Override: Jamie 2026-08-08 |
+
+## 1. What it is
+Settled: Dave 2026-08-08 (accepted both recommendations) · Ack: Jamie 2026-08-08
+
+1. The problem: the generator picks clues by how much each one narrows the field, never
+   checking whether a clue is still needed once later clues land. Result: 77% of puzzles
+   carry at least one clue that adds nothing, and the count drifts up to 7 (and could
+   reach 9). (assumed — measured above)
+2. Who it is for: players, who read clues that do no work; and the game screen, which
+   Dave reports does not lay out nicely beyond 6 clues. (assumed — Dave 2026-08-08)
+3. Why now: the redundancy audit surfaced it, and no puzzle already published changes —
+   KV is write-once, so this only affects puzzles generated from the merge date onwards.
+   (assumed — archive integrity rule in docs/ARCHITECTURE.md)
+4. Scope of the change: the daily puzzle and the random puzzle both, since both call the
+   same generator. QUESTION — or dailies only?
+   My rec: both. Why: they share `runFilterLoop`, splitting them means two behaviours to
+   reason about, and random puzzles are where players see the most puzzles.
+5. Success looks like: every clue in a published puzzle is load-bearing, and every puzzle
+   has between 4 and 6 clues. QUESTION — is "no clue is redundant" the goal, or "no more
+   than 6 clues" the goal?
+   My rec: both, with the clue count as the hard rule and no-redundancy as the method.
+   Why: Dave's screen-fit problem is a hard constraint; redundancy is a quality one.
+
+   **Answers (Dave, 2026-08-08):** 4 — both daily and random. 5 — both goals, clue count
+   as the hard rule.
+
+## 2. Out of scope
+Settled: Dave 2026-08-08 (accepted all recommendations, incl. 11 accept the lag) · Ack: Jamie 2026-08-08
+
+6. Puzzles already in storage are never rewritten, including the three 7-clue ones
+   (#33, #49, #144). (assumed — KV is write-once, docs/ARCHITECTURE.md)
+7. No change to clue wording, no new clue types, no change to the six clue families.
+   (assumed — separate concern, and §8 covers wording if it comes up)
+8. The 15–40% narrowing band that picks each clue stays exactly as it is. The sweep works
+   downstream of it. (assumed — retuning the band is its own maths change with its own
+   consequences)
+9. Not solving the screen-fit problem by changing the game screen layout instead.
+   (assumed — Dave's constraint is that puzzles fit the current design)
+10. No difficulty levels, no difficulty tuning, no per-day difficulty curve.
+    (assumed — much bigger piece of work)
+11. The cron pre-generates tomorrow's puzzle the day before (`src/worker/daily-puzzle.ts`,
+    #257). The cron freezes **today and tomorrow**, so a merge on day D finds D and D+1
+    already written under the old generator and the first new-style daily is **D+2** — up
+    to two days, not one (corrected after da-brief M7). QUESTION — accept that lag, or delete
+    the pre-generated entries by hand so they regenerate under the new rules?
+    My rec: accept the lag. Why: deleting a live storage entry is a manual production step
+    for a one-day cosmetic gain, and write-once is the rule that protects the archive.
+
+    **Answer (Dave, 2026-08-08):** 11 — accept the lag.
+
+## 3. How it works
+Settled: Dave 2026-08-08 (16 → range 4-6; 19 → accept) · Ack: Jamie 2026-08-08
+
+Second simulation, 3,000 puzzles, running the full proposed algorithm (trim, then reject
+and regenerate until the count is in range). Results referenced by the items below:
+
+- Both drop orders converge once the reject-and-regenerate loop is in place:
+  earliest-first gives 4 clues 59.6% / 5 clues 34.4% / 6 clues 6.0%; latest-first gives
+  59.0% / 35.0% / 6.0%.
+- Clue mix after: "is exactly" 46% (41% today), prime/square/cube family 26% (21% today).
+- Regenerations: 68% of puzzles pass on the first attempt, average 0.46 extra attempts,
+  worst case seen 5. No puzzle failed to produce a result within 50 attempts.
+
+**Where the long puzzles come from (da-brief M4).** The generator's main loop is already
+capped at six clues — it draws at most one clue per property family and marks each family
+used. Every 7-, 8- and 9-clue puzzle comes from the tiebreaker pass that runs afterwards
+(`src/worker/puzzle.ts`, the block after the main loop), which keeps adding exact-match
+clues until one number is left. That pass is the direct cause of the problem this change
+exists to fix. Note the consequence: a trimmed 7-clue puzzle is already irredundant, so
+trimming cannot shorten it — regenerating is the only lever for the too-long case, which
+is why item 15's fallback must be directional.
+
+12. The sweep, **one clue at a time and never in a batch**: take the clues in a fixed
+    order; for each, test whether removing it from *the clues still remaining* leaves
+    exactly one possible answer; if so, remove it and carry on from the reduced set.
+    (assumed — this is the mechanism, and it is what was measured)
+
+    **This is a correctness rule, not a style choice (da-brief H1, 2026-08-08).** Two clues
+    can each be individually removable while removing *both* leaves two possible answers.
+    Testing every clue against the full set and then deleting all the winners produces a
+    puzzle with more than one valid answer 20.5% of the time — measured over 2,000 seeds.
+    Example: seed 2, answer 323, batch-trimmed to 3 clues, leaves both 323 and 921 valid,
+    and a player guessing 921 would be told they were wrong.
+
+    One pass is enough: removing a clue only ever widens the surviving set, so a clue that
+    was not removable cannot become removable later. A second pass changed nothing in 3,000
+    of 3,000 puzzles (da-brief L2).
+13. Drop order makes no statistical difference — earliest-first and latest-first give the
+    same distribution and the same clue mix, to within noise — **but it must still be fixed
+    in the code, and the order is earliest-first.** Which clue survives for a given seed
+    decides the actual puzzle, and daily puzzles are frozen in storage forever, so two
+    equally correct implementations of this brief would otherwise ship different puzzles.
+    (assumed — measured above; rule added after da-brief M5)
+14. If the trimmed puzzle falls outside the allowed clue range, discard it and generate
+    again — **by continuing to draw from the same random-number generator, not by deriving
+    a new seed** (the mechanism is spelled out at §6 item 32). (assumed — the only way to
+    make the range a guarantee rather than a statistic. Corrected after da-brief M2, which
+    caught this item and item 32 describing two different mechanisms.)
+15. Retry cap: **10 attempts**, and the fallback is **directional — never publish a puzzle
+    with more than 6 clues.** If the cap is somehow reached, publish the best under-range
+    candidate seen (the one with the most clues below 4) and log a warning. (assumed —
+    rewritten after da-brief M3 and M6)
+
+    Why directional: "closest to the range" would treat a 3-clue and a 7-clue puzzle as
+    equally acceptable, and §1 item 2 says the opposite — above 6 breaks the screen layout,
+    which is the hard constraint; below 4 is only a taste judgement. The two bounds are not
+    the same kind of bound.
+
+    Why 10 rather than 50: about 31% of attempts land out of range, so ten attempts leaves
+    roughly a one-in-a-hundred-thousand chance of reaching the fallback at all, and the
+    guess-checking path re-runs this whole loop on every random-puzzle guess. On the free
+    Cloudflare plan a worker invocation gets 10 milliseconds of processor time; 50 attempts
+    is an unbounded-looking cost sitting on a hard limit. Worst case seen over 3,000 seeds
+    was 7 attempts (da-brief L3 — an earlier note in this brief said 5, measured with a
+    different retry mechanism).
+16. QUESTION — what is the allowed clue range? Jamie proposed 4, 5 or 6. Dave said 2-clue
+    puzzles could be good for variation, depending how many happen. Measured: with no
+    minimum, 4.9% come out at 2 clues and 26.3% at 3.
+    My rec: 4 to 6, as Jamie proposed. Why: 2-clue puzzles at 1-in-20 would be a novelty,
+    but 3-clue at 1-in-4 is every fourth day, and both take away the sense of working
+    through a body of evidence. **Tie-break if they disagree: Dave, this is gameplay maths.**
+17. Consequence to accept knowingly: puzzles get shorter and therefore harder. Today's
+    daily is 5 clues 62% / 6 clues 34%; after this it is 4 clues 60% / 5 clues 34% /
+    6 clues 6%. Every clue will be load-bearing, so there is no slack for a player who
+    misreads one. (assumed — flagged, not hidden)
+18. The generator stays deterministic: the same seed always produces the same puzzle,
+    retries included. (assumed — the random-puzzle token stores only the seed and re-runs
+    the generator to check a guess, and the daily puzzle is seeded from its date)
+19. QUESTION — the deploy-moment wrinkle. A random puzzle's token holds only the seed;
+    when the player guesses, the worker re-runs the generator from that seed to work out
+    the answer. If the new version goes live while someone has a random puzzle open, their
+    clues came from the old code but their guess is checked against the new code's answer,
+    so a correct guess can be marked wrong. Daily puzzles are unaffected — their answer is
+    stored with the clues.
+    My rec: accept it. Why: the window is the few minutes around a deploy, it affects only
+    random puzzles in progress, and the fixes (versioning the token, or putting the answer
+    inside it) are permanent complexity plus a new way to leak the answer, for a one-off.
+    A player who is bitten gets it back by reloading — a reload mints a fresh puzzle from
+    the new code.
+
+    **Evidence gathered 2026-08-08 (Jamie's question — how much is /random used?):**
+    It cannot currently be answered. `/random` deliberately boots without the router
+    (`src/app.ts` ~1402), so it never emits a `route_change`, and it is absent from the
+    analytics entirely — that is silence, not a zero. `puzzle_start` fires on the random
+    path but carries no source, so it cannot be separated from daily and archive starts.
+    Production totals, last 30 days: route_change 2,256 (welcome 702, play 529, solved 466,
+    the rest archive), puzzle_start 1,104, puzzle_complete 466. Subtracting the routes that
+    can lead to a daily start leaves only a small remainder for random, but that arithmetic
+    is loose (restores skip `puzzle_start`, replays add extra ones) and should not be quoted
+    as a measurement. Per-path request counts are not reachable: the analytics token is
+    account-scoped and has no zone access. **Candidate for §10: give `puzzle_start` a source
+    of daily / archive / random, so this is answerable next time.**
+
+## 4. Maths
+Settled: Dave 2026-08-08 (23 → shift acceptable) · Ack: n/a (Dave owns maths)
+
+Dave owns this section — his sign-off is blocking.
+
+20. The sweep can never change the answer. The answer satisfies every clue, so it always
+    survives any subset of them; removing a clue can only ever widen the surviving set. A
+    clue is removed only when the set is still exactly one number, and that number must
+    therefore still be the answer. (assumed — checked against all 100 live random puzzles,
+    every derived answer confirmed by the server)
+21. Uniqueness is preserved by construction, so no puzzle can end up with two valid
+    answers — **but only if the sweep removes clues one at a time as §3 item 12 now
+    specifies.** The guarantee does not hold for a batch removal, which breaks uniqueness
+    in one puzzle in five. Do not read this item as saying the invariant is free.
+    (assumed — follows from 20; qualified after da-brief H1)
+22. Reject-and-regenerate barely shifts which numbers become answers. Across 3,000
+    puzzles: distinct answers 753 of 900 versus 796 today; mean answer 514 versus 528;
+    answers with a repeated digit 30% versus 34%; answers containing a zero 23% versus
+    27%. (assumed — measured)
+23. QUESTION (Dave) — is that shift acceptable? It comes from discarding puzzles that trim
+    below 4 clues, and those are more often puzzles with an easily-pinned answer.
+    My rec: yes, accept it. Why: the movement is a few percentage points on every measure,
+    and no answer becomes common enough to be guessable — the most frequent answer came up
+    23 times in 3,000.
+24. The check is exact, not sampled: each test re-derives the surviving numbers from all
+    900 candidates. Cost is negligible (900 numbers × a handful of clues, a few times per
+    puzzle). (assumed)
+
+## 5. State & persistence
+Settled: Jamie 2026-08-08 (29 → no marker) · Ack: Dave 2026-08-08
+
+25. Nothing new is stored in the browser. The whole change lives in puzzle generation on
+    the server. (assumed)
+26. Daily puzzles keep the same stored shape in KV — answer, clues, puzzle number — and are
+    still written once and never updated (`StoredPuzzle` in `src/worker/daily-puzzle.ts`).
+    (assumed)
+27. A player's saved in-progress game and their history are unaffected, because the puzzle
+    they point at never changes once written. (assumed)
+28. Nothing in the client or the stylesheet assumes a particular number of clues — checked
+    `src/tailwind.css`, `src/app.ts`, `src/storage.ts`, `src/walkthrough.ts`. Clue rows are
+    rendered from the list, whatever its length. (assumed — verified 2026-08-08)
+29. QUESTION — should puzzles made by the new generator carry a marker saying so?
+    My rec: no. Why: the changeover is a single merge, so the date already separates old
+    from new, and a field added to a write-once store can never be removed or corrected
+    later. If we want it findable, record the first affected puzzle number in
+    docs/ARCHITECTURE.md instead — that costs nothing and is easy to read.
+
+## 6. How it fits
+Settled: Jamie 2026-08-08 (35 → export the trimming step) · Ack: Dave 2026-08-08 (items 30-32, item 31 confirmed as a build requirement)
+
+30. The change lives in `src/worker/puzzle.ts`, at the generator entry point. **Four**
+    callers pick it up with no edit: `generatePuzzle` in `src/worker/daily-puzzle.ts` (the
+    cron and the daily read), `handleGetRandomPuzzle` in `src/worker/index.ts`, `handleGuess`
+    in the same file (which re-runs the generator from the token's seed to work out a random
+    puzzle's answer), and `/api/dev/answer`, also in `index.ts` — blocked on clumeral.com but
+    live on every pre-prod URL, and missed by the first draft of this item (da-brief M9).
+31. **The invariant: no caller can reach the untrimmed generator.** Trimming alone
+    never changes the answer, but the reject-and-regenerate loop does: a rejected puzzle is
+    replaced by a different one with a different answer. If the random endpoint used a
+    trimming wrapper and `handleGuess` still called the raw `runFilterLoop`, then every
+    random puzzle that needed a regeneration — about a third of them — would be marked
+    against the wrong answer. Putting it inside the one function all three already call
+    removes the possibility of that mismatch by construction. (assumed — this is the single
+    biggest way this change could go wrong)
+
+    **What is actually required (restated after da-brief M8):** the invariant above, not a
+    particular file layout. Putting the logic inside the existing function satisfies it; so
+    would a wrapper that every call site uses. What must not happen is the raw filter loop
+    staying reachable — so it should stop being exported, and whatever is exported in its
+    place should be named for what it now does. The plan should also note that once the raw
+    loop is private, `tests/puzzle-fibonacci.spec.ts` no longer exercises it directly.
+32. Retries continue drawing from the same random stream rather than deriving fresh seeds.
+    `runFilterLoop` already takes a random-number generator, and it holds its position
+    between calls, so generating again just continues the sequence. Same seed still gives
+    the same puzzle, and the function signature does not change. (assumed — simpler than
+    seed arithmetic and keeps every caller as it is)
+33. No change to any API response shape, no client change, no database migration, no new
+    wrangler binding. (assumed)
+34. One existing test file touches the generator, `tests/puzzle-fibonacci.spec.ts`, and it
+    asserts on clue contents rather than clue counts, so it should keep passing. §11 covers
+    what gets added. (assumed — read 2026-08-08)
+35. QUESTION — should the trimming step be exported on its own, so tests can drive it
+    directly, or kept private inside the module?
+    My rec: export it. Why: it is the part with the real logic in it, and testing it
+    directly ("give it a puzzle with a known spare clue, check that clue goes") is far
+    clearer than inferring behaviour from whole generated puzzles. The cost is one more
+    name in the module's public surface.
+
+## 7. How it looks
+Settled: Jamie 2026-08-08 (38 → no layout changes, 4 clues looks good) · Override: Jamie 2026-08-08
+
+36. No new UI, no new components, no CSS change. Clue rows are already rendered from the
+    list whatever its length. (assumed — verified in §5 item 28)
+37. What does change: most puzzles will show fewer clue rows. Four clues becomes the
+    commonest case at about 60%, where today it is 1.3%. Six drops from 34% to 6%.
+    (assumed — measured)
+38. QUESTION — does the game screen look right with only four clues, and does it look
+    unbalanced against a six-clue one? Two live 4-clue puzzles already exist to judge it
+    on: puzzle #45 (2026-04-21) and #102 (2026-06-17), against today's 6-clue #154.
+    My rec: no layout work needed. Why: the two existing 4-clue puzzles have been live for
+    months without a complaint, and the screen was rebuilt to be uncluttered — fewer rows
+    should suit it. But this is a UI call and it is yours, both of you, not mine. Worth one
+    look on a phone before it is settled.
+
+## 8. Copy & wording
+Settled: Jamie 2026-08-08 (nothing to write) · Override: Jamie 2026-08-08
+
+39. No copy changes anywhere. Clue wording comes from the generator's own labels, which
+    §2 item 7 puts out of scope, and no new message, error or empty state appears — there
+    is no moment where a player is shown anything they have not seen before. The only
+    difference is that there are fewer clue lines. (assumed — nothing to write)
+
+## 9. Accessibility
+Settled: Jamie 2026-08-08 (43 → no special screen-reader check) · Ack: n/a (Jamie owns it)
+
+40. The clue list is already marked up as a labelled list (`data-clue-list`, `role="list"`,
+    `aria-label="Puzzle clues"` in index.html) with each clue a list item, so a screen
+    reader announces the count from the markup. A shorter list is announced correctly with
+    no change from us. (assumed — read index.html and `renderClues` in src/app.ts)
+41. The grey loading placeholders in index.html are a fixed three rows whatever the real
+    count, and they are hidden from assistive technology (`aria-hidden="true"`). This work
+    does not change that, for better or worse. (assumed)
+42. Nothing about focus order, keyboard interaction or live announcements changes: no
+    element is added to or removed from the screen's structure, only the number of rows in
+    a list that was already variable-length. (assumed)
+43. QUESTION (Jamie, blocking) — is there anything you want checked with a screen reader
+    before this ships, given the commonest puzzle becomes four clues instead of five or six?
+    My rec: no special check beyond the normal pass. Why: 4-clue puzzles already exist live
+    (#45, #102) and go through the same rendering path, so this is not a new shape of page,
+    only a more frequent one.
+
+## 10. Analytics
+Settled: Jamie 2026-08-08 (46 → leave it out, no analytics change) · Override: Jamie 2026-08-08
+
+44. No new events. The one question this change raises — did the shorter puzzles make the
+    game too hard? — gets a **before-and-after comparison of the same imperfect aggregate**,
+    not a clean measurement. The metric is `incorrect_guess` divided by `puzzle_complete`,
+    watched for a fortnight after the merge. Baseline 285 / 466 = 0.61. **Trigger for
+    reopening the 4-6 range: 0.85 or above sustained over a week.** (assumed — rewritten
+    after da-brief M10, which pointed out that the first draft claimed the question was
+    answered and then explained why it was not, with no failure condition either way)
+45. Baseline to compare against, production, the 30 days to 2026-08-08: 1,104
+    `puzzle_start`, 466 `puzzle_complete`, 285 `incorrect_guess`, 443 `undo_used`.
+    **Caveat, so nobody misreads it later:** starts include random and archive plays and
+    restored games skip the event, so starts-to-completions is not a clean completion rate.
+    It is only meaningful compared with itself before and after. (assumed — measured)
+46. QUESTION — do we add the daily / archive / random label to `puzzle_start` as part of
+    this change (raised at §3 item 19), or leave it as its own piece of work?
+    My rec: leave it out of this one. Why: it touches the client as well as the worker,
+    it needs its own decision about what the values are, and this change is server-only.
+    It deserves its own issue — say the word and I will write one for you to check.
+
+    **Answer (Jamie, 2026-08-08):** leave it out, no analytics change in this piece of work.
+    Logged as its own ticket: https://github.com/jevawin/clumeral-game/issues/306
+
+## 11. Done / test plan
+Settled: Jamie 2026-08-08 (accepted all recommendations, incl. 53 QA level) · Override: Jamie 2026-08-08
+
+47. Unit tests on the exported trimming step: a puzzle with a known spare clue loses exactly
+    that clue; a puzzle where every clue is needed comes back untouched; the answer is
+    unchanged in both cases. (assumed)
+48. A sweep over a few hundred seeds asserting three things at once — every puzzle has 4 to
+    6 clues, every puzzle has exactly one answer, and no single clue can be removed while
+    still leaving one answer. The third is the real definition of done. (assumed)
+49. Determinism: the same seed twice produces an identical puzzle, clues and answer.
+    (assumed)
+50. Agreement between the two answer paths: for a spread of seeds, the answer produced when
+    the puzzle is generated equals the answer produced by re-running the generator from the
+    same seed. This is the §6 item 31 failure mode — the one that would mark correct guesses
+    wrong — so it gets its own test rather than being assumed. (assumed)
+51. Existing tests, the type check and the linter all still pass. (assumed)
+52. Before the pull request, run the generator over a few thousand seeds locally and put the
+    resulting clue-count spread and redundancy check into the pull request description, so
+    the real numbers are on the record rather than a claim. (assumed)
+53. QA level: nothing beyond what CI already runs by itself — the chromium smoke test on the
+    staging pull request and the full set on the main pull request. Why: server-only change,
+    no interface change, and the risk lives entirely in generation, which unit tests cover
+    far better than a browser can. (assumed — QA level agreed up front per CLAUDE.md)
+
+## da-brief review — findings and what was done (2026-08-08)
+
+Fresh-context review of this file, which re-derived the numbers independently (they held)
+and then attacked the mechanism claims (three of which did not hold).
+
+**High**
+- **H1 — §3 item 12 read as a batch removal, which breaks uniqueness in 20.5% of puzzles,
+  while §4 item 21 told the reader it could not happen.** Fixed: item 12 now specifies one
+  clue at a time against the remaining set, with the counter-example; item 21 now says the
+  guarantee depends on that.
+
+**Medium — all fixed**
+- M2 — items 14 and 32 described two different retry mechanisms. Item 14 corrected to point
+  at item 32 (continue the same random stream). Item 32 was the correct one and was verified.
+- M3 — item 15's "closest to the range" fallback could publish a 7-clue puzzle, which §1
+  item 2 forbids. Now directional: never above 6.
+- M4 — the tiebreaker pass, which is where every 7-clue puzzle actually comes from, was
+  never mentioned. Now named in §3, with the consequence that regeneration is the only
+  lever for too-long puzzles.
+- M5 — item 13 left the drop order to the implementer. Daily puzzles are frozen forever, so
+  two correct implementations would ship different puzzles. Order fixed as earliest-first.
+- M6 — no processor-time budget, on the free Cloudflare plan's 10 millisecond limit, for a
+  loop that re-runs on every random-puzzle guess. Retry cap cut from 50 to 10; §11 now takes
+  a measurement.
+- M7 — the cron freezes today *and* tomorrow, so the lag is up to two days, not one. §2
+  item 11 corrected. Dave's decision to accept the lag is unchanged.
+- M8 — item 31's premise was verified but its conclusion ("must go inside runFilterLoop")
+  was a strawman. Restated as an invariant: no caller can reach the untrimmed generator.
+- M9 — a fourth call site, `/api/dev/answer`, was missing from §6 item 30. Added.
+- M10 — §10 items 44 and 45 contradicted each other and set no failure condition. Item 44
+  rewritten with one metric, a baseline and a trigger.
+
+**Low — dispositions**
+- L1 (archive page has a Clues column that will step at the merge date) — accepted, see item
+  55 below.
+- L2 (a second trimming pass is unnecessary) — accepted, folded into item 12.
+- L3 ("worst case 5" should be 7) — accepted, corrected in item 15.
+- L4 (deploy-window exposure is any open random tab, not "a few minutes") — accepted, see
+  item 56.
+- L5 (`tests/daily-puzzle.spec.ts` also exercises the generator; its assertion still passes
+  under the new algorithm) — accepted, see item 57.
+- L6 (make the accept condition include "exactly one survivor") — accepted, see item 58.
+- L7 (`display: contents` on clue rows may drop them from the accessibility tree, which
+  would undercut §9 item 40) — **deferred with justification**: pre-existing, unchanged by
+  this work, and fixing it is an accessibility change of its own. Recorded here so it is not
+  lost, and worth one spot-check whenever accessibility is next touched.
+
+## Items added by the review
+
+54. Retry cap is 10 and the fallback is directional — see the rewritten §3 item 15.
+55. The archive page (`src/worker/puzzles.ts`) renders a sortable "Clues" column, so the
+    archive table will show a visible step down at the merge date. Nothing breaks. §7 item
+    36's "no new UI" stands; this is a content change, not a layout one. (assumed)
+56. Correction to §3 item 19: the exposure window is not "a few minutes around a deploy".
+    Random-puzzle tokens carry no expiry and no version, so a backgrounded tab can hold one
+    for days — the window is any open random puzzle that predates the deploy. Nothing is
+    persisted (`/random` mints a fresh token per load and does not save progress), so the
+    exposure is bounded by tab lifetime. The decision to accept it is unchanged; the sizing
+    was wrong. (assumed — corrected after da-brief L4)
+57. Correction to §6 item 34: two test files touch the generator, not one.
+    `tests/daily-puzzle.spec.ts` also does, via `generatePuzzle`; its one value-sensitive
+    assertion still passes under the new algorithm. (assumed — verified in review)
+58. The accept condition is "4 to 6 clues **and** exactly one surviving number", not the
+    clue count alone. The generator's tiebreaker has no post-condition of its own — if it
+    ran out of properties with more than one candidate left it would return the first as
+    though it were the answer. No seed in 3,000 does this, but the survivor count is being
+    computed anyway, so checking it costs nothing and turns a latent assumption into an
+    enforced rule. (assumed — added after da-brief L6)
+59. §11 additions: a stub-driven unit test for the fallback branch in item 15, since no real
+    seed will ever reach it; and a measured worker processor-time figure for the generator
+    under the new algorithm, recorded in the pull request. (assumed)
+
+## Open after the review — needs a word from Jamie and Dave
+
+60. **Dave has now seen §6 items 30-32.** CLOSED — Dave 2026-08-08: "31 is concerning.
+    Definitely do the fix." The invariant in item 31 — nothing may reach the untrimmed
+    generator, so the guess checker can never disagree with the puzzle a player was shown —
+    is confirmed by the maths owner and is a build requirement, not a preference.
+61. **§7 item 38 asked for one look on a phone.** CLOSED — Jamie 2026-08-08: "we've seen
+    MANY 4-clue puzzles and we are happy with them, 100% confirmed." The look happened; it
+    is not a gate on §11.
+62. **The 4-6 range is an asymmetry, and it is now written down as one.** Jamie 2026-08-08:
+    **above 6 is a hard rule** (the screen cannot lay it out); **below 4 is a soft rule**, and
+    Jamie is happy with 4 as the floor but handed Dave the final call. **CLOSED — Dave
+    2026-08-08: "Minimum clue count of 4 sounds good."** The range is 4 to 6, with the upper
+    bound hard and the lower bound soft-but-agreed. For the record, dropping the floor would
+    have meant 3-clue puzzles at 26.3% and 2-clue at 4.9%.

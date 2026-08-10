@@ -26,11 +26,11 @@
 // preview build can now only affect the player in front of it, transiently,
 // instead of freezing a broken puzzle for everyone forever.
 
-import { runFilterLoop, makeRng, dateSeedInt, todayUTC, puzzleNumber, nextUTCDate } from './puzzle.ts';
+import { generatePuzzleFromRng, makeRng, dateSeedInt, todayUTC, puzzleNumber, nextUTCDate, type Clue } from './puzzle.ts';
 
 export interface StoredPuzzle {
   answer: number;
-  clues: { propKey: string; label: string; operator: string; value: number | boolean }[];
+  clues: Clue[];
   puzzleNumber: number;
 }
 
@@ -52,7 +52,7 @@ export interface PuzzleStore extends PuzzleReader {
 /** Deterministic from the date seed alone — no I/O, no persistence. */
 export function generatePuzzle(date: string): StoredPuzzle {
   const rng = makeRng(dateSeedInt(date));
-  const { answer, clues } = runFilterLoop(rng);
+  const { answer, clues } = generatePuzzleFromRng(rng);
   return { answer, clues, puzzleNumber: puzzleNumber(date) };
 }
 
