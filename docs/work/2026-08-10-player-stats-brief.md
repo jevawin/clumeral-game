@@ -12,7 +12,7 @@ into this brief once the stats are settled; Jamie 2026-08-10).
 
 | Section | State |
 |---|---|
-| 1. What it is | asked 2026-08-10 |
+| 1. What it is | Ack: Dave 2026-08-10 (goes along, no strong view) · awaiting Jamie's settle |
 | 2. Out of scope | not started |
 | 3. How it works | not started |
 | 4. Maths | not started |
@@ -191,4 +191,11 @@ grid, and said the layout does not have to stay a grid:
      5  ░░░░░░░░░░░░   2
 ```
 
-Open with Dave: items 5, 12, 13, 17, 18, 19, 20, 21, 22, 23.
+24. **Dave, 2026-08-10: "I am not sure. I'll go along with yours and Jamie's suggestions
+    for now."** Recorded as an ack on section 1, but a soft one — he liked the three-block
+    split (2026-08-10) and his only stated worry is the volume of numbers, item 22. Treat
+    that worry as live in §7 rather than closed. His maths sign-off is not needed here;
+    section 4 is not applicable.
+
+Still needed to close section 1: **Jamie's settle** on items 5, 12, 13, 17, 18, 19, 20, 21
+and 23.
