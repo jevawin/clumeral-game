@@ -248,10 +248,12 @@ export function trimRedundantClues(clues: Clue[]): Clue[] {
  *  READ RULE 4 HONESTLY. On this path MAX_CLUES is a strong preference, not a
  *  guarantee: if all MAX_ATTEMPTS draws came back over range, the code publishes
  *  the smallest of them, and that could be a 7-clue puzzle the screen lays out
- *  badly. The alternative was to throw, which on a daily is a dated outage. That
- *  trade is plan-level decision 4 and Jamie approved it. It needs ten
- *  consecutive irredundant draws of 7 or more clues, which is around 1 in 1e30 —
- *  the guarantee holds everywhere a real puzzle has ever been. */
+ *  badly. The alternative was to throw, which on a daily is a dated outage —
+ *  that is plan-level decision 3, and ranking the over-range candidates rather
+ *  than refusing them is decision 4. Jamie approved both. It needs ten
+ *  consecutive irredundant draws of 7 or more clues: a trimmed draw is 7+ about
+ *  1.6 times in 1,000, so roughly 1 in 1e28. The bound holds everywhere a real
+ *  puzzle has ever been. */
 export function betterFallback(
   candidate: { clues: Clue[] },
   incumbent: { clues: Clue[] } | null,
