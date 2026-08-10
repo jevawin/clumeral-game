@@ -6,6 +6,7 @@ import type { HistoryEntry, Prefs, ActiveState } from './types.ts';
 import type { StoredEntry } from './undo-stack.ts';
 import { HISTORY_LIMIT } from './undo-stack.ts';
 import { todayKey } from './date.ts';
+import { validSeconds } from './player-stats.ts';
 
 const STORAGE_HISTORY = "dlng_history";
 const STORAGE_PREFS = "dlng_prefs";
@@ -61,14 +62,75 @@ export function loadHistory(): HistoryEntry[] {
   }
 }
 
-export function recordGame(dateStr: string, tries: number, answer?: number, archived?: boolean): void {
+// Keep stored history sorted date-descending so out-of-order inserts never create a
+// false gap when the streak walk reads it (push + sort makes insertion position
+// irrelevant). Shared by recordGame and recordMarker, which both replace by date.
+function writeHistory(dateStr: string, entry: HistoryEntry): void {
   const history = loadHistory().filter((h) => h.date !== dateStr);
-  // Include archived only when true so entries stay lean (absence === live daily solve).
-  history.push({ date: dateStr, tries, ...(answer != null && { answer }), ...(archived && { archived: true }) });
-  // Keep stored history sorted date-descending so out-of-order inserts never create a
-  // false gap when computeStats walks it (push + sort makes insertion position irrelevant).
+  history.push(entry);
   history.sort((a, b) => b.date.localeCompare(a.date));
   localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history));
+}
+
+/**
+ * Record a solved game.
+ *
+ * `answer`, `archived` and `seconds` are an options object rather than three
+ * positional arguments — a fourth positional flag is a bug waiting to happen.
+ */
+export function recordGame(
+  dateStr: string,
+  tries: number,
+  opts: { answer?: number; archived?: boolean; seconds?: number } = {},
+): void {
+  const { answer, archived, seconds } = opts;
+  // Include each optional field only when it has a value so entries stay lean
+  // (absence of `archived` === live daily solve; absence of `seconds` === unknown).
+  writeHistory(dateStr, {
+    date: dateStr,
+    tries,
+    ...(answer != null && { answer }),
+    ...(archived && { archived: true }),
+    ...(validSeconds(seconds) !== null && { seconds }),
+  });
+}
+
+/**
+ * Write the day-only marker for a player with score saving off (brief 71): the
+ * date and nothing else. It exists only so a refresh does not hand today's
+ * puzzle back, and every figure filters markers out before counting anything.
+ *
+ * `tries` is present and zero deliberately (brief 123) — the code that averages
+ * goes adds `tries` up, and a missing number there poisons the average silently.
+ */
+export function recordMarker(dateStr: string, archived = false): void {
+  writeHistory(dateStr, { date: dateStr, tries: 0, marker: true, ...(archived && { archived: true }) });
+}
+
+/**
+ * Delete the stored results, optionally leaving a day-only marker behind for one
+ * date.
+ *
+ * The marker looks contradictory in a function called delete, and it is
+ * load-bearing: hasPlayerData() returns true only if dlng_history exists or a
+ * mid-game board does, and solving clears the mid-game board. So deleting
+ * history right after solving today would leave neither, the router would send
+ * the player to /welcome, and today's puzzle would become replayable. The marker
+ * holds the date and nothing else, which is exactly what a player who opted out
+ * gets anyway (brief 66, 71).
+ *
+ * The marker is written whenever a date is given, whether or not the deleted
+ * history held a row for it. The only caller is the solve path, where the date
+ * IS the day just finished and no row was ever written for it — saving is off,
+ * so recordGame never ran. Writing it only when a row already existed (as the
+ * plan's Task 1 first described) would leave that player with nothing, which is
+ * the replay bug this exists to prevent.
+ */
+export function deleteHistory(keepMarkerFor?: string, archived = false): void {
+  try {
+    localStorage.removeItem(STORAGE_HISTORY);
+    if (typeof keepMarkerFor === 'string' && keepMarkerFor) recordMarker(keepMarkerFor, archived);
+  } catch { /* private mode / disabled storage — nothing to delete */ }
 }
 
 
@@ -117,7 +179,18 @@ export function loadActive(): ActiveState | null {
     // feedbackKey must be one of the documented sentinel values (WR-03).
     if (d.feedbackKey !== null && d.feedbackKey !== 'incorrect' && d.feedbackKey !== 'error') return null;
 
-    return d as unknown as ActiveState;
+    // elapsed and idles drop the FIELD when invalid, not the whole board — unlike
+    // every check above. Those fields are load-bearing: a bad `possibles` means an
+    // unusable board. These two are decoration, and throwing away a real mid-game
+    // board because someone typed a float into `elapsed` is the worse outcome
+    // (brief 121). An absent or rejected value simply means the clock restarts.
+    const state = d as unknown as ActiveState;
+    if (validSeconds(d.elapsed) === null) delete state.elapsed;
+    if (!(Number.isInteger(d.idles) && (d.idles as number) >= 0 && (d.idles as number) <= 1000)) {
+      delete state.idles;
+    }
+
+    return state;
   } catch {
     return null;
   }

@@ -980,7 +980,7 @@ async function handleGuess() {
       const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
 
       if (!gameState.isRandom && gameState.date) {
-        recordGame(gameState.date, tries, saveScore ? guess : undefined, isArchiveSolve);
+        recordGame(gameState.date, tries, { answer: saveScore ? guess : undefined, archived: isArchiveSolve });
       }
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();

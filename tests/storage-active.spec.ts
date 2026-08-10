@@ -302,3 +302,55 @@ describe('hasPlayerData — router deep-link gate', () => {
     expect(hasPlayerData()).toBe(false);
   });
 });
+
+// The play timer rides on the saved board (brief 30, 59, 121). Both fields are
+// optional, and both drop the FIELD rather than the board when they fail
+// validation — a forged elapsed must not cost a player their in-progress game.
+describe('elapsed and idles on the saved board', () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(TODAY + 'T10:00:00')); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('round-trips a counted time', () => {
+    saveActive(makeState({ elapsed: 240 }));
+    expect(loadActive()!.elapsed).toBe(240);
+  });
+
+  it('round-trips an idle count', () => {
+    saveActive(makeState({ idles: 2 }));
+    expect(loadActive()!.idles).toBe(2);
+  });
+
+  it('accepts a board written before this shipped, with neither field', () => {
+    saveActive(makeState());
+    const loaded = loadActive();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.elapsed).toBeUndefined();
+    expect(loaded!.idles).toBeUndefined();
+  });
+
+  it('keeps the board and drops the field for every invalid elapsed', () => {
+    for (const bad of [-1, 12.5, 86_401, '240', NaN, null]) {
+      localStorage.setItem('dlng_active', JSON.stringify({ ...makeState(), elapsed: bad }));
+      const loaded = loadActive();
+      expect(loaded, `elapsed: ${String(bad)}`).not.toBeNull();
+      expect(loaded!.possibles).toEqual([[1, 2, 3], [4, 5], [7]]);
+      expect(loaded!.elapsed, `elapsed: ${String(bad)}`).toBeUndefined();
+    }
+  });
+
+  it('keeps the board and drops the field for every invalid idles', () => {
+    for (const bad of [-1, 2.5, 1001, '2', NaN, null]) {
+      localStorage.setItem('dlng_active', JSON.stringify({ ...makeState(), idles: bad }));
+      const loaded = loadActive();
+      expect(loaded, `idles: ${String(bad)}`).not.toBeNull();
+      expect(loaded!.possibles).toEqual([[1, 2, 3], [4, 5], [7]]);
+      expect(loaded!.idles, `idles: ${String(bad)}`).toBeUndefined();
+    }
+  });
+
+  it('the schema version is still 1 — bumping it throws away every in-progress board', () => {
+    saveActive(makeState({ elapsed: 30 }));
+    expect(JSON.parse(localStorage.getItem('dlng_active')!).v).toBe(1);
+    expect(loadActive()!.v).toBe(1);
+  });
+});
