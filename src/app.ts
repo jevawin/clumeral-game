@@ -17,7 +17,7 @@ import { isWalkthroughActive } from './walkthrough.ts';
 import { showScreen, getCurrentScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
-import { renderCompletion } from './completion.ts';
+import { renderCompletion, resetCompletionAnnouncement } from './completion.ts';
 import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
@@ -386,7 +386,13 @@ const ICON_CHECK = `<svg class="w-8 h-8 shrink-0" viewBox="0 0 24 24" xmlns="htt
 
 const ICON_CROSS = `<svg class="w-8 h-8 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-cx"><circle cx="12" cy="12" r="10" fill="white"/><path d="m15 9-6 6M9 9l6 6" stroke="black" stroke-width="2.5" stroke-linecap="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-cx)"/></svg>`;
 
-function renderFeedback(type: string | null, answer?: number): void {
+// `announce: false` silences the live region for this write without changing a
+// word on screen. A daily or random solve moves to the completion screen, which
+// does the announcing — and two voices talking at once is what brief 99 forbids.
+// An archive solve stays on /play and reaches no completion announcement, so it
+// keeps its own. resetPuzzleUI restores "assertive" for the next puzzle.
+function renderFeedback(type: string | null, answer?: number, opts: { announce?: boolean } = {}): void {
+  if (opts.announce === false) dom.feedback?.setAttribute('aria-live', 'off');
   if (type === "correct") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CHECK} Correct! That's puzzle #${gameState.puzzleNum ?? ''}.`;
@@ -817,6 +823,10 @@ function resetPuzzleUI() {
   // random and archive replay — comes through here; the mid-game restore path
   // does not, and rebuilds the timer from the saved board instead.
   timer = createPlayTimer();
+  // A new puzzle gets a new announcement, and the play screen's own feedback
+  // gets its voice back — the suppression below is per solve, not permanent.
+  resetCompletionAnnouncement();
+  dom.feedback?.setAttribute('aria-live', 'assertive');
   renderFeedback(null);
   renderHistory([]);
   dom.stats?.classList.add("hidden");
@@ -934,7 +944,11 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
     // when the user reaches the completion screen via /archive/<date>. The renderCompletion
     // signature accepting opts ships in Plan 06 — this call site depends on that change.
-    renderCompletion(num, entry.tries, false, { activeDate: date, todayLocal: todayKey() });
+    renderCompletion(num, entry.marker ? null : entry.tries, false, {
+      activeDate: date,
+      todayLocal: todayKey(),
+      seconds: entry.seconds,
+    });
     return;
   }
 
@@ -998,7 +1012,10 @@ async function handleGuess() {
       gameState.tries = tries;
       gameState.answer = guess; // now we know the answer (it was our correct guess)
       track("puzzle_complete", tries);
-      renderFeedback("correct", guess);
+      // Computed here rather than below, because the announcement decision needs
+      // it: an archive solve stays on /play and this is its only announcement.
+      const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
+      renderFeedback("correct", guess, { announce: isArchiveSolve });
       closeKeypad();
       // Apply correct state to all digit boxes
       for (let i = 0; i < 3; i++) {
@@ -1017,13 +1034,16 @@ async function handleGuess() {
       // saveScore is off (WR-02). Include the answer only when saveScore is on — that way
       // the history entry exists (prevents re-solving) but the answer is omitted when the
       // player has opted out of saving stats. Random puzzles are never written to history.
-      // Tag archive solves (date != today) so computeStats can exclude them from daily
-      // stats while still recording them (archive replay + the archive Tries column read
-      // dlng_history by date). Computed BEFORE recordGame so it can be passed as the flag.
-      const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
-
+      // Tag archive solves (date != today) so the counting rules can exclude them from
+      // daily stats while still recording them (archive replay + the archive goes column
+      // read dlng_history by date). isArchiveSolve is computed above, where the
+      // announcement decision also needs it.
       if (!gameState.isRandom && gameState.date) {
-        recordGame(gameState.date, tries, { answer: saveScore ? guess : undefined, archived: isArchiveSolve });
+        recordGame(gameState.date, tries, {
+          answer: saveScore ? guess : undefined,
+          archived: isArchiveSolve,
+          seconds: timer.seconds(),
+        });
       }
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();
@@ -1038,14 +1058,15 @@ async function handleGuess() {
         // directly), so the router has no deps and replaceRoute('/solved') would
         // throw `router not initialized`. Random has no /solved URL anyway — show
         // the completion screen directly.
-        renderCompletion(gameState.puzzleNum ?? 0, tries, true);
+        // Shown, but never stored and never sent (brief 52).
+        renderCompletion(gameState.puzzleNum ?? 0, tries, true, { seconds: timer.seconds() });
         showScreen('completion');
       } else {
         // Today's solve: paint the completion screen and replace history (no /play
         // entry to back into; back from /solved goes to /welcome, which itself
         // redirects to /solved post-solve so the back lands on the same screen
         // — effectively making /solved the post-solve home).
-        renderCompletion(gameState.puzzleNum ?? 0, tries, false);
+        renderCompletion(gameState.puzzleNum ?? 0, tries, false, { seconds: timer.seconds() });
         // Fire sync — never inside celebrateOcto's callback. If celebration is
         // interrupted (page hidden, rAF paused) the user could otherwise be
         // stranded on /play with the puzzle solved (#solve-stranding).
@@ -1483,7 +1504,13 @@ const _todayHistoryAtBoot = todayEntry();
 if (_todayHistoryAtBoot) {
   const _todayDate = todayKey();
   const _num = puzzleNumberFor(_todayDate);
-  renderCompletion(_num, _todayHistoryAtBoot.tries, false);
+  renderCompletion(
+    _num,
+    // A marker means "played, not recorded" — never "Solved in 0".
+    _todayHistoryAtBoot.marker ? null : _todayHistoryAtBoot.tries,
+    false,
+    { seconds: _todayHistoryAtBoot.seconds },
+  );
 }
 
 // Don't pre-paint a screen here — the router resolves location.pathname and
