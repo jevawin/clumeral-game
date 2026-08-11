@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { recordGame, recordMarker, deleteHistory, loadHistory } from '../src/storage.ts';
 import { validSeconds, MAX_STORED_SECONDS } from '../src/player-stats.ts';
 
@@ -86,6 +86,11 @@ describe('recordMarker — the day-only marker (brief 71, 123)', () => {
 });
 
 describe('deleteHistory', () => {
+  // deleteHistory now reads todayKey() to decide whether to keep a marker for
+  // today, so these are pinned to a fixed day rather than the machine's.
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-08-10T10:00:00')); });
+  afterEach(() => { vi.useRealTimers(); });
+
   it('leaves exactly one marker row for the date it is given', () => {
     localStorage.setItem('dlng_history', JSON.stringify([
       { date: '2026-08-10', tries: 2 },

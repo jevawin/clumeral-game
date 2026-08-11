@@ -1322,7 +1322,13 @@ goes and returns "Solved!", which is a state it already handles.
 **L2 — the explanatory lines rendered bold monospace.** `.stat-row dd` outranks `.stat-note`
 on specificity, so the All-time notes were the loudest thing in a block settled as "open but
 quiet", and differed from the identical notes in Streaks. A side-effect of B-07 the
-departure note did not anticipate. Fixed by restating family and weight on `.stat-note`.
+departure note did not anticipate.
+
+**The first fix for this was a no-op and the re-review caught it.** Restating the family and
+weight on `.stat-note` could never win: `.stat-note` is (0,1,0) and `.stat-row dd` is
+(0,1,1), and source order is only a tiebreak at equal specificity. The value rule is now
+`.stat-row dd:not(.stat-note)`, so the note stops matching it at all rather than trying to
+out-declare it. Verified in the built CSS, not just the source.
 
 **L5 — an archive solve with saving off made today replayable.** Solve today with saving on,
 untick, then solve an archive puzzle: `deleteHistory` wiped everything including today's
@@ -1332,6 +1338,24 @@ consequence is exactly the replay bug brief 66 exists to prevent. `deleteHistory
 a marker for today as well when today had been played — no results kept, so the promise
 holds, and the hole closes. Three tests. **Flagged to Jamie**, since it changes what a
 delete leaves behind.
+
+### da-build re-review — run 2026-08-11, one Medium found and fixed
+
+The fixes above were re-reviewed cold. Four of the five were correct; the L2 fix was the
+no-op described above, graded Medium and fixed properly. Three further Lows came out of it,
+all taken:
+
+- **The M2 fix was a position in `index.html` and nothing read it.** Moving the live region
+  back inside a screen would have left the suite green and silently stopped the result being
+  spoken. `tests/save-warning.spec.ts` now parses the shipped markup and asserts the region
+  has no `[data-screen]` and no `aria-hidden` ancestor.
+- **The M2 move introduced stale text.** The region used to leave the accessibility tree
+  with the screen it lived in; now it is always there, so last game's result would sit
+  between the main content and the footer for the life of the session. Cleared on reset and
+  on entering any other screen — which also means two identical solves in a row both
+  announce, since assigning the same textContent is not a mutation.
+- **`deleteHistory`'s docblock said one marker** when it can now write two, and one of its
+  tests had become clock-dependent. Both corrected.
 
 **Not changed, recorded instead:** L3 (the warning is both a live region and an
 `aria-describedby` target — may double on VoiceOver; needs a real screen reader to judge),

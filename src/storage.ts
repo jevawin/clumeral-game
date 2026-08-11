@@ -125,6 +125,10 @@ export function recordMarker(dateStr: string, archived = false): void {
  * so recordGame never ran. Writing it only when a row already existed (as the
  * plan's Task 1 first described) would leave that player with nothing, which is
  * the replay bug this exists to prevent.
+ *
+ * It can leave TWO markers: the given date, and today, when today had been
+ * played and is not the given date. See the comment in the body — that second
+ * one is what stops an archive solve making today replayable.
  */
 export function deleteHistory(keepMarkerFor?: string, archived = false): void {
   try {

@@ -126,3 +126,31 @@ describe('the checkbox keeps its own label (P-02)', () => {
     expect(doc.querySelector('[data-save-countdown]')!.hasAttribute('aria-live')).toBe(false);
   });
 });
+
+// The completion announcement is a position, not a value: it only works because
+// the region sits outside every screen. Nothing else in the suite reads that, so
+// a future markup tidy-up could move it back inside "where it belongs", leave the
+// suite green, and silently stop the result being spoken.
+describe('the completion announcement lives outside every screen', () => {
+  const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+  const doc = new JSDOM(html).window.document;
+  const live = doc.querySelector('[data-completion-live]')!;
+
+  it('exists, and is a polite status region', () => {
+    expect(live).not.toBeNull();
+    expect(live.getAttribute('role')).toBe('status');
+    expect(live.getAttribute('aria-live')).toBe('polite');
+    expect(live.className).toContain('sr-only');
+  });
+
+  it('has no [data-screen] ancestor', () => {
+    // A screen goes display:none when inactive, and a display:none subtree is
+    // not in the accessibility tree at all — so a region inside one arrives
+    // complete, as inserted content, which screen readers routinely ignore.
+    expect(live.closest('[data-screen]')).toBeNull();
+  });
+
+  it('has no aria-hidden ancestor', () => {
+    expect(live.closest('[aria-hidden="true"]')).toBeNull();
+  });
+});

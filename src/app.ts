@@ -1061,7 +1061,7 @@ async function handleGuess() {
       }
 
       // How long that took, with a label saying whether the idle cut-off ever
-      // fired. All four conditions earn their place and none is redundant:
+      // fired. All three rules earn their place and none is redundant:
       // daily-only keeps randoms and archive replays out of the average (brief
       // 52, 132); saving-on honours brief 141, so nothing about an opted-out
       // player's play leaves the device; and a valid time keeps a junk value out

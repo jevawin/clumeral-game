@@ -523,7 +523,11 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   .stat-row:last-of-type { border-block-end: 0; }
   .stat-row dt { font-size: 0.9375rem; color: var(--color-text); }
-  .stat-row dd {
+  /* :not(.stat-note) rather than restating the family and weight on .stat-note —
+     .stat-note is (0,1,0) and this selector is (0,1,1), so it could never win on
+     specificity no matter what it declares or what order the rules are in. The
+     note simply stops matching this rule instead. */
+  .stat-row dd:not(.stat-note) {
     margin: 0;
     font-family: "Inconsolata", monospace;
     font-weight: 700;
@@ -533,11 +537,9 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      so it is text under the stat, never a tooltip (brief 95). */
   .stat-note {
     flex-basis: 100%;
-    /* .stat-row dd sets bold monospace and outranks this on specificity, so the
-       family and weight are restated. Without them the explanatory lines render
-       as the loudest thing in a block that is meant to be open but quiet — and
-       differently from the identical lines in the Streaks block. */
-    font-family: inherit;
+    margin: 0;
+    /* The weight is for the chart's <h4>, which would otherwise take the user
+       agent's bold. The family comes from the page. */
     font-weight: 400;
     font-size: 0.8125rem;
     line-height: 1.35;

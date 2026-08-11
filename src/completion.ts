@@ -204,14 +204,30 @@ function showsTime(mode: PanelMode): boolean {
 let pendingAnnouncement: string | null = null;
 let announced = false;
 
-/** Called when a new puzzle starts, so the next solve announces again. */
+/**
+ * Called when a new puzzle starts, so the next solve announces again.
+ *
+ * Clears the region's text as well as the pending flag. The region lives outside
+ * every screen now, so it is permanently in the accessibility tree — stale text
+ * would otherwise sit there for the life of the session, and a screen-reader
+ * user browsing /play would meet last game's result between the main content and
+ * the footer. Clearing also means two identical solves in a row still announce
+ * twice: assigning the same textContent is not a mutation, so without this the
+ * second would be silent.
+ */
 export function resetCompletionAnnouncement(): void {
   pendingAnnouncement = null;
   announced = false;
+  if (dom.live) dom.live.textContent = '';
 }
 
 document.addEventListener('screens:enter', (e) => {
-  if ((e as CustomEvent).detail?.screen !== 'completion') return;
+  const screen = (e as CustomEvent).detail?.screen;
+  if (screen !== 'completion') {
+    // Leaving the result behind on a screen it does not describe.
+    if (dom.live) dom.live.textContent = '';
+    return;
+  }
   if (pendingAnnouncement === null) return;
   if (dom.live) dom.live.textContent = pendingAnnouncement;
   pendingAnnouncement = null;
