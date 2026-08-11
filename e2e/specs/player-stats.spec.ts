@@ -5,18 +5,36 @@ import { seedHistory, seedPrefs, seedLastVisit } from "../helpers/storage.ts";
 import { freezeDate, advanceBy } from "../helpers/clock.ts";
 import { solvePuzzle, readAnswer, setBoxes } from "../helpers/solve.ts";
 
-// Frozen "today", so seeded history and the streak walk are deterministic.
-const NOW = "2026-06-08T12:00:00Z";
-const TODAY = "2026-06-08";
+// The clock is frozen at the REAL now, not at a fixed past date.
+//
+// It has to be frozen at all so the five-second countdown can be advanced rather
+// than waited out. It has to be *now* because /api/dev/answer serves today's
+// daily answer: freeze to a date in the past and the client asks for that day's
+// puzzle while the helper hands back today's, so every "solve" is really a wrong
+// guess and the screen never moves. That is what failed here first time round.
+const NOW = new Date();
+const day = (back: number) => {
+  const d = new Date(NOW);
+  d.setDate(d.getDate() - back);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const TODAY = day(0);
 
-// Four past days ending yesterday. Solving today makes it five countable games,
-// which is well past the third-game reveal gate.
+// Four consecutive past days ending yesterday. Solving today makes it five
+// countable games, well past the third-game reveal gate.
 const PAST = [
-  { date: "2026-06-07", tries: 1, answer: 111, seconds: 48 },
-  { date: "2026-06-06", tries: 3, answer: 222, seconds: 300 },
-  { date: "2026-06-05", tries: 2, answer: 333, seconds: 260 },
-  { date: "2026-06-04", tries: 4, answer: 444, seconds: 400 },
+  { date: day(1), tries: 1, answer: 111, seconds: 48 },
+  { date: day(2), tries: 3, answer: 222, seconds: 300 },
+  { date: day(3), tries: 2, answer: 333, seconds: 260 },
+  { date: day(4), tries: 4, answer: 444, seconds: 400 },
 ];
+
+// How long today's solve is made to take. The clock is frozen, so without this
+// every solve counts zero seconds — the timer only banks a gap when the next
+// interaction lands. 90s is under the two-minute idle cut-off, so it counts, and
+// it is longer than the seeded 48s so the fastest first-go win stays the seeded
+// one.
+const TODAY_SECONDS = 90;
 
 async function readHistory(page: import("@playwright/test").Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem("dlng_history") ?? "null"));
@@ -61,7 +79,13 @@ async function startToday(
 test.describe("player stats — the panel after a solve", () => {
   test("shows all three blocks with the figures from history plus this game", async ({ page }) => {
     await startToday(page, PAST);
-    await solvePuzzle(page);
+
+    // Solve by hand so the clock can be moved between resolving the board and
+    // submitting — that gap is what the timer counts.
+    const answer = await readAnswer(page);
+    await setBoxes(page, answer);
+    await advanceBy(page, TODAY_SECONDS * 1000);
+    await page.locator("[data-submit]").click();
     await settleScreen(page, "game", "completion");
 
     const completion = new CompletionPage(page);
@@ -69,14 +93,19 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.streaks).toBeVisible();
     await expect(completion.allTime).toBeVisible();
 
-    // Five countable games ending today, so both streaks are live.
+    // Five countable games ending today, so the play streak is live. Today is a
+    // first-go win, so that streak is 1: yesterday was a first go too, but the
+    // day before took three.
     await expect(completion.stat("Play streak")).toHaveText("5");
+    await expect(completion.stat("First-go streak")).toHaveText("2");
     await expect(completion.stat("Plays")).toHaveText("5");
-    // One first-go win among five. The number of goes today is whatever the
-    // solve took, so the percentage is not pinned here — the unit tests own the
-    // arithmetic; this proves the real numbers reach the real panel.
-    await expect(completion.stat("First-go wins")).toHaveText(/^\d+ \(\d+%\)$/);
-    await expect(completion.stat("Average goes")).toHaveText(/^\d+\.\d$/);
+    await expect(completion.stat("First-go wins")).toHaveText("2 (40%)");
+    // (1 + 3 + 2 + 4 + 1) / 5
+    await expect(completion.stat("Average goes")).toHaveText("2.2");
+    // (48 + 300 + 260 + 400 + 90) / 5 = 219.6s. This is the assertion that
+    // proves the timer's number reaches the panel.
+    await expect(completion.stat("Average time")).toHaveText("3:40");
+    // The seeded 48s beats today's 90s.
     await expect(completion.stat("Fastest first-go win")).toHaveText("0:48");
 
     // The explanatory lines are the whole point of the build.
@@ -88,9 +117,10 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.goesRows).toHaveCount(6);
     await expect(completion.panel).toContainText("How many goes you take");
 
-    // The hero says how this game went, and the panel announces once.
-    await expect(completion.thisGame).toContainText(/^Solved in \d+ · \d+:\d\d$/);
-    await expect(completion.live).toContainText(/^Solved in \d+\. .+\. Play streak 5\.$/);
+    // The hero says how this game went, and the panel announces once — spelled
+    // out for speech, not read as "one colon thirty".
+    await expect(completion.thisGame).toContainText("Solved in 1 · 1:30");
+    await expect(completion.live).toHaveText("Solved in 1. 1 minute 30 seconds. Play streak 5.");
   });
 
   test("a brand-new player sees This game only, and why", async ({ page }) => {
