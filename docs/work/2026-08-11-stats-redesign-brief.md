@@ -10,8 +10,8 @@ are **not repeated here**. Read them alongside this.
 Numbering starts fresh at 1 and is append-only.
 
 Status: **OPEN.** All 11 sections written. Dave acked the lot on 2026-08-11 ("happy").
-Outstanding: Jamie's blocking sign-off on §9 accessibility (item 54), his acks on items 38
-and 45, and his sign-off on the brief as a whole.
+Outstanding: Jamie's blocking sign-off on §9 accessibility (item 54); Dave's ack on the
+reopened §7 and §8 (items 66–72, and item 71 in particular); Jamie's sign-off on the whole.
 
 ## The source drawing
 
@@ -41,8 +41,8 @@ this brief is written against. Reading it top to bottom:
 | 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
 | 5. State & persistence | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
 | 6. How it fits | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
-| 7. How it looks | Settled: Dave 2026-08-11 (item 38) · Ack: Jamie 2026-08-11 (item 65) · REOPENED by items 66–70 |
-| 8. Copy & wording | Item 45 stands (item 69) · REOPENED by items 66–68 — awaiting Jamie on item 70, then Dave's ack |
+| 7. How it looks | Settled: Jamie 2026-08-11 (items 66–72) · Ack: Dave pending on item 71 |
+| 8. Copy & wording | Settled: Jamie 2026-08-11 (items 66–68, 71) · Ack: Dave pending |
 | 9. Accessibility | Asked 2026-08-11 — Jamie's sign-off blocks (item 54) |
 | 10. Analytics | Settled 2026-08-11 — none (items 55–57) · Ack: Dave 2026-08-11 · Jamie pending |
 | 11. Done / test plan | Settled 2026-08-11 (items 58–64, light QA) · Ack: Dave 2026-08-11 · Jamie pending |
@@ -392,6 +392,22 @@ he said in words.
     The alternative: keep "Avg." in the Time box and make the Average block hold **average
     goes only**, as a single box rather than two. That keeps the three boxes even, at the
     price of a lopsided Average block.
+
+71. **Item 70 SETTLED: Jamie 2026-08-11 — "Current", and accept the repeat.** The Time box
+    reads `best time / Best` over `today's time / Current`. The Average block stays as item
+    67 describes it, with both averages in it. So the three Best boxes are even, and
+    today's time appears twice: once under "Today" and once as "Current".
+    Jamie's reasoning, recorded: "It'll be a repeat of above, that's fine. Otherwise it'll
+    be lopsided and will be more noticeable."
+    **Dave's ack is wanted here specifically**, because it cuts against what he said
+    earlier the same evening — "I don't see a benefit in repeating numbers close together"
+    (item 38). Both views are on the record and they point different ways. UI is joint, so
+    if Dave still disagrees, Jamie's is the deciding vote as dev lead — but not before Dave
+    has had the chance to say so.
+
+72. **The Average block's two boxes take the matching icons** — the stopwatch for average
+    time, the calculator-with-tick for average goes — and the same box styling, two across
+    rather than three. Labels: "Avg." under each, matching item 68's shortening. (assumed)
 
 ## 9. Accessibility
 
