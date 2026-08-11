@@ -12,8 +12,8 @@ Numbering starts fresh at 1 and is append-only.
 Status: **CLOSED, 2026-08-11.** Every section settled. Dave acked the joint sections
 ("happy"); Jamie signed off accessibility and the brief as a whole ("Approved. DA it").
 One override rather than an ack — item 73. `da-brief` has run (items 74–83).
-**Reopened by it:** Dave's ack on the final design (item 74) and the duplication question
-(item 80). Everything else the review raised is answered in place.
+Item 80 settled by Jamie (item 84). **The only thing outstanding is Dave's ack on the final
+design — item 74.**
 
 ## The source drawing
 
@@ -38,7 +38,7 @@ this brief is written against. Reading it top to bottom:
 | Section | State |
 |---|---|
 | 1. What it is | Settled: Jamie 2026-08-11 · Ack: Dave 2026-08-11 |
-| 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave 2026-08-11 |
+| 2. Out of scope | Settled: Jamie 2026-08-11 · item 6 superseded by item 84 · Ack: Dave 2026-08-11 |
 | 3. How it works | Settled: Jamie 2026-08-11 (item 13) · Ack: Dave 2026-08-11 |
 | 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
 | 5. State & persistence | Settled 2026-08-11 · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
@@ -638,3 +638,14 @@ than a decision from me, it says so and names them.
       markup, CSS and one counting rule, with no server, storage or routing change; unit
       tests cover the counting and the markup, and item 63's eyeball on the preview covers
       the look. Flagged for Jamie rather than changed on my own.
+
+84. **Item 80 SETTLED: Jamie 2026-08-12 — "lose them from all time".** Three rows come out
+    of the All-time list: **average time, average goes and fastest first-go win**. All time
+    keeps plays, first-go wins and the goes chart.
+    This **supersedes item 6** ("All time is fine as it is now"), which was said before the
+    Average block existed. No figure is lost from the panel — each of the three now lives
+    higher up, in the Best or Average block — and the screen gets three rows shorter, which
+    was Dave's original complaint.
+    Consequence for §11: `computePlayerStats` keeps computing `fastestFirstGoSeconds` only
+    if something still uses it. Nothing will, so it goes too, along with its test — the
+    plan should delete it rather than leave a dead figure behind.
