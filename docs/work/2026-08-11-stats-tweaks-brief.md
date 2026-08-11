@@ -115,3 +115,40 @@ staging. The redesign gets its own brief once Jamie has had his think.
     things you raised (the untidy streaks, the emphasis on the best numbers, the 6+ tail and
     the length of the screen) are deliberately NOT in this branch and are waiting for their
     own brief.
+
+## Parked for the redesign brief — 2026-08-11
+
+Everything below is **not built here**. It is written down so it survives a context clear
+and so the redesign brief starts from something rather than from memory.
+
+14. **What Dave raised**, 2026-08-11: the streaks block looks untidy; the best numbers lack
+    emphasis; only some of the panel is in the theme colour; the goes chart stops at `6+`
+    and a 20-go day has nowhere to go; and the screen is long.
+
+15. **What Jamie raised**, 2026-08-11: it needs icons for faster pattern recognition — a
+    flame for streaks, and a variation on it so plays and the first-go streak are
+    distinguishable at a glance — and "it's all a big ol' list", not "LOOK HERE". Jamie is
+    thinking about the layout himself, so the direction is his to set.
+
+16. **Examples worth looking at, and the one thing each does well** (asked for by Jamie,
+    2026-08-11):
+    - **Wordle** — four plain numbers, then the guess-distribution chart. The chart is the
+      hero and the bit people screenshot; the numbers are deliberately quiet.
+    - **Duolingo's streak screen** — the flame IS the screen, with a week strip beneath.
+      Exactly the pattern Jamie described.
+    - **Apple Fitness** — one graphic you read in half a second; detail only if you scroll.
+    - **Strava** — big number, tiny label, and "this week / all time" as tabs rather than
+      one long page. That is a direct answer to Dave's "it's quite long".
+    - **Chess.com's profile** — the rating chart is the hero and the counts sit in a small
+      grid underneath.
+    - Browsable: https://dribbble.com/tags/stats_screen and
+      https://www.behance.net/search/projects/stats%20ui
+
+17. **The pattern running through all of them, and the diagnosis of our own screen:** one
+    thing shouts and the rest whispers. Our three blocks currently whisper equally, which is
+    exactly why it reads as a list rather than as a result. Whatever layout Jamie lands on,
+    that is the problem to solve — not the number of figures.
+
+18. **Open and owed on THIS branch**, so it is not lost:
+    - `da-build` has not run on the fixes diff (PR #311).
+    - Dave has not acked item 8 — that the redesign is deliberately out of this branch.
