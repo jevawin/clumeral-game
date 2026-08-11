@@ -35,10 +35,10 @@ this brief is written against. Reading it top to bottom:
 |---|---|
 | 1. What it is | Settled: Jamie 2026-08-11 (items 1–3 accepted, "park for now, build this") · Ack: Dave pending |
 | 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave pending |
-| 3. How it works | Asked 2026-08-11 — awaiting Jamie on item 12 |
-| 4. Maths | Not applicable — nothing here touches puzzle generation or filtering |
-| 5. State & persistence | Not yet asked |
-| 6. How it fits | Not yet asked |
+| 3. How it works | Settled: Jamie 2026-08-11 (item 12 decided as item 13) · Ack: Dave pending |
+| 4. Maths | Not applicable — nothing here touches puzzle generation or filtering. But item 14 adds a counting rule; Dave's ack wanted on that alone |
+| 5. State & persistence | Asked 2026-08-11 — no decision in it |
+| 6. How it fits | Asked 2026-08-11 — no decision in it |
 | 7. How it looks | Not yet asked |
 | 8. Copy & wording | Not yet asked |
 | 9. Accessibility | Not yet asked |
@@ -121,3 +121,63 @@ this brief is written against. Reading it top to bottom:
     Also note: *Fastest first-go win* and *Average time* would then both still sit in the
     All-time list, which Jamie has said stays as it is. So one of those numbers is shown
     twice whichever way this goes.
+
+13. **Item 12 SETTLED: Jamie 2026-08-11 — best time over average.** The Time box reads:
+
+        1m 20s
+        Best time
+        2m 25s
+        Average
+
+    Jamie: "Do average in the box so it doesn't repeat at the top." So this game's time
+    appears once, in the hero line, and the box carries two all-time figures.
+    Two consequences, recorded rather than re-asked:
+    - The lower label is **"Average"**, not "Current". The three boxes therefore no longer
+      share a second label. That is fine because each label is explicit, but it does mean
+      the Time box is a record-and-average pair while the other two are record-and-current.
+    - **Average time now appears twice on the screen** — in this box and in the All-time
+      list, which stays as it is. Deliberate, and the cheaper of the two repeats: a
+      duplicated all-time figure two screens apart is less jarring than the same number
+      twice within one screen's height.
+
+14. **What "best time" counts.** My rec: the fastest solve of **any** number of goes, using
+    the same exclusions the existing time figures use — a game over 30 minutes
+    (`OUTLIER_SECONDS`) is shown on its own row but never becomes a fastest or feeds an
+    average, and anything over a day is discarded entirely. Why: a new figure that counted
+    differently from the two beside it would make the panel internally inconsistent, and
+    the 30-minute rule exists because a walked-away-from tab is not a fast solve.
+    **Dave — this is the only counting rule in the redesign, and it is yours to confirm.**
+
+## 5. State & persistence
+
+15. **Nothing new is stored, anywhere.** Every figure is recomputed from `dlng_history` on
+    each render, exactly as today — no running totals, no new key, no server call.
+    (assumed — settled in the original build and unchanged by a visual redesign)
+
+16. **Best time needs no new storage.** History entries already carry `seconds`; the figure
+    is a minimum over rows that already exist. It therefore works retrospectively, on
+    history saved before this change. (assumed)
+
+17. **The "next theme colour" is derived at render, not stored.** The player's chosen theme
+    already persists; the second colour is read off the palette order at the moment the
+    panel draws, so changing theme changes both colours together. (assumed)
+
+## 6. How it fits
+
+18. **Modules touched.** `src/completion.ts` for the markup, `src/tailwind.css` for the
+    styling, `src/player-stats.ts` for the one new figure, and a new small module holding
+    the icons. **No worker or API change**, no routing change, no storage change.
+    (assumed)
+
+19. **Icons are inline SVG in a module**, from Lucide, with the calculator-and-tick
+    assembled by hand from two Lucide paths since it does not exist as one icon.
+    Inline rather than a sprite sheet or an icon font because they must take the theme
+    colour via `currentColor` and there are only three of them. (assumed)
+
+20. **The three boxes borrow the play screen's box styling** — same border, same background
+    — as Jamie asked, so a theme change moves the whole app together. (assumed)
+
+21. **Built so Dave's alternative can swap in.** The figures come out of
+    `computePlayerStats` unchanged; only the builders in `completion.ts` and the styles
+    differ between the two designs. That is what makes a later merge of the two a layout
+    decision rather than a rewrite. (assumed — follows from item 8)
