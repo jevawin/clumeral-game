@@ -132,9 +132,9 @@ describe('the completion panel', () => {
     expect(pair('Current 1-go streak')!.value).toBe('0');
     expect(stat('Plays')).toBe('5');
     expect(stat('First-go wins')).toBe('1 (20%)');
-    expect(stat('Average goes')).toBe('2.4');
-    expect(stat('Average time')).toBe('4m 06s'); // (221+48+300+260+400)/5 = 245.8s
-    expect(stat('Fastest first-go win')).toBe('0m 48s');
+    expect(pair('Average goes')!.value).toBe('2.4');
+    expect(pair('Average time')!.value).toBe('4m 06s'); // (221+48+300+260+400)/5 = 245.8s
+    expect(pair('Best time')!.value).toBe('0m 48s');
   });
 
   it('shows only This game for a brand-new player, with the third-game line', async () => {
@@ -348,6 +348,20 @@ describe('the completion panel', () => {
     expect(block('average')).toBeNull();
   });
 
+  it('keeps All time to plays, first-go wins and the chart (brief 84)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    const t = blockText('all-time');
+    expect(t).toContain('Plays');
+    expect(t).toContain('First-go wins');
+    expect(block('all-time')!.querySelector('.goes-chart')).not.toBeNull();
+    // The two averages moved to their own block and the fastest first-go win is
+    // gone entirely — with best time on the panel it was a second, narrower
+    // version of the same idea.
+    for (const dropped of ['Average goes', 'Average time', 'Fastest first-go win']) {
+      expect(t, dropped).not.toContain(dropped);
+    }
+  });
+
   it('puts no explanatory line inside a box or under the row (brief 45)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     expect(block('best')!.querySelector('.stat-note')).toBeNull();
@@ -373,9 +387,6 @@ describe('the completion panel', () => {
     for (const line of [
       'Daily puzzles you have finished.',
       'Puzzles you got on your first guess.',
-      'Your average number of guesses.',
-      'How long you usually take.',
-      'Your quickest win on a first guess.',
     ]) {
       expect(t, line).toContain(line);
     }
@@ -414,19 +425,19 @@ describe('the completion panel', () => {
     ];
     await render(history, 1, false, { seconds: 3900 });
     expect(figures()).toEqual(['1 go', '1h 05m']);
-    expect(stat('Average time')).toBe('22m 40s');
-    expect(stat('Fastest first-go win')).toBe('1m 00s');
+    expect(pair('Average time')!.value).toBe('22m 40s');
+    expect(pair('Best time')!.value).toBe('1m 00s');
   });
 
-  it('shows a dash for an average nobody has data for', async () => {
+  it('shows a dash for a figure nobody has data for', async () => {
     await render([
       { date: day(0), tries: 2 },
       { date: day(1), tries: 3 },
       { date: day(2), tries: 3 },
     ], 2);
-    // A dash is right HERE — a column of figures needs a placeholder.
-    expect(stat('Average time')).toBe('—');
-    expect(stat('Fastest first-go win')).toBe('—');
+    // A dash is right HERE — a box needs a placeholder rather than a gap.
+    expect(pair('Average time')!.value).toBe('—');
+    expect(pair('Best time')!.value).toBe('—');
   });
 });
 

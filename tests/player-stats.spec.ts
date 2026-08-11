@@ -174,19 +174,11 @@ describe('totals and averages', () => {
       { date: day(1), tries: 1, seconds: 60 },
     ]);
     expect(s.avgTimeSeconds).toBe(1030);
-    expect(s.fastestFirstGoSeconds).toBe(60);
     expect(s.plays).toBe(2);
   });
 
   it('reports no average time as null, never 0', () => {
     expect(stats([{ date: day(0), tries: 2 }]).avgTimeSeconds).toBeNull();
-  });
-
-  it('only considers first-go rows for the fastest win (brief 13)', () => {
-    expect(stats([
-      { date: day(0), tries: 3, seconds: 30 },
-      { date: day(1), tries: 1, seconds: 90 },
-    ]).fastestFirstGoSeconds).toBe(90);
   });
 
   it('reports empty history as zeros and nulls', () => {
@@ -196,7 +188,6 @@ describe('totals and averages', () => {
     expect(s.avgGoes).toBeNull();
     expect(s.firstGoPercent).toBeNull();
     expect(s.avgTimeSeconds).toBeNull();
-    expect(s.fastestFirstGoSeconds).toBeNull();
     expect(s.bestTimeSeconds).toBeNull();
   });
 });

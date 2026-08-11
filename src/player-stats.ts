@@ -59,7 +59,6 @@ export interface PlayerStats {
   avgTimeSeconds: number | null;
   /** The fastest solve of any number of goes, or null with no valid time. */
   bestTimeSeconds: number | null;
-  fastestFirstGoSeconds: number | null;
   playStreak: number;
   bestPlayStreak: number;
   firstGoStreak: number;
@@ -157,11 +156,6 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
     : null;
   const bestTimeSeconds = times.length ? Math.min(...times) : null;
 
-  const firstGoTimes = countable
-    .filter((h) => h.tries === 1)
-    .map(rowSeconds)
-    .filter((s): s is number => s !== null);
-
   // Recency gate: a run that ended more than a day ago is stale, so report 0
   // rather than showing a "current streak" to someone who has not played in
   // days. The leading COUNTABLE row is what decides it.
@@ -187,7 +181,6 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
     avgGoes: plays > 0 ? (countable.reduce((s, h) => s + h.tries, 0) / plays).toFixed(1) : null,
     avgTimeSeconds,
     bestTimeSeconds,
-    fastestFirstGoSeconds: firstGoTimes.length ? Math.min(...firstGoTimes) : null,
     playStreak: live ? play.current : 0,
     bestPlayStreak: play.best,
     firstGoStreak: live ? firstGo.current : 0,

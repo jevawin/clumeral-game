@@ -54,9 +54,6 @@ const dom = {
 const NOTES = {
   plays: 'Daily puzzles you have finished.',
   firstGoWins: 'Puzzles you got on your first guess.',
-  avgGoes: 'Your average number of guesses.',
-  avgTime: 'How long you usually take.',
-  fastest: 'Your quickest win on a first guess.',
 } as const;
 
 const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
@@ -404,9 +401,6 @@ export function renderCompletion(
         `<dl class="m-0">
           ${statRow('Plays', String(stats.plays), NOTES.plays)}
           ${statRow('First-go wins', firstGo, NOTES.firstGoWins)}
-          ${statRow('Average goes', stats.avgGoes ?? '—', NOTES.avgGoes)}
-          ${statRow('Average time', formatDuration(stats.avgTimeSeconds), NOTES.avgTime)}
-          ${statRow('Fastest first-go win', formatDuration(stats.fastestFirstGoSeconds), NOTES.fastest)}
         </dl>
         ${goesChart(stats.goesDistribution)}`));
     }
