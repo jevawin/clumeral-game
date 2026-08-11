@@ -22,6 +22,28 @@ async function readHistory(page: import("@playwright/test").Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem("dlng_history") ?? "null"));
 }
 
+// Wait out a screen transition on a frozen clock.
+//
+// showScreen fades the outgoing screen for 200ms on a setTimeout, and
+// page.clock.install() pauses timers — so on a frozen clock that timer never
+// fires on its own and the incoming screen never appears. A cold `page.goto`
+// paints immediately and needs none of this; every transition made INSIDE the
+// app does.
+//
+// The wait on the outgoing screen matters: the fade sets aria-hidden on it
+// synchronously, so this proves the transition has actually started and the
+// timer exists before we run the clock forward. Advancing before the solve's
+// fetch has resolved would do nothing at all.
+async function settleScreen(
+  page: import("@playwright/test").Page,
+  from: "welcome" | "game" | "completion",
+  to: "welcome" | "game" | "completion",
+) {
+  await expect(page.locator(`[data-screen="${from}"]`)).toHaveAttribute("aria-hidden", "true");
+  await advanceBy(page, 400);
+  await expectActiveScreen(page, to);
+}
+
 async function startToday(
   page: import("@playwright/test").Page,
   history: Parameters<typeof seedHistory>[1],
@@ -40,7 +62,7 @@ test.describe("player stats — the panel after a solve", () => {
   test("shows all three blocks with the figures from history plus this game", async ({ page }) => {
     await startToday(page, PAST);
     await solvePuzzle(page);
-    await expectActiveScreen(page, "completion");
+    await settleScreen(page, "game", "completion");
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
@@ -78,11 +100,11 @@ test.describe("player stats — the panel after a solve", () => {
     await seedLastVisit(page, TODAY);
     await page.goto("/welcome");
     await page.locator("[data-play-btn]").click();
-    await expectActiveScreen(page, "game");
+    await settleScreen(page, "welcome", "game");
     await expect(page.locator("[data-clue-list]")).toBeVisible();
 
     await solvePuzzle(page);
-    await expectActiveScreen(page, "completion");
+    await settleScreen(page, "game", "completion");
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
@@ -98,7 +120,7 @@ test.describe("player stats — score saving switched off", () => {
   test("shows This game only, says nothing about saving, and stores a marker", async ({ page }) => {
     await startToday(page, PAST, { saveScore: false });
     await solvePuzzle(page);
-    await expectActiveScreen(page, "completion");
+    await settleScreen(page, "game", "completion");
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
@@ -115,6 +137,10 @@ test.describe("player stats — score saving switched off", () => {
 });
 
 test.describe("player stats — the delete flow", () => {
+  // These two resolve the board by hand AND drive the checkbox, so they do far
+  // more work than a plain solve. The default 30s budget ran out mid-test on CI.
+  test.slow();
+
   test("warns, holds submit for five seconds, and deletes only on submit", async ({ page }) => {
     await startToday(page, PAST);
 
@@ -159,7 +185,7 @@ test.describe("player stats — the delete flow", () => {
     expect(await readHistory(page)).toHaveLength(PAST.length);
 
     await submit.click();
-    await expectActiveScreen(page, "completion");
+    await settleScreen(page, "game", "completion");
 
     // The seeded results are gone and a marker remains for the day just solved.
     expect(await readHistory(page)).toEqual([{ date: TODAY, tries: 0, marker: true }]);
@@ -190,7 +216,7 @@ test.describe("player stats — the delete flow", () => {
     await expect(page.locator("[data-submit]")).not.toHaveAttribute("aria-disabled", "true");
 
     await page.locator("[data-submit]").click();
-    await expectActiveScreen(page, "completion");
+    await settleScreen(page, "game", "completion");
 
     const history = (await readHistory(page)) as { date: string }[];
     expect(history).toHaveLength(PAST.length + 1);
