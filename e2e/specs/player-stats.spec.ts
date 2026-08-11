@@ -168,14 +168,36 @@ test.describe("player stats — score saving switched off", () => {
 
 test.describe("player stats — the delete flow", () => {
   // These two resolve the board by hand AND drive the checkbox, so they do far
-  // more work than a plain solve. The default 30s budget ran out mid-test on CI.
+  // more work than a plain solve.
   test.slow();
 
+  // seedHistory writes on EVERY navigation, which would put the seeded rows back
+  // after the deletion and hide the very thing the reload is checking. This
+  // writes only when there is nothing there, so the marker survives a reload.
+  async function seedHistoryOnce(
+    page: import("@playwright/test").Page,
+    entries: typeof PAST,
+  ): Promise<void> {
+    await page.addInitScript((data) => {
+      if (localStorage.getItem("dlng_history") === null) {
+        localStorage.setItem("dlng_history", JSON.stringify(data));
+      }
+      if (localStorage.getItem("dlng_prefs") === null) {
+        localStorage.setItem("dlng_prefs", JSON.stringify({ saveScore: true }));
+      }
+    }, entries);
+  }
+
   test("warns, holds submit for five seconds, and deletes only on submit", async ({ page }) => {
-    await startToday(page, PAST);
+    await freezeDate(page, NOW);
+    await seedHistoryOnce(page, PAST);
+    await seedLastVisit(page, TODAY);
+    await page.goto("/play");
+    await expectActiveScreen(page, "game");
+    await expect(page.locator("[data-clue-list]")).toBeVisible();
 
     // Resolve the board WITHOUT submitting: the save row is only shown while the
-    // submit row is, and a wrong guess hides both again.
+    // submit row is.
     const answer = await readAnswer(page);
     await setBoxes(page, answer);
 
@@ -190,22 +212,27 @@ test.describe("player stats — the delete flow", () => {
     // The input is visually hidden behind its label's tick icons, so the label is
     // what a player actually presses.
     await label.click();
+
+    // Press submit IMMEDIATELY, before anything else. The hold is five seconds of
+    // real time, so any assertion in between is a race — and this is the
+    // assertion that matters most: during the hold, pressing submit must do
+    // nothing at all. aria-disabled leaves the button clickable by design, so the
+    // handler is what has to refuse.
+    await submit.click();
+    expect(await readHistory(page)).toHaveLength(PAST.length);
+    await expectActiveScreen(page, "game");
+
+    // Now the state it should be showing while it holds.
     await expect(page.locator("[data-save-check]")).not.toBeChecked();
     await expect(warning).toHaveText("Your existing stats will be deleted when you submit.");
-    await expect(countdown).toHaveText("Submit enabled in 5");
+    await expect(countdown).toContainText(/^Submit enabled in [1-5]$/);
     await expect(submit).toHaveAttribute("aria-disabled", "true");
-
     // The checkbox keeps its own label throughout (P-02) — it never becomes the
     // warning, which would leave the control not saying what it does.
     await expect(label).toHaveText("Save my scores on this device");
 
-    // Nothing is deleted while the countdown runs, and pressing submit does
-    // nothing at all.
-    await submit.click();
-    await expectActiveScreen(page, "game");
-    expect(await readHistory(page)).toHaveLength(PAST.length);
-
-    // The clock is under our control, so the five seconds cost no wall time.
+    // Let the hold expire. advanceBy nudges the frozen clock; the assertion below
+    // is what actually waits, so a running clock reaches the same place.
     await advanceBy(page, 5_000);
     await expect(submit).not.toHaveAttribute("aria-disabled", "true");
     await expect(countdown).toHaveText("");
@@ -225,6 +252,7 @@ test.describe("player stats — the delete flow", () => {
     // router would send this player to /welcome and hand them today again.
     await page.reload();
     await expect(page).toHaveURL(/\/solved$/);
+    expect(await readHistory(page)).toEqual([{ date: TODAY, tries: 0, marker: true }]);
     await page.goto("/play");
     await expect(page).toHaveURL(/\/solved$/);
   });
@@ -250,6 +278,6 @@ test.describe("player stats — the delete flow", () => {
 
     const history = (await readHistory(page)) as { date: string }[];
     expect(history).toHaveLength(PAST.length + 1);
-    expect(history.some((h) => h.date === "2026-06-04")).toBe(true);
+    expect(history.some((h) => h.date === day(4))).toBe(true);
   });
 });
