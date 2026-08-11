@@ -8,7 +8,9 @@ brackets — `(b12)` — refer to that brief. **This plan settles how, not what.
 brief left something genuinely unnamed it is flagged in "Open questions" below rather than
 decided quietly.
 
-Status: **DRAFT — awaiting `da-plan`, then Jamie's approval.**
+Status: **`da-plan` run and answered, 2026-08-12. Awaiting Jamie's approval.** The review
+returned 1 High, 4 Medium and 5 Low. Every one is fixed in place below; the changes it caused
+are listed under "What `da-plan` changed" at the end.
 
 ---
 
@@ -90,7 +92,9 @@ Drops the thirty-minute exclusion and adds the one new figure. Deliberately keep
 `tests/demo-history.spec.ts`: line 58's `fastestFirstGoSeconds` assertion becomes
 `bestTimeSeconds`. The `avgTimeSeconds` bound at line 64 still holds — the seed's average
 moves from 220s to 344s once the 2210-second row counts — but assert the new value exactly
-rather than a loose bound, so the change is visible next time.
+rather than a loose bound, so the change is visible next time. **Rename the test too**: it is
+currently titled `'excludes the over-thirty-minute game from the average, as a real one
+would'`, which becomes a lie the moment the assertion changes.
 
 **Then** — `src/player-stats.ts`:
 - Delete `export const OUTLIER_SECONDS` and the paragraph of comment above it explaining two
@@ -106,8 +110,10 @@ rather than a loose bound, so the change is visible next time.
 Comment-only corrections, all naming a rule that no longer exists (b83 low-15):
 - `src/types.ts:34` — the `seconds` field's note about values above `OUTLIER_SECONDS`.
 - `src/play-timer.ts:121` — the note about a long game being left out.
-- `src/demo-history.ts:41` — the 2210-second row's bullet. **Keep the row**; correct the
-  comment to say it exercises the hour-plus format and now counts like any other game.
+- `src/demo-history.ts:41` — the 2210-second row's bullet in the doc comment, **and** the
+  inline `// the 6+ bucket, and an outlier time` on line 58, which is a second stale mention
+  of the same dead rule. **Keep the row**; correct both comments to say it exercises the
+  hour-plus format and now counts like any other game.
 
 Commit: `refactor(stats): drop the thirty-minute rule, add best time`
 
@@ -143,8 +149,9 @@ current colour and freeze the best one.
 `:root.dark` and the four `:root[data-theme="…"]` rules. `/archive` does not use the colour,
 but `tests/token-parity.spec.ts` compares every `--(accent|chroma|color)-*` declaration
 between the two stylesheets with `toEqual`, and it is right to: a token added to one file and
-not the other is exactly the #243 failure it was written for. Six mirrored lines is cheaper
-than weakening the guard.
+not the other is exactly the #243 failure it was written for. That is three declarations in
+`:root`, one in `:root.dark` and two in each of the four `:root[data-theme]` rules — about
+twelve declarations across six rules, which is still far cheaper than weakening the guard.
 
 Contrast needs no new test. The best colour is one of the same four accents at the same
 `--accent-l`, and `tests/palette-contrast.spec.ts` already pins all four against bg and
@@ -217,8 +224,10 @@ markup tasks assert the class names.
 - `.stat-box__value` — Inconsolata, bold, same `clamp()` as the title, `color:
   var(--color-accent)`. Rung 2.
 - `.stat-box__value--best` — `color: var(--color-accent-best)`. The only exception (b81).
-- `.stat-box__label` — `0.875rem`, regular weight, `color: var(--color-text)`. Rung 3, and
-  the size b69's arithmetic was done against.
+- `.stat-box__label` — `0.875rem`, regular weight, `color: var(--color-text)`. Rung 3.
+  b29 says rung 3 matches "the all-time text size", and All time has two: `.stat-row dt` at
+  `0.9375rem` and `.stat-note` at `0.8125rem` (`src/tailwind.css:539, 564`). 14px sits between
+  them and is the size b69's fit arithmetic was done at, so that is the one this follows.
 
 Delete `.stat-streaks`, `.stat-streak__value`, `.stat-streak__best` and the `22rem` media
 query with them, in task 6 where their markup goes.
@@ -233,7 +242,18 @@ Commit: `style(stats): box and figure styles for the redesign`
 
 ## Task 5 — the Today block
 
-Implements b35, b36, b38, b47, b48, b59, b65, b66, b76, b83 low-12.
+Implements b35, b36, b38, b39, b47, b48, b59, b65, b66, b76, b83 low-12.
+
+**`heroLine` is not renamed and not changed.** The first draft of this plan said it was, and
+`da-plan` caught it: `heroLine` has a second caller the brief's module list never mentions.
+`src/app.ts:22` imports it and `src/app.ts:795` uses it to write the **`/play` screen's**
+`Solved in 1 go, 1m 05s` line into `dom.feedback`. That is the sentence brief item 39
+explicitly protects. Renaming it is a compile break; gutting its sentence branches would
+silently delete the play screen's result line, and neither would show up in the panel's own
+tests. `tests/completion-stats.spec.ts:339–340` and `e2e/specs/undo-reset.spec.ts:246` pin
+it, and both stay exactly as they are — they are now the guard that `/play` did not move.
+
+So the panel gets a **new** function beside it, and `src/app.ts` is not touched at all.
 
 **Tests first** — `tests/completion-stats.spec.ts`:
 1. The block heading reads "Today", not "This game".
@@ -244,9 +264,11 @@ Implements b35, b36, b38, b47, b48, b59, b65, b66, b76, b83 low-12.
 5. Both icons are `aria-hidden="true"` (b49).
 6. Archive replay and marker: no stopwatch figure at all, not an empty one (b36).
 7. `marker` mode renders the plain word `Solved!` and no figures (b76).
-8. The forged-history tests survive unchanged in intent: a `tries` that is not an integer of
-   at least 1 renders `Solved!` and puts no markup in the panel. This guard matters because
-   `loadHistory` does not validate and the value reaches `innerHTML`.
+8. The forged-history guard survives, now on the new function: a `tries` that is not an
+   integer of at least 1 renders `Solved!` and puts no markup in the panel. This matters
+   because `loadHistory` does not validate and the value reaches `innerHTML`. The existing
+   `heroLine` assertions at `tests/completion-stats.spec.ts:333, 339–340` stay untouched —
+   they now prove the `/play` sentence is unchanged.
 9. The announcement is **unchanged** — "Solved in 1. 48 seconds. Play streak 5." It is built
    by `buildAnnouncement` from the raw figures and never touched the hero string, so this is
    an assertion that nothing moved, not that a sentence survived (b48, b83 low-12).
@@ -254,9 +276,13 @@ Implements b35, b36, b38, b47, b48, b59, b65, b66, b76, b83 low-12.
     figures (b76).
 
 **Then** — `src/completion.ts`:
-- Rename `heroLine` to `todayFigures(tries, seconds, showTime)`. It keeps the guard and the
-  `Solved!` branch — returning `<p class="stat-hero">Solved!</p>` — and loses the sentence
-  branches.
+- Add `todayFigures(tries, seconds, showTime)`, a new export. It applies the same guard
+  `heroLine` applies and returns `<p class="stat-hero">Solved!</p>` when `tries` is not an
+  integer of at least 1 — which is also `marker` mode's whole rendering (b76). Otherwise it
+  returns the two figures.
+- `heroLine` stays exactly as it is, exported, for `src/app.ts`. The small duplication of the
+  guard between the two is deliberate: they are two screens with two audiences, and the last
+  time one string served both is what the comma discussion of 2026-08-11 was about.
 - Add a small `figure(iconId, spokenLabel, value)` helper emitting
   `<span class="stat-figure"><svg class="stat-figure__icon" aria-hidden="true"><use
   href="/sprites.svg#…"/></svg><span class="sr-only">Goes, </span><span
@@ -264,6 +290,7 @@ Implements b35, b36, b38, b47, b48, b59, b65, b66, b76, b83 low-12.
 - The block heading string becomes `Today`; the block id stays `this-game`, so the e2e page
   object and every existing locator keep working.
 - `buildAnnouncement`, `showsTime` and the `screens:enter` listener are untouched.
+- **`src/app.ts` is not edited in this task or any other.**
 
 Commit: `feat(stats): Today block — two icon figures instead of a sentence`
 
@@ -273,30 +300,67 @@ Commit: `feat(stats): Today block — two icon figures instead of a sentence`
 
 Implements b11, b12, b13, b30, b41, b42, b52, b59, b66, b68, b71, b78, b81, b83 low-16.
 
+### The box markup, pinned exactly
+
+`da-plan` was right that the first draft left the `dl` unplaced and specified a label
+mechanism that could not produce the Average block's labels. One shape, used by all five
+pairs in tasks 6 and 7:
+
+```html
+<div class="stat-box shadow-box">
+  <h4 class="stat-box__title">
+    <svg class="stat-box__icon" aria-hidden="true"><use href="/sprites.svg#icon-stopwatch"/></svg>Time
+  </h4>
+  <dl class="m-0">
+    <div class="stat-box__pair">
+      <dt>
+        <span class="stat-box__label" aria-hidden="true">Best</span>
+        <span class="sr-only">Best time</span>
+      </dt>
+      <dd class="stat-box__value stat-box__value--best">1m 20s</dd>
+    </div>
+    <!-- second pair -->
+  </dl>
+</div>
+```
+
+Two things this settles. The `dl` wraps the pairs and sits **inside** the box, below the
+`h4` — a `dt` with no `dl` ancestor breaks b46 outright and trips axe's `definition-list`
+rule at serious level, which `e2e/specs/a11y.spec.ts:60` runs over `/solved` in both colour
+schemes. And the short word is a separate `aria-hidden` span rather than a prefix of the
+full one, because `"Avg."` is not a prefix of `"Average time"` — a hidden *suffix* works for
+the Best block and cannot work for the Average block. One mechanism, both blocks.
+
 **Tests first** — `tests/completion-stats.spec.ts`:
 1. The block exists with `data-stat-block="best"` and the heading "Best".
 2. Three boxes, titled "Time", "1-go" and "Plays", each title an `h4` (b52).
 3. The Time box shows best time over today's time; the 1-go box best over current first-go
-   streak; the Plays box best over current play streak — read by their full `dt` text.
-4. The `dt`s read in full — "Best time", "Current time", "Best 1-go streak", "Current 1-go
-   streak", "Best play streak", "Current play streak" — while the visible text is "Best" and
-   "Current" (b78). Assert both: `dt.textContent` for the full words, and the text with the
-   `.sr-only` spans stripped for the short ones.
-5. DOM order inside each pair is `dt` then `dd` (the reversal is visual only, task 4).
+   streak; the Plays box best over current play streak — read by their `.sr-only` label text.
+4. Each pair's spoken label reads in full — "Best time", "Current time", "Best 1-go streak",
+   "Current 1-go streak", "Best play streak", "Current play streak" — while the visible label
+   is "Best" or "Current" (b78). Assert the `.sr-only` span's text for the full words and the
+   `.stat-box__label` span's text for the short ones. Not raw `dt.textContent`, which holds
+   both and reads `"BestBest time"`.
+5. Every `dt` has a `dl` ancestor, and DOM order inside each pair is `dt` then `dd` (the
+   reversal is visual only, task 4).
 6. The three "Best" values carry `.stat-box__value--best` and the three "Current" values do
    not (b81).
 7. "Current" in the Time box shows `—` when this game has no valid time, matching the
    all-time rows' existing behaviour rather than vanishing (b83 low-16).
+7a. **On a personal-best day the same number appears three times.** `renderCompletion` reads
+   history *after* today's row is written, so today's game is inside `bestTimeSeconds`. Beat
+   your record and the screen reads `1m 20s` under the stopwatch in Today, then `1m 20s /
+   Best` over `1m 20s / Current` in one box. b71 and b73 parked Dave's objection to a number
+   appearing twice; nobody has seen the three-way case, so this test pins it as a decision
+   rather than letting it be a discovery on the preview. It is also the cheapest thing to
+   change if Dave rejects the repeat when he can see it — one `statPair` call.
 8. The boxes are absent, not hidden, before the third countable game and when saving is off —
    the existing reveal-gate tests, re-pointed at the new block id (b9, b76).
 9. No explanatory sentence inside any box, and none under the row (b45).
 
 **Then** — `src/completion.ts`:
-- Replace `streakColumn` with two builders:
-  `statBox(title, iconId, pairs)` and `statPair(fullLabel, shortLabel, value, isBest)`.
-  `statPair` emits `<dt><span class="…">Best</span><span class="sr-only"> time</span></dt>`
-  so the visible span holds the short word and the hidden span completes it — one string, no
-  duplication, and the visible text is trimmed rather than the label shortened.
+- Replace `streakColumn` with two builders, emitting exactly the markup pinned above:
+  `statBox(title, iconId, pairs)` and `statPair(shortLabel, fullLabel, value, isBest)`.
 - The block: `block('best', 'Best', '<div class="stat-boxes">…three boxes…</div>')`.
 - Delete `NOTES.playStreak`, `NOTES.firstGoStreak` and `NOTES.streakPair` (b45).
 - Delete `.stat-streaks`, `.stat-streak__value`, `.stat-streak__best` and their `22rem` media
@@ -314,7 +378,9 @@ Implements b67, b72, b78, b81.
 1. `data-stat-block="average"` exists with the heading "Average" and an `h3` and rule like the
    other three (b78).
 2. Two boxes, two across, each with one figure labelled "Avg." on screen.
-3. The `dt`s read "Average time" and "Average goes" in full (b78).
+3. The spoken labels read "Average time" and "Average goes" in full, from the `.sr-only` span,
+   while the visible `.stat-box__label` reads "Avg." (b78). This is the pair the task 6
+   markup was designed around — a hidden suffix could not have produced it.
 4. Neither value carries `.stat-box__value--best`; both take the ordinary accent (b81).
 5. Each shows `—` when there is no data.
 6. Absent before the third game and when saving is off, like Best and All time.
@@ -335,8 +401,12 @@ Implements b6 as superseded by b84, plus b84's own consequence.
 1. `tests/completion-stats.spec.ts` — the All-time block contains "Plays" and "First-go wins"
    and the chart, and contains none of "Average goes", "Average time" or "Fastest first-go
    win".
-2. `tests/player-stats.spec.ts` — delete the `fastestFirstGoSeconds` assertions at lines 173,
-   185 and 195 rather than leaving them asserting a figure nothing shows.
+2. `tests/player-stats.spec.ts` — remove `fastestFirstGoSeconds` from it entirely. Three
+   places, and one of them is a whole test rather than a line: the `it('only considers
+   first-go rows for the fastest win (brief 13)')` block **goes**, because the assertion is
+   its entire body; the assertion inside `it('reports empty history as zeros and nulls')`
+   goes; and the third sits in the test task 1 already rewrote. Located by name, not by line
+   number — task 1 edits this file first and moves them.
 
 **Then**:
 - `src/completion.ts` — drop the three `statRow` calls and `NOTES.avgGoes`, `NOTES.avgTime`,
@@ -358,16 +428,25 @@ first real signal is the CI run on the pull request.
 - `e2e/pages/completion.page.ts` — `streaks` becomes `best`; add `average`; point `stat()` at
   `.stat-row, .stat-box__pair` so it finds figures in both shapes; add a `boxes` locator for
   `.stat-box`.
-- `e2e/specs/player-stats.spec.ts` — the first test drops "Average goes", "Average time" and
-  "Fastest first-go win"; "Play streak"/"First-go streak" become "Current play streak" and
-  "Current 1-go streak" (the full `dt` text, which is what a locator sees); the hero
-  assertion becomes the two figures; the explanatory-line assertions for the streaks go, the
-  two all-time ones stay. The announcement assertion is unchanged and is the proof of b48.
+- `e2e/specs/player-stats.spec.ts`, the first test (lines 56–95):
+  - "Average goes", "Average time" and "Fastest first-go win" come out of All time; average
+    goes and average time reappear as Average-block assertions.
+  - "Play streak" and "First-go streak" become "Current play streak" and "Current 1-go
+    streak", which is the spoken label a locator matches.
+  - The `Solved in 1 go, …` hero assertion becomes the two icon figures.
+  - **All four** explanatory-line assertions at lines 82–85 go, not three. Three of them are
+    the streak lines that b45 drops; the fourth, "Your quickest win on a first guess.", is
+    `NOTES.fastest`, whose row task 8 deletes. The two surviving all-time notes are not
+    asserted there today, so add them: "Daily puzzles you have finished." and "Puzzles you
+    got on your first guess."
+  - The announcement assertion is unchanged, and is the e2e proof of b48.
 - **The one new check** (b62): on a seeded history the Best block shows three boxes and the
   Average block two; on a brand-new player both blocks have count 0. Added to the existing
   describe rather than as a new file.
-- `e2e/specs/completion.spec.ts:33–37` — `completion.streaks` becomes `completion.best`, and
-  the "Average goes" assertion moves to the Average block's box.
+- `e2e/specs/completion.spec.ts:33–37` — `completion.streaks` becomes `completion.best`; the
+  "Average goes" assertion at line 36 moves to the Average block's box; and **line 37's
+  `stat("Play streak")` becomes `stat("Current play streak")`**, which the first draft of this
+  plan missed.
 
 Commit: `test(e2e): the four blocks after the redesign`
 
@@ -412,7 +491,7 @@ Every numbered item in the brief, and where it lands.
 | 34, 49 | Tasks 5–7 — every icon `aria-hidden`. |
 | 35, 36, 38, 65 | Task 5. |
 | 37 | Answered by 38. No code. |
-| 39 | No code — the `/play` sentence is deliberately untouched. Task 10 records why. |
+| 39 | Task 5, actively rather than passively: `heroLine` and `src/app.ts` are left alone on purpose, and the two `heroLine` unit tests plus `e2e/specs/undo-reset.spec.ts:246` are the guard. Task 10 records why the two screens now differ. |
 | 40, 41, 42 | Superseded by 66 and 68 → tasks 5–7. |
 | 43 | Task 8 — the two surviving rows and the chart keep their words. |
 | 44, 45 | Task 6 — no lines in the boxes, none under them. |
@@ -479,8 +558,11 @@ is markup, CSS, three icons and one counting rule.
 3. **The e2e specs cannot be run here.** Between tasks 6 and 9 the e2e suite refers to a block
    id that no longer exists. Nothing on the branch is pushed until task 9 lands.
 4. **Dave's objection to repeated numbers is parked, not settled** (b71, b73). Today's time
-   appears twice by design. If it grates on the preview, the change is confined to one
-   `statPair` call in task 6.
+   appears twice by design, and three times on a personal-best day (task 6, test 7a). If it
+   grates on the preview, the change is confined to one `statPair` call in task 6.
+5. **`heroLine` is shared with `/play`.** It looks like panel code and it is not. Task 5
+   leaves it alone; anyone tidying `completion.ts` later should read the comment that task
+   goes in before touching it.
 
 ## Open questions
 
@@ -488,3 +570,33 @@ is markup, CSS, three icons and one counting rule.
 brief. Item 67 says "two boxes: average time and average goes" and item 72 gives them icons
 and the "Avg." labels, but no titles. To match the Best block's "Time / 1-go / Plays" I have
 assumed **"Time"** and **"Goes"**. Worth a yes or no at approval rather than a round trip.
+
+One consequence to weigh with it: "Time" would then be an `h4` in both the Best block and the
+Average block, so someone moving through the page by heading hears it twice. The alternative
+is "Avg. time" and "Avg. goes" as the titles, which removes the clash but repeats the word
+that is already the label underneath. I still lean to "Time" and "Goes" — the block heading
+above them says "Average", and heading text repeating across sections is ordinary.
+
+---
+
+## What `da-plan` changed
+
+Recorded so a later reader can see the plan was reviewed and what it cost.
+
+- **HIGH — `heroLine` also builds the `/play` screen's sentence** (`src/app.ts:22, 795`). The
+  first draft renamed it and stripped its branches, which would have compile-broken the app
+  and silently deleted the line brief 39 protects. Task 5 rewritten: a new `todayFigures`
+  beside an untouched `heroLine`.
+- **MEDIUM — the label mechanism could not produce the Average block's labels.** A hidden
+  suffix works for "Best" → "Best time" and cannot work for "Avg." → "Average time". Replaced
+  with one mechanism for all five pairs, pinned as markup in task 6.
+- **MEDIUM — no `dl` was placed in the box markup.** `dt` without a `dl` ancestor breaks b46
+  and trips axe at serious level, which `e2e/specs/a11y.spec.ts:60` runs over `/solved`. Now
+  pinned, with a test.
+- **MEDIUM — task 9's e2e instructions were wrong in both directions.** Four explanatory-line
+  assertions go, not three, and `e2e/specs/completion.spec.ts:37` was missed.
+- **MEDIUM — best time includes today's game**, so a personal best shows the same number three
+  times. Now named and pinned by test 7a rather than discovered on the preview.
+- **The five Lows**, all taken: a whole `it` block to delete rather than a line; two more stale
+  thirty-minute comments; which all-time size rung 3 follows and why; the real count of
+  mirrored declarations; and the heading clash added to the open question.
