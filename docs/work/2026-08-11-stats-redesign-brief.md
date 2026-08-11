@@ -9,9 +9,9 @@ are **not repeated here**. Read them alongside this.
 
 Numbering starts fresh at 1 and is append-only.
 
-Status: **OPEN.** All 11 sections written. Dave acked the lot on 2026-08-11 ("happy").
-Outstanding: Jamie's blocking sign-off on §9 accessibility (item 54); Dave's ack on the
-reopened §7 and §8 (items 66–72, and item 71 in particular); Jamie's sign-off on the whole.
+Status: **CLOSED, 2026-08-11.** Every section settled. Dave acked the joint sections
+("happy"); Jamie signed off accessibility and the brief as a whole ("Approved. DA it").
+One override rather than an ack — item 73. Next: `da-brief`, then Plan.
 
 ## The source drawing
 
@@ -39,13 +39,13 @@ this brief is written against. Reading it top to bottom:
 | 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave 2026-08-11 |
 | 3. How it works | Settled: Jamie 2026-08-11 (item 13) · Ack: Dave 2026-08-11 |
 | 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
-| 5. State & persistence | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
-| 6. How it fits | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
-| 7. How it looks | Settled: Jamie 2026-08-11 (items 66–72) · Ack: Dave pending on item 71 |
-| 8. Copy & wording | Settled: Jamie 2026-08-11 (items 66–68, 71) · Ack: Dave pending |
-| 9. Accessibility | Asked 2026-08-11 — Jamie's sign-off blocks (item 54) |
-| 10. Analytics | Settled 2026-08-11 — none (items 55–57) · Ack: Dave 2026-08-11 · Jamie pending |
-| 11. Done / test plan | Settled 2026-08-11 (items 58–64, light QA) · Ack: Dave 2026-08-11 · Jamie pending |
+| 5. State & persistence | Settled 2026-08-11 · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
+| 6. How it fits | Settled 2026-08-11 · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
+| 7. How it looks | Settled: Jamie 2026-08-11 (items 66–72) · Override: Jamie 2026-08-11 on item 71 (see item 73) |
+| 8. Copy & wording | Settled: Jamie 2026-08-11 (items 66–68, 71) · Override: Jamie 2026-08-11 (item 73) |
+| 9. Accessibility | Signed off: Jamie 2026-08-11 ("approved") · Ack: n/a, owned section |
+| 10. Analytics | Settled 2026-08-11 — none (items 55–57) · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
+| 11. Done / test plan | Settled 2026-08-11 (items 58–64, light QA) · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
 
 ## 1. What it is
 
@@ -404,6 +404,12 @@ he said in words.
     (item 38). Both views are on the record and they point different ways. UI is joint, so
     if Dave still disagrees, Jamie's is the deciding vote as dev lead — but not before Dave
     has had the chance to say so.
+
+73. **Item 71 CLOSED BY OVERRIDE, not by ack. Jamie 2026-08-11:** "let Dave challenge
+    repeats when there's a version live to see." So Dave's earlier objection to repeated
+    numbers stands unresolved on purpose, and gets tested against the preview rather than
+    against a description. If it still grates when he can see it, it reopens then.
+    Recorded as **Override: Jamie 2026-08-11**, deliberately not as Dave's agreement.
 
 72. **The Average block's two boxes take the matching icons** — the stopwatch for average
     time, the calculator-with-tick for average goes — and the same box styling, two across
