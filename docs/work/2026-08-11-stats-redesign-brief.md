@@ -9,11 +9,10 @@ are **not repeated here**. Read them alongside this.
 
 Numbering starts fresh at 1 and is append-only.
 
-Status: **CLOSED, 2026-08-11.** Every section settled. Dave acked the joint sections
-("happy"); Jamie signed off accessibility and the brief as a whole ("Approved. DA it").
-One override rather than an ack — item 73. `da-brief` has run (items 74–83).
-Item 80 settled by Jamie (item 84). **The only thing outstanding is Dave's ack on the final
-design — item 74.**
+Status: **CLOSED, 2026-08-12. Ready for Plan.** Every section settled and acked. Jamie
+signed off accessibility and the brief as a whole; `da-brief` ran and every Medium-and-above
+finding is answered in items 74–84. One thing is parked rather than agreed: Dave's objection
+to repeated numbers (items 71 and 73), to be tested against the preview.
 
 ## The source drawing
 
@@ -43,8 +42,8 @@ this brief is written against. Reading it top to bottom:
 | 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
 | 5. State & persistence | Settled 2026-08-11 · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
 | 6. How it fits | Settled 2026-08-11 · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
-| 7. How it looks | Settled: Jamie 2026-08-11 (items 66–72) · Override: Jamie 2026-08-11 on item 71 (see item 73) |
-| 8. Copy & wording | Settled: Jamie 2026-08-11 (items 66–68, 71) · Override: Jamie 2026-08-11 (item 73) |
+| 7. How it looks | Settled: Jamie 2026-08-11 (items 66–72) · Ack: Dave, relayed by Jamie 2026-08-12 (item 85) · Override on item 71 (item 73) |
+| 8. Copy & wording | Settled: Jamie 2026-08-11 (items 66–68, 71) · Ack: Dave, relayed by Jamie 2026-08-12 (item 85) |
 | 9. Accessibility | Signed off: Jamie 2026-08-11 ("approved") · Ack: n/a, owned section |
 | 10. Analytics | Settled 2026-08-11 — none (items 55–57) · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
 | 11. Done / test plan | Settled 2026-08-11 (items 58–64, light QA) · Ack: Dave 2026-08-11 · Jamie 2026-08-11 |
@@ -649,3 +648,13 @@ than a decision from me, it says so and names them.
     Consequence for §11: `computePlayerStats` keeps computing `fastestFirstGoSeconds` only
     if something still uses it. Nothing will, so it goes too, along with its test — the
     plan should delete it rather than leave a dead figure behind.
+
+85. **Item 74 CLOSED. Jamie 2026-08-12: "Dave knows and approves those changes."** So items
+    66–72 — the "Today" and "Best" headings, the Average block, the shorter labels and the
+    Average block's icons — carry Dave's agreement, relayed by Jamie rather than said by
+    Dave here. Recorded that way deliberately, so a later reader can see which it was.
+    Item 73's override on item 71 still stands as an override: Dave's objection to repeated
+    numbers is parked until he can see the preview, not withdrawn.
+
+**The brief is CLOSED, 2026-08-12.** Every section settled, every joint section acked,
+`da-brief` run and answered. Next stage: Plan, from this file.
