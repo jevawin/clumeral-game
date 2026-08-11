@@ -312,3 +312,38 @@ describe('the announcement (brief 139)', () => {
     expect(live()).toBe('');
   });
 });
+
+// heroLine reaches innerHTML, and `tries` comes from dlng_history, which
+// loadHistory does not validate — unlike loadActive and loadUndo next door.
+describe('a forged history row cannot inject markup', () => {
+  beforeEach(() => {
+    setupDOM();
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+  });
+
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('renders "Solved!" rather than whatever was in the row', async () => {
+    const mod = await import('../src/completion.ts');
+    for (const bad of ['<img src=x onerror=alert(1)>', '2<script>x</script>', 0, -1, 2.5, NaN]) {
+      expect(mod.heroLine(bad as unknown as number, 30, true), String(bad)).toBe('Solved!');
+    }
+  });
+
+  it('leaves a real count of goes alone', async () => {
+    const mod = await import('../src/completion.ts');
+    expect(mod.heroLine(1, 30, true)).toBe('Solved in 1 go, 0m 30s');
+    expect(mod.heroLine(4, null, true)).toBe('Solved in 4 goes');
+  });
+
+  it('puts no markup in the panel when the stored row is forged', async () => {
+    await render(
+      [{ date: day(0), tries: '<img src=x onerror=alert(1)>' as unknown as number }],
+      '<img src=x onerror=alert(1)>' as unknown as number,
+    );
+    expect(panel().querySelector('img')).toBeNull();
+    expect(text()).toContain('Solved!');
+  });
+});

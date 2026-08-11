@@ -1283,3 +1283,59 @@ to the warning region instead would have re-announced the whole warning.
 ### Next
 
 Human review, then `da-build` on the diff, then push and open the pull request.
+
+---
+
+## da-build — run 2026-08-11, findings fixed
+
+Fresh-context review of the whole diff, after Jamie's review and after the 2026-08-11 copy
+change. Result: **0 High, 2 Medium, 7 Low.** Both Mediums fixed, plus three Lows worth
+taking in the same pass. The review confirmed both named risks are genuinely closed — all
+five readers of `entry.tries` handle a marker, and `deleteHistory`'s marker really does keep
+today unreplayable — and endorsed all eight departures B-01 to B-08.
+
+**M1 — one forged POST would have ruined "Avg time to complete" for good.**
+`/api/event` is public and `recordEvent` casts `value` without validating it. Every previous
+reader of that column bucketed it, so junk only ever added a junk bucket; `avgTimeSeconds`
+is the first *unbounded mean* over it. A single `{"event":"puzzle_time","value":1e11}` would
+have sat in the figure permanently with no non-destructive way to remove it, and the
+client-side `validSeconds` guard is on the wrong side of the wire to help. Fixed with
+`AND value BETWEEN 0 AND 86400` in the statement — which also excludes any junk already
+stored. Two tests.
+
+**M2 — the one announcement would probably not have been spoken.**
+The build knew a live region inside an `aria-hidden` subtree is silent and deferred the
+write to `screens:enter`. But that fires in the same synchronous block that takes the
+completion screen from `display:none` to displayed, and a `display:none` subtree is not in
+the accessibility tree at all — so the region and its text arrived together, as inserted
+content, which screen readers routinely say nothing about. That is the exact silence brief
+126 reopened section 9 to fix. Fixed by moving `[data-completion-live]` **outside every
+`[data-screen]` section**, so it is in the accessibility tree from first paint and only its
+text ever changes. The `screens:enter` handshake stays, and is now a change to a region that
+was already being watched.
+
+**L1 — `entry.tries` reached `innerHTML` unvalidated.** `loadHistory` validates nothing,
+unlike `loadActive` and `loadUndo` next door. Self-XSS only — there is no cross-origin write
+path to `dlng_history` — but `heroLine` now rejects anything that is not a whole count of
+goes and returns "Solved!", which is a state it already handles.
+
+**L2 — the explanatory lines rendered bold monospace.** `.stat-row dd` outranks `.stat-note`
+on specificity, so the All-time notes were the loudest thing in a block settled as "open but
+quiet", and differed from the identical notes in Streaks. A side-effect of B-07 the
+departure note did not anticipate. Fixed by restating family and weight on `.stat-note`.
+
+**L5 — an archive solve with saving off made today replayable.** Solve today with saving on,
+untick, then solve an archive puzzle: `deleteHistory` wiped everything including today's
+row, so `todayEntry()` found nothing and the router handed today's puzzle back. The review
+graded it Low as faithful to brief 65 as written; it is fixed anyway, because the
+consequence is exactly the replay bug brief 66 exists to prevent. `deleteHistory` now leaves
+a marker for today as well when today had been played — no results kept, so the promise
+holds, and the hole closes. Three tests. **Flagged to Jamie**, since it changes what a
+delete leaves behind.
+
+**Not changed, recorded instead:** L3 (the warning is both a live region and an
+`aria-describedby` target — may double on VoiceOver; needs a real screen reader to judge),
+L4 (`/stats` still renders `4:12` rather than `4m 12s`; the Worker must not import client
+modules and it is an internal page), L6 (a coverage gap: nothing asserts `app.ts` writes
+`elapsed` into `dlng_active`, though both call sites were read and are correct), and the
+`icon-cookie` sprite symbol, now unreferenced.

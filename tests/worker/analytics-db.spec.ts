@@ -334,6 +334,26 @@ describe('getStats', () => {
       expect(stats.avgTimeSeconds).toBe(100);
     });
 
+    it('ignores a forged value, so one POST cannot ruin the figure for good', async () => {
+      // /api/event is public and recordEvent does not validate `value`. This is
+      // the first unbounded mean over that column, and a junk row would sit in
+      // it permanently with no non-destructive way to remove it.
+      await seedTime([
+        { value: 240, interval: 1 },
+        { value: 100_000_000_000, interval: 1 },
+        { value: 86_401, interval: 1 },
+        { value: -5, interval: 1 },
+      ]);
+      const stats = await getStats(db(), { all: true }, 'clumeral.com', NOW);
+      expect(stats.avgTimeSeconds).toBe(240);
+    });
+
+    it('keeps a real long game — the bound is validity, not the outlier rule', async () => {
+      await seedTime([{ value: 2400, interval: 1 }, { value: 1200, interval: 1 }]);
+      const stats = await getStats(db(), { all: true }, 'clumeral.com', NOW);
+      expect(stats.avgTimeSeconds).toBe(1800);
+    });
+
     it('does not throw on ?period=all, where the time clause is omitted entirely', async () => {
       // The all-time branch binds one argument, not two. A hardcoded time clause
       // in this statement would leave two placeholders and one argument.

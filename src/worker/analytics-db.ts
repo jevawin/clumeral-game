@@ -194,8 +194,19 @@ export async function getStats(
     // starts. Built through q(), never with a hardcoded time clause: getStats
     // OMITS that clause for all-time, so a second placeholder here would leave
     // two bind slots and one argument, and ?period=all would throw.
+    //
+    // The BETWEEN is load-bearing, not belt-and-braces. /api/event is public and
+    // unauthenticated and recordEvent casts `value` without validating it, so
+    // anyone can POST a puzzle_time of 10^11. Every previous consumer of this
+    // column bucketed it (guessDistribution groups BY value), so a junk row only
+    // ever added a junk bucket; this is the first unbounded MEAN over it, and one
+    // forged row would sit in the figure for good with no non-destructive way to
+    // remove it. The client-side validSeconds guard is on the wrong side of the
+    // wire to help. Bounds match MAX_STORED_SECONDS, restated rather than
+    // imported because the Worker must not import client modules.
     q(`SELECT SUM(value * sample_interval) AS total, SUM(sample_interval) AS n
-       FROM analytics_events ${where} AND event = 'puzzle_time'`),
+       FROM analytics_events ${where} AND event = 'puzzle_time'
+       AND value BETWEEN 0 AND 86400`),
   ]);
 
   const rows = <T>(r: D1Result) => (r.results ?? []) as T[];

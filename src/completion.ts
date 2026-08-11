@@ -176,7 +176,12 @@ function goesChart(distribution: PlayerStats['goesDistribution']): string {
  * column of figures and wrong in the middle of a sentence.
  */
 export function heroLine(tries: number | null, seconds: number | null, showTime: boolean): string {
-  if (tries === null) return 'Solved!';
+  // Guarded because this string reaches innerHTML and `tries` comes from
+  // dlng_history, which loadHistory does not validate — unlike loadActive and
+  // loadUndo next door, which validate every field precisely because that store
+  // is editable by whoever owns the browser. Anything that is not a real count
+  // of goes is "played, not recorded", which is already a state this handles.
+  if (tries === null || !Number.isInteger(tries) || tries < 1) return 'Solved!';
   const goes = `Solved in ${tries} ${tries === 1 ? 'go' : 'goes'}`;
   if (!showTime || seconds === null) return goes;
   return `${goes}, ${formatDuration(seconds)}`;

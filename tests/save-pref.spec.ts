@@ -119,6 +119,40 @@ describe('what does NOT trigger a deletion', () => {
   });
 });
 
+describe('an archive solve with saving off', () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(TODAY + 'T10:00:00')); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("keeps a marker for today, so today's puzzle does not become replayable again", () => {
+    // Solve today with saving ON, then untick and solve an ARCHIVE puzzle. The
+    // deletion is right — they asked us to forget — but taking today's row with
+    // it would let them replay a day they had already finished.
+    recordSolve(TODAY, 2, { saveScore: true, answer: 512, seconds: 60 });
+    recordSolve('2026-07-01', 3, { saveScore: false, archived: true });
+
+    const rows = loadHistory();
+    expect(rows).toEqual([
+      { date: TODAY, tries: 0, marker: true },
+      { date: '2026-07-01', tries: 0, marker: true, archived: true },
+    ]);
+    // No results survive — just the two days.
+    expect(rows.every((r) => r.answer === undefined && r.seconds === undefined)).toBe(true);
+    expect(hasPlayerData()).toBe(true);
+  });
+
+  it('writes one marker, not two, when the archive date IS today', () => {
+    recordSolve(TODAY, 2, { saveScore: true, answer: 512 });
+    recordSolve(TODAY, 2, { saveScore: false });
+    expect(loadHistory()).toEqual([{ date: TODAY, tries: 0, marker: true }]);
+  });
+
+  it('adds no today marker when today was never played', () => {
+    seed();
+    recordSolve('2026-07-01', 3, { saveScore: false, archived: true });
+    expect(loadHistory()).toEqual([{ date: '2026-07-01', tries: 0, marker: true, archived: true }]);
+  });
+});
+
 describe('a marker meets the code that reads tries', () => {
   beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(TODAY + 'T10:00:00')); });
   afterEach(() => { vi.useRealTimers(); });

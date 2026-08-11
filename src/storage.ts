@@ -128,8 +128,20 @@ export function recordMarker(dateStr: string, archived = false): void {
  */
 export function deleteHistory(keepMarkerFor?: string, archived = false): void {
   try {
+    // Today's row, if there is one, becomes a marker rather than vanishing. It
+    // matters on one path: solving an ARCHIVE puzzle with saving off deletes all
+    // history, and without this it would take today's completed row with it —
+    // todayEntry() would return nothing, the router would hand today's puzzle
+    // back, and the player could replay a day they had already finished. A
+    // marker is exactly what an opted-out player gets anyway (brief 71), so this
+    // keeps the promise ("no results kept") while closing the replay hole
+    // (brief 66).
+    const today = todayKey();
+    const keepToday = today !== keepMarkerFor && loadHistory().some((h) => h.date === today);
+
     localStorage.removeItem(STORAGE_HISTORY);
     if (typeof keepMarkerFor === 'string' && keepMarkerFor) recordMarker(keepMarkerFor, archived);
+    if (keepToday) recordMarker(today);
   } catch { /* private mode / disabled storage — nothing to delete */ }
 }
 

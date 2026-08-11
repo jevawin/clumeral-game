@@ -533,6 +533,12 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      so it is text under the stat, never a tooltip (brief 95). */
   .stat-note {
     flex-basis: 100%;
+    /* .stat-row dd sets bold monospace and outranks this on specificity, so the
+       family and weight are restated. Without them the explanatory lines render
+       as the loudest thing in a block that is meant to be open but quiet — and
+       differently from the identical lines in the Streaks block. */
+    font-family: inherit;
+    font-weight: 400;
     font-size: 0.8125rem;
     line-height: 1.35;
     color: var(--color-text);

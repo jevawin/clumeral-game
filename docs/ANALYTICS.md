@@ -53,7 +53,7 @@ interactions — a digit toggle, undo, reset, submit. A gap longer than two minu
 away entirely and raises the idle count; time while the tab is hidden is never counted. So
 "opened at 9am, came back at 11am and finished" reads as minutes, not two hours.
 
-**Four things stop it being sent**, and all four are in `playTimeToSend`:
+**Three things stop it being sent**, and all three are in `playTimeToSend`:
 
 - random puzzles and archive replays, which are not daily play;
 - a player with score saving switched off — nothing about their play leaves the device;
