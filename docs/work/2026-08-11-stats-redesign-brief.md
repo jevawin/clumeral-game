@@ -41,8 +41,8 @@ this brief is written against. Reading it top to bottom:
 | 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
 | 5. State & persistence | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
 | 6. How it fits | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
-| 7. How it looks | Settled: Dave 2026-08-11 (item 38) · Ack: Jamie pending on item 38 |
-| 8. Copy & wording | Settled: Dave 2026-08-11 (item 45) · Ack: Jamie pending |
+| 7. How it looks | Settled: Dave 2026-08-11 (item 38) · Ack: Jamie 2026-08-11 (item 65) · REOPENED by items 66–70 |
+| 8. Copy & wording | Item 45 stands (item 69) · REOPENED by items 66–68 — awaiting Jamie on item 70, then Dave's ack |
 | 9. Accessibility | Asked 2026-08-11 — Jamie's sign-off blocks (item 54) |
 | 10. Analytics | Settled 2026-08-11 — none (items 55–57) · Ack: Dave 2026-08-11 · Jamie pending |
 | 11. Done / test plan | Settled 2026-08-11 (items 58–64, light QA) · Ack: Dave 2026-08-11 · Jamie pending |
@@ -338,6 +338,60 @@ he said in words.
     boxes and no shared line under them. The all-time rows keep their notes and carry the
     explaining. **Jamie's ack wanted**, since the spacing of those very lines was one of
     the three faults he reported and had fixed on this branch — this removes them instead.
+
+## 7 and 8 reopened — Jamie's tweaks, 2026-08-11
+
+65. **Item 38 ACKED: Jamie 2026-08-11** — "yes replace solved in x with the two icon and
+    text sections". Section 7 is closed.
+
+66. **Headings change. Jamie 2026-08-11.** "This game" becomes **"Today"**. "Stats" becomes
+    **"Best"**. This supersedes item 40, including the small worry recorded there — "Best"
+    says what the block is for, which "Stats" did not.
+
+67. **A fourth block: "Average". Jamie 2026-08-11.** Below the Best block, styled the same,
+    **two boxes**: average time and average goes.
+    Note that *average goes* is a figure the All-time list already carries, so it now
+    appears twice. Consistent with item 13's decision to accept that for average time.
+
+68. **Shorter labels throughout. Jamie 2026-08-11**, from his column sketch:
+
+        ⏱️ Time        🧮 1-go        🕹️ Plays
+        1m 38s         7              6
+        Best           Best           Best
+        2m 23s         6              6
+        Avg.           Current        Current
+
+    So: **"1-go"** not "First-go"; **"Best"** alone, not "Best time" or "Best streak";
+    **"Current"**; **"Avg."** abbreviated. This supersedes items 41 and 42.
+
+69. **Three columns fit. That was never the concern.** Jamie asked whether three across is
+    the problem and pointed at Strava. It is not — three columns are fine.
+    The arithmetic, at the narrowest phone we support (320px): 16px page padding each side
+    and two 8px gaps leaves about 90px per box, roughly 74px of it usable inside the box's
+    own padding. "Current" at 14px is about 49px wide. An icon plus "Plays" is about 58px.
+    "1m 38s" bold at 18–20px is 60–66px. All inside 74px, with the tightest being the time
+    figure rather than any label. So **yes, 14px works** for the small labels.
+    What does *not* fit is what item 44 was actually about: a full sentence like "Days in a
+    row you have finished the puzzle" inside a 74px column wraps to six or seven lines and
+    makes the three boxes wildly different heights. Short labels are fine; sentences are
+    not. Dave dropped the sentences (item 45) and Jamie's sketch has none, so **item 45
+    stands** and the two of you agree.
+    Safety net kept: below the width where the numbers would start to wrap, the row falls
+    to one column, exactly as the two streak columns do today.
+
+70. **The question this raises: "Avg." now appears in two places.** Jamie's column sketch
+    keeps `2m 23s / Avg.` inside the Time box, and item 67 adds an Average block with an
+    average-time box in it. Both cannot be right.
+    My rec: **take "Avg." out of the Time box.** The Time box then shows best time alone,
+    and every average lives in the Average block. Why: it makes "Best" honestly mean best,
+    and it stops the same number appearing twice a few centimetres apart — the exact thing
+    Dave objected to earlier tonight and the reason we dropped the "Solved in…" sentence.
+    The cost: the Time box has one figure where the other two have two, so the row is a
+    little ragged. I think that is right rather than wrong — a streak has a "current" and a
+    time does not.
+    The alternative: keep "Avg." in the Time box and make the Average block hold **average
+    goes only**, as a single box rather than two. That keeps the three boxes even, at the
+    price of a lopsided Average block.
 
 ## 9. Accessibility
 
