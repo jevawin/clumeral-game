@@ -169,7 +169,13 @@ function goesChart(distribution: PlayerStats['goesDistribution']): string {
 }
 
 /**
- * The hero: `Solved in 1 go, 0m 30s`.
+ * The `/play` screen's result sentence: `Solved in 1 go, 0m 30s`.
+ *
+ * NOT the completion panel's — the panel shows two icon figures now and has no
+ * sentence at all (redesign brief 38). This function looks like panel code and
+ * is not: src/app.ts imports it and writes it into the play screen's feedback
+ * line, which redesign brief 39 deliberately protects. The two screens diverged
+ * on purpose. Leave it alone when tidying this file.
  *
  * `null` goes means played but not recorded — never "Solved in 0". An unknown
  * time drops the whole clause rather than showing a dash: a dash is right in a
@@ -185,6 +191,40 @@ export function heroLine(tries: number | null, seconds: number | null, showTime:
   const goes = `Solved in ${tries} ${tries === 1 ? 'go' : 'goes'}`;
   if (!showTime || seconds === null) return goes;
   return `${goes}, ${formatDuration(seconds)}`;
+}
+
+/**
+ * One figure: an icon, a word only a screen reader hears, and the number.
+ *
+ * The word is not optional decoration. Without it the panel reads as a bare
+ * "1 go" beside a bare "2m 38s" and the icon carries the meaning, which is
+ * exactly what an icon cannot do in speech (brief 47, 49).
+ */
+function figure(iconId: string, spokenLabel: string, value: string): string {
+  return `<span class="stat-figure">
+    <svg class="stat-figure__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
+    <span class="sr-only">${spokenLabel}, </span><span class="stat-figure__value">${value}</span>
+  </span>`;
+}
+
+/**
+ * The Today block's body: the goes and the time, side by side (brief 38, 65).
+ *
+ * An unknown time drops the stopwatch figure entirely rather than showing an
+ * empty one (brief 36). Unknowable goes — a reload after a saving-off solve —
+ * is the plain word `Solved!` and no figures at all (brief 76).
+ */
+export function todayFigures(tries: number | null, seconds: number | null, showTime: boolean): string {
+  // The same guard heroLine applies, and for the same reason: this string
+  // reaches innerHTML and `tries` comes from dlng_history, which loadHistory
+  // does not validate. Anything that is not a real count of goes is "played,
+  // not recorded", which is already a state this handles.
+  if (tries === null || !Number.isInteger(tries) || tries < 1) return '<p class="stat-hero">Solved!</p>';
+  const goes = figure('icon-calculator-check', 'Goes', `${tries} ${tries === 1 ? 'go' : 'goes'}`);
+  const time = showTime && seconds !== null
+    ? figure('icon-stopwatch', 'Time', formatDuration(seconds))
+    : '';
+  return `<div class="stat-today">${goes}${time}</div>`;
 }
 
 /** Archive replays and markers carry no timing, on screen or in speech. */
@@ -266,8 +306,8 @@ export function renderCompletion(
     dom.octo.innerHTML = COMPLETION_OCTO_SVG;
   }
 
-  // Heading. The old subheading is now the hero line inside the This game block,
-  // so it is cleared rather than left saying the same thing twice.
+  // Heading. The old subheading is now the figures inside the Today block, so it
+  // is cleared rather than left saying the same thing twice.
   if (dom.heading) {
     dom.heading.textContent = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
   }
@@ -291,14 +331,16 @@ export function renderCompletion(
     // totals and no timing (brief 54).
     const showTime = showsTime(mode);
     const thisGame = [
-      `<p class="stat-hero">${heroLine(tries, seconds, showTime)}</p>`,
+      todayFigures(tries, seconds, showTime),
       mode === 'random' ? `<p class="stat-note">${RANDOM_LINE}</p>` : '',
       // Not shown to a saving-off player: with saving off no third game ever
       // accumulates, so it would be a promise we are not going to keep.
       mode === 'new' ? `<p class="stat-note">${NEW_PLAYER_LINE}</p>` : '',
     ].join('');
 
-    const blocks = [block('this-game', 'This game', thisGame)];
+    // The id stays `this-game` while the heading becomes `Today` (brief 66):
+    // every existing locator and the e2e page object key off the id.
+    const blocks = [block('this-game', 'Today', thisGame)];
 
     if (mode === 'full') {
       blocks.push(block('streaks', 'Streaks',

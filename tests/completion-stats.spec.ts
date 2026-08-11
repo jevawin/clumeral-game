@@ -50,6 +50,16 @@ function text(): string {
   return panel().textContent!.replace(/\s+/g, ' ').trim();
 }
 
+/** The text of one block, whitespace-collapsed the way `text()` does it. */
+function blockText(id: string): string {
+  return (block(id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/** The visible values of the Today block's figures, in order. */
+function figures(): string[] {
+  return [...panel().querySelectorAll('.stat-figure__value')].map((el) => el.textContent!.trim());
+}
+
 function live(): string {
   return (document.querySelector('[data-completion-live]') as HTMLElement).textContent ?? '';
 }
@@ -96,7 +106,7 @@ describe('the completion panel', () => {
     expect(block('streaks')).not.toBeNull();
     expect(block('all-time')).not.toBeNull();
 
-    expect(block('this-game')!.textContent).toContain('Solved in 2 goes, 3m 41s');
+    expect(figures()).toEqual(['2 goes', '3m 41s']);
 
     expect(stat('Play streak')).toBe('5');
     expect(stat('First-go streak')).toBe('0');
@@ -144,7 +154,7 @@ describe('the completion panel', () => {
     expect(block('this-game')).not.toBeNull();
     expect(block('streaks')).toBeNull();
     expect(block('all-time')).toBeNull();
-    expect(text()).toContain('Solved in 2');
+    expect(figures()).toEqual(['2 goes', '3m 41s']);
   });
 
   it('says nothing at all about score saving, in any mode (P-01)', async () => {
@@ -174,8 +184,44 @@ describe('the completion panel', () => {
     expect(block('this-game')).not.toBeNull();
     expect(block('streaks')).toBeNull();
     expect(block('all-time')).toBeNull();
-    expect(text()).toContain('Solved in 3 goes');
-    expect(text()).not.toContain('3:20'); // no timing on an archive replay (brief 54)
+    // No stopwatch figure at all, not an empty one — an archive replay carries
+    // no timing (brief 54, and brief 36 for the shape).
+    expect(figures()).toEqual(['3 goes']);
+    expect(blockText('this-game')).not.toContain('3m 20s');
+  });
+
+  it('heads the first block "Today", not "This game" (brief 66)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(block('this-game')!.querySelector('h3')!.textContent).toBe('Today');
+    expect(text()).not.toContain('This game');
+  });
+
+  it('has no "Solved in" sentence anywhere on the panel (brief 38)', async () => {
+    // The sentence lives on the /play screen now and only there. The two screens
+    // diverged on purpose (brief 39).
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(text()).not.toContain('Solved in');
+  });
+
+  it('gives each figure a word only a screen reader hears (brief 47)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(blockText('this-game')).toContain('Goes, 2 goes');
+    expect(blockText('this-game')).toContain('Time, 3m 41s');
+  });
+
+  it('hides both Today icons from the accessibility tree (brief 49)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    const icons = block('this-game')!.querySelectorAll('svg');
+    expect(icons.length).toBe(2);
+    for (const icon of icons) expect(icon.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps the random line and the new-player line under the figures (brief 76)', async () => {
+    await render(RETURNING, 2, true, { seconds: 221 });
+    const kids = [...block('this-game')!.children].map((el) => el.className);
+    // head, figures, then the note — the note is inside the block and last.
+    expect(kids[1]).toBe('stat-today');
+    expect(blockText('this-game')).toContain("Random puzzles don't count towards your stats.");
   });
 
   it('reads "Solved!" and never "Solved in 0" when the goes are unknowable', async () => {
@@ -185,6 +231,8 @@ describe('the completion panel', () => {
     expect(text()).toContain('Solved!');
     expect(text()).not.toContain('Solved in');
     expect(text()).not.toContain('0:00');
+    // The plain word and nothing else — no figures, empty or otherwise (brief 76).
+    expect(figures()).toEqual([]);
   });
 
   it('puts an explanatory line under every stat (brief 135)', async () => {
@@ -215,18 +263,18 @@ describe('the completion panel', () => {
     expect(text()).toContain('How many goes you take');
   });
 
-  it('drops the time clause entirely when this game has no valid time', async () => {
-    // A dash is right in a column of figures and wrong in the middle of a
-    // sentence, so the hero says the goes and stops.
+  it('drops the stopwatch figure entirely when this game has no valid time', async () => {
+    // An empty figure with a dash in it is worse than no figure: it reads as a
+    // stat you have failed at rather than one that was never taken (brief 36).
     await render(RETURNING, 2, false, {});
-    expect(block('this-game')!.textContent).toContain('Solved in 2 goes');
-    expect(block('this-game')!.textContent).not.toContain('—');
-    expect(block('this-game')!.textContent).not.toContain('0m 00s');
+    expect(figures()).toEqual(['2 goes']);
+    expect(blockText('this-game')).not.toContain('—');
+    expect(blockText('this-game')).not.toContain('0m 00s');
   });
 
   it('says "1 go", not "1 goes"', async () => {
     await render(RETURNING, 1, false, { seconds: 30 });
-    expect(block('this-game')!.textContent).toContain('Solved in 1 go, 0m 30s');
+    expect(figures()).toEqual(['1 go', '0m 30s']);
   });
 
   it('shows a long game its own time and counts it in the averages', async () => {
@@ -236,7 +284,7 @@ describe('the completion panel', () => {
       { date: day(2), tries: 1, seconds: 120 },
     ];
     await render(history, 1, false, { seconds: 3900 });
-    expect(block('this-game')!.textContent).toContain('1h 05m');
+    expect(figures()).toEqual(['1 go', '1h 05m']);
     expect(stat('Average time')).toBe('22m 40s');
     expect(stat('Fastest first-go win')).toBe('1m 00s');
   });
@@ -315,8 +363,13 @@ describe('the announcement (brief 139)', () => {
   });
 });
 
-// heroLine reaches innerHTML, and `tries` comes from dlng_history, which
+// Both builders reach innerHTML, and `tries` comes from dlng_history, which
 // loadHistory does not validate — unlike loadActive and loadUndo next door.
+//
+// heroLine is the /play screen's sentence now, not the panel's (brief 39). Its
+// assertions below are no longer about the completion screen at all: they are
+// the guard that the play screen's result line did not move when the panel's
+// hero was replaced by figures.
 describe('a forged history row cannot inject markup', () => {
   beforeEach(() => {
     setupDOM();
@@ -338,6 +391,14 @@ describe('a forged history row cannot inject markup', () => {
     const mod = await import('../src/completion.ts');
     expect(mod.heroLine(1, 30, true)).toBe('Solved in 1 go, 0m 30s');
     expect(mod.heroLine(4, null, true)).toBe('Solved in 4 goes');
+  });
+
+  it('renders "Solved!" from the panel builder too, with no figures', async () => {
+    const mod = await import('../src/completion.ts');
+    for (const bad of ['<img src=x onerror=alert(1)>', '2<script>x</script>', 0, -1, 2.5, NaN]) {
+      expect(mod.todayFigures(bad as unknown as number, 30, true), String(bad))
+        .toBe('<p class="stat-hero">Solved!</p>');
+    }
   });
 
   it('puts no markup in the panel when the stored row is forged', async () => {
