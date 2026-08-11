@@ -53,15 +53,16 @@ describe('the seeded history', () => {
     }
   });
 
-  it('has an average time and a fastest first-go win to show', () => {
+  it('has an average time and a best time to show', () => {
     expect(stats.avgTimeSeconds).not.toBeNull();
-    expect(stats.fastestFirstGoSeconds).not.toBeNull();
+    expect(stats.bestTimeSeconds).not.toBeNull();
   });
 
-  it('excludes the over-thirty-minute game from the average, as a real one would', () => {
-    // The 9-go day took 2210s. It shows its own time on its own panel but must
-    // not reach the average — the rule that is otherwise invisible on screen.
-    expect(stats.avgTimeSeconds!).toBeLessThan(600);
+  it('counts the hour-plus game in the average, as a real one would', () => {
+    // The 9-go day took 2210s and counts like any other game now that the
+    // thirty-minute exclusion is gone. Asserted exactly rather than as a bound,
+    // so the next person to change the seed sees the number move.
+    expect(stats.avgTimeSeconds).toBe(344);
   });
 
   it('carries a row with no time, standing in for a pre-launch game', () => {

@@ -229,7 +229,7 @@ describe('the completion panel', () => {
     expect(block('this-game')!.textContent).toContain('Solved in 1 go, 0m 30s');
   });
 
-  it('shows a long game its own time while leaving it out of the averages', async () => {
+  it('shows a long game its own time and counts it in the averages', async () => {
     const history: HistoryEntry[] = [
       { date: day(0), tries: 1, seconds: 3900 },
       { date: day(1), tries: 1, seconds: 60 },
@@ -237,7 +237,7 @@ describe('the completion panel', () => {
     ];
     await render(history, 1, false, { seconds: 3900 });
     expect(block('this-game')!.textContent).toContain('1h 05m');
-    expect(stat('Average time')).toBe('1m 30s');
+    expect(stat('Average time')).toBe('22m 40s');
     expect(stat('Fastest first-go win')).toBe('1m 00s');
   });
 

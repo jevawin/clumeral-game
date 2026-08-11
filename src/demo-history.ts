@@ -38,8 +38,8 @@ function dayBefore(today: string, back: number): string {
  *   - a first-go streak that is live but shorter, so the two numbers differ
  *   - a gap, so "best" is visibly larger than "current"
  *   - goes across all six chart buckets, including a 9-go day in the 6+ tail
- *   - one game over thirty minutes, which shows its own time but is excluded
- *     from the average and from fastest — the rule that is otherwise invisible
+ *   - one game over half an hour, which exercises the hour-plus time format and
+ *     counts towards the average like any other game
  *   - one row with no time at all, standing in for a pre-launch game
  *   - an archived row, which must change no figure on this panel
  */
@@ -56,7 +56,7 @@ export function demoHistory(today = todayKey()): HistoryEntry[] {
     // A gap at 6 days ago, so the current streak is 6 and the best is 9.
     { date: d(7), tries: 1, answer: 236, seconds: 54 },
     { date: d(8), tries: 2, answer: 449, seconds: 210 },
-    { date: d(9), tries: 9, answer: 195, seconds: 2210 },   // the 6+ bucket, and an outlier time
+    { date: d(9), tries: 9, answer: 195, seconds: 2210 },   // the 6+ bucket, and a long time
     { date: d(10), tries: 1, answer: 383, seconds: 63 },
     { date: d(11), tries: 3, answer: 720, seconds: 265 },
     { date: d(12), tries: 2, answer: 508, seconds: 173 },

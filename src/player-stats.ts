@@ -11,21 +11,16 @@ import type { HistoryEntry } from './types.ts';
 
 // ─── Shared constants ────────────────────────────────────────────────────────
 //
-// Two thresholds, not one, and the difference matters. The brief named 1800
-// seconds for two different jobs and the two disagreed: a 65-minute game either
-// shows "1h 05m" (brief 134) or shows a dash (brief 122), and it is one or the
-// other. So they are split.
+// One threshold. There used to be a second — a thirty-minute exclusion that kept
+// a long game out of the averages — and the redesign brief dropped it (item 22):
+// people really do take an hour, and a figure that quietly ignores your slowest
+// games is not your average.
 
 /** Validity bound. A stored time outside 0–86400 whole seconds is *unknown*: it
- *  shows as a dash, sends no event, never counts as zero, never enters an
- *  average, never becomes a fastest win. A day is comfortably absurd enough to
- *  catch a forged value while leaving a real long game alone (brief 122). */
+ *  shows as a dash, sends no event, never counts as zero and never enters an
+ *  average or a best. A day is comfortably absurd enough to catch a forged value
+ *  while leaving a real long game alone (brief 122). */
 export const MAX_STORED_SECONDS = 86_400;
-
-/** Exclusion threshold. A *valid* time above thirty minutes still shows on its
- *  own panel, formatted with hours, and is left out of the average time and out
- *  of fastest first-go win (brief 31, 134). */
-export const OUTLIER_SECONDS = 1800;
 
 /** Two minutes with no action and the clock stops; the gap is thrown away
  *  entirely rather than paused (brief 34, 50). */
@@ -43,8 +38,8 @@ export const GOES_BUCKETS: readonly string[] = ['1', '2', '3', '4', '5', '6+'];
 /**
  * The stored time for one game, or null when it is unknown.
  *
- * Deliberately does NOT apply OUTLIER_SECONDS: 2000 is valid and shows on the
- * panel. The exclusion happens where averages are worked out, not here.
+ * Validity is the only question asked here, and now the only question asked
+ * anywhere: every valid time counts towards every figure.
  */
 export function validSeconds(value: unknown): number | null {
   if (typeof value !== 'number') return null;
@@ -62,6 +57,8 @@ export interface PlayerStats {
   firstGoPercent: number | null;
   avgGoes: string | null;
   avgTimeSeconds: number | null;
+  /** The fastest solve of any number of goes, or null with no valid time. */
+  bestTimeSeconds: number | null;
   fastestFirstGoSeconds: number | null;
   playStreak: number;
   bestPlayStreak: number;
@@ -84,11 +81,9 @@ function isCountable(h: HistoryEntry): boolean {
   return h.archived !== true && h.marker !== true;
 }
 
-/** The time this game can contribute to an average or a record, or null. */
-function contributableSeconds(h: HistoryEntry): number | null {
-  const s = validSeconds(h.seconds);
-  if (s === null || s > OUTLIER_SECONDS) return null;
-  return s;
+/** The time this game contributes to an average or a record, or null. */
+function rowSeconds(h: HistoryEntry): number | null {
+  return validSeconds(h.seconds);
 }
 
 const DAY_MS = 86_400_000;
@@ -156,14 +151,15 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
   const plays = countable.length;
   const firstGoWins = countable.filter((h) => h.tries === 1).length;
 
-  const times = countable.map(contributableSeconds).filter((s): s is number => s !== null);
+  const times = countable.map(rowSeconds).filter((s): s is number => s !== null);
   const avgTimeSeconds = times.length
     ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
     : null;
+  const bestTimeSeconds = times.length ? Math.min(...times) : null;
 
   const firstGoTimes = countable
     .filter((h) => h.tries === 1)
-    .map(contributableSeconds)
+    .map(rowSeconds)
     .filter((s): s is number => s !== null);
 
   // Recency gate: a run that ended more than a day ago is stale, so report 0
@@ -190,6 +186,7 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
     firstGoPercent: plays > 0 ? Math.round((firstGoWins / plays) * 100) : null,
     avgGoes: plays > 0 ? (countable.reduce((s, h) => s + h.tries, 0) / plays).toFixed(1) : null,
     avgTimeSeconds,
+    bestTimeSeconds,
     fastestFirstGoSeconds: firstGoTimes.length ? Math.min(...firstGoTimes) : null,
     playStreak: live ? play.current : 0,
     bestPlayStreak: play.best,
