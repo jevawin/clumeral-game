@@ -9,8 +9,9 @@ are **not repeated here**. Read them alongside this.
 
 Numbering starts fresh at 1 and is append-only.
 
-Status: **OPEN.** All 11 sections written. Waiting on Jamie for §9 accessibility (blocking),
-and on Jamie's acks for items 38 and 45.
+Status: **OPEN.** All 11 sections written. Dave acked the lot on 2026-08-11 ("happy").
+Outstanding: Jamie's blocking sign-off on §9 accessibility (item 54), his acks on items 38
+and 45, and his sign-off on the brief as a whole.
 
 ## The source drawing
 
@@ -34,17 +35,17 @@ this brief is written against. Reading it top to bottom:
 
 | Section | State |
 |---|---|
-| 1. What it is | Settled: Jamie 2026-08-11 (items 1–3 accepted, "park for now, build this") · Ack: Dave pending |
-| 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave pending |
-| 3. How it works | Settled: Jamie 2026-08-11 (item 12 decided as item 13) · Ack: Dave pending |
+| 1. What it is | Settled: Jamie 2026-08-11 · Ack: Dave 2026-08-11 |
+| 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave 2026-08-11 |
+| 3. How it works | Settled: Jamie 2026-08-11 (item 13) · Ack: Dave 2026-08-11 |
 | 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
-| 5. State & persistence | Asked 2026-08-11 — no decision in it |
-| 6. How it fits | Asked 2026-08-11 — no decision in it |
+| 5. State & persistence | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
+| 6. How it fits | Settled 2026-08-11 (no decision in it) · Ack: Dave 2026-08-11 · Jamie pending |
 | 7. How it looks | Settled: Dave 2026-08-11 (item 38) · Ack: Jamie pending on item 38 |
 | 8. Copy & wording | Settled: Dave 2026-08-11 (item 45) · Ack: Jamie pending |
 | 9. Accessibility | Asked 2026-08-11 — Jamie's sign-off blocks (item 54) |
-| 10. Analytics | Asked 2026-08-11 — none proposed (items 55–57) |
-| 11. Done / test plan | Asked 2026-08-11 (items 58–64) |
+| 10. Analytics | Settled 2026-08-11 — none (items 55–57) · Ack: Dave 2026-08-11 · Jamie pending |
+| 11. Done / test plan | Settled 2026-08-11 (items 58–64, light QA) · Ack: Dave 2026-08-11 · Jamie pending |
 
 ## 1. What it is
 
