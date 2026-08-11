@@ -405,15 +405,15 @@ he said in words.
     if Dave still disagrees, Jamie's is the deciding vote as dev lead — but not before Dave
     has had the chance to say so.
 
+72. **The Average block's two boxes take the matching icons** — the stopwatch for average
+    time, the calculator-with-tick for average goes — and the same box styling, two across
+    rather than three. Labels: "Avg." under each, matching item 68's shortening. (assumed)
+
 73. **Item 71 CLOSED BY OVERRIDE, not by ack. Jamie 2026-08-11:** "let Dave challenge
     repeats when there's a version live to see." So Dave's earlier objection to repeated
     numbers stands unresolved on purpose, and gets tested against the preview rather than
     against a description. If it still grates when he can see it, it reopens then.
     Recorded as **Override: Jamie 2026-08-11**, deliberately not as Dave's agreement.
-
-72. **The Average block's two boxes take the matching icons** — the stopwatch for average
-    time, the calculator-with-tick for average goes — and the same box styling, two across
-    rather than three. Labels: "Avg." under each, matching item 68's shortening. (assumed)
 
 ## 9. Accessibility
 
