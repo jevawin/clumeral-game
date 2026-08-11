@@ -36,10 +36,10 @@ this brief is written against. Reading it top to bottom:
 | 1. What it is | Settled: Jamie 2026-08-11 (items 1–3 accepted, "park for now, build this") · Ack: Dave pending |
 | 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave pending |
 | 3. How it works | Settled: Jamie 2026-08-11 (item 12 decided as item 13) · Ack: Dave pending |
-| 4. Maths | REOPENED 2026-08-11 (items 22–27) — awaiting Dave on item 26 |
+| 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
 | 5. State & persistence | Asked 2026-08-11 — no decision in it |
 | 6. How it fits | Asked 2026-08-11 — no decision in it |
-| 7. How it looks | Not yet asked |
+| 7. How it looks | Asked 2026-08-11 — awaiting Jamie on item 37 |
 | 8. Copy & wording | Not yet asked |
 | 9. Accessibility | Not yet asked |
 | 10. Analytics | Not yet asked |
@@ -186,6 +186,11 @@ this brief is written against. Reading it top to bottom:
 27. **Dave owns this — it is the counting rule and the only maths in the redesign.**
     Asked 2026-08-11.
 
+28. **Item 26 SETTLED: Dave 2026-08-11 — "yes happy to drop the cut off of 30 minutes".**
+    So: `OUTLIER_SECONDS` is deleted. Average time and best time count every game whose
+    stored time is valid, and `MAX_STORED_SECONDS` (one day) is the only bound left.
+    Section 4 is now closed and signed by its owner, so it needs no separate ack.
+
 ## 5. State & persistence
 
 15. **Nothing new is stored, anywhere.** Every figure is recomputed from `dlng_history` on
@@ -219,3 +224,65 @@ this brief is written against. Reading it top to bottom:
     `computePlayerStats` unchanged; only the builders in `completion.ts` and the styles
     differ between the two designs. That is what makes a later merge of the two a layout
     decision rather than a rewrite. (assumed — follows from item 8)
+
+## 7. How it looks
+
+All of this is Jamie's specification, 2026-08-11, written back so it survives a context
+clear. Where an item says "assumed", it is my reading of the drawing rather than something
+he said in words.
+
+29. **The size ladder, largest to smallest.** (1) the "This game" icons and figures,
+    (2) the box titles and the numbers inside the boxes, (3) the small labels inside the
+    boxes, which match the all-time text size. Jamie's words: "Top section (this game) icon
+    and text should be largest, then title and numbers in streaks boxes, then text in boxes
+    which can be same size as all time stats."
+
+30. **Weight.** Numbers **bold**. The small labels — "Best time", "Best streak", "Average",
+    "Current" — regular weight in the ordinary foreground colour. The **box title is the
+    same size as the numbers but not bold**, so size carries the grouping and weight
+    carries the figure. And **no all-caps** anywhere.
+
+31. **Colour: two accents, not one.** The *current* figure takes the player's own theme
+    colour. The *best* figure takes **the next colour along in the picker**.
+    The picker order is Lime, Cherry, Blueberry, Grape, and it **wraps** — a player on
+    Grape gets Lime for their bests. (assumed — the order is the palette's own; only the
+    wrap is my call, and there is nowhere else for the last one to go.)
+    Contrast is safe by construction: all four hues share one accent lightness precisely so
+    that none of them can fail AA, so borrowing a second one as text colour cannot break
+    it. Colour is never the only signal either — every figure has its own word label.
+
+32. **The three boxes borrow the play screen's digit-box styling** — surface background,
+    the 1.5px border in the border token, the same rounding and the same soft shadow — so
+    the completion screen and the play screen read as the same app under any theme.
+
+33. **Icons: three, all inline SVG.** A **calculator with a tick in its screen** for goes
+    and for the first-go streak; a **stopwatch** for time; a **retro game controller** for
+    plays. Lucide where one exists, and the calculator-with-tick built by hand out of two
+    Lucide paths, since it is not one icon. They inherit the surrounding colour.
+    This **supersedes** the flame Jamie floated on 2026-08-11 — the drawing replaced it.
+
+34. **Icons are decorative and are hidden from screen readers.** Every one sits beside text
+    that already says what it is, so announcing them would only add noise. (assumed —
+    §9 will confirm)
+
+35. **"This game" becomes two figures side by side, not a sentence.** The drawing shows a
+    calculator icon with `1 GO` and a stopwatch with `2m 38s`, not "Solved in 1 go,
+    2m 38s". That sentence was itself agreed only on 2026-08-11 after a long back and
+    forth about the separator, so this is a real change and is flagged rather than assumed.
+    See item 37.
+
+36. **When there is no time, the row shows one figure, not a gap.** Archive replays and
+    random puzzles carry no timing, so the stopwatch pair is simply absent and the goes
+    figure sits alone. (assumed — follows from item 10)
+
+37. **The question for §7: does the "Solved in 1 go, 2m 38s" line survive, and where?**
+    My rec: **keep the sentence and put the two icon figures beneath it.** Why: you two
+    settled that wording yesterday and the comma argument was a real one; it is also the
+    line that carries the result for someone who cannot see the layout, and it reads as a
+    result rather than as a readout. The two icon figures then do the fast-glance job the
+    drawing is asking for.
+    The alternative, which is what the drawing literally shows: **drop the sentence** and
+    let the two icon figures be the whole of "This game". Cleaner and less repetitive — the
+    same two numbers are otherwise said twice, a foot apart.
+    Either way the spoken announcement keeps the full sentence, so nothing is lost for a
+    screen reader.
