@@ -36,7 +36,7 @@ this brief is written against. Reading it top to bottom:
 | 1. What it is | Settled: Jamie 2026-08-11 (items 1–3 accepted, "park for now, build this") · Ack: Dave pending |
 | 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave pending |
 | 3. How it works | Settled: Jamie 2026-08-11 (item 12 decided as item 13) · Ack: Dave pending |
-| 4. Maths | Not applicable — nothing here touches puzzle generation or filtering. But item 14 adds a counting rule; Dave's ack wanted on that alone |
+| 4. Maths | REOPENED 2026-08-11 (items 22–27) — awaiting Dave on item 26 |
 | 5. State & persistence | Asked 2026-08-11 — no decision in it |
 | 6. How it fits | Asked 2026-08-11 — no decision in it |
 | 7. How it looks | Not yet asked |
@@ -147,6 +147,44 @@ this brief is written against. Reading it top to bottom:
     differently from the two beside it would make the panel internally inconsistent, and
     the 30-minute rule exists because a walked-away-from tab is not a fast solve.
     **Dave — this is the only counting rule in the redesign, and it is yours to confirm.**
+
+## 4. Maths — reopened 2026-08-11
+
+22. **Item 14 is REOPENED.** Jamie and Dave both independently asked why the cut-off is
+    thirty minutes. It is my number, carried over from the original stats brief (items 31
+    and 134), and on re-examination I do not think it survives the question.
+
+23. **What the cut-off actually does today.** `OUTLIER_SECONDS = 1800`. A game above it
+    still **shows its own time**, formatted with hours — nothing is hidden. It is left out
+    of *average time* and out of *fastest first-go win* only.
+
+24. **The fact that changes the argument: idle time is already discarded.** The play timer
+    is an accumulator, not a wall clock. Two minutes with no interaction and the whole gap
+    is thrown away (`IDLE_TIMEOUT_MS`, brief 34/50). So a game that took an hour of
+    elapsed time may record twelve minutes of counted solving. The walked-away-from-tab
+    case — the thing the thirty minutes was defending against — is **already handled
+    upstream, and handled better**. Jamie's "people might take longer, I have done" is
+    about elapsed time; the stored figure is not elapsed time.
+
+25. **For "best time" the cut-off is a no-op.** Best time is a minimum. A slow game cannot
+    lower a minimum, so excluding slow games changes the answer never. The rule only ever
+    bore on the average.
+
+26. **My rec: drop the thirty-minute exclusion entirely.** Count every game whose time is
+    valid — that is, under the one-day bound in `MAX_STORED_SECONDS`, which stays and is
+    doing a different job (catching a forged or corrupt value, not a slow player).
+    Why: after the idle rule has run, what is left is real solving, and a genuinely hard
+    forty-minute game belongs in your average. An average that quietly drops your hardest
+    games is not your average.
+    The honest cost: one long game shifts a short history's average visibly — a 40-minute
+    game among ten 3-minute ones moves the average from 3m to about 6m 42s. That is a real
+    effect, and I think it is the true one rather than a distortion.
+    Knock-on if accepted: *fastest first-go win* in the All-time list also stops excluding,
+    which is likewise a no-op for the same reason as item 25, and `OUTLIER_SECONDS` is
+    deleted rather than left unused.
+
+27. **Dave owns this — it is the counting rule and the only maths in the redesign.**
+    Asked 2026-08-11.
 
 ## 5. State & persistence
 
