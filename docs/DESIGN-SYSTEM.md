@@ -194,7 +194,15 @@ Component-specific CSS lives in `src/tailwind.css` using data-attribute selector
 Three blocks in reading order: **This game**, **Streaks**, **All time**.
 
 - **This game is the hero** -- one line, the largest type on the panel. It is the only
-  thing that changed in the last ten seconds.
+  thing that changed in the last ten seconds. It reads `Solved in 1 go, 0m 30s`, and the
+  play screen's solved view says exactly the same thing: one solve described two ways on
+  two screens is how a player starts doubting both.
+- **Times use unit letters, never a colon**: `0m 30s`, `4m 06s`, `1h 04m`. `4:06` can read
+  as four hours at a glance, and the separator the hero used to need -- a bullet, or the
+  pipe Dave suggested -- sits right beside a number, where a pipe is hard to tell from a 1.
+  Letters remove the ambiguity and the separator both. Seconds are padded to two digits so
+  a column lines up; minutes are not. An unknown time is a dash in a column of figures and
+  is dropped entirely from the hero sentence. (Jamie and Dave, 2026-08-11.)
 - **All time is open, not folded, but quiet**: smaller type, muted colour, plain rows
   rather than boxes. A folded block is a block nobody opens, and these numbers are the
   reason a returning player scrolls at all. Density is solved by making them quiet.

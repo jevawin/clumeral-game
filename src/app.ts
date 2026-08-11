@@ -6,6 +6,7 @@ import { launchBubbles } from './bubbles.ts';
 import { loadPrefs, persistPrefs, loadHistory, recordSolve, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
 import { createPlayTimer, playTimeToSend } from './play-timer.ts';
+import { validSeconds } from './player-stats.ts';
 import { createSaveWarning, WARNING_TEXT } from './save-warning.ts';
 import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
@@ -17,7 +18,7 @@ import { isWalkthroughActive } from './walkthrough.ts';
 import { showScreen, getCurrentScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
-import { renderCompletion, resetCompletionAnnouncement } from './completion.ts';
+import { renderCompletion, resetCompletionAnnouncement, heroLine } from './completion.ts';
 import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
@@ -775,12 +776,14 @@ function checkSubmit() {
 // "Solved in 0 tries" (brief 71, 123).
 function showCompletedState(tries: number | null, replayDate?: string): void {
   // /play in solved-replay mode is the same minimal view for today and archive:
-  // clues + revealed digits + "Solved in N tries!" + a context-specific link.
+  // clues + revealed digits + "Solved in N goes, 1m 05s" + a context-specific
+  // link. Same wording as the completion panel's hero, deliberately — one solve
+  // described two ways on two screens is how a player starts doubting both.
   // Stats panel never appears here — it lives on /solved.
   // Finalised: the keypad is no longer usable, so hide it (issue #194).
   closeKeypad();
-  const solvedText =
-    tries === null ? "Solved!" : `Solved in ${tries === 1 ? "1 try" : `${tries} tries`}!`;
+  // No timing on an archive replay, matching the panel (brief 54).
+  const solvedText = heroLine(tries, validSeconds(gameState.seconds), !replayDate);
   if (dom.feedback) {
     dom.feedback.innerHTML = `${ICON_CHECK} ${solvedText}`;
     dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-success font-[Quicksand]";
@@ -871,7 +874,7 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
   const entry = todayEntry();
   if (entry) {
     const entryTries = entry.marker ? null : entry.tries;
-    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entryTries, puzzleNum: num, date };
+    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entryTries, seconds: entry.seconds, puzzleNum: num, date };
     showCompletedState(entryTries);
     return;
   }
@@ -945,7 +948,7 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
       } catch { /* leave as null */ }
     }
     const entryTries = entry.marker ? null : entry.tries;
-    gameState = { answer, guesses: [], solved: true, tries: entryTries, puzzleNum: num, date };
+    gameState = { answer, guesses: [], solved: true, tries: entryTries, seconds: entry.seconds, puzzleNum: num, date };
     showCompletedState(entryTries, date);
     showBanner();
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
@@ -1017,6 +1020,9 @@ async function handleGuess() {
     if (result.correct) {
       gameState.solved = true;
       gameState.tries = tries;
+      // Banked by timer.activity() at the top of this function, so it is the
+      // final counted time for this game.
+      gameState.seconds = timer.seconds();
       gameState.answer = guess; // now we know the answer (it was our correct guess)
       track("puzzle_complete", tries);
       // Computed here rather than below, because the announcement decision needs

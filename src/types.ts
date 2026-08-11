@@ -12,6 +12,9 @@ export interface GameState {
   /** null means "played, not recorded" — a day-only marker. undefined means the
    *  puzzle is not solved. The two are different and the solved view reads both. */
   tries?: number | null;
+  /** Counted play seconds for the solved game, so the /play solved view can show
+   *  the same "Solved in 2 goes, 1m 05s" line the completion panel does. */
+  seconds?: number;
   puzzleNum?: number;
   isRandom?: boolean;
   date?: string;

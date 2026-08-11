@@ -75,8 +75,8 @@ test.describe("player stats — the panel after a solve", () => {
     // How long today's solve took is real wall time, so these assert the SHAPE.
     // The arithmetic behind them is pinned exactly in tests/player-stats.spec.ts;
     // what this proves is that real numbers reach the real panel at all.
-    await expect(completion.stat("Average time")).toHaveText(/^\d+:\d\d$/);
-    await expect(completion.stat("Fastest first-go win")).toHaveText(/^\d+:\d\d$/);
+    await expect(completion.stat("Average time")).toHaveText(/^\d+m \d\ds$/);
+    await expect(completion.stat("Fastest first-go win")).toHaveText(/^\d+m \d\ds$/);
 
     // The explanatory lines are the whole point of the build.
     await expect(completion.panel).toContainText("Days in a row you have finished the puzzle.");
@@ -90,7 +90,7 @@ test.describe("player stats — the panel after a solve", () => {
 
     // The hero, and the one announcement — goes, time, play streak, nothing else,
     // with the time spelled out for speech rather than read as "colon".
-    await expect(completion.thisGame).toContainText(/Solved in 1 · \d+:\d\d/);
+    await expect(completion.thisGame).toContainText(/Solved in 1 go, \d+m \d\ds/);
     await expect(completion.live).toHaveText(/^Solved in 1\. .*seconds?\. Play streak 5\.$/);
   });
 

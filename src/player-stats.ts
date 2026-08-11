@@ -203,7 +203,19 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
-/** For the screen. An unknown time is a dash, never 0:00. */
+/**
+ * For the screen: `0m 30s`, `4m 06s`, `1h 04m`. An unknown time is a dash,
+ * never 0:00.
+ *
+ * Unit letters rather than `4:06` (Jamie and Dave, 2026-08-11). `4:06` can read
+ * as four hours to someone glancing, and the separator this line used to need —
+ * a bullet, or the pipe Dave suggested — sits right beside a number, where a
+ * pipe is barely distinguishable from a 1. Letters remove the ambiguity and the
+ * separator both: the line is now a comma away from plain English.
+ *
+ * Seconds are padded to two digits so a column of them lines up; minutes are
+ * not, because a leading zero on the minutes reads as a stopwatch.
+ */
 export function formatDuration(seconds: number | null): string {
   if (seconds === null) return '—';
   if (seconds >= 3600) {
@@ -212,7 +224,7 @@ export function formatDuration(seconds: number | null): string {
     return `${hours}h ${String(minutes).padStart(2, '0')}m`;
   }
   const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+  return `${minutes}m ${String(seconds % 60).padStart(2, '0')}s`;
 }
 
 function plural(n: number, word: string): string {

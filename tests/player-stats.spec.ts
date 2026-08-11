@@ -255,11 +255,19 @@ describe('the goes chart', () => {
 });
 
 describe('formatting', () => {
-  it('formats a duration for the screen', () => {
-    expect(formatDuration(221)).toBe('3:41');
-    expect(formatDuration(48)).toBe('0:48');
+  it('formats a duration for the screen with unit letters', () => {
+    expect(formatDuration(221)).toBe('3m 41s');
+    expect(formatDuration(48)).toBe('0m 48s');
+    expect(formatDuration(30)).toBe('0m 30s');
+    expect(formatDuration(65)).toBe('1m 05s');
     expect(formatDuration(3840)).toBe('1h 04m');
     expect(formatDuration(null)).toBe('—');
+  });
+
+  it('never uses a colon — 4:06 can read as four hours at a glance', () => {
+    for (const s of [0, 48, 221, 3840, 86_400]) {
+      expect(formatDuration(s), String(s)).not.toContain(':');
+    }
   });
 
   it('spells a duration out for speech', () => {

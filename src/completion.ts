@@ -168,10 +168,18 @@ function goesChart(distribution: PlayerStats['goesDistribution']): string {
   </div>`;
 }
 
-/** The hero. `null` goes means played but not recorded — never "Solved in 0". */
-function heroLine(tries: number | null, seconds: number | null, showTime: boolean): string {
+/**
+ * The hero: `Solved in 1 go, 0m 30s`.
+ *
+ * `null` goes means played but not recorded — never "Solved in 0". An unknown
+ * time drops the whole clause rather than showing a dash: a dash is right in a
+ * column of figures and wrong in the middle of a sentence.
+ */
+export function heroLine(tries: number | null, seconds: number | null, showTime: boolean): string {
   if (tries === null) return 'Solved!';
-  return showTime ? `Solved in ${tries} · ${formatDuration(seconds)}` : `Solved in ${tries}`;
+  const goes = `Solved in ${tries} ${tries === 1 ? 'go' : 'goes'}`;
+  if (!showTime || seconds === null) return goes;
+  return `${goes}, ${formatDuration(seconds)}`;
 }
 
 /** Archive replays and markers carry no timing, on screen or in speech. */

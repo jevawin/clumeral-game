@@ -94,16 +94,15 @@ describe('the completion panel', () => {
     expect(block('streaks')).not.toBeNull();
     expect(block('all-time')).not.toBeNull();
 
-    expect(block('this-game')!.textContent).toContain('Solved in 2');
-    expect(block('this-game')!.textContent).toContain('3:41');
+    expect(block('this-game')!.textContent).toContain('Solved in 2 goes, 3m 41s');
 
     expect(stat('Play streak')).toBe('5');
     expect(stat('First-go streak')).toBe('0');
     expect(stat('Plays')).toBe('5');
     expect(stat('First-go wins')).toBe('1 (20%)');
     expect(stat('Average goes')).toBe('2.4');
-    expect(stat('Average time')).toBe('4:06'); // (221+48+300+260+400)/5 = 245.8s
-    expect(stat('Fastest first-go win')).toBe('0:48');
+    expect(stat('Average time')).toBe('4m 06s'); // (221+48+300+260+400)/5 = 245.8s
+    expect(stat('Fastest first-go win')).toBe('0m 48s');
   });
 
   it('shows only This game for a brand-new player, with the third-game line', async () => {
@@ -173,7 +172,7 @@ describe('the completion panel', () => {
     expect(block('this-game')).not.toBeNull();
     expect(block('streaks')).toBeNull();
     expect(block('all-time')).toBeNull();
-    expect(text()).toContain('Solved in 3');
+    expect(text()).toContain('Solved in 3 goes');
     expect(text()).not.toContain('3:20'); // no timing on an archive replay (brief 54)
   });
 
@@ -214,10 +213,18 @@ describe('the completion panel', () => {
     expect(text()).toContain('How many goes you take');
   });
 
-  it('shows a dash, not 0:00, when this game has no valid time', async () => {
+  it('drops the time clause entirely when this game has no valid time', async () => {
+    // A dash is right in a column of figures and wrong in the middle of a
+    // sentence, so the hero says the goes and stops.
     await render(RETURNING, 2, false, {});
-    expect(block('this-game')!.textContent).toContain('—');
-    expect(block('this-game')!.textContent).not.toContain('0:00');
+    expect(block('this-game')!.textContent).toContain('Solved in 2 goes');
+    expect(block('this-game')!.textContent).not.toContain('—');
+    expect(block('this-game')!.textContent).not.toContain('0m 00s');
+  });
+
+  it('says "1 go", not "1 goes"', async () => {
+    await render(RETURNING, 1, false, { seconds: 30 });
+    expect(block('this-game')!.textContent).toContain('Solved in 1 go, 0m 30s');
   });
 
   it('shows a long game its own time while leaving it out of the averages', async () => {
@@ -228,8 +235,8 @@ describe('the completion panel', () => {
     ];
     await render(history, 1, false, { seconds: 3900 });
     expect(block('this-game')!.textContent).toContain('1h 05m');
-    expect(stat('Average time')).toBe('1:30');
-    expect(stat('Fastest first-go win')).toBe('1:00');
+    expect(stat('Average time')).toBe('1m 30s');
+    expect(stat('Fastest first-go win')).toBe('1m 00s');
   });
 
   it('shows a dash for an average nobody has data for', async () => {
@@ -238,6 +245,7 @@ describe('the completion panel', () => {
       { date: day(1), tries: 3 },
       { date: day(2), tries: 3 },
     ], 2);
+    // A dash is right HERE — a column of figures needs a placeholder.
     expect(stat('Average time')).toBe('—');
     expect(stat('Fastest first-go win')).toBe('—');
   });
