@@ -9,7 +9,8 @@ are **not repeated here**. Read them alongside this.
 
 Numbering starts fresh at 1 and is append-only.
 
-Status: **OPEN.** Section 1 asked.
+Status: **OPEN.** All 11 sections written. Waiting on Jamie for §9 accessibility (blocking),
+and on Jamie's acks for items 38 and 45.
 
 ## The source drawing
 
@@ -40,10 +41,10 @@ this brief is written against. Reading it top to bottom:
 | 5. State & persistence | Asked 2026-08-11 — no decision in it |
 | 6. How it fits | Asked 2026-08-11 — no decision in it |
 | 7. How it looks | Settled: Dave 2026-08-11 (item 38) · Ack: Jamie pending on item 38 |
-| 8. Copy & wording | Asked 2026-08-11 — awaiting a word on item 44 |
-| 9. Accessibility | Not yet asked |
-| 10. Analytics | Not yet asked |
-| 11. Done / test plan | Not yet asked |
+| 8. Copy & wording | Settled: Dave 2026-08-11 (item 45) · Ack: Jamie pending |
+| 9. Accessibility | Asked 2026-08-11 — Jamie's sign-off blocks (item 54) |
+| 10. Analytics | Asked 2026-08-11 — none proposed (items 55–57) |
+| 11. Done / test plan | Asked 2026-08-11 (items 58–64) |
 
 ## 1. What it is
 
@@ -331,3 +332,96 @@ he said in words.
     reset if you miss a day." One sentence for all three rather than three.
     The cost of dropping them entirely is that a new player meets "First-go — best streak
     7" with nothing telling them what a first-go streak is until they scroll.
+
+45. **Item 44 SETTLED: Dave 2026-08-11 — "drop them".** No explanatory lines inside the
+    boxes and no shared line under them. The all-time rows keep their notes and carry the
+    explaining. **Jamie's ack wanted**, since the spacing of those very lines was one of
+    the three faults he reported and had fixed on this branch — this removes them instead.
+
+## 9. Accessibility
+
+Jamie signs this section off and his sign-off blocks. Written 2026-08-11.
+
+46. **Every number keeps its label attached in the markup.** The boxes stay description
+    lists: the label is a `dt`, the figure a `dd`, so a screen reader says "Best time, 1m
+    20s" rather than reading a loose number. That is how the panel works today and the
+    redesign must not lose it. (assumed — carried from the original build, brief 97)
+
+47. **The two "This game" figures get short spoken labels.** On screen they are an icon and
+    `1 go`. Spoken, the icon says nothing, so each figure carries a visually hidden word —
+    "Goes" and "Time" — and reads as "Goes, 1 go" and "Time, 2m 38s".
+    Why this matters more than it used to: item 38 removes the "Solved in 1 go, 2m 38s"
+    sentence from the screen. Someone returning to `/solved` later, or moving through the
+    page rather than hearing the one announcement, would otherwise meet two bare figures.
+
+48. **The announcement on solving is unchanged** and still speaks the full sentence, goes
+    and time and streak together. It is built separately from the visible markup, so item
+    38 does not touch it. (assumed)
+
+49. **Icons are `aria-hidden` and decorative.** Each sits beside text that already names it;
+    announcing them would add noise and no information. (item 34)
+
+50. **Colour is never the only signal.** Best and current differ by hue, but each also has
+    its own word underneath, so the pairing survives colour blindness and greyscale
+    entirely. (WCAG 1.4.1)
+
+51. **Contrast is safe by construction, and there is a test.** All four theme hues share one
+    accent lightness precisely so none can fail AA, so using a second hue as a figure colour
+    cannot break contrast. `tests/palette-contrast.spec.ts` already pins that.
+
+52. **Heading order stays sane.** The three block headings remain `h3`. Each box title
+    becomes an `h4` inside its section, so the boxes are reachable as structure rather than
+    being three unlabelled groups of numbers.
+
+53. **Text sizes are relative, not fixed.** The size ladder in item 29 is built in `rem`, so
+    a player with a larger browser text size gets the whole ladder scaled rather than a
+    broken layout. The three boxes drop to one column when they no longer fit, the way the
+    two streak columns already do at 22rem.
+
+54. **The question for §9, Jamie:** anything you want adding, and are you happy that the
+    hidden "Goes"/"Time" labels in item 47 are enough to replace the sentence item 38
+    removes?
+
+## 10. Analytics
+
+55. **No new events, and no changed events.** This is a presentational change; every figure
+    on it is computed on the device from history that is already there. (assumed)
+
+56. **Dropping the thirty-minute rule changes no analytics either.** I checked: the
+    `puzzle_time` event's four conditions are random, archive replay, saving opted out, and
+    a valid value — `OUTLIER_SECONDS` is not among them. So the server-side average is
+    unaffected by item 28; only the figures on the player's own device change.
+
+57. **Nothing about the redesign is worth tracking.** We would learn nothing actionable from
+    "the stats panel rendered", and it fires on every solve, so it is pure noise in a
+    dataset we are actively trying to keep small. (assumed)
+
+## 11. Done / test plan
+
+58. **Unit tests, on the counting.** Best time over a mixed history, including a game over
+    thirty minutes now counted rather than excluded; average time likewise; and a test that
+    pins `OUTLIER_SECONDS` is gone rather than merely unused.
+
+59. **Unit tests, on the markup.** Each box renders its title, its icon, both figures and
+    both labels; the icons are `aria-hidden`; the "This game" figures carry their hidden
+    labels; the "Solved in…" sentence is absent from the panel but still present in the
+    announcement.
+
+60. **A theme test on the second colour.** For each of the four themes, the best figure gets
+    the next hue along and Grape wraps to Lime.
+
+61. **The dark-mode rule stays pinned.** The container-level colour rule from the fixes
+    branch keeps its test, so the fault that started all this cannot come back through a
+    redesign.
+
+62. **End-to-end: the existing smoke test, plus one new check** that the three boxes appear
+    on a seeded history and do not appear before the third game. Chromium on staging, the
+    full set on main — the arrangement Jamie described on 2026-08-11.
+
+63. **Looked at by eye, on a phone, both modes, all four themes**, via the preview URL with
+    `?demo=stats`. That is what the seeded history was built for.
+
+64. **The QA level: light.** No worker change, no storage change, no routing change, and one
+    new counting rule with unit tests behind it. A full Playwright battering would cost
+    forty minutes to re-prove things this change cannot reach. (assumed — the proportional
+    QA rule in `CLAUDE.md`)
