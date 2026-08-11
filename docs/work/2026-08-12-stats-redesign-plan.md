@@ -8,9 +8,13 @@ brackets — `(b12)` — refer to that brief. **This plan settles how, not what.
 brief left something genuinely unnamed it is flagged in "Open questions" below rather than
 decided quietly.
 
-Status: **`da-plan` run and answered, 2026-08-12. Awaiting Jamie's approval.** The review
-returned 1 High, 4 Medium and 5 Low. Every one is fixed in place below; the changes it caused
-are listed under "What `da-plan` changed" at the end.
+Status: **Built, 2026-08-12.** Jamie approved the plan and the ten tasks below are all
+committed on `dev/stats-tweaks`, one commit each, in order. 813 unit tests and the build
+pass. Next gates: Jamie's own look, then `da-build`, then the pull request. What the build
+decided or did differently is recorded under "What the build settled" at the end.
+
+Earlier: `da-plan` run and answered, 2026-08-12 — 1 High, 4 Medium and 5 Low, every one
+fixed in place below and listed under "What `da-plan` changed".
 
 ---
 
@@ -578,6 +582,29 @@ that is already the label underneath. I still lean to "Time" and "Goes" — the 
 above them says "Average", and heading text repeating across sections is ordinary.
 
 ---
+
+## What the build settled
+
+Four things the plan left open or the build had to decide. Recorded here because the
+conversation they were decided in is cleared.
+
+1. **The Average block's box titles are "Time" and "Goes"** — the open question above, taken
+   as the plan's own recommendation because Jamie approved without changing it. The
+   consequence stands: "Time" is now an `h4` in both the Best block and the Average block,
+   so someone moving by heading hears it twice. One string each to change if that grates.
+2. **The calculator-with-tick icon's coordinates are worked out, not eyeballed.** This
+   machine has no way to rasterise an SVG, so the composition was fitted by arithmetic:
+   body `x=4 y=2 w=16 h=20`, screen `x=7 y=5 w=10 h=7`, tick inside it, two rows of three
+   keypad dots at `y=15.5` and `y=19`. Every stroke has at least one unit of clear space
+   around it at 24px. It still needs a real look at 18px on the preview — that is the one
+   part of this build nobody has seen.
+3. **`contributableSeconds` became `rowSeconds`** — a one-line named function, the second of
+   the two options task 1 allowed. It is now only `validSeconds(h.seconds)`, so the name had
+   to stop promising a rule that no longer exists.
+4. **One test the plan did not name had to move**: `tests/completion-stats.spec.ts`'s "shows
+   a long game its own time while leaving it out of the averages" asserted the thirty-minute
+   rule from the panel's side. Rewritten in task 1 to assert the long game counts, and
+   re-pointed at the Average and Best boxes in task 8.
 
 ## What `da-plan` changed
 
