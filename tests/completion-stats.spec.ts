@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { HistoryEntry } from '../src/types.ts';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // The four stat boxes are gone, so this file is rewritten rather than patched.
 // It renders the real panel and reads it the way a player meets it — by heading
@@ -345,5 +347,24 @@ describe('a forged history row cannot inject markup', () => {
     );
     expect(panel().querySelector('img')).toBeNull();
     expect(text()).toContain('Solved!');
+  });
+});
+
+// The dark-mode bug this guards: seven elements on the panel were coloured
+// individually and the eighth — the streak block's <dt> — was missed, so it fell
+// through to the browser's default black and vanished on the dark background.
+// The fix is to colour the CONTAINER once so everything inherits, which is what
+// makes the whole class of miss impossible rather than fixing the one instance.
+describe('the panel colours itself once, at the top', () => {
+  const css = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+
+  it('sets a text colour on the panel container', () => {
+    expect(css).toMatch(/\[data-completion-panel\]\s*\{[^}]*color:\s*var\(--color-text\)/);
+  });
+
+  it('uses the theme token, never a literal colour', () => {
+    // A hex here would be one mode's colour hardcoded into both.
+    const block = css.match(/\[data-completion-panel\]\s*\{[^}]*\}/)![0];
+    expect(block).not.toMatch(/#[0-9a-f]{3,8}/i);
   });
 });

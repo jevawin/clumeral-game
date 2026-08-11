@@ -6,14 +6,15 @@ Follows the player-stats build merged to staging on 2026-08-11 (PR #310). Source
 for what was already agreed: [`2026-08-10-player-stats-brief.md`](2026-08-10-player-stats-brief.md)
 and its plan. Numbering here starts fresh at 1 and is append-only.
 
-Status: **OPEN.** Section 1 asked 2026-08-11.
+Status: **OPEN — short form.** The three fixes are built and in a pull request into
+staging. The redesign gets its own brief once Jamie has had his think.
 
 ## Ledger
 
 | Section | State |
 |---|---|
-| 1. What it is | Asked 2026-08-11 |
-| 2. Out of scope | Not yet asked |
+| 1. What it is | Settled: Jamie 2026-08-11 (split agreed by asking for the fixes PR) · Ack: Dave pending |
+| 2. Out of scope | Settled by item 8 · Ack: Dave pending |
 | 3. How it works | Not yet asked |
 | 4. Maths | Not applicable — nothing here touches puzzle generation or filtering |
 | 5. State & persistence | Not yet asked |
@@ -74,3 +75,43 @@ Status: **OPEN.** Section 1 asked 2026-08-11.
    coloured seven things individually and missed the eighth. Patching just `.stat-streak dt`
    leaves the next new element with the same trap. (assumed — a mechanism, but it changes
    whether this class of fault can recur)
+
+## Settled, 2026-08-11
+
+8. **Item 6 SETTLED: Jamie 2026-08-11**, by asking for the fixes PR with the pre-filled
+   history rather than a full brief. So this is a **short form** brief: the three fixes
+   only. The redesign — icons, emphasis, the 6+ tail, the length of the screen — is
+   explicitly **out of scope here** and gets its own brief when Jamie is ready.
+
+9. **Item 7 accepted and built.** The panel container sets its text colour once and
+   everything inherits it, rather than eight elements each carrying their own. A test pins
+   that the container rule exists and uses the token rather than a hex, because the rule is
+   what makes the class of fault impossible rather than the one instance fixed.
+
+10. **The spacing fix, concretely.** The explanatory line had 0.25rem above it and nothing
+    below, so the label, the number and the explanation all sat at the same rhythm. Now:
+    0.375rem above the line and none below, the row's own padding raised from 0.375rem to
+    0.625rem, and the line's leading opened from 1.35 to 1.45. The effect is that the
+    explanation reads as belonging to the stat above it and as clearly separate from the
+    next one.
+
+11. **The pre-filled history is a query parameter, not a console command.** Both of you test
+    on a phone, where there is no console.
+    - `<preview-url>/solved?demo=stats` — fills a rich history and shows the full panel
+    - `<preview-url>/play?demo=clear` — puts it back to nothing
+    It **cannot run on clumeral.com**: the gate is the hostname, the same one
+    `/api/dev/answer` already uses, and a test asserts it. The parameter is stripped from
+    the URL afterwards, so a reload does not reseed.
+
+12. **The seeded history is shaped to exercise the panel, not to be a flat run.** It carries
+    a live play streak of 6 with a best of 9 behind it, so current and best visibly differ;
+    a first-go streak that is a different number from the play streak; goes in all six chart
+    buckets including a 9-go day in the tail; one game over thirty minutes, which shows its
+    own time but is excluded from the average and from fastest; one row with no time at all,
+    standing in for a pre-launch game; and one archived row, which must change no figure.
+    Every one of those is asserted through the real counting rules.
+
+13. **Dave, this needs your ack** on items 8 to 12 — particularly item 8, since it means the
+    things you raised (the untidy streaks, the emphasis on the best numbers, the 6+ tail and
+    the length of the screen) are deliberately NOT in this branch and are waiting for their
+    own brief.
