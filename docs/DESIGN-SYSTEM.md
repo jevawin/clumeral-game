@@ -184,36 +184,71 @@ Component-specific CSS lives in `src/tailwind.css` using data-attribute selector
 - `.fb-cat` -- feedback category pill selected state
 - `.toast-msg` -- toast notification element
 - `.recurring` -- recurring decimal overdot
-- `.stat-block__*`, `.stat-hero`, `.stat-streaks`, `.stat-row`, `.stat-note` -- the
-  completion panel's three blocks
+- `.stat-block__*`, `.stat-hero`, `.stat-today`, `.stat-figure*`, `.stat-boxes`,
+  `.stat-box*`, `.stat-row`, `.stat-note` -- the completion panel's four blocks
 - `.goes-*` -- the "How many goes you take" chart
 - `.save-note*` -- the untick warning and submit countdown on the play screen
 
 ## The completion panel
 
-Three blocks in reading order: **This game**, **Streaks**, **All time**.
+Four blocks in reading order: **Today**, **Best**, **Average**, **All time**.
 
-- **This game is the hero** -- one line, the largest type on the panel. It is the only
-  thing that changed in the last ten seconds. It reads `Solved in 1 go, 0m 30s`, and the
-  play screen's solved view says exactly the same thing: one solve described two ways on
-  two screens is how a player starts doubting both.
+- **Today is the hero** -- two figures side by side, each an icon and a number, and the
+  largest type on the panel. It is the only thing that changed in the last ten seconds.
+  It shows `1 go` under a calculator-with-tick and `2m 38s` under a stopwatch.
+- **The completion panel has no `Solved in ...` sentence; the play screen still does.**
+  That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
+  screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
+  code and is not. Leave it alone when tidying that file.
+- **Three rungs of type size**, used by every block: (1) the Today icons and figures,
+  (2) the box titles and the numbers in the boxes, (3) the small labels in the boxes.
+  Numbers are bold; box titles are the same size and not bold; labels are regular in the
+  ordinary foreground colour. All-caps stays on the block headings and never appears
+  inside a box.
+- **Two accents, one exception.** Every figure takes the player's own `--color-accent`
+  except the three "Best" numbers, which take `--color-accent-best` -- the next theme
+  along, wrapping Grape back to Lime. It is CSS, not JavaScript: chroma differs per theme
+  and per mode, and the panel renders once, so deriving it at render time would freeze the
+  best colour when someone switched theme on `/solved`. The mapping is pinned in
+  `tests/accent-best.spec.ts`, and mirrored into the Worker's inline style because
+  `tests/token-parity.spec.ts` compares every `--accent-*` declaration between the two.
+- **The boxes borrow the play screen's digit-box styling** -- surface background, 1.5px
+  border, 0.25rem radius, the `shadow-box` utility -- so a theme change moves both screens
+  together.
+- **Boxes are three across from 22.5rem and one column below it.** `rem`, not pixels: it
+  is 360px at default text size and also stacks at large browser text on a wide screen,
+  which is what the 320px / 200% requirement is really about.
+- **The number sits above its label on screen while the DOM stays `dt` then `dd`.**
+  `.stat-box__pair` is `column-reverse`. A screen reader must hear "Best time, 1m 20s",
+  and `dd` before `dt` is not conforming HTML; the pairing is carried by the description
+  list, not by position (WCAG 1.3.2). Do not "fix" the markup to match the picture --
+  `tests/completion-stats.spec.ts` pins the DOM order.
+- **The visible label is short and the spoken one is full.** "Best" and "Current" and
+  "Avg." on screen; "Best time", "Current 1-go streak", "Average time" in a visually
+  hidden span. Two spans, not a prefix and a suffix -- "Avg." is not the start of
+  "Average time".
+- **Today's time appears twice, and three times on a personal-best day.** Once under the
+  stopwatch in Today, then as Best over Current in the Time box. Jamie's call, over Dave's
+  objection to the repeat; if it grates, it is one `statPair` call to change.
 - **Times use unit letters, never a colon**: `0m 30s`, `4m 06s`, `1h 04m`. `4:06` can read
   as four hours at a glance, and the separator the hero used to need -- a bullet, or the
   pipe Dave suggested -- sits right beside a number, where a pipe is hard to tell from a 1.
   Letters remove the ambiguity and the separator both. Seconds are padded to two digits so
   a column lines up; minutes are not. An unknown time is a dash in a column of figures and
-  is dropped entirely from the hero sentence. (Jamie and Dave, 2026-08-11.)
+  is dropped entirely from the play screen's sentence. On the panel an unknown time drops
+  the stopwatch figure altogether rather than showing an empty one. (Jamie and Dave,
+  2026-08-11.)
 - **All time is open, not folded, but quiet**: smaller type, muted colour, plain rows
-  rather than boxes. A folded block is a block nobody opens, and these numbers are the
-  reason a returning player scrolls at all. Density is solved by making them quiet.
-- **Every number carries a plain line saying what it means.** That is the whole point of
-  the build -- "streak" used to explain nothing on screen. Text under the stat, never a
-  tooltip.
-- **No new colour tokens and no new type sizes.** Everything is built from `--color-text`,
-  `--color-accent`, `--color-border` and `--color-surface`, whose contrast is already
-  measured in `tests/palette-contrast.spec.ts`.
-- **The streak pair stacks below 22rem**, not below a pixel width -- so it also stacks at
-  200% text on a wide screen, which is what the 320px / 200% requirement is really about.
+  rather than boxes. It keeps plays, first-go wins and the goes chart; the two averages
+  moved to their own block and the fastest first-go win went entirely, because best time
+  is the same idea told better.
+- **The explanatory lines live in All time only.** Inside a box, "Best" over "Current"
+  under a labelled icon is already the explanation, and three sentences in three small
+  boxes was the clutter the redesign was called for.
+- **No new type sizes, and exactly one new colour token.** Everything is built from
+  `--color-text`, `--color-accent`, `--color-accent-best`, `--color-border` and
+  `--color-surface`. The best accent is one of the same four theme accents at the same
+  `--accent-l`, so `tests/palette-contrast.spec.ts` already covers its contrast.
 - **Blocks are absent, not hidden**, when they do not apply. A hidden block can still
   reach the accessibility tree, and an empty "All time" heading reads as broken.
 - **The goes chart's bars are `aria-hidden`**; the count beside each bar is the accessible
