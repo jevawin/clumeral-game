@@ -33,9 +33,9 @@ this brief is written against. Reading it top to bottom:
 
 | Section | State |
 |---|---|
-| 1. What it is | Asked 2026-08-11 — awaiting Jamie |
-| 2. Out of scope | Asked with section 1 (items 4–6) |
-| 3. How it works | Not yet asked |
+| 1. What it is | Settled: Jamie 2026-08-11 (items 1–3 accepted, "park for now, build this") · Ack: Dave pending |
+| 2. Out of scope | Settled: Jamie 2026-08-11 (items 4–6 parked) · Ack: Dave pending |
+| 3. How it works | Asked 2026-08-11 — awaiting Jamie on item 12 |
 | 4. Maths | Not applicable — nothing here touches puzzle generation or filtering |
 | 5. State & persistence | Not yet asked |
 | 6. How it fits | Not yet asked |
@@ -80,8 +80,44 @@ this brief is written against. Reading it top to bottom:
 
 ## 3. How it works
 
-7. **Which branch this is built on.**
-   My rec: a new branch off `staging` once PR #311 has merged, not a continuation of
-   `dev/stats-tweaks`. Why: #311 is a small, provable fix set that is ready now, and hanging
-   a redesign off it delays the dark-mode fix behind a much larger review. The pre-filled
-   history lands on staging with #311, so the new branch inherits it.
+7. **Which branch this is built on. SETTLED: Jamie 2026-08-11 — into PR #311.** My
+   recommendation was a fresh branch off `staging` so the dark-mode fix could merge ahead of
+   a larger review. Jamie overruled it: "park for now, build this into the pr." So the
+   redesign lands on `dev/stats-tweaks` and PR #311 grows to carry both.
+   The cost, recorded rather than argued: the dark-mode fix now waits for the redesign
+   review, and `da-build` runs once over a much bigger diff.
+
+8. **Dave's design gets a second branch. SETTLED: Jamie 2026-08-11.** Dave has mocked up an
+   alternative and will send it. When he does, it is built on its own branch off the same
+   base, so the two previews can be opened side by side and compared. Jamie expects the end
+   result to merge ideas from both, so neither branch is a winner-takes-all.
+   Consequence to plan for: whatever this branch builds should be **structured so a second
+   layout can replace it without rewriting the numbers** — the computed figures are the same
+   in both designs, only the presentation differs.
+
+9. **When the three boxes appear.** With the streaks block today: from the third countable
+   game, the same reveal gate. Before that, the panel is the hero line only. (assumed — the
+   drawing shows the full state and nothing suggests changing the gate)
+
+10. **Archive replays and random puzzles are unchanged.** They keep the minimal panel with
+    no boxes and no timing. (assumed — settled in the original build, brief 54)
+
+11. **The play-streak and first-go-streak boxes carry exactly the figures the two streak
+    columns carry today** — current and best of each. No new counting. (assumed — from the
+    drawing)
+
+12. **The Time box is the one genuinely new thing, and its two figures need naming.** The
+    drawing shows "Best time" over "Current". The panel today has no such pair: it has
+    *Average time* and *Fastest first-go win*, both under All time.
+    My rec: **best time = the fastest solve of any kind**, not first-go only; **current =
+    this game's time**. Why: the other two boxes read "your record" over "where you are
+    now", and this keeps that rhythm. Restricting best to first-go wins would make the two
+    numbers incomparable — a best you can only beat on a one-go day.
+    The honest cost: "current" then repeats the stopwatch figure at the top of the screen,
+    so the same number appears twice within a screen's height.
+    The alternative, if that repetition grates: make the lower figure **average time**
+    instead, which is a genuinely different number and is already computed — but it breaks
+    the "current" label the other two boxes share.
+    Also note: *Fastest first-go win* and *Average time* would then both still sit in the
+    All-time list, which Jamie has said stays as it is. So one of those numbers is shown
+    twice whichever way this goes.
