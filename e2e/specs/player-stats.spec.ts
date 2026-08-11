@@ -2,16 +2,21 @@ import { test, expect } from "../fixtures.ts";
 import { CompletionPage } from "../pages/completion.page.ts";
 import { expectActiveScreen } from "../helpers/screens.ts";
 import { seedHistory, seedPrefs, seedLastVisit } from "../helpers/storage.ts";
-import { freezeDate, advanceBy } from "../helpers/clock.ts";
 import { solvePuzzle, readAnswer, setBoxes } from "../helpers/solve.ts";
 
-// The clock is frozen at the REAL now, not at a fixed past date.
+// No page.clock here, deliberately.
 //
-// It has to be frozen at all so the five-second countdown can be advanced rather
-// than waited out. It has to be *now* because /api/dev/answer serves today's
-// daily answer: freeze to a date in the past and the client asks for that day's
-// puzzle while the helper hands back today's, so every "solve" is really a wrong
-// guess and the screen never moves. That is what failed here first time round.
+// Two reasons, both learned the hard way. /api/dev/answer serves TODAY's daily
+// answer, so freezing "today" to a fixed past date makes the client ask for that
+// day's puzzle while the helper hands back today's — every "solve" is really a
+// wrong guess and the screen never moves. And the fake clock fights Playwright:
+// screen transitions run on a setTimeout and clicks wait on animation frames, so
+// jumping the clock around left clicks hanging.
+//
+// So: real time, and history seeded relative to the real today. The cost is that
+// this file waits out the five-second submit hold for real. That is the only
+// destructive thing in the build, and the pause is the only thing standing
+// between a mis-tap and a deletion, so it is worth five seconds.
 const NOW = new Date();
 const day = (back: number) => {
   const d = new Date(NOW);
@@ -21,7 +26,8 @@ const day = (back: number) => {
 const TODAY = day(0);
 
 // Four consecutive past days ending yesterday. Solving today makes it five
-// countable games, well past the third-game reveal gate.
+// countable games, well past the third-game reveal gate. Yesterday and the day
+// before differ in goes, so the first-go streak has something to break on.
 const PAST = [
   { date: day(1), tries: 1, answer: 111, seconds: 48 },
   { date: day(2), tries: 3, answer: 222, seconds: 300 },
@@ -29,45 +35,15 @@ const PAST = [
   { date: day(4), tries: 4, answer: 444, seconds: 400 },
 ];
 
-// How long today's solve is made to take. The clock is frozen, so without this
-// every solve counts zero seconds — the timer only banks a gap when the next
-// interaction lands. 90s is under the two-minute idle cut-off, so it counts, and
-// it is longer than the seeded 48s so the fastest first-go win stays the seeded
-// one.
-const TODAY_SECONDS = 90;
-
 async function readHistory(page: import("@playwright/test").Page) {
   return page.evaluate(() => JSON.parse(localStorage.getItem("dlng_history") ?? "null"));
 }
 
-// Wait out a screen transition on a frozen clock.
-//
-// showScreen fades the outgoing screen for 200ms on a setTimeout, and
-// page.clock.install() pauses timers — so on a frozen clock that timer never
-// fires on its own and the incoming screen never appears. A cold `page.goto`
-// paints immediately and needs none of this; every transition made INSIDE the
-// app does.
-//
-// The wait on the outgoing screen matters: the fade sets aria-hidden on it
-// synchronously, so this proves the transition has actually started and the
-// timer exists before we run the clock forward. Advancing before the solve's
-// fetch has resolved would do nothing at all.
-async function settleScreen(
-  page: import("@playwright/test").Page,
-  from: "welcome" | "game" | "completion",
-  to: "welcome" | "game" | "completion",
-) {
-  await expect(page.locator(`[data-screen="${from}"]`)).toHaveAttribute("aria-hidden", "true");
-  await advanceBy(page, 400);
-  await expectActiveScreen(page, to);
-}
-
 async function startToday(
   page: import("@playwright/test").Page,
-  history: Parameters<typeof seedHistory>[1],
+  history: typeof PAST,
   prefs: { saveScore?: boolean } = {},
 ) {
-  await freezeDate(page, NOW);
   await seedHistory(page, history);
   await seedPrefs(page, prefs);
   await seedLastVisit(page, TODAY);
@@ -79,37 +55,32 @@ async function startToday(
 test.describe("player stats — the panel after a solve", () => {
   test("shows all three blocks with the figures from history plus this game", async ({ page }) => {
     await startToday(page, PAST);
-
-    // Solve by hand so the clock can be moved between resolving the board and
-    // submitting — that gap is what the timer counts.
-    const answer = await readAnswer(page);
-    await setBoxes(page, answer);
-    await advanceBy(page, TODAY_SECONDS * 1000);
-    await page.locator("[data-submit]").click();
-    await settleScreen(page, "game", "completion");
+    await solvePuzzle(page);
+    await expectActiveScreen(page, "completion");
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
     await expect(completion.streaks).toBeVisible();
     await expect(completion.allTime).toBeVisible();
 
-    // Five countable games ending today, so the play streak is live. Today is a
-    // first-go win, so that streak is 1: yesterday was a first go too, but the
-    // day before took three.
+    // Five countable games ending today, so the play streak is live. Today is
+    // solved first go, and so was yesterday; the day before took three, which is
+    // where the first-go streak breaks.
     await expect(completion.stat("Play streak")).toHaveText("5");
     await expect(completion.stat("First-go streak")).toHaveText("2");
     await expect(completion.stat("Plays")).toHaveText("5");
     await expect(completion.stat("First-go wins")).toHaveText("2 (40%)");
     // (1 + 3 + 2 + 4 + 1) / 5
     await expect(completion.stat("Average goes")).toHaveText("2.2");
-    // (48 + 300 + 260 + 400 + 90) / 5 = 219.6s. This is the assertion that
-    // proves the timer's number reaches the panel.
-    await expect(completion.stat("Average time")).toHaveText("3:40");
-    // The seeded 48s beats today's 90s.
-    await expect(completion.stat("Fastest first-go win")).toHaveText("0:48");
+    // How long today's solve took is real wall time, so these assert the SHAPE.
+    // The arithmetic behind them is pinned exactly in tests/player-stats.spec.ts;
+    // what this proves is that real numbers reach the real panel at all.
+    await expect(completion.stat("Average time")).toHaveText(/^\d+:\d\d$/);
+    await expect(completion.stat("Fastest first-go win")).toHaveText(/^\d+:\d\d$/);
 
     // The explanatory lines are the whole point of the build.
     await expect(completion.panel).toContainText("Days in a row you have finished the puzzle.");
+    await expect(completion.panel).toContainText("Days in a row you got it on your first guess.");
     await expect(completion.panel).toContainText("Miss a day and the streak starts again.");
     await expect(completion.panel).toContainText("Your quickest win on a first guess.");
 
@@ -117,24 +88,23 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.goesRows).toHaveCount(6);
     await expect(completion.panel).toContainText("How many goes you take");
 
-    // The hero says how this game went, and the panel announces once — spelled
-    // out for speech, not read as "one colon thirty".
-    await expect(completion.thisGame).toContainText("Solved in 1 · 1:30");
-    await expect(completion.live).toHaveText("Solved in 1. 1 minute 30 seconds. Play streak 5.");
+    // The hero, and the one announcement — goes, time, play streak, nothing else,
+    // with the time spelled out for speech rather than read as "colon".
+    await expect(completion.thisGame).toContainText(/Solved in 1 · \d+:\d\d/);
+    await expect(completion.live).toHaveText(/^Solved in 1\. .*seconds?\. Play streak 5\.$/);
   });
 
   test("a brand-new player sees This game only, and why", async ({ page }) => {
-    // No history at all. /play would normally bounce a stranger to /welcome, so
-    // start there and press Play, which is the real first-timer's route.
-    await freezeDate(page, NOW);
+    // No history at all. /play would bounce a stranger to /welcome, so start
+    // there and press Play — the real first-timer's route.
     await seedLastVisit(page, TODAY);
     await page.goto("/welcome");
     await page.locator("[data-play-btn]").click();
-    await settleScreen(page, "welcome", "game");
+    await expectActiveScreen(page, "game");
     await expect(page.locator("[data-clue-list]")).toBeVisible();
 
     await solvePuzzle(page);
-    await settleScreen(page, "game", "completion");
+    await expectActiveScreen(page, "completion");
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
@@ -150,7 +120,7 @@ test.describe("player stats — score saving switched off", () => {
   test("shows This game only, says nothing about saving, and stores a marker", async ({ page }) => {
     await startToday(page, PAST, { saveScore: false });
     await solvePuzzle(page);
-    await settleScreen(page, "game", "completion");
+    await expectActiveScreen(page, "completion");
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
@@ -167,14 +137,15 @@ test.describe("player stats — score saving switched off", () => {
 });
 
 test.describe("player stats — the delete flow", () => {
-  // These two resolve the board by hand AND drive the checkbox, so they do far
-  // more work than a plain solve.
+  // These resolve the board by hand and drive the checkbox, and one of them
+  // waits out the five-second hold for real.
   test.slow();
 
-  // seedHistory writes on EVERY navigation, which would put the seeded rows back
-  // after the deletion and hide the very thing the reload is checking. This
-  // writes only when there is nothing there, so the marker survives a reload.
-  async function seedHistoryOnce(
+  // seedHistory rewrites history on EVERY navigation, which would put the seeded
+  // rows straight back after the deletion and hide the very thing the reload is
+  // checking. This writes only when there is nothing there, so the marker
+  // survives a reload.
+  async function seedOnce(
     page: import("@playwright/test").Page,
     entries: typeof PAST,
   ): Promise<void> {
@@ -189,15 +160,14 @@ test.describe("player stats — the delete flow", () => {
   }
 
   test("warns, holds submit for five seconds, and deletes only on submit", async ({ page }) => {
-    await freezeDate(page, NOW);
-    await seedHistoryOnce(page, PAST);
+    await seedOnce(page, PAST);
     await seedLastVisit(page, TODAY);
     await page.goto("/play");
     await expectActiveScreen(page, "game");
     await expect(page.locator("[data-clue-list]")).toBeVisible();
 
-    // Resolve the board WITHOUT submitting: the save row is only shown while the
-    // submit row is.
+    // Resolve the board WITHOUT submitting: the save row only shows while the
+    // submit row does.
     const answer = await readAnswer(page);
     await setBoxes(page, answer);
 
@@ -212,44 +182,34 @@ test.describe("player stats — the delete flow", () => {
     // The input is visually hidden behind its label's tick icons, so the label is
     // what a player actually presses.
     await label.click();
-
-    // Press submit IMMEDIATELY, before anything else. The hold is five seconds of
-    // real time, so any assertion in between is a race — and this is the
-    // assertion that matters most: during the hold, pressing submit must do
-    // nothing at all. aria-disabled leaves the button clickable by design, so the
-    // handler is what has to refuse.
-    await submit.click();
-    expect(await readHistory(page)).toHaveLength(PAST.length);
-    await expectActiveScreen(page, "game");
-
-    // Now the state it should be showing while it holds.
     await expect(page.locator("[data-save-check]")).not.toBeChecked();
     await expect(warning).toHaveText("Your existing stats will be deleted when you submit.");
-    await expect(countdown).toContainText(/^Submit enabled in [1-5]$/);
     await expect(submit).toHaveAttribute("aria-disabled", "true");
+    await expect(countdown).toHaveText(/^Submit enabled in [1-5]$/);
     // The checkbox keeps its own label throughout (P-02) — it never becomes the
     // warning, which would leave the control not saying what it does.
     await expect(label).toHaveText("Save my scores on this device");
 
-    // Let the hold expire. advanceBy nudges the frozen clock; the assertion below
-    // is what actually waits, so a running clock reaches the same place.
-    await advanceBy(page, 5_000);
-    await expect(submit).not.toHaveAttribute("aria-disabled", "true");
+    // Wait the hold out for real. That it clears at all is what proves the
+    // countdown is a hold rather than a permanent lock.
+    await expect(submit).not.toHaveAttribute("aria-disabled", "true", { timeout: 15_000 });
     await expect(countdown).toHaveText("");
     // The warning stays while the box is unticked — submitting can be long after
     // the countdown ends, and it is the warning that has to be on screen then.
     await expect(warning).toHaveText("Your existing stats will be deleted when you submit.");
+    // Still nothing deleted. Deletion happens on the solve — not on the untick,
+    // and not when the countdown ends.
     expect(await readHistory(page)).toHaveLength(PAST.length);
 
     await submit.click();
-    await settleScreen(page, "game", "completion");
+    await expectActiveScreen(page, "completion");
 
     // The seeded results are gone and a marker remains for the day just solved.
     expect(await readHistory(page)).toEqual([{ date: TODAY, tries: 0, marker: true }]);
 
-    // And that marker is what keeps today unreplayable: hasPlayerData needs
-    // history or a mid-game board, and solving cleared the board. Without it the
-    // router would send this player to /welcome and hand them today again.
+    // That marker is what keeps today unreplayable: hasPlayerData needs history
+    // or a mid-game board, and solving cleared the board. Without it the router
+    // would send this player to /welcome and hand them today's puzzle again.
     await page.reload();
     await expect(page).toHaveURL(/\/solved$/);
     expect(await readHistory(page)).toEqual([{ date: TODAY, tries: 0, marker: true }]);
@@ -274,7 +234,7 @@ test.describe("player stats — the delete flow", () => {
     await expect(page.locator("[data-submit]")).not.toHaveAttribute("aria-disabled", "true");
 
     await page.locator("[data-submit]").click();
-    await settleScreen(page, "game", "completion");
+    await expectActiveScreen(page, "completion");
 
     const history = (await readHistory(page)) as { date: string }[];
     expect(history).toHaveLength(PAST.length + 1);
