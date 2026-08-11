@@ -30,11 +30,12 @@ test.describe("completion screen", () => {
     const completion = new CompletionPage(page);
 
     await expect(completion.thisGame).toBeVisible();
-    await expect(completion.streaks).toBeVisible();
+    await expect(completion.best).toBeVisible();
+    await expect(completion.average).toBeVisible();
     await expect(completion.allTime).toBeVisible();
     await expect(completion.stat("Plays")).toHaveText("3");
     await expect(completion.stat("Average goes")).toHaveText("3.0");
-    await expect(completion.stat("Play streak")).toHaveText("3");
+    await expect(completion.stat("Current play streak")).toHaveText("3");
   });
 
   test("countdown shows the time until the next puzzle, derived from the clock", async ({ page }) => {

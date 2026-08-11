@@ -5,11 +5,14 @@ export class CompletionPage {
   readonly screen: Locator;
   readonly heading: Locator;
   readonly subheading: Locator;
-  /** The container the three blocks are written into. */
+  /** The container the four blocks are written into. */
   readonly panel: Locator;
   readonly thisGame: Locator;
-  readonly streaks: Locator;
+  readonly best: Locator;
+  readonly average: Locator;
   readonly allTime: Locator;
+  /** Every box on the panel, across the Best and Average blocks. */
+  readonly boxes: Locator;
   readonly goesRows: Locator;
   /** The one polite announcement of the result. */
   readonly live: Locator;
@@ -23,8 +26,10 @@ export class CompletionPage {
     this.subheading = page.locator("[data-completion-subheading]");
     this.panel = page.locator("[data-completion-panel]");
     this.thisGame = page.locator('[data-stat-block="this-game"]');
-    this.streaks = page.locator('[data-stat-block="streaks"]');
+    this.best = page.locator('[data-stat-block="best"]');
+    this.average = page.locator('[data-stat-block="average"]');
     this.allTime = page.locator('[data-stat-block="all-time"]');
+    this.boxes = page.locator(".stat-box");
     this.goesRows = page.locator("[data-goes-row]");
     this.live = page.locator("[data-completion-live]");
     this.countdown = page.locator("[data-completion-countdown]");
@@ -36,11 +41,18 @@ export class CompletionPage {
     await this.page.goto("/solved");
   }
 
-  /** The value shown for a labelled stat, anywhere on the panel. */
+  /**
+   * The value shown for a labelled stat, anywhere on the panel.
+   *
+   * Two shapes now: the all-time rows, whose `dt` is the whole label, and the
+   * box pairs, whose `dt` holds a short visible word plus the full one in a
+   * visually hidden span. Matching either means the label passed here is always
+   * the words a screen reader hears — "Current play streak", not "Current".
+   */
   stat(label: string): Locator {
     return this.panel
-      .locator(".stat-row, .stat-streak")
-      .filter({ has: this.page.locator("dt", { hasText: new RegExp(`^${label}$`) }) })
+      .locator(".stat-row, .stat-box__pair")
+      .filter({ has: this.page.locator("dt, .sr-only", { hasText: new RegExp(`^${label}$`) }) })
       .locator("dd")
       .first();
   }
