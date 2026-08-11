@@ -55,6 +55,25 @@ function blockText(id: string): string {
   return (block(id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
+/** One box pair, found by the full words a screen reader hears (brief 78). */
+function pair(fullLabel: string): { value: string; short: string; isBest: boolean } | null {
+  for (const el of panel().querySelectorAll('.stat-box__pair')) {
+    if (el.querySelector('.sr-only')?.textContent?.trim() !== fullLabel) continue;
+    const value = el.querySelector('.stat-box__value')!;
+    return {
+      value: value.textContent!.trim(),
+      short: el.querySelector('.stat-box__label')!.textContent!.trim(),
+      isBest: value.classList.contains('stat-box__value--best'),
+    };
+  }
+  return null;
+}
+
+/** The titles of every box on the panel, in order. */
+function boxTitles(): string[] {
+  return [...panel().querySelectorAll('.stat-box__title')].map((el) => el.textContent!.trim());
+}
+
 /** The visible values of the Today block's figures, in order. */
 function figures(): string[] {
   return [...panel().querySelectorAll('.stat-figure__value')].map((el) => el.textContent!.trim());
@@ -103,13 +122,13 @@ describe('the completion panel', () => {
     await render(RETURNING, 2, false, { seconds: 221 });
 
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).not.toBeNull();
+    expect(block('best')).not.toBeNull();
     expect(block('all-time')).not.toBeNull();
 
     expect(figures()).toEqual(['2 goes', '3m 41s']);
 
-    expect(stat('Play streak')).toBe('5');
-    expect(stat('First-go streak')).toBe('0');
+    expect(pair('Current play streak')!.value).toBe('5');
+    expect(pair('Current 1-go streak')!.value).toBe('0');
     expect(stat('Plays')).toBe('5');
     expect(stat('First-go wins')).toBe('1 (20%)');
     expect(stat('Average goes')).toBe('2.4');
@@ -120,7 +139,7 @@ describe('the completion panel', () => {
   it('shows only This game for a brand-new player, with the third-game line', async () => {
     await render([{ date: day(0), tries: 2, seconds: 100 }], 2, false, { seconds: 100 });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('best')).toBeNull();
     expect(block('all-time')).toBeNull();
     expect(text()).toContain('Your streaks and all-time stats start from your third game.');
   });
@@ -130,7 +149,7 @@ describe('the completion panel', () => {
       { date: day(0), tries: 2 },
       { date: day(1), tries: 3 },
     ], 2);
-    expect(block('streaks')).toBeNull();
+    expect(block('best')).toBeNull();
     expect(block('all-time')).toBeNull();
   });
 
@@ -140,7 +159,7 @@ describe('the completion panel', () => {
       { date: day(1), tries: 3 },
       { date: day(2), tries: 3 },
     ], 2);
-    expect(block('streaks')).not.toBeNull();
+    expect(block('best')).not.toBeNull();
     expect(block('all-time')).not.toBeNull();
   });
 
@@ -152,7 +171,7 @@ describe('the completion panel', () => {
   it('shows only This game when score saving is off', async () => {
     await render(RETURNING, 2, false, { seconds: 221 }, { saveScore: false });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('best')).toBeNull();
     expect(block('all-time')).toBeNull();
     expect(figures()).toEqual(['2 goes', '3m 41s']);
   });
@@ -170,7 +189,7 @@ describe('the completion panel', () => {
   it('shows This game and the random line after a random puzzle', async () => {
     await render(RETURNING, 2, true, { seconds: 221 });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('best')).toBeNull();
     expect(block('all-time')).toBeNull();
     expect(text()).toContain("Random puzzles don't count towards your stats.");
   });
@@ -182,7 +201,7 @@ describe('the completion panel', () => {
       seconds: 200,
     });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('best')).toBeNull();
     expect(block('all-time')).toBeNull();
     // No stopwatch figure at all, not an empty one — an archive replay carries
     // no timing (brief 54, and brief 36 for the shape).
@@ -224,6 +243,84 @@ describe('the completion panel', () => {
     expect(blockText('this-game')).toContain("Random puzzles don't count towards your stats.");
   });
 
+  it('shows three Best boxes: your record over where you are now', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(block('best')!.querySelector('h3')!.textContent).toBe('Best');
+    expect(boxTitles()).toEqual(['Time', '1-go', 'Plays']);
+    // Every box title is an h4 under the block's h3 (brief 52).
+    for (const t of block('best')!.querySelectorAll('.stat-box__title')) {
+      expect(t.tagName).toBe('H4');
+    }
+    expect(pair('Best time')!.value).toBe('0m 48s');
+    expect(pair('Current time')!.value).toBe('3m 41s');
+    expect(pair('Best 1-go streak')!.value).toBe('1');
+    expect(pair('Current 1-go streak')!.value).toBe('0');
+    expect(pair('Best play streak')!.value).toBe('5');
+    expect(pair('Current play streak')!.value).toBe('5');
+  });
+
+  it('says the short word on screen and the full one in speech (brief 78)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(pair('Best time')!.short).toBe('Best');
+    expect(pair('Current 1-go streak')!.short).toBe('Current');
+    // The visible label is never the whole label — the words a screen reader
+    // hears are always the full ones.
+    expect(pair('Current play streak')!.short).toBe('Current');
+  });
+
+  it('colours only the Best figures with the second accent (brief 81)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    for (const label of ['Best time', 'Best 1-go streak', 'Best play streak']) {
+      expect(pair(label)!.isBest, label).toBe(true);
+    }
+    for (const label of ['Current time', 'Current 1-go streak', 'Current play streak']) {
+      expect(pair(label)!.isBest, label).toBe(false);
+    }
+  });
+
+  it('keeps every dt inside a dl, with dd after it', async () => {
+    // A dt with no dl ancestor is not a description list at all: it breaks the
+    // pairing and trips axe at serious level. The visual reversal is CSS only.
+    await render(RETURNING, 2, false, { seconds: 221 });
+    for (const dt of panel().querySelectorAll('dt')) {
+      expect(dt.closest('dl'), dt.textContent!).not.toBeNull();
+    }
+    for (const el of panel().querySelectorAll('.stat-box__pair')) {
+      expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD']);
+    }
+  });
+
+  it('shows a dash for Current time when this game has no valid time', async () => {
+    // A dash, matching the all-time rows, rather than the figure vanishing and
+    // leaving a lopsided box (brief 83 low-16).
+    await render(RETURNING, 2, false, {});
+    expect(pair('Current time')!.value).toBe('—');
+  });
+
+  it('shows the same number three times on a personal-best day', async () => {
+    // History is read AFTER today's row is written, so today's game is inside
+    // the best. Beat your record and it reads once under the stopwatch in Today
+    // and twice in the Time box. Deliberate, and pinned here so it is a decision
+    // rather than a discovery on the preview (brief 71, 73).
+    const history: HistoryEntry[] = [
+      { date: day(0), tries: 2, seconds: 80 },
+      { date: day(1), tries: 1, seconds: 300 },
+      { date: day(2), tries: 3, seconds: 400 },
+    ];
+    await render(history, 2, false, { seconds: 80 });
+    expect(figures()).toEqual(['2 goes', '1m 20s']);
+    expect(pair('Best time')!.value).toBe('1m 20s');
+    expect(pair('Current time')!.value).toBe('1m 20s');
+  });
+
+  it('puts no explanatory line inside a box or under the row (brief 45)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(block('best')!.querySelector('.stat-note')).toBeNull();
+    expect(text()).not.toContain('Miss a day and the streak starts again.');
+    expect(text()).not.toContain('Days in a row you have finished the puzzle.');
+    expect(text()).not.toContain('Days in a row you got it on your first guess.');
+  });
+
   it('reads "Solved!" and never "Solved in 0" when the goes are unknowable', async () => {
     // The reload after a saving-off solve: today's row is a marker, so neither
     // the goes nor the time were ever stored.
@@ -235,13 +332,10 @@ describe('the completion panel', () => {
     expect(figures()).toEqual([]);
   });
 
-  it('puts an explanatory line under every stat (brief 135)', async () => {
+  it('puts an explanatory line under every all-time stat (brief 135)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     const t = text();
     for (const line of [
-      'Days in a row you have finished the puzzle.',
-      'Days in a row you got it on your first guess.',
-      'Miss a day and the streak starts again.',
       'Daily puzzles you have finished.',
       'Puzzles you got on your first guess.',
       'Your average number of guesses.',

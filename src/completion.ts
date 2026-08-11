@@ -46,14 +46,12 @@ const dom = {
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
 //
-// The explanatory lines are the whole point of this build (brief 135): "streak"
-// currently explains nothing on screen. They are text under the stat, never a
-// tooltip.
+// Explanatory lines under the All-time rows only. The boxes carry none: the
+// redesign dropped them because "Best" over "Current" under a labelled icon is
+// already the explanation, and three sentences inside three small boxes was the
+// clutter the redesign was called for (redesign brief 45).
 
 const NOTES = {
-  playStreak: 'Days in a row you have finished the puzzle.',
-  firstGoStreak: 'Days in a row you got it on your first guess.',
-  streakPair: 'Miss a day and the streak starts again.',
   plays: 'Daily puzzles you have finished.',
   firstGoWins: 'Puzzles you got on your first guess.',
   avgGoes: 'Your average number of guesses.',
@@ -139,12 +137,39 @@ function statRow(label: string, value: string, note: string): string {
   </div>`;
 }
 
-function streakColumn(label: string, value: number, best: number, note: string): string {
-  return `<div class="stat-streak">
-    <dt>${label}</dt>
-    <dd class="stat-streak__value">${value}</dd>
-    <dd class="stat-streak__best">best ${best}</dd>
-    <dd class="stat-note">${note}</dd>
+/**
+ * One box: a title with its icon, and a description list of one or two pairs.
+ *
+ * The `dl` sits INSIDE the box, below the `h4`. A `dt` with no `dl` ancestor is
+ * not a description list at all — it breaks the pairing brief 46 relies on and
+ * trips axe's definition-list rule at serious level, which the accessibility
+ * spec runs over /solved in both colour schemes.
+ */
+function statBox(title: string, iconId: string, pairs: string): string {
+  return `<div class="stat-box shadow-box">
+    <h4 class="stat-box__title">
+      <svg class="stat-box__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${title}
+    </h4>
+    <dl class="m-0">${pairs}</dl>
+  </div>`;
+}
+
+/**
+ * One number and its label (brief 78).
+ *
+ * The short word on screen and the full one in speech are two separate spans,
+ * not a prefix and a hidden suffix: "Avg." is not the start of "Average time",
+ * so a suffix could never have produced the Average block's labels. One
+ * mechanism, both blocks.
+ *
+ * The number sits above its label on screen while the DOM stays `dt` then `dd`
+ * — the reversal is CSS (`.stat-box__pair`), because `dd` before `dt` is not
+ * conforming HTML and a screen reader must hear the label first.
+ */
+function statPair(shortLabel: string, fullLabel: string, value: string, isBest = false): string {
+  return `<div class="stat-box__pair">
+    <dt><span class="stat-box__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
+    <dd class="stat-box__value${isBest ? ' stat-box__value--best' : ''}">${value}</dd>
   </div>`;
 }
 
@@ -343,12 +368,22 @@ export function renderCompletion(
     const blocks = [block('this-game', 'Today', thisGame)];
 
     if (mode === 'full') {
-      blocks.push(block('streaks', 'Streaks',
-        `<dl class="stat-streaks">
-          ${streakColumn('Play streak', stats.playStreak, stats.bestPlayStreak, NOTES.playStreak)}
-          ${streakColumn('First-go streak', stats.firstGoStreak, stats.bestFirstGoStreak, NOTES.firstGoStreak)}
-        </dl>
-        <p class="stat-note">${NOTES.streakPair}</p>`));
+      // Three boxes: your record over where you are now. Today's time appears
+      // here as well as in Today, and on a personal-best day the same number
+      // appears three times — deliberate, and standing as Jamie's override of
+      // Dave's objection to the repeat (brief 71, 73).
+      blocks.push(block('best', 'Best',
+        `<div class="stat-boxes">
+          ${statBox('Time', 'icon-stopwatch',
+            statPair('Best', 'Best time', formatDuration(stats.bestTimeSeconds), true) +
+            statPair('Current', 'Current time', formatDuration(showTime ? seconds : null)))}
+          ${statBox('1-go', 'icon-calculator-check',
+            statPair('Best', 'Best 1-go streak', String(stats.bestFirstGoStreak), true) +
+            statPair('Current', 'Current 1-go streak', String(stats.firstGoStreak)))}
+          ${statBox('Plays', 'icon-gamepad',
+            statPair('Best', 'Best play streak', String(stats.bestPlayStreak), true) +
+            statPair('Current', 'Current play streak', String(stats.playStreak)))}
+        </div>`));
 
       const firstGo = stats.firstGoPercent === null
         ? String(stats.firstGoWins)

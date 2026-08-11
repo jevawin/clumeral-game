@@ -610,31 +610,6 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--color-text);
   }
 
-  /* Streaks — two columns that stack rather than squeeze. 22rem rather than a
-     pixel width so the stack also happens at 200% text on a wide screen, which
-     is the case brief 85 and 104 are really about. */
-  .stat-streaks {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  @media (max-width: 22rem) {
-    .stat-streaks { grid-template-columns: 1fr; }
-  }
-  .stat-streak__value {
-    font-family: "Inconsolata", monospace;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-accent);
-    line-height: 1.2;
-  }
-  .stat-streak__best {
-    font-size: 0.8125rem;
-    margin-block-start: 0.125rem;
-    color: var(--color-text);
-    opacity: 0.75;
-  }
-
   /* All time — open, but quiet: plain rows, smaller type, no boxes (brief 81). */
   .stat-row {
     display: flex;
