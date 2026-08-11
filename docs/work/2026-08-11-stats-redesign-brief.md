@@ -11,7 +11,9 @@ Numbering starts fresh at 1 and is append-only.
 
 Status: **CLOSED, 2026-08-11.** Every section settled. Dave acked the joint sections
 ("happy"); Jamie signed off accessibility and the brief as a whole ("Approved. DA it").
-One override rather than an ack — item 73. Next: `da-brief`, then Plan.
+One override rather than an ack — item 73. `da-brief` has run (items 74–83).
+**Reopened by it:** Dave's ack on the final design (item 74) and the duplication question
+(item 80). Everything else the review raised is answered in place.
 
 ## The source drawing
 
@@ -502,3 +504,137 @@ Jamie signs this section off and his sign-off blocks. Written 2026-08-11.
     new counting rule with unit tests behind it. A full Playwright battering would cost
     forty minutes to re-prove things this change cannot reach. (assumed — the proportional
     QA rule in `CLAUDE.md`)
+
+## The `da-brief` review — 2026-08-12
+
+A fresh-context devil's-advocate pass on this brief returned 2 High, 8 Medium and 9 Low
+findings. Every Medium and above is answered below. Where a finding needs a person rather
+than a decision from me, it says so and names them.
+
+74. **HIGH 1 — Dave's ack predates the design it is claimed to cover. UPHELD, and it needs
+    Dave.** The review checked the commits: Dave's "happy" (`89e351c`) lands *before* items
+    66–68 (`35a620d`) and items 70–71 (`491fb5f`). So the headings, the fourth block, every
+    label and the Time box's "Current" are all closed on a joint section with one
+    signature. Item 73's override covers item 71 only.
+    Not something I can fix by writing. **Dave needs to see the final shape and say yes or
+    no**, and until he does §7 and §8 are settled but not acked.
+
+75. **HIGH 2 — the second accent colour must be CSS, not a value computed at render.
+    UPHELD, and item 17 is wrong.** The review is right: accent colour resolves entirely in
+    CSS today (`colours.ts` sets `data-theme`, `tailwind.css` maps it to `--accent-h` and
+    `--accent-c`), and chroma differs **per theme and per mode**. Computing the next hue in
+    JS would need a light/dark branch, and `palette.ts` warns that using the wrong mode's
+    chroma puts Cherry out of gamut. Worse, the panel renders once — a player who changes
+    theme or flips to dark mode while sitting on `/solved` would get the theme colour
+    updating and the "best" colour frozen.
+    **The fix: add `--accent-best-h` and `--accent-best-c` alongside the existing pair in
+    each `html[data-theme=…]` block**, light and dark, taken from the same table in
+    `palette.ts`. The best figure then uses `--accent-best-*` exactly as everything else
+    uses `--accent-*`, and a theme or mode change moves both together with no re-render.
+    Item 17 is superseded: nothing is derived at render at all.
+    The behaviour this settles, which should have been a question in §5: **yes, the best
+    figure's colour follows a theme change made while the completion screen is open.**
+
+76. **MEDIUM 3 — the panel has six modes and the brief covered three. UPHELD.** `panelMode`
+    returns `random | archive | marker | saving-off | new | full`. Adding the two missing:
+    - **`marker`** (played, not recorded — `tries` is null): item 38 deletes the sentence,
+      which in this mode was the whole of the block. So "Today" would render a heading, a
+      rule and nothing. **Decision: in `marker` mode the Today block keeps the plain word
+      `Solved!` and shows no icon figures.** There is nothing to put in them.
+    - **`saving-off`**: it returns before the reveal check, so those players never see the
+      boxes however long they have played. Item 9 described only half the gate. **No
+      change in behaviour — the boxes stay hidden for a player who has saving off** — but
+      it is now written down rather than implied.
+    - `RANDOM_LINE` and `NEW_PLAYER_LINE` keep their present position, directly under the
+      Today block's figures.
+
+77. **MEDIUM 4 — the fit arithmetic used the wrong padding, and the breakpoint contradicts
+    it. UPHELD; item 69's numbers are corrected here.** The completion container is
+    `max-w-[390px] … px-6` (index.html:345), so 24px each side, not 16px.
+    - At a 390px viewport or wider the content is capped at 342px, giving 109px per box.
+      Comfortable.
+    - At 320px — the narrowest phone we support — it is 272px, giving 85px per box and
+      about 69px usable inside the box padding. "1m 38s" bold at 18px is about 59px and
+      fits; **"12h 05m" is about 69px and does not**, and hour-long times are now more
+      likely, not less, because item 28 stopped excluding them.
+    - Item 53's kept breakpoint made the whole argument moot anyway: `.stat-streaks` falls
+      to one column at 22rem, which is 352px, so at 320px the row was never three across.
+    **Decision: three across from 360px up; one column below it.** Real phones at 375px and
+    above — which is nearly all of them — get Jamie's Strava layout. The 320px class of
+    device gets a single column rather than a squeezed one. The figures also get a `clamp()`
+    so they step down slightly in the tight band instead of wrapping.
+
+78. **MEDIUM 5 — the shortened labels break the promise in item 46. UPHELD.** With item 68
+    the panel has "Best / Current" three times over and "Avg." twice, and a screen reader
+    walking the description lists hears the same two words repeated with the box title
+    outside the list.
+    **The fix: the `dt` carries the full words and the screen shows the short ones.** The
+    markup reads "Best time", "Best 1-go streak", "Best play streak", "Average time",
+    "Average goes"; the visible text is trimmed with a span, not by shortening the label
+    itself. Nothing changes on screen and the promise in item 46 holds.
+    Also from this finding: item 52 said three `h3` headings and there are now four. The
+    Average block gets an `h3` and a rule like the rest.
+
+79. **MEDIUM 6 — item 19's stated reason for inline SVG is false. UPHELD.**
+    `public/sprites.svg` already exists with 28 symbols on `currentColor`, and
+    `completion.ts` already uses it three times. So "they must take the theme colour" does
+    not choose between the options.
+    **Decision: put the three new icons in the existing sprite sheet.** One icon mechanism
+    in this file rather than two, and they come down in a separately cached request instead
+    of as bytes in the JS bundle. Item 19 is superseded.
+
+80. **MEDIUM 7 and 8 — the panel now says several things twice, and only a person can
+    decide what comes out. THIS ONE NEEDS JAMIE AND DAVE.** Two duplications, both created
+    by decisions taken after item 6 froze the All-time list:
+    - **"Fastest first-go win" against the new best time.** Best-of-any-goes is by
+      definition equal to or faster than fastest-first-go, so two similarly named times
+      will usually disagree, a short scroll apart, with nothing explaining why.
+    - **The Average block against the All-time rows.** "Average time" and "Average goes"
+      now each appear twice on one screen.
+    My rec: **take those three rows out of All time** — average time, average goes and
+    fastest first-go win — leaving All time as plays, first-go wins and the chart. Why: the
+    new blocks say the same things better and higher up, and Dave's original complaint was
+    that the screen is long. This shortens it by three rows without losing a single figure.
+    The counter: item 6 was Jamie's explicit "All time is fine as it is now", and that was
+    said before the Average block existed.
+
+81. **MEDIUM 9 — item 31 left several figures with no colour. UPHELD.** The rule now covers
+    every number on the panel: **the "best" figures take the second accent; everything else
+    takes the player's own theme colour** — the Today figures, the "Current" figures and
+    both "Avg." figures. One exception, one rule, nothing unstated.
+
+82. **MEDIUM 10 — item 45 was closed by inference. PARTLY UPHELD.** The review is right that
+    no explicit ack exists and that item 45 asked for one. I disagree that it is unresolved:
+    Jamie's "Approved" on 2026-08-11 came after he had seen item 45 written up and had
+    himself asked whether shorter words would let the lines fit, which item 69 answered.
+    Recorded as **covered by Jamie's sign-off of the brief as a whole**, not as a separate
+    ack — and flagged here so it is visible rather than buried.
+
+83. **The Lows, answered.**
+    - **11** — right, the best-time test cannot fail; the average-time test is the one that
+      discriminates. Item 58 is corrected to say so.
+    - **12** — right about `buildAnnouncement`; item 59 should assert the announcement is
+      unchanged, not that it contains a sentence it never contained. `heroLine` keeps its
+      `Solved!` branch for `marker` mode (item 76) and loses the rest, and the forged-history
+      test stays.
+    - **13** — right, `.stat-block__head h3` is uppercase today. **All-caps stays on the
+      block headings**, which is what items 6 and 43 preserve; item 30's "no all-caps"
+      applies to the labels inside the boxes, which is what Jamie was talking about.
+    - **14** — right, `.digit-box` carries no shadow. **The boxes take the border, surface
+      and rounding, and the `--shadow-box` token as a utility with its dark variant**, the
+      way the digit boxes do at their usage sites.
+    - **15** — right. `types.ts`, `play-timer.ts` and `demo-history.ts` all mention the
+      thirty-minute rule and go stale; the demo seed's 2210-second row keeps its comment
+      corrected rather than the row removed, since it still exercises an hour-plus format.
+      Added to item 18.
+    - **16** — right, "Current" can be a dash when today's row has no time. It shows "—",
+      matching the All-time rows' existing behaviour rather than vanishing.
+    - **17** — fair. The block is titled "Best" and holds a current figure in every box.
+      Left as Jamie chose it; noted for him rather than reopened.
+    - **18** — right that item 8 is ambiguous. **Dave's alternative branches off `staging`**,
+      so the two designs are compared against the same base rather than one inheriting the
+      other.
+    - **19** — the QA level. My view: **light still stands.** The diff is bigger but it is
+      markup, CSS and one counting rule, with no server, storage or routing change; unit
+      tests cover the counting and the markup, and item 63's eyeball on the preview covers
+      the look. Flagged for Jamie rather than changed on my own.
