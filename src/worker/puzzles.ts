@@ -73,10 +73,17 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     --chroma-grape: 0.237;
     --accent-h: 145;
     --accent-c: var(--chroma-lime);
+    /* The completion panel's "best" colour. /archive never shows it, but the
+       parity test compares every --accent-* declaration between the two
+       stylesheets on purpose: a token in one file and not the other is the #243
+       failure it exists to catch. */
+    --accent-best-h: 5;
+    --accent-best-c: var(--chroma-cherry);
     --color-bg:      #FAFAFA;
     --color-surface: #FFFFFF;
     --color-text:    #262624;
     --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+    --color-accent-best: oklch(var(--accent-l) var(--accent-best-c) var(--accent-best-h));
     --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
     --color-success: oklch(var(--accent-l) var(--chroma-lime) 145);
     --color-error:   oklch(var(--accent-l) var(--chroma-cherry) 5);
@@ -89,6 +96,7 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     --chroma-blueberry:   0.111;
     --chroma-grape: 0.140;
     --accent-c: var(--chroma-lime);
+    --accent-best-c: var(--chroma-cherry);
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
     --color-text:    #FAF8F4;
@@ -99,10 +107,10 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
      src/tailwind.css. The inline script above sets the attribute from the saved
      accent. Chroma is truncated to 3dp, never rounded: Cherry dark's sRGB ceiling
      is 0.135523, so 0.136 would clip and shift lightness. */
-  :root[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); }
-  :root[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); }
-  :root[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); }
-  :root[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); }
+  :root[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); --accent-best-h: 5; --accent-best-c: var(--chroma-cherry); }
+  :root[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); --accent-best-h: 262; --accent-best-c: var(--chroma-blueberry); }
+  :root[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); --accent-best-h: 305; --accent-best-c: var(--chroma-grape); }
+  :root[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); --accent-best-h: 145; --accent-best-c: var(--chroma-lime); }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: "Quicksand", system-ui, sans-serif; }

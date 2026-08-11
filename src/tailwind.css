@@ -63,10 +63,19 @@
   --accent-h: 145;
   --accent-c: var(--chroma-lime);
 
+  /* The second accent, for "best" figures on the completion panel: the NEXT
+     theme along, wrapping Grape back to Lime (redesign brief 31, 60). Chroma
+     names the next hue's own --chroma-* variable rather than reusing the
+     current one, so it follows dark mode and stays inside sRGB. Defaults are
+     Lime's next colour, Cherry. */
+  --accent-best-h: 5;
+  --accent-best-c: var(--chroma-cherry);
+
   --color-bg:      #FAFAFA;
   --color-surface: #FFFFFF;
   --color-text:    #262624;
   --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --color-accent-best: oklch(var(--accent-l) var(--accent-best-c) var(--accent-best-h));
   --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
 
   /* Success and error are the Lime and Cherry themes reused, not colours of their
@@ -103,10 +112,10 @@
    its 0.135523 limit and out of gamut, which clips and shifts lightness — the
    one thing the AA guarantee rests on. tests/palette-contrast.spec.ts checks
    the gamut, not just the ratio. */
-html[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); }
-html[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); }
-html[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); }
-html[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); }
+html[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); --accent-best-h: 5; --accent-best-c: var(--chroma-cherry); }
+html[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); --accent-best-h: 262; --accent-best-c: var(--chroma-blueberry); }
+html[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); --accent-best-h: 305; --accent-best-c: var(--chroma-grape); }
+html[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); --accent-best-h: 145; --accent-best-c: var(--chroma-lime); }
 
 /* Default body font — Quicksand 300 to match the clue lead style. Buttons / headings / tag pills override via font-bold etc. */
 html, body { font-family: var(--font-sans); font-weight: 400; }
@@ -125,6 +134,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     --chroma-blueberry:   0.111;
     --chroma-grape: 0.140;
     --accent-c: var(--chroma-lime);
+    --accent-best-c: var(--chroma-cherry);
 
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
