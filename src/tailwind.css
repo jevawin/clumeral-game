@@ -507,6 +507,109 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     line-height: 1.2;
   }
 
+  /* ─── The redesign: figures and boxes ──────────────────────────────────────
+     Three rungs of type size, used by every block (redesign brief 29):
+       1. the Today icons and figures      — the only thing that just happened
+       2. the box titles and their numbers
+       3. the small labels inside a box
+     Numbers are bold; box titles are the same size and NOT bold; labels are
+     regular in the ordinary foreground colour (brief 30). All-caps stays on the
+     block headings and never appears inside a box (brief 83 low-13). */
+
+  /* Today — the two figures side by side. Wraps rather than overflows: an
+     hour-long time makes the pair too wide for a 320px screen. */
+  .stat-today {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .stat-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .stat-figure__icon {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    flex: none;
+    /* Baseline-aligned text beside a baseline-less SVG sits high, so nudge it
+       down onto the same optical line as the number. */
+    transform: translateY(0.2em);
+  }
+  .stat-figure__value {
+    font-family: "Inconsolata", monospace;
+    font-weight: 700;
+    font-size: clamp(1.375rem, 7vw, 1.75rem);
+    line-height: 1.2;
+    color: var(--color-accent);
+  }
+
+  /* Best and Average — boxes across, stacking below 360px. 22.5rem rather than
+     360px so the stack also happens at large browser text on a wide screen,
+     which is what brief 53 is really about. */
+  .stat-boxes {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  @media (min-width: 22.5rem) {
+    .stat-boxes { grid-template-columns: repeat(3, 1fr); }
+    .stat-boxes--two { grid-template-columns: repeat(2, 1fr); }
+  }
+  /* The play screen's digit-box styling, so a theme change moves both screens
+     together (brief 20, 32). The offset shadow is the shadow-box utility on the
+     element, exactly as the digit boxes do it — --shadow-box is a color-mix over
+     --color-text, which flips in html.dark, so one utility covers both modes. */
+  .stat-box {
+    background-color: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+  }
+  .stat-box__title {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: "Inconsolata", monospace;
+    font-weight: 400;
+    font-size: clamp(1.125rem, 5vw, 1.375rem);
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+  .stat-box__icon {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    flex: none;
+  }
+  /* column-reverse so the number appears ABOVE its label while the DOM stays
+     dt then dd. The mismatch is deliberate and is the point: a screen reader
+     must hear "Best time, 1m 20s", and dd before dt is not conforming HTML.
+     Meaning survives the reorder because the pairing is carried by the
+     description list rather than by position (WCAG 1.3.2). Do not "fix" this by
+     swapping the markup. */
+  .stat-box__pair {
+    display: flex;
+    flex-direction: column-reverse;
+    margin-block-start: 0.375rem;
+  }
+  .stat-box__value {
+    margin: 0;
+    font-family: "Inconsolata", monospace;
+    font-weight: 700;
+    font-size: clamp(1.125rem, 5vw, 1.375rem);
+    line-height: 1.2;
+    color: var(--color-accent);
+  }
+  /* The one exception to "every figure is the player's own accent" (brief 81). */
+  .stat-box__value--best { color: var(--color-accent-best); }
+  /* 14px: rung 3 sits between All time's two sizes (0.9375rem and 0.8125rem),
+     and is the size the fit arithmetic at brief 69 was done at. */
+  .stat-box__label {
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--color-text);
+  }
+
   /* Streaks — two columns that stack rather than squeeze. 22rem rather than a
      pixel width so the stack also happens at 200% text on a wide screen, which
      is the case brief 85 and 104 are really about. */
