@@ -69,9 +69,9 @@ function pair(fullLabel: string): { value: string; short: string; isBest: boolea
   return null;
 }
 
-/** The titles of every box on the panel, in order. */
-function boxTitles(): string[] {
-  return [...panel().querySelectorAll('.stat-box__title')].map((el) => el.textContent!.trim());
+/** The box titles inside one block, in order. */
+function boxTitles(id: string): string[] {
+  return [...block(id)!.querySelectorAll('.stat-box__title')].map((el) => el.textContent!.trim());
 }
 
 /** The visible values of the Today block's figures, in order. */
@@ -118,11 +118,12 @@ describe('the completion panel', () => {
 
   afterEach(() => { vi.useRealTimers(); });
 
-  it('renders all three blocks for a returning player', async () => {
+  it('renders all four blocks for a returning player', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
 
     expect(block('this-game')).not.toBeNull();
     expect(block('best')).not.toBeNull();
+    expect(block('average')).not.toBeNull();
     expect(block('all-time')).not.toBeNull();
 
     expect(figures()).toEqual(['2 goes', '3m 41s']);
@@ -246,7 +247,7 @@ describe('the completion panel', () => {
   it('shows three Best boxes: your record over where you are now', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     expect(block('best')!.querySelector('h3')!.textContent).toBe('Best');
-    expect(boxTitles()).toEqual(['Time', '1-go', 'Plays']);
+    expect(boxTitles('best')).toEqual(['Time', '1-go', 'Plays']);
     // Every box title is an h4 under the block's h3 (brief 52).
     for (const t of block('best')!.querySelectorAll('.stat-box__title')) {
       expect(t.tagName).toBe('H4');
@@ -311,6 +312,40 @@ describe('the completion panel', () => {
     expect(figures()).toEqual(['2 goes', '1m 20s']);
     expect(pair('Best time')!.value).toBe('1m 20s');
     expect(pair('Current time')!.value).toBe('1m 20s');
+  });
+
+  it('shows two Average boxes, labelled "Avg." on screen (brief 67, 72)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    const average = block('average')!;
+    expect(average.querySelector('h3')!.textContent).toBe('Average');
+    expect(average.querySelectorAll('.stat-box').length).toBe(2);
+    expect(boxTitles('average')).toEqual(['Time', 'Goes']);
+    expect(pair('Average time')!.value).toBe('4m 06s');
+    expect(pair('Average goes')!.value).toBe('2.4');
+    expect(pair('Average time')!.short).toBe('Avg.');
+    expect(pair('Average goes')!.short).toBe('Avg.');
+  });
+
+  it('gives the Average figures the ordinary accent, not the Best one (brief 81)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(pair('Average time')!.isBest).toBe(false);
+    expect(pair('Average goes')!.isBest).toBe(false);
+  });
+
+  it('shows a dash in an Average box when there is nothing to average', async () => {
+    await render([
+      { date: day(0), tries: 2 },
+      { date: day(1), tries: 3 },
+      { date: day(2), tries: 3 },
+    ], 2);
+    expect(pair('Average time')!.value).toBe('—');
+  });
+
+  it('hides the Average block before the third game and when saving is off', async () => {
+    await render([{ date: day(0), tries: 2, seconds: 100 }], 2, false, { seconds: 100 });
+    expect(block('average')).toBeNull();
+    await render(RETURNING, 2, false, { seconds: 221 }, { saveScore: false });
+    expect(block('average')).toBeNull();
   });
 
   it('puts no explanatory line inside a box or under the row (brief 45)', async () => {
