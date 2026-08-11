@@ -305,16 +305,26 @@
               <button data-submit class="btn btn-solid w-full" type="button"><svg aria-hidden="true"><use href="/sprites.svg#icon-tick"/></svg>Submit answer</button>
             </div>
 
-            <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css) -->
-            <div data-save class="items-center gap-1.5 mt-3.5 text-base text-text font-[Quicksand]">
-              <input type="checkbox" checked id="cw-ck" data-save-check />
-              <label for="cw-ck" class="flex items-center gap-1.5 cursor-pointer">
-                <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
-                <svg class="ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
-                Keep my score in a
-                <svg class="inline" width="13" height="13" aria-hidden="true"><use href="/sprites.svg#icon-cookie"/></svg>
-                cookie
-              </label>
+            <!-- Save score row — visible when submit-wrap sibling is shown (CSS rule in tailwind.css).
+                 The checkbox keeps its own label permanently; the warning and the countdown
+                 appear as two lines underneath it, left-aligned with the label's text (P-02).
+                 Swapping the label for the warning would leave the control not saying what it
+                 does, and would fail WCAG 2.5.3 Label in Name, which voice control depends on. -->
+            <div data-save class="flex-col mt-3.5 text-base text-text font-[Quicksand]">
+              <div class="flex items-center gap-1.5">
+                <input type="checkbox" checked id="cw-ck" data-save-check aria-describedby="cw-save-warning" />
+                <label for="cw-ck" class="flex items-center gap-1.5 cursor-pointer">
+                  <svg class="ck-on" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-check"/></svg>
+                  <svg class="ck-off" width="16" height="16" aria-hidden="true"><use href="/sprites.svg#icon-uncheck"/></svg>
+                  Save my scores on this device
+                </label>
+              </div>
+              <!-- Always in the layout, driven by text content: a live region toggled in and
+                   out of the layout is unreliably announced (VoiceOver in particular). -->
+              <p data-save-warning id="cw-save-warning" class="save-note save-note--warn" role="status" aria-live="polite"></p>
+              <!-- Deliberately NOT live — five announcements in five seconds is noise. -->
+              <p data-save-countdown class="save-note"></p>
+              <p data-save-live class="sr-only" role="status" aria-live="polite"></p>
             </div>
 
             <!-- Feedback -->
@@ -338,8 +348,13 @@
           <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
           <p data-completion-subheading class="text-base text-text"></p>
 
-          <!-- Stats grid -->
-          <div data-completion-stats class="grid grid-cols-2 gap-4 w-full"></div>
+          <!-- Stat blocks — This game, Streaks, All time. Each block is written by
+               completion.ts and is ABSENT rather than hidden when it does not apply:
+               a hidden block can still reach the accessibility tree, and a screen
+               reader landing on an empty "All time" heading is exactly the
+               "looks broken" impression the reveal gate exists to avoid. -->
+          <div data-completion-panel class="w-full flex flex-col gap-6 text-left"></div>
+
 
           <!-- Countdown -->
           <p data-completion-countdown class="text-base text-text"></p>
@@ -356,6 +371,16 @@
         </div>
       </section>
     </main>
+
+    <!-- One polite announcement of the result (brief 126, 139).
+
+         Deliberately OUTSIDE every [data-screen] section. A live region only
+         announces a CHANGE to a region the assistive tech was already watching —
+         and each screen goes from display:none to displayed, so a region living
+         inside one arrives complete, as inserted content, which screen readers
+         routinely say nothing about. Out here it is in the accessibility tree
+         from first paint and only its text ever changes. -->
+    <p data-completion-live class="sr-only" role="status" aria-live="polite"></p>
 
     <footer class="text-center py-4 text-text text-sm font-[Quicksand]">
       Made with <svg role="img" aria-label="love" class="inline-block w-4 h-4 align-[-0.15em] text-accent" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> by Jamie &amp; Dave. &copy; 2026.

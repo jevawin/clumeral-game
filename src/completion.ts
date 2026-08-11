@@ -1,9 +1,18 @@
 // Clumeral — completion.ts
-// Renders completion screen: heading, stats grid, countdown, feedback button.
+// Renders the completion screen: heading, the three stat blocks, countdown,
+// feedback button. Rendering only — the counting rules live in player-stats.ts
+// so #163 and #148 can read the same numbers instead of copying them.
 
-import { loadHistory } from './storage.ts';
-import { todayKey, localDateKey } from './date.ts';
-import type { HistoryEntry } from './types.ts';
+import { loadHistory, loadPrefs } from './storage.ts';
+import { todayKey } from './date.ts';
+import {
+  computePlayerStats,
+  formatDuration,
+  speakDuration,
+  validSeconds,
+  REVEAL_AFTER_GAMES,
+  type PlayerStats,
+} from './player-stats.ts';
 
 
 // ─── SVG ─────────────────────────────────────────────────────────────────────
@@ -26,7 +35,8 @@ const COMPLETION_OCTO_SVG = `<svg aria-hidden="true" width="96" height="96" view
 const dom = {
   heading: document.querySelector('[data-completion-heading]') as HTMLElement | null,
   subheading: document.querySelector('[data-completion-subheading]') as HTMLElement | null,
-  stats: document.querySelector('[data-completion-stats]') as HTMLElement | null,
+  panel: document.querySelector('[data-completion-panel]') as HTMLElement | null,
+  live: document.querySelector('[data-completion-live]') as HTMLElement | null,
   countdown: document.querySelector('[data-completion-countdown]') as HTMLElement | null,
   feedback: document.querySelector('[data-completion-feedback]') as HTMLElement | null,
   octo: document.querySelector('[data-completion-octo]') as HTMLElement | null,
@@ -34,69 +44,58 @@ const dom = {
 };
 
 
-// ─── Stats Computation ───────────────────────────────────────────────────────
+// ─── Copy ────────────────────────────────────────────────────────────────────
+//
+// The explanatory lines are the whole point of this build (brief 135): "streak"
+// currently explains nothing on screen. They are text under the stat, never a
+// tooltip.
 
-interface Stats {
-  played: number;
-  avgTries: string;
-  streak: number;
-  bestStreak: number;
-}
+const NOTES = {
+  playStreak: 'Days in a row you have finished the puzzle.',
+  firstGoStreak: 'Days in a row you got it on your first guess.',
+  streakPair: 'Miss a day and the streak starts again.',
+  plays: 'Daily puzzles you have finished.',
+  firstGoWins: 'Puzzles you got on your first guess.',
+  avgGoes: 'Your average number of guesses.',
+  avgTime: 'How long you usually take.',
+  fastest: 'Your quickest win on a first guess.',
+} as const;
 
-function computeStats(history: HistoryEntry[]): Stats {
-  // Archive solves (date != today) are tagged `archived: true` in dlng_history and MUST NOT
-  // affect any daily stat. They are recorded only so archive replay and the archive Tries
-  // column can detect a prior solve by date. Old un-tagged entries are live daily solves.
-  // filter() returns a new array — the passed-in array is never mutated.
-  const live = history.filter((h) => h.archived !== true);
+const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
+const RANDOM_LINE = "Random puzzles don't count towards your stats.";
+const CHART_LABEL = 'How many goes you take';
 
-  const played = live.length;
-  const avgTries = played > 0
-    ? (live.reduce((s, h) => s + h.tries, 0) / played).toFixed(1)
-    : '0';
 
-  // Stored dlng_history may be unsorted (recordGame historically prepended in play order),
-  // so a single out-of-order entry would create a false early gap and under-count the streak.
-  // Sort a COPY date-descending before walking — never mutate the passed-in array.
-  const sorted = [...live].sort((a, b) => b.date.localeCompare(a.date));
+// ─── Which blocks exist ──────────────────────────────────────────────────────
 
-  // Single pass for bestStreak; capture current streak (from today) at first gap
-  let bestStreak = 0;
-  let currentRun = 0;
-  let streak = 0;
-  let streakBroken = false;
-  let prevDate: Date | null = null;
+// One value, one switch, so the six states cannot drift apart.
+//
+//   random      a random puzzle — no history, no streaks, no totals
+//   archive     an archive replay — the minimal panel it has today
+//   marker      a reload after a saving-off solve: the goes and the time were
+//               never stored, so neither can be shown
+//   saving-off  score saving is switched off — this game only, from memory
+//   new         fewer than three countable games — nothing to show yet
+//   full        all three blocks
+//
+// NOTHING about score saving appears on this panel in any of them (P-01). The
+// setting lives on the play screen, where the consent happens; the discoverable
+// opt-out is deferred to the menu ticket (#309). The silence is deliberate.
+type PanelMode = 'random' | 'archive' | 'marker' | 'saving-off' | 'new' | 'full';
 
-  for (const entry of sorted) {
-    const d = new Date(entry.date + 'T00:00:00'); // local midnight — avoids UTC date shift
-    if (!prevDate) {
-      currentRun = 1;
-    } else {
-      const dayDiff = Math.round((prevDate.getTime() - d.getTime()) / 86400000);
-      if (dayDiff === 1) {
-        currentRun++;
-      } else {
-        if (!streakBroken) { streak = currentRun; streakBroken = true; }
-        currentRun = 1;
-      }
-    }
-    if (currentRun > bestStreak) bestStreak = currentRun;
-    prevDate = d;
-  }
-  // If streak never broke, the entire history is one consecutive run
-  if (!streakBroken) streak = currentRun;
-
-  // Recency gate (WR-01): only report a live streak when the leading entry is today or
-  // yesterday. A run that ended more than 1 day ago is stale — report 0 so the UI does
-  // not show a "current streak" for a player who has not played in days.
-  const todayStr = todayKey();
-  const yesterdayDate = new Date(todayStr + 'T00:00:00');
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterdayStr = localDateKey(yesterdayDate);
-  const mostRecent = sorted[0]?.date;
-  const recent = mostRecent === todayStr || mostRecent === yesterdayStr;
-
-  return { played, avgTries, streak: recent ? streak : 0, bestStreak };
+function panelMode(
+  isRandom: boolean,
+  isArchivedOtherDate: boolean,
+  tries: number | null,
+  stats: PlayerStats,
+): PanelMode {
+  if (isRandom) return 'random';
+  if (isArchivedOtherDate) return 'archive';
+  // tries === null means "played, not recorded" — the marker's whole point.
+  if (tries === null) return 'marker';
+  if (!loadPrefs().saveScore) return 'saving-off';
+  if (stats.countableGames <= REVEAL_AFTER_GAMES) return 'new';
+  return 'full';
 }
 
 
@@ -117,18 +116,148 @@ function formatCountdown(isRandom: boolean): string | null {
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 
-function renderStatBox(value: string | number, label: string): string {
-  return `<div class="bg-surface border border-border rounded-md p-4 text-center">
-    <span class="block text-3xl font-bold font-mono text-text">${value}</span>
-    <span class="text-sm text-text mt-1 block">${label}</span>
+// A block is a <section> with its own heading, so a screen reader can jump
+// between them. The rule beside the heading is decorative.
+function block(id: string, heading: string, body: string): string {
+  return `<section data-stat-block="${id}" class="stat-block" aria-labelledby="stat-head-${id}">
+    <div class="stat-block__head">
+      <h3 id="stat-head-${id}">${heading}</h3>
+      <span class="stat-block__rule" aria-hidden="true"></span>
+    </div>
+    ${body}
+  </section>`;
+}
+
+// Every number is a <dl> pair, so it is read with its label attached rather than
+// as a loose figure (brief 97). The explanatory line is a second <dd> under the
+// number — valid against a single <dt>, and it reads in the right order.
+function statRow(label: string, value: string, note: string): string {
+  return `<div class="stat-row">
+    <dt>${label}</dt>
+    <dd>${value}</dd>
+    <dd class="stat-note">${note}</dd>
   </div>`;
 }
 
-export interface RenderCompletionOpts { activeDate?: string; todayLocal?: string }
+function streakColumn(label: string, value: number, best: number, note: string): string {
+  return `<div class="stat-streak">
+    <dt>${label}</dt>
+    <dd class="stat-streak__value">${value}</dd>
+    <dd class="stat-streak__best">best ${best}</dd>
+    <dd class="stat-note">${note}</dd>
+  </div>`;
+}
+
+function goesChart(distribution: PlayerStats['goesDistribution']): string {
+  const max = Math.max(1, ...distribution.map((d) => d.count));
+  const rows = distribution
+    .map((d) => {
+      const pct = Math.round((d.count / max) * 100);
+      // The bar is aria-hidden; the count beside it is the accessible content,
+      // so nothing in the chart is available only as a picture (brief 98).
+      return `<li class="goes-row" data-goes-row>
+        <span data-goes-label>${d.bucket}</span>
+        <span class="goes-row__track" aria-hidden="true"><span class="goes-row__fill" style="inline-size: ${pct}%"></span></span>
+        <span class="goes-row__count" data-goes-count>${d.count}</span>
+      </li>`;
+    })
+    .join('');
+  return `<div class="goes-chart">
+    <h4 id="goes-chart-label" class="stat-note">${CHART_LABEL}</h4>
+    <ul class="list-none p-0 m-0" aria-labelledby="goes-chart-label">${rows}</ul>
+  </div>`;
+}
+
+/**
+ * The hero: `Solved in 1 go, 0m 30s`.
+ *
+ * `null` goes means played but not recorded — never "Solved in 0". An unknown
+ * time drops the whole clause rather than showing a dash: a dash is right in a
+ * column of figures and wrong in the middle of a sentence.
+ */
+export function heroLine(tries: number | null, seconds: number | null, showTime: boolean): string {
+  // Guarded because this string reaches innerHTML and `tries` comes from
+  // dlng_history, which loadHistory does not validate — unlike loadActive and
+  // loadUndo next door, which validate every field precisely because that store
+  // is editable by whoever owns the browser. Anything that is not a real count
+  // of goes is "played, not recorded", which is already a state this handles.
+  if (tries === null || !Number.isInteger(tries) || tries < 1) return 'Solved!';
+  const goes = `Solved in ${tries} ${tries === 1 ? 'go' : 'goes'}`;
+  if (!showTime || seconds === null) return goes;
+  return `${goes}, ${formatDuration(seconds)}`;
+}
+
+/** Archive replays and markers carry no timing, on screen or in speech. */
+function showsTime(mode: PanelMode): boolean {
+  return mode !== 'archive' && mode !== 'marker';
+}
+
+
+// ─── The one announcement (brief 126, 139) ───────────────────────────────────
+//
+// renderCompletion runs BEFORE the completion screen becomes visible — the very
+// next statement in app.ts is replaceRoute('/solved') or showScreen('completion'),
+// and at that moment the section still carries aria-hidden="true". A live region
+// inside an aria-hidden subtree is not spoken, so writing it at render time would
+// announce nothing at all. So the text is prepared here and written when the
+// transition says the screen is up.
+let pendingAnnouncement: string | null = null;
+let announced = false;
+
+/**
+ * Called when a new puzzle starts, so the next solve announces again.
+ *
+ * Clears the region's text as well as the pending flag. The region lives outside
+ * every screen now, so it is permanently in the accessibility tree — stale text
+ * would otherwise sit there for the life of the session, and a screen-reader
+ * user browsing /play would meet last game's result between the main content and
+ * the footer. Clearing also means two identical solves in a row still announce
+ * twice: assigning the same textContent is not a mutation, so without this the
+ * second would be silent.
+ */
+export function resetCompletionAnnouncement(): void {
+  pendingAnnouncement = null;
+  announced = false;
+  if (dom.live) dom.live.textContent = '';
+}
+
+document.addEventListener('screens:enter', (e) => {
+  const screen = (e as CustomEvent).detail?.screen;
+  if (screen !== 'completion') {
+    // Leaving the result behind on a screen it does not describe.
+    if (dom.live) dom.live.textContent = '';
+    return;
+  }
+  if (pendingAnnouncement === null) return;
+  if (dom.live) dom.live.textContent = pendingAnnouncement;
+  pendingAnnouncement = null;
+});
+
+function buildAnnouncement(
+  tries: number | null,
+  seconds: number | null,
+  playStreak: number | null,
+): string {
+  // Spelled out for speech: a screen reader saying "three colon forty-one" is
+  // the reason this is not the display string.
+  const spoken = speakDuration(seconds);
+  return [
+    tries === null ? 'Solved.' : `Solved in ${tries}.`,
+    spoken ? `${spoken}.` : '',
+    playStreak === null ? '' : `Play streak ${playStreak}.`,
+  ].filter(Boolean).join(' ');
+}
+
+export interface RenderCompletionOpts {
+  activeDate?: string;
+  todayLocal?: string;
+  /** This game's counted time. Absent or invalid renders a dash, never 0:00. */
+  seconds?: number;
+}
 
 export function renderCompletion(
   puzzleNum: number,
-  tries: number,
+  tries: number | null,
   isRandom: boolean,
   opts: RenderCompletionOpts = {}
 ): void {
@@ -137,30 +266,76 @@ export function renderCompletion(
     dom.octo.innerHTML = COMPLETION_OCTO_SVG;
   }
 
-  // Heading
+  // Heading. The old subheading is now the hero line inside the This game block,
+  // so it is cleared rather than left saying the same thing twice.
   if (dom.heading) {
     dom.heading.textContent = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
   }
-  if (dom.subheading) {
-    dom.subheading.textContent = `Solved in ${tries} ${tries === 1 ? 'try' : 'tries'}`;
+  if (dom.subheading) dom.subheading.textContent = '';
+
+  const isArchivedOtherDate =
+    !isRandom &&
+    typeof opts.activeDate === 'string' &&
+    typeof opts.todayLocal === 'string' &&
+    opts.activeDate !== opts.todayLocal;
+
+  // Everything is recomputed from history on every render, never kept as a
+  // running total — a running total drifts the moment one write is missed
+  // (brief 55).
+  const stats = computePlayerStats(loadHistory(), todayKey());
+  const mode = panelMode(isRandom, isArchivedOtherDate, tries, stats);
+  const seconds = validSeconds(opts.seconds);
+
+  if (dom.panel) {
+    // Archive replays keep the minimal panel they have today: no streaks, no
+    // totals and no timing (brief 54).
+    const showTime = showsTime(mode);
+    const thisGame = [
+      `<p class="stat-hero">${heroLine(tries, seconds, showTime)}</p>`,
+      mode === 'random' ? `<p class="stat-note">${RANDOM_LINE}</p>` : '',
+      // Not shown to a saving-off player: with saving off no third game ever
+      // accumulates, so it would be a promise we are not going to keep.
+      mode === 'new' ? `<p class="stat-note">${NEW_PLAYER_LINE}</p>` : '',
+    ].join('');
+
+    const blocks = [block('this-game', 'This game', thisGame)];
+
+    if (mode === 'full') {
+      blocks.push(block('streaks', 'Streaks',
+        `<dl class="stat-streaks">
+          ${streakColumn('Play streak', stats.playStreak, stats.bestPlayStreak, NOTES.playStreak)}
+          ${streakColumn('First-go streak', stats.firstGoStreak, stats.bestFirstGoStreak, NOTES.firstGoStreak)}
+        </dl>
+        <p class="stat-note">${NOTES.streakPair}</p>`));
+
+      const firstGo = stats.firstGoPercent === null
+        ? String(stats.firstGoWins)
+        : `${stats.firstGoWins} (${stats.firstGoPercent}%)`;
+
+      blocks.push(block('all-time', 'All time',
+        `<dl class="m-0">
+          ${statRow('Plays', String(stats.plays), NOTES.plays)}
+          ${statRow('First-go wins', firstGo, NOTES.firstGoWins)}
+          ${statRow('Average goes', stats.avgGoes ?? '—', NOTES.avgGoes)}
+          ${statRow('Average time', formatDuration(stats.avgTimeSeconds), NOTES.avgTime)}
+          ${statRow('Fastest first-go win', formatDuration(stats.fastestFirstGoSeconds), NOTES.fastest)}
+        </dl>
+        ${goesChart(stats.goesDistribution)}`));
+    }
+
+    dom.panel.innerHTML = blocks.join('');
   }
 
-  // Stats grid — daily: full history stats; random: just this game's tries
-  if (dom.stats) {
-    if (isRandom) {
-      dom.stats.innerHTML = renderStatBox(tries, tries === 1 ? 'Try' : 'Tries');
-      dom.stats.classList.remove('grid-cols-2');
-      dom.stats.classList.add('grid-cols-1', 'max-w-[200px]', 'mx-auto');
-    } else {
-      const history = loadHistory();
-      const stats = computeStats(history);
-      dom.stats.innerHTML = [
-        renderStatBox(stats.played, 'Played'),
-        renderStatBox(stats.avgTries, 'Avg tries'),
-        renderStatBox(stats.streak, 'Streak'),
-        renderStatBox(stats.bestStreak, 'Best streak'),
-      ].join('');
-    }
+  // Prepared once per solve, written by the screens:enter listener above. The
+  // flag is a flag rather than a comparison of the text, so two identical solves
+  // in a row still each announce.
+  if (!announced) {
+    pendingAnnouncement = buildAnnouncement(
+      tries,
+      showsTime(mode) ? seconds : null,
+      mode === 'full' ? stats.playStreak : null,
+    );
+    announced = true;
   }
 
   // Countdown (per D-10: hidden for random puzzles)
@@ -175,12 +350,6 @@ export function renderCompletion(
   // game screen). For random puzzles, only Archive shows.
   if (dom.links) {
     dom.links.replaceChildren();
-
-    const isArchivedOtherDate =
-      !isRandom &&
-      typeof opts.activeDate === 'string' &&
-      typeof opts.todayLocal === 'string' &&
-      opts.activeDate !== opts.todayLocal;
 
     // Show puzzle: only on today's solved view. Archive solves stay on
     // /archive/<date> and never reach the completion screen, so no Show-puzzle

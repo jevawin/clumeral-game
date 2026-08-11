@@ -184,6 +184,43 @@ Component-specific CSS lives in `src/tailwind.css` using data-attribute selector
 - `.fb-cat` -- feedback category pill selected state
 - `.toast-msg` -- toast notification element
 - `.recurring` -- recurring decimal overdot
+- `.stat-block__*`, `.stat-hero`, `.stat-streaks`, `.stat-row`, `.stat-note` -- the
+  completion panel's three blocks
+- `.goes-*` -- the "How many goes you take" chart
+- `.save-note*` -- the untick warning and submit countdown on the play screen
+
+## The completion panel
+
+Three blocks in reading order: **This game**, **Streaks**, **All time**.
+
+- **This game is the hero** -- one line, the largest type on the panel. It is the only
+  thing that changed in the last ten seconds. It reads `Solved in 1 go, 0m 30s`, and the
+  play screen's solved view says exactly the same thing: one solve described two ways on
+  two screens is how a player starts doubting both.
+- **Times use unit letters, never a colon**: `0m 30s`, `4m 06s`, `1h 04m`. `4:06` can read
+  as four hours at a glance, and the separator the hero used to need -- a bullet, or the
+  pipe Dave suggested -- sits right beside a number, where a pipe is hard to tell from a 1.
+  Letters remove the ambiguity and the separator both. Seconds are padded to two digits so
+  a column lines up; minutes are not. An unknown time is a dash in a column of figures and
+  is dropped entirely from the hero sentence. (Jamie and Dave, 2026-08-11.)
+- **All time is open, not folded, but quiet**: smaller type, muted colour, plain rows
+  rather than boxes. A folded block is a block nobody opens, and these numbers are the
+  reason a returning player scrolls at all. Density is solved by making them quiet.
+- **Every number carries a plain line saying what it means.** That is the whole point of
+  the build -- "streak" used to explain nothing on screen. Text under the stat, never a
+  tooltip.
+- **No new colour tokens and no new type sizes.** Everything is built from `--color-text`,
+  `--color-accent`, `--color-border` and `--color-surface`, whose contrast is already
+  measured in `tests/palette-contrast.spec.ts`.
+- **The streak pair stacks below 22rem**, not below a pixel width -- so it also stacks at
+  200% text on a wide screen, which is what the 320px / 200% requirement is really about.
+- **Blocks are absent, not hidden**, when they do not apply. A hidden block can still
+  reach the accessibility tree, and an empty "All time" heading reads as broken.
+- **The goes chart's bars are `aria-hidden`**; the count beside each bar is the accessible
+  content, so nothing in the chart is available only as a picture.
+- **The submit button dims to 0.5 opacity** while the untick countdown holds it. WCAG
+  1.4.3 and 1.4.11 both exempt inactive controls from their contrast minimums, and those
+  five seconds are exactly when the control is inactive. Deliberate -- do not "fix" it.
 
 ## Clue display
 

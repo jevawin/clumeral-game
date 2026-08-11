@@ -9,7 +9,12 @@ export interface GameState {
   answer: number | null;
   guesses: number[];
   solved: boolean;
-  tries?: number;
+  /** null means "played, not recorded" — a day-only marker. undefined means the
+   *  puzzle is not solved. The two are different and the solved view reads both. */
+  tries?: number | null;
+  /** Counted play seconds for the solved game, so the /play solved view can show
+   *  the same "Solved in 2 goes, 1m 05s" line the completion panel does. */
+  seconds?: number;
   puzzleNum?: number;
   isRandom?: boolean;
   date?: string;
@@ -22,8 +27,16 @@ export interface HistoryEntry {
   answer?: number;
   // Tags an archived solve (a puzzle whose date != today). Backward compatible:
   // absence means a live daily solve. Archived entries are recorded but excluded
-  // from all daily stats (see computeStats in completion.ts).
+  // from all daily stats (see computePlayerStats in player-stats.ts).
   archived?: boolean;
+  /** Counted play seconds, 0–86400. Absent = unknown: pre-launch rows, opted-out
+   *  players, and rows whose stored value failed validation. Never read as 0.
+   *  A valid value above OUTLIER_SECONDS still shows on its own panel but is
+   *  excluded from the average and from fastest (brief 31, 134). */
+  seconds?: number;
+  /** Day-only marker (brief 71): the player finished this day with saving off.
+   *  tries is 0 and means nothing. Filtered out of every figure before counting. */
+  marker?: true;
 }
 
 export interface Prefs {
@@ -37,4 +50,8 @@ export interface ActiveState {
   guesses: number[];          // wrong guesses submitted this session
   activeBox: number | null;   // 0 | 1 | 2 | null
   feedbackKey: string | null; // "incorrect" | "error" | null  (never "correct" — solve clears active state)
+  /** Counted seconds so far. Absent on any board written before this shipped. */
+  elapsed?: number;
+  /** How many times the idle cut-off has fired this game. Absent = 0. */
+  idles?: number;
 }

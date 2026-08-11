@@ -171,6 +171,19 @@ function rangeDays(stats: StatsResult, range: StatsRange, now: number): { from: 
   return { from: toISODay(rangeCutoff(range, now) as number), to };
 }
 
+/**
+ * Whole seconds as m:ss, or a dash when there is nothing to show.
+ *
+ * Deliberately a local copy of one rule rather than an import: src/worker/ must
+ * not import client modules and vice versa (docs/CONVENTIONS.md, "Code
+ * separation"). Hours are not formatted here — this is a mean across many games
+ * and it will not reach one.
+ */
+export function formatSeconds(seconds: number | null): string {
+  if (seconds === null) return '—';
+  return `${Math.floor(seconds / 60)}:${String(Math.round(seconds) % 60).padStart(2, '0')}`;
+}
+
 function periodLabel(range: StatsRange, window: { from: string; to: string } | null): string {
   if (window === null) return 'All time · no data yet';
   const span = `${formatDay(window.from)} – ${formatDay(window.to)}`;
@@ -206,6 +219,10 @@ export function renderDashboard(
   const incorrectGuesses = eventMap.get('incorrect_guess') ?? 0;
   const completionRate = totalPlays > 0 ? ((completions / totalPlays) * 100).toFixed(1) : '0';
   const returningUsers = stats.uniqueUsers - stats.newUsers;
+  // A dash rather than 0:00, so "nobody has sent one yet" is not read as
+  // "everybody solves it instantly". Its own tiny formatter rather than an
+  // import: the Worker must not import client modules (docs/CONVENTIONS.md).
+  const avgTime = formatSeconds(stats.avgTimeSeconds);
 
   const window = rangeDays(stats, range, now);
   const dailyRows = stats.daily
@@ -362,6 +379,7 @@ export function renderDashboard(
     <div class="card"><div class="card__val">${completionRate}%</div><div class="card__label">Completion rate</div></div>
     <div class="card"><div class="card__val">${dailyAvg}</div><div class="card__label">Avg daily plays</div></div>
     <div class="card"><div class="card__val">${incorrectGuesses}</div><div class="card__label">Incorrect guesses</div></div>
+    <div class="card"><div class="card__val">${avgTime}</div><div class="card__label">Avg time to complete</div></div>
   </div>
 
   <section>

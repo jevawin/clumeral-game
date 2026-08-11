@@ -339,7 +339,13 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
   var history = [];
   try { history = JSON.parse(localStorage.getItem("dlng_history") || "[]"); } catch(e) {}
   var byDate = {};
-  for (var i = 0; i < history.length; i++) byDate[history[i].date] = history[i].tries;
+  // A marker day means "you played, we did not keep the score" — a dash, not a
+  // blank and not a 0. Hand-written ES5 in a template string, as the rest of
+  // this file is: it has no build step and no module system, so it cannot
+  // import player-stats.ts. The one rule it needs is one line long.
+  for (var i = 0; i < history.length; i++) {
+    byDate[history[i].date] = history[i].marker ? "—" : history[i].tries;
+  }
 
   var rows = document.querySelectorAll("tr.row");
   for (var r = 0; r < rows.length; r++) {

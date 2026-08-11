@@ -44,6 +44,11 @@ export const VALID_EVENTS = new Set([
   'route_change',
   // Both carry a source of 'keyboard' or 'button' in blob3.
   'undo_used', 'reset_used',
+  // Value is the counted play seconds; source is 'clean' or 'idle-N', which is
+  // how many times the two-minute cut-off fired that game. Today's daily puzzle
+  // only, and only from a player with score saving on — see docs/ANALYTICS.md.
+  // No migration: the existing table already holds a name, a value and a source.
+  'puzzle_time',
 ]);
 
 function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {

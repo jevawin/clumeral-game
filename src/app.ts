@@ -3,8 +3,11 @@
 
 import type { GameState, ClueData, ActiveState } from './types.ts';
 import { launchBubbles } from './bubbles.ts';
-import { loadPrefs, persistPrefs, loadHistory, recordGame, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
+import { loadPrefs, persistPrefs, loadHistory, recordSolve, saveActive, loadActive, clearActive, hasPlayerData, saveUndo, loadUndo, clearUndo } from './storage.ts';
 import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
+import { createPlayTimer, playTimeToSend } from './play-timer.ts';
+import { validSeconds } from './player-stats.ts';
+import { createSaveWarning, WARNING_TEXT } from './save-warning.ts';
 import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
@@ -15,7 +18,7 @@ import { isWalkthroughActive } from './walkthrough.ts';
 import { showScreen, getCurrentScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
-import { renderCompletion } from './completion.ts';
+import { renderCompletion, resetCompletionAnnouncement, heroLine } from './completion.ts';
 import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
@@ -86,6 +89,9 @@ const dom = {
   // which aria-describedby needs as IDREF targets — see CONVENTIONS.md.
   undoDesc: $('[data-undo-desc]') as HTMLElement | null,
   resetDesc: $('[data-reset-desc]') as HTMLElement | null,
+  saveWarning: $('[data-save-warning]') as HTMLElement | null,
+  saveCountdown: $('[data-save-countdown]') as HTMLElement | null,
+  saveLive: $('[data-save-live]') as HTMLElement | null,
 };
 
 // ─── Module state ─────────────────────────────────────────────────────────────
@@ -93,6 +99,11 @@ const dom = {
 let gameState: GameState = { answer: null, guesses: [], solved: false };
 let saveScore = true;
 let submitting = false; // guard against double-submit during API call
+
+// How long the player has actually been here solving this puzzle. Replaced
+// wholesale on every fresh start and on restore — never reset in place, so a
+// half-updated timer cannot outlive the game it was counting.
+let timer = createPlayTimer();
 
 let possibles: Set<number>[] = startingBoard();
 let activeBox: number | null = null; // 0 | 1 | 2 | null
@@ -159,8 +170,20 @@ function buildActiveState(): ActiveState {
     guesses: [...gameState.guesses],
     activeBox,
     feedbackKey: null,
+    // The clock rides with the board, so a refresh or an app-switch does not
+    // reset it to zero (brief 30, 59). Persisted even when score saving is off,
+    // because the board itself is — saving your current play state is core
+    // functionality (brief 70). Nothing of that game reaches history and no
+    // event is sent; clearActive() on solve removes it.
+    elapsed: timer.seconds(),
+    idles: timer.idles(),
   };
 }
+
+// The idle count is persisted alongside the time on purpose. The analytics label
+// is `idle-N` for that GAME (brief 38); drop the counter on reload and a game
+// that went idle twice with a refresh in between reports `clean`, which is the
+// one reading that would make us trust the number when we should not.
 
 // Persist the starting board the moment the player is actually on /play, so a
 // refresh before they have touched anything still resumes the game rather than
@@ -364,7 +387,13 @@ const ICON_CHECK = `<svg class="w-8 h-8 shrink-0" viewBox="0 0 24 24" xmlns="htt
 
 const ICON_CROSS = `<svg class="w-8 h-8 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><mask id="fc-cx"><circle cx="12" cy="12" r="10" fill="white"/><path d="m15 9-6 6M9 9l6 6" stroke="black" stroke-width="2.5" stroke-linecap="round" fill="none"/></mask><circle cx="12" cy="12" r="10" fill="currentColor" mask="url(#fc-cx)"/></svg>`;
 
-function renderFeedback(type: string | null, answer?: number): void {
+// `announce: false` silences the live region for this write without changing a
+// word on screen. A daily or random solve moves to the completion screen, which
+// does the announcing — and two voices talking at once is what brief 99 forbids.
+// An archive solve stays on /play and reaches no completion announcement, so it
+// keeps its own. resetPuzzleUI restores "assertive" for the next puzzle.
+function renderFeedback(type: string | null, answer?: number, opts: { announce?: boolean } = {}): void {
+  if (opts.announce === false) dom.feedback?.setAttribute('aria-live', 'off');
   if (type === "correct") {
     if (dom.feedback) {
       dom.feedback.innerHTML = `${ICON_CHECK} Correct! That's puzzle #${gameState.puzzleNum ?? ''}.`;
@@ -495,6 +524,10 @@ function closeKeypad() {
 // Single mutation path for both keypad click and keyboard — prevents double-firing
 function toggleDigit(digit: number): void {
   if (activeBox === null) return;
+  // A real interaction — both the keypad and the keyboard land here (brief 27).
+  // Opening a box, hovering, scrolling and the theme or menu controls do not:
+  // reading the clues is not solving.
+  timer.activity();
   renderFeedback(null);
   const s = possibles[activeBox];
   if (s.has(digit)) {
@@ -628,6 +661,7 @@ function undoLast(): EntryKind | null {
   const kind = boardHistory.nextKind();   // read BEFORE the pop
   const previous = boardHistory.undo();
   if (previous === null) return null;
+  timer.activity();       // after the guard — a dead press is not an interaction
   applyBoard(previous);   // persists the popped stack against the restored board
   // Non-null whenever undo() was: nextKind() and undo() share the empty-stack guard.
   return kind;
@@ -636,6 +670,7 @@ function undoLast(): EntryKind | null {
 // Returns true if the board was actually reset.
 function resetBoard(): boolean {
   if (gameState.solved || isStartingBoard(possibles)) return false;
+  timer.activity();       // after the guard — a dead press is not an interaction
   // One entry, tagged so the Undo control can label itself "Undo reset". A
   // single press restores the whole pre-reset board.
   pushHistory('reset');
@@ -735,15 +770,22 @@ function checkSubmit() {
 
 // ─── Game ─────────────────────────────────────────────────────────────────────
 
-function showCompletedState(tries: number, replayDate?: string): void {
+// `tries` is null when the day was played but not recorded — the day-only
+// marker a player with score saving off leaves behind. Neither the number of
+// goes nor the answer was stored, so neither is shown, and it must never read
+// "Solved in 0 tries" (brief 71, 123).
+function showCompletedState(tries: number | null, replayDate?: string): void {
   // /play in solved-replay mode is the same minimal view for today and archive:
-  // clues + revealed digits + "Solved in N tries!" + a context-specific link.
+  // clues + revealed digits + "Solved in N goes, 1m 05s" + a context-specific
+  // link. Same wording as the completion panel's hero, deliberately — one solve
+  // described two ways on two screens is how a player starts doubting both.
   // Stats panel never appears here — it lives on /solved.
   // Finalised: the keypad is no longer usable, so hide it (issue #194).
   closeKeypad();
-  const t = tries === 1 ? "1 try" : `${tries} tries`;
+  // No timing on an archive replay, matching the panel (brief 54).
+  const solvedText = heroLine(tries, validSeconds(gameState.seconds), !replayDate);
   if (dom.feedback) {
-    dom.feedback.innerHTML = `${ICON_CHECK} Solved in ${t}!`;
+    dom.feedback.innerHTML = `${ICON_CHECK} ${solvedText}`;
     dom.feedback.className = "flex items-center gap-2 text-base font-bold leading-snug mt-4 text-success font-[Quicksand]";
     dom.feedback.classList.remove("hidden");
   }
@@ -785,6 +827,14 @@ function showCompletedState(tries: number, replayDate?: string): void {
 }
 
 function resetPuzzleUI() {
+  // A fresh puzzle gets a fresh clock. Every fresh-start path — today's daily,
+  // random and archive replay — comes through here; the mid-game restore path
+  // does not, and rebuilds the timer from the saved board instead.
+  timer = createPlayTimer();
+  // A new puzzle gets a new announcement, and the play screen's own feedback
+  // gets its voice back — the suppression below is per solve, not permanent.
+  resetCompletionAnnouncement();
+  dom.feedback?.setAttribute('aria-live', 'assertive');
   renderFeedback(null);
   renderHistory([]);
   dom.stats?.classList.add("hidden");
@@ -823,8 +873,9 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
 
   const entry = todayEntry();
   if (entry) {
-    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entry.tries, puzzleNum: num, date };
-    showCompletedState(entry.tries);
+    const entryTries = entry.marker ? null : entry.tries;
+    gameState = { answer: entry.answer ?? null, guesses: [], solved: true, tries: entryTries, seconds: entry.seconds, puzzleNum: num, date };
+    showCompletedState(entryTries);
     return;
   }
 
@@ -835,6 +886,9 @@ function startDailyPuzzle(date: string, num: number, clues: ClueData[]): void {
     gameState = { answer: null, guesses: draft.guesses, solved: false, puzzleNum: num, date };
     // Rebuild possibles from the stored arrays (Array → Set per box).
     possibles = draft.possibles.map((arr) => new Set(arr));
+    // And rebuild the clock from the same board, so a refresh does not hand the
+    // player a time of zero for a game they are halfway through (brief 30).
+    timer = createPlayTimer({ elapsed: draft.elapsed, idles: draft.idles });
     // Restore the undo stack alongside the board (#251). gameState is already
     // assigned above, so undoScope() reads the right date. loadUndo returns null
     // for a missing, forged or wrong-puzzle payload, in which case the stack
@@ -893,13 +947,18 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
         }
       } catch { /* leave as null */ }
     }
-    gameState = { answer, guesses: [], solved: true, tries: entry.tries, puzzleNum: num, date };
-    showCompletedState(entry.tries, date);
+    const entryTries = entry.marker ? null : entry.tries;
+    gameState = { answer, guesses: [], solved: true, tries: entryTries, seconds: entry.seconds, puzzleNum: num, date };
+    showCompletedState(entryTries, date);
     showBanner();
     // ARC-02: pre-render completion view with activeDate so the back-link shape is correct
     // when the user reaches the completion screen via /archive/<date>. The renderCompletion
     // signature accepting opts ships in Plan 06 — this call site depends on that change.
-    renderCompletion(num, entry.tries, false, { activeDate: date, todayLocal: todayKey() });
+    renderCompletion(num, entry.marker ? null : entry.tries, false, {
+      activeDate: date,
+      todayLocal: todayKey(),
+      seconds: entry.seconds,
+    });
     return;
   }
 
@@ -917,6 +976,14 @@ async function startReplayPuzzle(date: string, num: number, clues: ClueData[]): 
 async function handleGuess() {
   if (gameState.solved || submitting) return;
   if (!possibles.every((s) => s.size === 1)) return;
+  // The five-second hold after unticking "save my scores". aria-disabled leaves
+  // the button focusable and clickable, so the handler is what has to no-op —
+  // this is the same contract undo and reset already work to.
+  if (!saveWarning.state().submitAvailable) return;
+
+  // The last interaction of the game, and the one that ends the clock: whatever
+  // gap preceded it is banked here, before the answer is checked.
+  timer.activity();
 
   const guessStr = possibles.map((s) => [...s][0]).join("");
   const guess = Number(guessStr);
@@ -953,9 +1020,15 @@ async function handleGuess() {
     if (result.correct) {
       gameState.solved = true;
       gameState.tries = tries;
+      // Banked by timer.activity() at the top of this function, so it is the
+      // final counted time for this game.
+      gameState.seconds = timer.seconds();
       gameState.answer = guess; // now we know the answer (it was our correct guess)
       track("puzzle_complete", tries);
-      renderFeedback("correct", guess);
+      // Computed here rather than below, because the announcement decision needs
+      // it: an archive solve stays on /play and this is its only announcement.
+      const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
+      renderFeedback("correct", guess, { announce: isArchiveSolve });
       closeKeypad();
       // Apply correct state to all digit boxes
       for (let i = 0; i < 3; i++) {
@@ -974,14 +1047,33 @@ async function handleGuess() {
       // saveScore is off (WR-02). Include the answer only when saveScore is on — that way
       // the history entry exists (prevents re-solving) but the answer is omitted when the
       // player has opted out of saving stats. Random puzzles are never written to history.
-      // Tag archive solves (date != today) so computeStats can exclude them from daily
-      // stats while still recording them (archive replay + the archive Tries column read
-      // dlng_history by date). Computed BEFORE recordGame so it can be passed as the flag.
-      const isArchiveSolve = !!gameState.date && gameState.date !== todayKey();
-
+      // Tag archive solves (date != today) so the counting rules can exclude them from
+      // daily stats while still recording them (archive replay + the archive goes column
+      // read dlng_history by date). isArchiveSolve is computed above, where the
+      // announcement decision also needs it.
       if (!gameState.isRandom && gameState.date) {
-        recordGame(gameState.date, tries, saveScore ? guess : undefined, isArchiveSolve);
+        recordSolve(gameState.date, tries, {
+          saveScore,
+          answer: guess,
+          archived: isArchiveSolve,
+          seconds: timer.seconds(),
+        });
       }
+
+      // How long that took, with a label saying whether the idle cut-off ever
+      // fired. All three rules earn their place and none is redundant:
+      // daily-only keeps randoms and archive replays out of the average (brief
+      // 52, 132); saving-on honours brief 141, so nothing about an opted-out
+      // player's play leaves the device; and a valid time keeps a junk value out
+      // of a number we will quote. Give-ups stay invisible and that is accepted
+      // — they read as a puzzle_start with no puzzle_complete.
+      const countedSeconds = playTimeToSend({
+        isRandom: !!gameState.isRandom,
+        isArchiveSolve,
+        saveScore,
+        seconds: timer.seconds(),
+      });
+      if (countedSeconds !== null) track("puzzle_time", countedSeconds, timer.idleLabel());
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();
 
@@ -995,14 +1087,15 @@ async function handleGuess() {
         // directly), so the router has no deps and replaceRoute('/solved') would
         // throw `router not initialized`. Random has no /solved URL anyway — show
         // the completion screen directly.
-        renderCompletion(gameState.puzzleNum ?? 0, tries, true);
+        // Shown, but never stored and never sent (brief 52).
+        renderCompletion(gameState.puzzleNum ?? 0, tries, true, { seconds: timer.seconds() });
         showScreen('completion');
       } else {
         // Today's solve: paint the completion screen and replace history (no /play
         // entry to back into; back from /solved goes to /welcome, which itself
         // redirects to /solved post-solve so the back lands on the same screen
         // — effectively making /solved the post-solve home).
-        renderCompletion(gameState.puzzleNum ?? 0, tries, false);
+        renderCompletion(gameState.puzzleNum ?? 0, tries, false, { seconds: timer.seconds() });
         // Fire sync — never inside celebrateOcto's callback. If celebration is
         // interrupted (page hidden, rAF paused) the user could otherwise be
         // stranded on /play with the puzzle solved (#solve-stranding).
@@ -1041,7 +1134,7 @@ async function handleGuess() {
 async function loadPuzzle() {
   const isRandom = window.location.pathname === '/random';
   // Send the browser-LOCAL date so the worker serves the puzzle for the player's
-  // local day, not UTC today. This keeps the served puzzle, recordGame, and
+  // local day, not UTC today. This keeps the served puzzle, recordSolve, and
   // todayEntry all keyed on the same date (todayKey) — without it, a UTC+offset
   // player in the local/UTC-midnight window gets a mismatched day (the
   // not-completed / stats-bounce / streak-reset bugs).
@@ -1093,6 +1186,14 @@ if ('serviceWorker' in navigator) {
 
 // ─── Event listeners (module-level) ───────────────────────────────────────────
 
+// The play clock follows the tab, not the window (brief 26). Page visibility is
+// the reliable signal on phones; window focus is not. Module level, never inside
+// startDailyPuzzle — a listener registered per puzzle would stack up.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) timer.hide();
+  else timer.show();
+});
+
 // Digit box clicks
 for (let i = 0; i < 3; i++) {
   const box = document.querySelector(`[data-digit="${i}"]`) as HTMLElement | null;
@@ -1118,11 +1219,70 @@ dom.resetBtn?.addEventListener("click", () => {
   if (resetBoard()) track("reset_used", undefined, "button");
 });
 
-// Save checkbox
+// ─── Save-my-scores checkbox, warning and countdown ──────────────────────────
+//
+// Unticking says what submitting will cost and holds submit for five seconds.
+// Nothing is deleted here — the deletion happens on the next solve, read from
+// the stored preference (brief 65). Re-ticking puts everything back.
+
+const saveWarning = createSaveWarning();
+
+// Repaints the countdown while it runs. Cleared the moment submit is available
+// again, so nothing ticks on a quiet screen.
+let saveWarningTimer: ReturnType<typeof setInterval> | undefined;
+let submitWasAvailable = true;
+
+function renderSaveWarning(): void {
+  const s = saveWarning.state();
+
+  if (dom.saveWarning) dom.saveWarning.textContent = s.warning ? WARNING_TEXT : '';
+  if (dom.saveCountdown) {
+    dom.saveCountdown.textContent =
+      s.warning && s.secondsLeft > 0 ? `Submit enabled in ${s.secondsLeft}` : '';
+  }
+
+  // aria-disabled, never the native disabled attribute — the browser blurs a
+  // natively-disabled element, and a player who has tabbed to submit during the
+  // five seconds must not be thrown back to the top of the document. The house
+  // rule the keypad's hundreds-box 0 and the undo/reset controls already follow.
+  if (dom.submitBtn) {
+    if (s.submitAvailable) {
+      dom.submitBtn.removeAttribute('aria-disabled');
+      dom.submitBtn.removeAttribute('aria-label');
+    } else {
+      dom.submitBtn.setAttribute('aria-disabled', 'true');
+      // The remaining seconds go in the accessible name, so a screen-reader user
+      // is not left pressing a button that silently does nothing.
+      dom.submitBtn.setAttribute(
+        'aria-label',
+        `Submit answer — available in ${s.secondsLeft} ${s.secondsLeft === 1 ? 'second' : 'seconds'}`,
+      );
+    }
+  }
+
+  // Announced once when it becomes available. The warning line announces itself
+  // when it appears; the countdown line is deliberately not live.
+  if (s.submitAvailable && !submitWasAvailable && dom.saveLive) {
+    dom.saveLive.textContent = 'Submit is now available.';
+  }
+  if (!s.submitAvailable && dom.saveLive) dom.saveLive.textContent = '';
+  submitWasAvailable = s.submitAvailable;
+
+  if (s.submitAvailable && saveWarningTimer !== undefined) {
+    clearInterval(saveWarningTimer);
+    saveWarningTimer = undefined;
+  }
+}
+
 if (dom.saveCheck) {
   dom.saveCheck.addEventListener("change", () => {
     saveScore = dom.saveCheck!.checked;
     persistPrefs(saveScore);
+    saveWarning.setChecked(saveScore);
+    // Four ticks a second, so the number never sits a whole second stale. The
+    // state itself is read from the clock, so a missed tick costs nothing.
+    if (saveWarningTimer === undefined) saveWarningTimer = setInterval(renderSaveWarning, 250);
+    renderSaveWarning();
   });
 }
 
@@ -1373,7 +1533,13 @@ const _todayHistoryAtBoot = todayEntry();
 if (_todayHistoryAtBoot) {
   const _todayDate = todayKey();
   const _num = puzzleNumberFor(_todayDate);
-  renderCompletion(_num, _todayHistoryAtBoot.tries, false);
+  renderCompletion(
+    _num,
+    // A marker means "played, not recorded" — never "Solved in 0".
+    _todayHistoryAtBoot.marker ? null : _todayHistoryAtBoot.tries,
+    false,
+    { seconds: _todayHistoryAtBoot.seconds },
+  );
 }
 
 // Don't pre-paint a screen here — the router resolves location.pathname and
@@ -1464,7 +1630,9 @@ document.addEventListener('screens:enter', (e) => {
 
 document.addEventListener('screens:enter', (e) => {
   const screen = (e as CustomEvent).detail?.screen;
-  if (screen !== 'game' || !gameState.solved || gameState.tries == null) return;
+  // `=== undefined`, not `== null`: null is a real value here — a marker day,
+  // where the solved view still renders, just without a number.
+  if (screen !== 'game' || !gameState.solved || gameState.tries === undefined) return;
   // replayDate is only meaningful on /archive/<date>. On /play the puzzle is today's daily, even if
   // gameState still holds a previous archive date because the user navigated without reloading.
   const onArchiveDate = location.pathname.startsWith('/archive/');
