@@ -39,8 +39,8 @@ this brief is written against. Reading it top to bottom:
 | 4. Maths | Settled: Dave 2026-08-11 (item 28 — cut-off dropped) · Ack: n/a, owned section |
 | 5. State & persistence | Asked 2026-08-11 — no decision in it |
 | 6. How it fits | Asked 2026-08-11 — no decision in it |
-| 7. How it looks | Asked 2026-08-11 — awaiting Jamie on item 37 |
-| 8. Copy & wording | Not yet asked |
+| 7. How it looks | Settled: Dave 2026-08-11 (item 38) · Ack: Jamie pending on item 38 |
+| 8. Copy & wording | Asked 2026-08-11 — awaiting a word on item 44 |
 | 9. Accessibility | Not yet asked |
 | 10. Analytics | Not yet asked |
 | 11. Done / test plan | Not yet asked |
@@ -286,3 +286,48 @@ he said in words.
     same two numbers are otherwise said twice, a foot apart.
     Either way the spoken announcement keeps the full sentence, so nothing is lost for a
     screen reader.
+
+38. **Item 37 SETTLED: Dave 2026-08-11 — the icons replace the sentence.** Dave: "I prefer
+    Jamie's version. I don't see a benefit in repeating numbers close together." That is
+    also what Jamie's drawing literally shows, so the two agree. My recommendation is
+    dropped.
+    So "This game" is: the `Puzzle #123 solved!` heading as today, then two icon figures —
+    calculator with `1 go`, stopwatch with `2m 38s`. No `Solved in 1 go, 2m 38s` sentence
+    on screen. **Jamie's ack still wanted**, because it was his sentence that yesterday's
+    comma discussion produced and he has not said in words that it goes.
+
+39. **The `/play` screen sentence is untouched.** Jamie asked on 2026-08-11 for the play
+    screen to read "in 1 go" with a matching time. That is a different screen and no
+    drawing covers it, so it stays exactly as it is. (assumed)
+
+## 8. Copy & wording
+
+40. **Section headings.** "This game" and "All time" keep their words. The middle one
+    changes from **"Streaks" to "Stats"**, because it is no longer only streaks — it has
+    taken on time. (assumed — from the drawing)
+    Small worry, recorded not asked: "Stats" is a slightly odd name for one block on a
+    panel that is entirely stats. "Your records" or "Bests" would say more. Not worth a
+    round trip; say the word if either of you disagrees.
+
+41. **Box titles: "Time", "First-go", "Plays".** Straight from the drawing.
+
+42. **Labels inside the boxes.** Time: "Best time" then "Average". First-go: "Best streak"
+    then "Current". Plays: "Best streak" then "Current". Sentence case, not capitals.
+    (settled by items 13 and 30)
+
+43. **All-time rows and the chart keep every word they have today.** (settled by item 6)
+
+44. **The question for §8: the explanatory lines under the streaks.** Today each streak
+    carries a plain-English note — "Days in a row you have finished the puzzle", and the
+    equivalent for the first-go streak. They exist because "first-go streak" is not
+    self-explanatory, and their spacing was one of the three faults fixed on this branch.
+    The drawing has **no room for them**: a box holds an icon, a title, two numbers and two
+    small labels, and a sentence would break the three-across layout on a phone.
+    My rec: **drop them from the boxes and let the all-time rows carry the explaining** —
+    those rows keep their notes, and "Puzzles solved in 1" already defines what a first-go
+    is a short scroll below.
+    The alternative: **one line under the row of three boxes**, the way the streak pair
+    already has a shared note today — something like "Streaks count days in a row; they
+    reset if you miss a day." One sentence for all three rather than three.
+    The cost of dropping them entirely is that a new player meets "First-go — best streak
+    7" with nothing telling them what a first-go streak is until they scroll.
