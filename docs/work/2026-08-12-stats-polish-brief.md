@@ -313,6 +313,24 @@ he had never actually specified the sizing, so he specified it.
     spreadsheet is not obviously worth having.
     Item 6a already put `/stats` out of scope on the same reasoning and Jamie did not object,
     but he has since said "all pages", so this is asked rather than assumed.
+    **Settled: Jamie, 2026-08-12 — everywhere, including `/archive` and `/stats`.** He wants
+    one width across the whole site so nothing jumps around between pages on a desktop. Item
+    6a is reversed; the analytics chart coming down from 640px is a cost he is accepting.
+56. **The width is 480px, not 400px.** Settled: Jamie, 2026-08-12, replacing the 400 in item
+    53. The rule he set is that the cap must never be narrower than a phone, so that a phone
+    always fills its screen and only a desktop ever meets the cap. 440 does not satisfy that
+    rule — a Pixel 8 Pro reports 448 and a Galaxy S24 Ultra reports 480, so both would sit
+    just inside a 440 cap. 480 covers every phone in portrait.
+    So: **inner containers `max-width: 480px`, sections 16px padding, padding outside the
+    cap.** Content is `min(480, viewport − 32)`, and the cap only binds above 512px.
+57. **Two consequences, both named to Jamie and both accepted.** The play screen's digit
+    boxes grow from about 110px to about 140px on a wide screen, because they are sized to
+    fill the row. And `/stats` loses a quarter of its chart width on a laptop.
+58. **The small end is unchanged in rule and slightly better in practice.** The padding stays
+    16px, so an iPhone 12 mini at 375px keeps filling its screen. On the completion screen it
+    actually gains 16px, because that screen was on 24px padding. Jamie's concern about the
+    play screen was that the digit boxes were too *small* on a mini, not too large — that is
+    a separate piece of work and this change does not make it worse.
 
 ## 14. The demo seed
 
@@ -344,6 +362,6 @@ the panel repeated itself and ran long. Dave should see that on the preview and 
 Jamie's own specification in section 13: 400px inner cap, 16px section padding, padding
 outside the cap.
 
-One question remains open, and it does not block the panel work: **item 54**, whether
-`/archive` and `/stats` are in "all pages". Everything on the completion panel can be
-planned and built while that is decided.
+Section 13 is now fully settled by items 53 to 58: **480px inner cap, 16px section padding,
+padding outside the cap, on every page including `/archive` and `/stats`.** Nothing is open.
+The brief is closed and ready for Plan.
