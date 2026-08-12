@@ -12,27 +12,21 @@ Status: **`da-plan` run and answered, 2026-08-12.** The review returned 2 High, 
 
 ---
 
-## The two things the brief did not know
+## What the survey found, and what Jamie did with it
 
-A read-only survey of every layout container in the repo turned up two facts that change the
-shape of the margin work. Both are recorded here because the brief was written without them.
+A read-only survey of every layout container turned up two facts the brief was written
+without: the header and footer have no width cap, and the menu dropdown is positioned against
+the viewport rather than the header. The first draft of this plan put both in scope.
 
-**1. The header and the footer have no width cap at all.** `index.html:160` is a direct child
-of `<body>`, sibling to `<main>`, with `px-4` and nothing else. The footer at
-`index.html:385` has no padding and no cap. Today that accidentally lines up, because every
-screen also sits at a 16px gutter. The moment the content column caps at 480px and centres,
-the logo stays hard against the left edge while the content starts at `(viewport − 480) / 2`.
-On a 1280px desktop that is a 384px gap between the logo and the content beneath it.
+**Jamie's answer, 2026-08-12 (b59): the header is deliberately full width, and it stays.**
+The jumping around he wants gone is **the same content area changing width between one page
+view and the next** — not chrome sitting at a different edge from the content. So the header
+is untouched, the footer with it, and the menu bug does not arise, because nothing about the
+header moves. Two tasks came out of this plan as a result.
 
-That is exactly the "it jumps around on desktop" that b54 is about, so **the header and the
-footer are in scope**, on both the app and `/archive`. The brief's file list did not mention
-them and they are the largest part of this work.
-
-**2. The menu dropdown is positioned against the viewport, not the header.** `index.html:180`
-uses `absolute top-14 right-0`, and `<body>` is not positioned, so those resolve against the
-initial containing block. Cap and centre the header and the menu stays pinned to the far
-right of the window while its button moves inward. It needs a positioned wrapper, and that
-is a real bug this change would otherwise introduce.
+He added a second kind of jumping in the same breath (b61): on a desktop, `/welcome` and
+`/solved` centre their content vertically while `/play` starts at the top, so moving between
+screens walks the content up and down. **Everything is top-aligned.** That is now task 3.
 
 ---
 
@@ -111,109 +105,66 @@ Commit: `feat(layout): the three screens share the page column`
 
 ---
 
-## Task 3 — the header, the footer, and the menu
+## Task 3 — everything starts at the top
 
-Implements b54, and the two survey findings above.
+Implements b61.
 
-**The header.** `index.html:160` keeps its height, background and bottom border, all of which
-must stay full-bleed — a capped header would put the border in the middle of the screen. So
-the cap goes on a new inner wrapper:
+Two declarations, and the whole of the second kind of jumping around goes.
 
-```html
-<header data-app-header class="h-14 bg-bg border-b border-border">
-  <div class="page-col page-pad relative flex items-center justify-between h-full">
-    …brand, burger, menu…
-  </div>
-</header>
-```
+- `index.html:345` — the completion screen's inner div drops `justify-center`. It keeps
+  `flex-1`, so it still fills the space, and it keeps `items-center`, which is horizontal
+  centring and is not what moves. Content starts at the top of the screen.
+- `src/welcome.ts:121` — `screen.classList.add("items-center", "justify-center")` becomes
+  `add("items-center")`. Same reasoning: `items-center` centres the column horizontally and
+  stays; `justify-center` is what pushes it down the page.
+- `/play` already starts at the top and is not touched.
 
-`px-4` comes off the `<header>` and `page-pad` goes on the wrapper. `flex items-center
-justify-between` move down with it, plus `h-full` so the row still fills the 3.5rem.
+The comment at `index.html:211` says the welcome content "fills remaining viewport (flex-1)
+and centres content; footer pushes it slightly above visual centre" — that stops being true
+and is corrected in the same commit.
 
-**The menu MOVES.** `da-plan`'s High finding, and the plan's first draft got this wrong. The
-`<div id="app-menu">` at `index.html:180` is a **sibling of `</header>`**, not a child. Change
-only its classes and `top: 100%` still resolves against the initial containing block — the
-menu would land a full viewport below the fold, which is worse than the bug being fixed. So
-the element itself moves **inside the new wrapper**, as a sibling of `[data-menu-btn]`, and
-then `top-14` becomes `top-full` and `right-0` resolves against the wrapper.
+**Test** — `tests/page-width.spec.ts`:
+4. No screen's container carries `justify-center` — asserted across `index.html` and
+   `src/welcome.ts` together, so a fourth screen cannot quietly reintroduce it.
 
-Two consequences of the move, both checked and both fine:
-- `screens.ts`'s `showHeader(false)` hides the header on `/welcome`, so the menu now hides
-  with it. The burger is inside the header too, so there was never a way to open it there,
-  and `e2e/specs/menu.spec.ts` never does.
-- `right-0` against the wrapper's padding box reproduces today's offset exactly: 16px of
-  `page-pad` against the burger's `-mr-[10px]`, which is the same 6px it sits at now. Nothing
-  moves visually.
+**The header, the footer and the menu are all untouched** (b59). The first draft of this plan
+restructured all three, and that work is deleted rather than deferred: with the header full
+width by design, there is nothing to align it to and no reason to move the menu.
 
-**The footer.** `index.html:385` gains an inner `page-col page-pad` wrapper. Correcting the
-first draft's reasoning, which `da-plan` was right to call out: centred text inside a centred
-window lands in the same place either way, so centring is not the argument. The argument is
-that the footer has **no horizontal padding at all** today, so its text touches the screen
-edge at 320px. `page-pad` is the fix and `page-col` keeps it consistent with everything else.
-
-**Tests** — `tests/page-width.spec.ts`:
-4. The header's inner wrapper carries `page-col page-pad`, and the `<header>` itself carries
-   neither — the border must still run edge to edge.
-5. **`#app-menu` is inside the header**, and is `top-full`, not `top-14`. Asserted on
-   position in the file, because this is the High finding and a class-only change would look
-   correct while being broken.
-6. The footer has a `page-col page-pad` wrapper.
-
-**`e2e/specs/menu.spec.ts`** — one new check: at a desktop width the menu's right edge sits
-within a few pixels of the burger's, rather than at the window's edge. This is the assertion
-that the menu really did move.
-
-**One new alignment check**, and two corrections to how the first draft specified it:
-- It measures `[data-brand-octo]`, **not** the brand button. The button carries `-mx-1 px-1`,
-  so its bounding box starts 4px left of the column's content edge and a "within a pixel"
-  assertion would fail by exactly that 4px.
-- **There is no desktop-only suite.** `playwright.config.ts` runs `e2e/specs/**` across five
-  projects, two of them phones at 390px and 393px where the cap never binds. So the test
-  gates itself the way `e2e/specs/a11y.spec.ts` already does — `test.skip` unless the project
-  is a desktop one — rather than silently passing on mobile for the wrong reason.
-
-**Run by CI, never here.**
-
-Commit: `fix(layout): header, footer and menu follow the page column`
+Commit: `fix(layout): every screen starts at the top`
 
 ---
 
-## Task 4 — `/archive`
+## Task 4 — `/archive` needs nothing but a comment
 
-Implements b54.
+Implements b60.
 
-**`main.archive`'s width does not change, and that is the finding.** `src/worker/puzzles.ts:177`
-is `max-width: 32rem` with `padding: 1.25rem 1rem 2rem` under a global `box-sizing:
-border-box`. 32rem is 512px, minus 2×16px of padding, which is **480px of content already** —
-exactly the target. The first draft proposed `calc(480px + 2rem)`, which computes to the same
+`src/worker/puzzles.ts:177` is already right, and this task exists to record that rather than
+to change it. `main.archive` is `max-width: 32rem` with `padding: 1.25rem 1rem 2rem`, under
+the global `box-sizing: border-box` at `:115`. 32rem is 512px; minus 2 × 16px of padding that
+is **480px of content behind a 16px gutter** — exactly the target, already met, and Jamie's
+b60 asked specifically that the 16px stay.
+
+The first draft proposed rewriting it as `calc(480px + 2rem)`, which computes to the same
 512px and would have swapped a `rem` for a `px`: at a 20px root font the column is 600px of
-content today and would have become 480px, which is the large-text case b30 cares about.
+content today and would have become 480px. That is the large-text case b30 cares about, so
+the `rem` stays.
 
-So: leave the declaration alone and add a comment saying why the number is what it is —
-`32rem = 512px = 480 + 2 × 1rem gutter` — so the next person does not "fix" it either.
+So the only edit is a comment above the declaration recording why 32rem is the right number —
+`32rem = 512px = 480px content + 2 × 1rem gutter` — so that nobody, including a later me,
+"standardises" it into something worse.
 
-**The real work here is the header and the footer**, and `/archive`'s are not the app's:
-
-- `header.app-header` (`:129`) is `display: flex; align-items: center; justify-content:
-  flex-start; height: 3.5rem; padding: 0 1rem`. The flex properties and the padding move to a
-  new `header.app-header > .bar` rule that also carries `width: 100%; max-width: 32rem;
-  margin: 0 auto; height: 100%`. The `<header>` keeps only its height, background and border.
-  Markup at `:291` gains the wrapper div. `header.app-header .brand` is a descendant
-  selector, so it survives the extra level — as does the inline `document.querySelector('.brand')`
-  further down the file.
-- `footer.app-footer` (`:275`) is `padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom))`.
-  The **bottom padding with its `env()` stays on the `<footer>`** — moving it to a wrapper
-  breaks the safe-area inset on a notched phone. Only the horizontal 1rem and the cap go to
-  the wrapper.
+The header and footer on this page are untouched, for the same reason as the app's (b59).
 
 **Test** — `tests/page-width.spec.ts`:
-7. `/archive`'s three page containers all resolve to 480px of content: parse each rule's
-   `max-width` and horizontal padding and assert `max − 2 × pad === 480px`. Asserting the
-   derived width rather than looking for the strings `480px` and `1rem` — `1rem` appears a
-   dozen times in that stylesheet, so a substring check would pass whatever the container
-   said. This is the assertion that fails loudly if either number moves.
+5. `/archive`'s `main` resolves to 480px of content and a 16px gutter: parse `max-width` and
+   the horizontal padding and assert `max − 2 × pad === 480px`. Asserting the derived width
+   rather than looking for the strings `480px` and `1rem`, because `1rem` appears a dozen
+   times in that stylesheet and a substring check would pass whatever the container said.
+   This is what makes a no-op task worth a commit: the number is correct today by accident of
+   history, and nothing was stopping it drifting.
 
-Commit: `feat(layout): /archive header and footer on the page column`
+Commit: `docs(layout): record why /archive is already on the page column`
 
 ---
 
@@ -249,7 +200,7 @@ documents the derivation — "`/stats` body is max-width 40rem with 1.5rem paddi
   wrong would mislead whoever next sizes a label.
 
 **Test** — `tests/page-width.spec.ts`:
-8. `/stats`'s body resolves to 480px of content, by the same `max − 2 × pad` assertion as
+6. `/stats`'s body resolves to 480px of content, by the same `max − 2 × pad` assertion as
    task 4.
 
 Commit: `feat(layout): /stats on the page column, with the chart text rescaled`
@@ -399,13 +350,14 @@ read carefully; CI is the first real signal.
   saving-off test. Those assertions are still meaningful — the block should be absent — so
   keeping the locator is both less work and a better test than deleting three lines. `boxes`
   stays too; the Best block still has three.
+- **The header-alignment check is gone**, with the header work it was written for (b59).
 - `e2e/specs/player-stats.spec.ts` — the Average-block assertions move back to All-time rows;
   `Best time` becomes `Fastest time`; `Current 1-go streak` and `Current play streak` are
   unchanged; the two-boxes-in-Average assertion goes and the three-in-Best one stays.
 - `e2e/specs/completion.spec.ts` — the `completion.average` reference goes.
 - The new header-alignment check from task 3.
 
-Commit: `test(e2e): three blocks, new labels, and the column alignment`
+Commit: `test(e2e): three blocks and the new labels`
 
 ---
 
@@ -445,11 +397,11 @@ wider diff than the redesign was: it touches every page, not one panel.
 
 ## Risks worth naming
 
-1. **This touches every page.** The panel work is contained; the width work is not. Tasks 3,
-   4 and 5 are the ones to review hardest, and the header is where a mistake is most visible.
-2. **The menu bug is introduced by this change and fixed inside it** (task 3). If task 3 is
-   split or reordered, cap the header without moving the menu and the menu detaches from its
-   button on desktop.
+1. **The width work reaches beyond the panel**, though far less than the first draft assumed:
+   the three screens, and `/stats`. Task 5 is the one to review hardest.
+2. **Top-aligning is a visible change to `/welcome`** (task 3) that nobody has seen yet. It is
+   two declarations and trivially reversible, but it changes the first screen a new player
+   meets, so it wants a real look on the preview rather than a nod.
 3. **`/stats` is the only page whose width is depended on by code** (task 5). The label
    arithmetic survives, but the SVG font-size media queries no longer line up with anything
    real. Named, not fixed.
@@ -457,8 +409,10 @@ wider diff than the redesign was: it touches every page, not one panel.
    capped column**, as are the `clamp(…, 5vw, …)` type sizes. They do not track the column.
    Harmless at 480px — the column only ever gets wider — but it is the same class of bug as
    the one this plan is fixing, one level down.
-5. **Nothing tested any width before today.** Every assertion in task 1 and task 3 is new
-   ground, so a mistake in them fails silently rather than loudly.
+5. **Nothing tested any width before today.** Every assertion in `tests/page-width.spec.ts` is
+   new ground, so a mistake in it fails silently rather than loudly.
+6. **The footer still has no horizontal padding**, so its text meets the screen edge at
+   320px. Real, small, not asked for, and deliberately not smuggled into this pull request.
 
 ## Open questions
 
@@ -479,7 +433,9 @@ you want it in.
 
 - **HIGH — the menu had to move, not just be restyled.** `#app-menu` is a sibling of
   `</header>`, so `top-full` against an unchanged parent would have dropped it a full
-  viewport below the fold. Task 3 now moves the element.
+  viewport below the fold. Overtaken by Jamie's b59 — the header does not move, so neither
+  does the menu — but the finding was correct and is recorded in case the header is ever
+  capped later.
 - **HIGH — task 1 left the tree red.** Two of its four tests asserted states that tasks 2, 4
   and 5 create. Split across those tasks.
 - **MEDIUM — `/archive` is already 480px of content**, and the proposed change was a
@@ -487,8 +443,8 @@ you want it in.
 - **MEDIUM — the `/stats` chart text would have shrunk a fifth** and gained a size cliff at a
   641px window. Base sizes raised to cancel the new scale; the 640px step dropped.
 - **MEDIUM — the alignment check would have failed by 4px** on the brand button's `-mx-1`,
-  and would have run on two phone projects where the cap never binds. Now measures the octo
-  and gates itself to desktop.
+  and would have run on two phone projects where the cap never binds. Also overtaken by b59:
+  the check is gone with the header work.
 - **MEDIUM — task 6 understated its own diff**: nine existing assertions key off the old
   labels, not three.
 - **MEDIUM — the Worker parity test was close to vacuous.** Now asserts the derived content
