@@ -9,7 +9,7 @@ Follows [`2026-08-11-stats-redesign-brief.md`](2026-08-11-stats-redesign-brief.m
 plan, both of which are built and on this branch. Item numbers here start again at 1 and are
 append-only; where an item reverses a redesign decision it says so.
 
-**Short form: sections 1, 2, 3, 7, 8, 9, 11 — proposed, awaiting Jamie.** Sections 4
+**Short form: sections 1, 2, 3, 7, 8, 9, 11 — approved by Jamie 2026-08-12.** Sections 4
 (maths), 5 (state) and 10 (analytics) are n/a: nothing here changes a number, stores
 anything, or sends an event. Section 6 (how it fits) is folded into section 3, because the
 only module question is which files carry the margin.
@@ -17,7 +17,7 @@ only module question is which files carry the margin.
 ---
 
 ## 1. What it is
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-12 (his own list) · Ack: Override: Jamie 2026-08-12
 
 1. Seven presentational changes, six to the completion panel and one to page margins
    site-wide. Jamie's own list, given after seeing the built redesign. (assumed)
@@ -27,7 +27,7 @@ Settled: pending · Ack: pending
    request rather than as a follow-up. (assumed)
 
 ## 2. Out of scope
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-12 (accepted all recommendations) · Ack: Override: Jamie 2026-08-12
 
 4. Dave's alternative design stays parked, as agreed on 2026-08-11. (assumed)
 5. The goes chart keeps its shape, its `6+` tail and its wording. (assumed)
@@ -35,7 +35,7 @@ Settled: pending · Ack: pending
    redesign. (assumed)
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-12 (item 8 decided by him, rest accepted) · Ack: Override: Jamie 2026-08-12
 
 ### The margin
 
@@ -64,7 +64,7 @@ Settled: pending · Ack: pending
     flames, none on the "Current" figures. Same colour as the number it precedes, which is
     `--color-accent-best`. (assumed)
 11. Every font on the panel changes from Inconsolata to the body font, Quicksand, numbers
-    included. (assumed — but see 24 for how far "every" reaches)
+    included. (assumed — item 21 settles how far "every" reaches)
 12. The Average block goes, and average time and average goes return as rows inside All
     time. This reverses redesign items 67, 72 and 84. (assumed)
 13. The boxes around the three bests lose their background, border and offset shadow. The
@@ -84,7 +84,7 @@ Folded into section 3. Files touched: `index.html` and `src/welcome.ts` for the 
 `src/completion.ts`, `src/tailwind.css` and `public/sprites.svg` for the panel.
 
 ## 7. How it looks
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-12 (item 21 decided by him, rest accepted) · Ack: Override: Jamie 2026-08-12 (Dave sees it on the preview)
 
 15. The three bests keep their three-column grid, their icons, their titles and their
     number-over-label pairs. Only the background, the border and the offset shadow go. The
@@ -117,7 +117,7 @@ Settled: pending · Ack: pending
     screen.**
 
 ## 8. Copy & wording
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-12 (item 25 decided by him) · Ack: Override: Jamie 2026-08-12 (Dave sees it on the preview)
 
 22. The words on screen, from Jamie's list: **"Fastest"** in the Time box, **"Streak"** in
     the 1-go and Plays boxes. All three "Current" labels stay as they are. (settled by the
@@ -143,7 +143,7 @@ Settled: pending · Ack: pending
     streak".**
 
 ## 9. Accessibility
-Settled: pending (Jamie — blocking, this section is his) · Ack: n/a
+Settled: Jamie 2026-08-12 (his section, signed) · Ack: n/a
 
 26. The flame is `aria-hidden` and decorative, like every other icon on the panel. The word
     beside it — "Fastest", "Longest 1-go streak" — is what carries the meaning. (assumed)
@@ -168,6 +168,39 @@ Settled: pending (Jamie — blocking, this section is his) · Ack: n/a
 n/a — presentational only, no event of any kind.
 
 ## 11. Done / test plan
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-12 (blanket authorisation to proceed) · Ack: n/a
 
-*(to be written)*
+32. **QA level: light**, as the redesign was. No worker change, no storage change, no
+    routing change, and no figure's arithmetic moves. The diff is markup, CSS, copy and one
+    icon. (assumed)
+33. `tests/completion-stats.spec.ts` carries most of it: the visible labels read "Fastest",
+    "Streak", "Streak"; the spoken ones read "Fastest time", "Longest 1-go streak",
+    "Longest play streak"; the panel has three blocks and no `data-stat-block="average"`;
+    average time and average goes are rows inside All time with their explanatory lines; a
+    flame sits on each of the three records and on none of the three "Current" figures; and
+    every flame is `aria-hidden`. (assumed)
+34. **Two guards that these changes stay done**, both reading `src/tailwind.css` the way the
+    existing container-colour test does: the completion-panel rules declare no Inconsolata
+    anywhere, and `.stat-box` declares no background, border or shadow. Cheap, and they are
+    the two things a later tidy-up would put back without noticing. (assumed)
+35. A margin test reading `index.html` and `src/welcome.ts`: the welcome and completion
+    containers use the same side padding as the game screen. It is the only thing standing
+    between "standardised" and "standardised until someone edits one of them". (assumed)
+36. `e2e/`: the Average-block locator goes, its two assertions move back to All-time rows,
+    and the three spoken labels change. Playwright is run **by CI, never here**. (assumed)
+37. `npm test` after each task, `npm run build` before the pull request, and then by eye on
+    the preview with `?demo=stats` — on a phone, both colour modes, all four themes. Dave
+    sees it there before anything merges. (assumed)
+
+---
+
+## Closing
+
+**Settled 2026-08-12.** Jamie signed section 9 (his, blocking) and section 8, settled the
+margin in section 3 and the font reach in section 7, and then authorised the run through
+`da-brief`, Plan, `da-plan` and Build in one go.
+
+**Dave's ack on sections 7 and 8 is outstanding, and Jamie's authorisation stands as the
+override** — recorded as an override, never as an ack, and following the same pattern as
+2026-08-11: Dave challenges the look when there is a version on the preview to look at,
+which is faster for him than reading a description of it. `Override: Jamie 2026-08-12.`
