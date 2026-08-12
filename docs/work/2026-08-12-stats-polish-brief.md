@@ -139,11 +139,30 @@ Settled: pending · Ack: pending
     no idea which is the record. "Longest" against "Current" is the distinction the sighted
     reader gets from the flame.
     Jamie's call: accessibility is his.
+    **Settled: Jamie, 2026-08-12 — "Fastest time", "Longest 1-go streak", "Longest play
+    streak".**
 
 ## 9. Accessibility
-Settled: pending · Ack: pending
+Settled: pending (Jamie — blocking, this section is his) · Ack: n/a
 
-*(to be written)*
+26. The flame is `aria-hidden` and decorative, like every other icon on the panel. The word
+    beside it — "Fastest", "Longest 1-go streak" — is what carries the meaning. (assumed)
+27. Removing the boxes removes no semantics. The description list stays, the `h4` titles
+    stay, the number stays above its label on screen while the DOM order stays `dt` then
+    `dd`. Only background, border and shadow go. (assumed)
+28. Colour is still never the only signal, and this is slightly better than before: the
+    record was marked by the second accent colour alone, and now it also carries a flame and
+    a different word. Someone who cannot tell the two accents apart now has two other
+    signals. (assumed)
+29. The font change raises no new legibility question — Quicksand is already the font of
+    every sentence on the site, at every size. The one thing monospace was doing on this
+    panel was lining up columns of digits, and the only column that matters is the goes
+    chart's counts, which sit in a fixed-width track and stay aligned regardless. (assumed)
+30. The margin change gives the content 16px more width and takes nothing away, so no line
+    that fits today stops fitting. The three-across breakpoint is in `rem`, so the columns
+    still stack at large browser text. (assumed)
+31. Nothing here needs a new test beyond the ones in section 11 — the existing axe run over
+    `/solved` in both colour schemes covers the structural half. (assumed)
 
 ## 10. Analytics
 n/a — presentational only, no event of any kind.
