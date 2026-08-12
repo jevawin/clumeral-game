@@ -7,7 +7,18 @@ same day. Item numbers in brackets — `(b53)` — refer to that brief. **This p
 not what.** Anything the brief genuinely left unnamed is in "Open questions" rather than
 decided quietly.
 
-Status: **`da-plan` run and answered, 2026-08-12.** The review returned 2 High, 6 Medium and
+Status: **Built, 2026-08-12.** All twelve tasks are committed on `dev/stats-tweaks`, one
+commit each (tasks 4 and 5 share one, and 8 and 9 share one — both pairs are a single
+coherent change). 827 unit tests and the build pass. Not yet pushed; `da-build` has not run.
+
+Two things the build settled that the plan did not name:
+- **Task 8's font sweep found seven rules, not the six the plan listed** — `.stat-hero` was
+  the seventh, exactly as `da-plan` low 10 predicted. The guard is written as a sweep over
+  the whole panel section rather than a list, so the next one is covered too.
+- **`.stat-boxes--two` went with the Average block**, as planned, and nothing else referenced
+  it.
+
+Earlier: **`da-plan` run and answered, 2026-08-12.** The review returned 2 High, 6 Medium and
 10 Low. Every one is fixed in place below; what it changed is listed at the end.
 
 ---
