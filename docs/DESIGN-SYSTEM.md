@@ -159,11 +159,40 @@ The duplication goes away with #200, which migrates `/archive` to a SPA route.
 ## Typography
 
 - Body / headings: **Quicksand** 400/600/700 (Google Fonts), fallback `system-ui` — `--font-sans`
-- Mono (labels/digits): Inconsolata 400/700 (Google Fonts)
+- Mono (digit boxes, keypad, clue tags): Inconsolata 400/700 (Google Fonts). **Not the
+  completion panel** — that reads in Quicksand, numbers included.
 
 ## Layout
 
-- Fluid. `max-w-sm` (~24rem). No fixed breakpoints.
+### The page column
+
+**One content width for every page: 480px, behind a 16px gutter.** Declared once, as
+`--page-max` and `--page-gutter` in `src/tailwind.css`, and applied through two utilities:
+`.page-col` caps and centres, `.page-pad` puts the gutter on the element **outside** it.
+
+- The split matters. Padding *inside* a capped box eats the content width, which is how
+  `/welcome` and `/solved` ended up 32px narrower than `/play` on a large phone without
+  anybody noticing. Content is `min(480, viewport − 32)` everywhere.
+- **Why 480**: the cap must never be narrower than a phone, so a phone always fills its
+  screen and only a desktop ever meets it. A Galaxy S24 Ultra reports 480 and a Pixel 8 Pro
+  448, so 440 would not have held.
+- **Why px and not rem**: at large browser text the column stops growing rather than
+  outrunning the window. Components inside it keep their `rem` breakpoints — `.stat-boxes`
+  is `min-width: 22.5rem` deliberately, so the three records still stack at 200% text. Do
+  not "fix" one of the two to match the other; they answer different questions.
+- The Worker-rendered pages cannot import the token, so `/archive` and `/stats` repeat the
+  numbers. `tests/page-width.spec.ts` asserts the width they *work out to*, not the strings.
+  `/archive`'s `32rem` is already 480px of content behind its 1rem padding — leave it.
+- **The header and footer are deliberately full width** and have no cap. The jumping around
+  this solves is the content area changing width between page views, not chrome sitting at a
+  different edge from the content.
+- **Every screen starts at the top.** No `justify-center` on a screen container: `/welcome`
+  and `/solved` used to centre vertically while `/play` did not, so moving between screens
+  walked the content up and down the window.
+
+### Other
+
+- No fixed breakpoints beyond the page column.
 - Game screen uses new screen architecture: `data-screens` overlay with `data-screen` sections.
 - Legacy wrapper (`min-h-screen bg-bg`) holds header octo + title.
 - No `!important` unless overriding third-party.
@@ -185,13 +214,14 @@ Component-specific CSS lives in `src/tailwind.css` using data-attribute selector
 - `.toast-msg` -- toast notification element
 - `.recurring` -- recurring decimal overdot
 - `.stat-block__*`, `.stat-hero`, `.stat-today`, `.stat-figure*`, `.stat-boxes`,
-  `.stat-box*`, `.stat-row`, `.stat-note` -- the completion panel's four blocks
+  `.stat-box__*`, `.stat-flame`, `.stat-row`, `.stat-note` -- the completion panel's three
+  blocks. Note there is no `.stat-box` rule: the records have no box left, only a grid gap.
 - `.goes-*` -- the "How many goes you take" chart
 - `.save-note*` -- the untick warning and submit countdown on the play screen
 
 ## The completion panel
 
-Four blocks in reading order: **Today**, **Best**, **Average**, **All time**.
+Three blocks in reading order: **Today**, **Best**, **All time**.
 
 - **Today is the hero** -- two figures side by side, each an icon and a number, and the
   largest type on the panel. It is the only thing that changed in the last ten seconds.
@@ -205,8 +235,24 @@ Four blocks in reading order: **Today**, **Best**, **Average**, **All time**.
   Numbers are bold; box titles are the same size and not bold; labels are regular in the
   ordinary foreground colour. All-caps stays on the block headings and never appears
   inside a box.
+- **The records are Fastest, Streak, Streak** -- the visible words in the Time, 1-go and
+  Plays boxes, over an unchanged "Current". In speech they read **"Fastest time", "Longest
+  1-go streak", "Longest play streak"**, because "Streak" alone would announce two figures
+  both called "streak": on screen the flame and the position tell them apart, and a screen
+  reader gets neither.
+- **A flame marks each record**, inside the `dd` so it inherits the number's colour rather
+  than declaring one. Never beside a dash -- a badge for an achievement nobody has yet.
+- **The records have no box.** Background, border, radius, padding and the offset shadow all
+  went. What separates the three columns is the 1rem grid gap, and nothing else; vertical
+  space cannot do that job for a horizontal grid.
+- **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
+  at all and inherit from `html`/`body`, which is why removal was the right edit rather than
+  an override. The play screen keeps Inconsolata: its keypad relies on every key being the
+  same width.
+- **The two averages live in All time**, as rows with their explanatory lines, alongside
+  plays and first-go wins. They had their own block briefly and it repeated the panel.
 - **Two accents, one exception.** Every figure takes the player's own `--color-accent`
-  except the three "Best" numbers, which take `--color-accent-best` -- the next theme
+  except the three record numbers, which take `--color-accent-best` -- the next theme
   along, wrapping Grape back to Lime. It is CSS, not JavaScript: chroma differs per theme
   and per mode, and the panel renders once, so deriving it at render time would freeze the
   best colour when someone switched theme on `/solved`. The mapping is pinned in
@@ -223,10 +269,10 @@ Four blocks in reading order: **Today**, **Best**, **Average**, **All time**.
   and `dd` before `dt` is not conforming HTML; the pairing is carried by the description
   list, not by position (WCAG 1.3.2). Do not "fix" the markup to match the picture --
   `tests/completion-stats.spec.ts` pins the DOM order.
-- **The visible label is short and the spoken one is full.** "Best" and "Current" and
-  "Avg." on screen; "Best time", "Current 1-go streak", "Average time" in a visually
-  hidden span. Two spans, not a prefix and a suffix -- "Avg." is not the start of
-  "Average time".
+- **The visible label is short and the spoken one is full.** "Fastest", "Streak" and
+  "Current" on screen; "Fastest time", "Longest 1-go streak", "Current play streak" in a
+  visually hidden span. Two spans, not a prefix and a suffix -- neither is the start of the
+  other.
 - **Today's time appears twice, and three times on a personal-best day.** Once under the
   stopwatch in Today, then as Best over Current in the Time box. Jamie's call, over Dave's
   objection to the repeat; if it grates, it is one `statPair` call to change.
@@ -239,9 +285,9 @@ Four blocks in reading order: **Today**, **Best**, **Average**, **All time**.
   the stopwatch figure altogether rather than showing an empty one. (Jamie and Dave,
   2026-08-11.)
 - **All time is open, not folded, but quiet**: smaller type, muted colour, plain rows
-  rather than boxes. It keeps plays, first-go wins and the goes chart; the two averages
-  moved to their own block and the fastest first-go win went entirely, because best time
-  is the same idea told better.
+  rather than boxes. Plays, first-go wins, average goes, average time, then the chart. The
+  fastest first-go win is gone for good -- "Fastest" in the Time box is the same idea told
+  better.
 - **The explanatory lines live in All time only.** Inside a box, "Best" over "Current"
   under a labelled icon is already the explanation, and three sentences in three small
   boxes was the clutter the redesign was called for.
