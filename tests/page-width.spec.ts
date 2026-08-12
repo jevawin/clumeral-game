@@ -68,3 +68,28 @@ describe('the page column token', () => {
     expect(utilities).toContain('.page-pad');
   });
 });
+
+describe('the screens all use it', () => {
+  it('leaves no hand-written width cap on any screen', () => {
+    // Asserted as an absence rather than by listing the three screens: the
+    // failure this guards against is a fourth screen arriving with a number of
+    // its own, which a list would never see.
+    //
+    // Scoped to <main>, because the feedback modal legitimately has a cap of its
+    // own — it is a dialog floating over the page, not the page column.
+    const main = indexHtml.slice(indexHtml.indexOf('<main'), indexHtml.indexOf('</main>'));
+    expect(main).not.toMatch(/max-w-\[\d/);
+    expect(welcome).not.toMatch(/max-w-\[\d/);
+  });
+
+  it('gives every screen section the gutter and every wrapper the cap', () => {
+    const sections = [...indexHtml.matchAll(/<section data-screen="(\w+)"[^>]*class="([^"]*)"/g)];
+    expect(sections.length).toBe(3);
+    for (const [, name, classes] of sections) {
+      expect(classes, `${name} section`).toContain('page-pad');
+    }
+    // One wrapper per screen: two in index.html, one rendered by welcome.ts.
+    expect([...indexHtml.matchAll(/page-col/g)].length).toBe(2);
+    expect(welcome).toContain('page-col');
+  });
+});
