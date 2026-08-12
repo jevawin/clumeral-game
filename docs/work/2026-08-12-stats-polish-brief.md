@@ -113,11 +113,32 @@ Settled: pending · Ack: pending
     Changing those is a redesign of the play screen, not a tidy-up of the stats panel, and
     it would land unreviewed in a pull request about stats. Happy to do it — as its own
     piece of work, where it can be looked at properly.
+    **Settled: Jamie, 2026-08-12 — the completion panel only. No change to the play
+    screen.**
 
 ## 8. Copy & wording
 Settled: pending · Ack: pending
 
-*(to be written)*
+22. The words on screen, from Jamie's list: **"Fastest"** in the Time box, **"Streak"** in
+    the 1-go and Plays boxes. All three "Current" labels stay as they are. (settled by the
+    list itself)
+23. The returning All-time rows keep the names and the explanatory lines they had before
+    the redesign: "Average goes" / "Your average number of guesses." and "Average time" /
+    "How long you usually take." Every other row in that block carries a line, so these
+    would look half-finished without one. (assumed)
+24. Nothing else on the panel changes wording. (assumed)
+25. **What should a screen reader say for the three renamed labels?**
+    Background: the panel shows a short word and speaks a full one, because "Best" alone
+    tells you nothing about which figure it belongs to. Today they read "Best time", "Best
+    1-go streak" and "Best play streak".
+    My rec: **"Fastest time", "Longest 1-go streak", "Longest play streak"** — pairing with
+    the unchanged "Current time", "Current 1-go streak" and "Current play streak".
+    Why: "Fastest" is now the word on screen, so speech saying "Best" contradicts it. And
+    "Streak" cannot be spoken on its own, because the figure below it is a streak too — a
+    screen reader would announce two figures both called "streak" and the reader would have
+    no idea which is the record. "Longest" against "Current" is the distinction the sighted
+    reader gets from the flame.
+    Jamie's call: accessibility is his.
 
 ## 9. Accessibility
 Settled: pending · Ack: pending
