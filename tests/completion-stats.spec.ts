@@ -597,6 +597,30 @@ describe('the panel colours itself once, at the top', () => {
     expect(css).toMatch(/\[data-completion-panel\]\s*\{[^}]*color:\s*var\(--color-text\)/);
   });
 
+  it('reads in the body font, with no Inconsolata left on the panel', () => {
+    // Deleted rather than overridden, so the rules inherit Quicksand from
+    // html/body. Swept across the whole panel section rather than listing the
+    // seven rules, so a rule added later is covered too. The play screen keeps
+    // Inconsolata — its keypad needs every key the same width (brief 21).
+    const start = css.indexOf('[data-completion-panel] {');
+    const panel = css.slice(start, css.indexOf('.goes-row__fill'));
+    expect(panel).not.toContain('Inconsolata');
+  });
+
+  it('leaves no box around the records, in either file (brief 13, 42)', () => {
+    // Both halves matter. The rule is deleted outright, so an "declares no
+    // background" check inside its body would pass trivially — hence asserting
+    // the exact selector is absent. And the offset shadow was never in this
+    // file at all: it was the shadow-box utility in the markup, which a
+    // stylesheet-only guard would miss entirely.
+    expect(css).not.toMatch(/(^|[};])\s*\.stat-box\s*\{/m);
+    for (const rule of css.matchAll(/\.stat-box[\w-]*\s*\{([^}]*)\}/g)) {
+      expect(rule[1]).not.toMatch(/background-color|border:|box-shadow/);
+    }
+    const completion = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+    expect(completion).not.toMatch(/class="stat-box[^"]*shadow-box/);
+  });
+
   it('uses the theme token, never a literal colour', () => {
     // A hex here would be one mode's colour hardcoded into both.
     const block = css.match(/\[data-completion-panel\]\s*\{[^}]*\}/)![0];

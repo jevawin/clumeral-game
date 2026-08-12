@@ -137,13 +137,17 @@ function statRow(label: string, value: string, note: string): string {
 /**
  * One box: a title with its icon, and a description list of one or two pairs.
  *
+ * "Box" is now only a name for the grouping: the background, border and offset
+ * shadow all went (brief 13), so what separates the three on screen is the gap
+ * between the columns.
+ *
  * The `dl` sits INSIDE the box, below the `h4`. A `dt` with no `dl` ancestor is
  * not a description list at all — it breaks the pairing brief 46 relies on and
  * trips axe's definition-list rule at serious level, which the accessibility
  * spec runs over /solved in both colour schemes.
  */
 function statBox(title: string, iconId: string, pairs: string): string {
-  return `<div class="stat-box shadow-box">
+  return `<div class="stat-box">
     <h4 class="stat-box__title">
       <svg class="stat-box__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${title}
     </h4>
