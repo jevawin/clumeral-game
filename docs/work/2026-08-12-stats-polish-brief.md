@@ -291,6 +291,39 @@ new numbered item; item numbers stay append-only, so 38 onwards.
 
 ---
 
+## 13. The margin, specified properly
+
+Item 39 asked Jamie to choose between two changes. He answered with a third and better one:
+he had never actually specified the sizing, so he specified it.
+
+53. **Settled: Jamie, 2026-08-12.** Every inner div gets `max-width: 400px`. Every section
+    gets 16px padding. The padding therefore sits **outside** the cap on every screen, which
+    is option (b) in item 39, and the cap moves from 390px to a round 400px.
+    What that gives, in his words: above 432px of viewport the content is the full 400px;
+    below it the content is whatever is left after 16px each side. 432 is 400 + 16 + 16.
+    This supersedes items 7, 8 and 39. It is a real specification rather than a match
+    against whatever `/play` happened to be doing, which is what makes it worth having.
+54. **Open: does "all pages" include `/archive` and `/stats`?** Those two are Worker-rendered
+    and are shaped differently — `/archive` is a table of every past puzzle at a 512px
+    measure, `/stats` is the team's dashboard with a chart at 640px.
+    My rec: **the three player screens only** — welcome, play and solved. Why: 400px is a
+    phone column, and it is the right measure for a column of clues or a stack of figures.
+    A table of dates squeezed into 400px wraps every row, and the analytics chart is read on
+    a laptop and would lose most of its width. Consistency between a game screen and a
+    spreadsheet is not obviously worth having.
+    Item 6a already put `/stats` out of scope on the same reasoning and Jamie did not object,
+    but he has since said "all pages", so this is asked rather than assumed.
+
+## 14. The demo seed
+
+55. **Settled: Jamie, 2026-08-12 — leave it alone.** The fake history seeded by `?demo=stats`
+    includes a row for today with the answer 314, which is why the preview showed a solved
+    puzzle whose answer did not match the real one. That cost an hour of a live-site scare
+    on 2026-08-12. It is not being changed: the seed is temporary scaffolding and goes when
+    the redesign lands. `?demo=clear` puts the preview back to a normal unplayed puzzle.
+
+---
+
 ## Closing
 
 **Settled 2026-08-12.** Jamie signed section 9 (his, blocking) and section 8, settled the
@@ -307,5 +340,10 @@ One thing in there is more than a formality, and item 43 says so: putting the tw
 back partly reverses redesign item 84, which was Jamie's answer to Dave's own complaint that
 the panel repeated itself and ran long. Dave should see that on the preview and say.
 
-**`da-brief` run and answered 2026-08-12** — items 38 to 52. One question is still open and
-blocking: **item 39**, which of the two margin changes Jamie means.
+**`da-brief` run and answered 2026-08-12** — items 38 to 52. Item 39 was then superseded by
+Jamie's own specification in section 13: 400px inner cap, 16px section padding, padding
+outside the cap.
+
+One question remains open, and it does not block the panel work: **item 54**, whether
+`/archive` and `/stats` are in "all pages". Everything on the completion panel can be
+planned and built while that is decided.
