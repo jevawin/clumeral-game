@@ -56,7 +56,9 @@ function blockText(id: string): string {
 }
 
 /** One box pair, found by the full words a screen reader hears (brief 78). */
-function pair(fullLabel: string): { value: string; short: string; isBest: boolean } | null {
+function pair(fullLabel: string): {
+  value: string; short: string; isBest: boolean; flame: Element | null;
+} | null {
   for (const el of panel().querySelectorAll('.stat-box__pair')) {
     if (el.querySelector('.sr-only')?.textContent?.trim() !== fullLabel) continue;
     const value = el.querySelector('.stat-box__value')!;
@@ -64,6 +66,7 @@ function pair(fullLabel: string): { value: string; short: string; isBest: boolea
       value: value.textContent!.trim(),
       short: el.querySelector('.stat-box__label')!.textContent!.trim(),
       isBest: value.classList.contains('stat-box__value--best'),
+      flame: value.querySelector('.stat-flame'),
     };
   }
   return null;
@@ -293,6 +296,33 @@ describe('the completion panel', () => {
     for (const el of panel().querySelectorAll('.stat-box__pair')) {
       expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD']);
     }
+  });
+
+  it('puts a flame on each record and on nothing else (brief 10, 18)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    for (const label of ['Fastest time', 'Longest 1-go streak', 'Longest play streak']) {
+      expect(pair(label)!.flame, label).not.toBeNull();
+      // aria-hidden, and inside the dd — so it never lands in the spoken label.
+      expect(pair(label)!.flame!.getAttribute('aria-hidden')).toBe('true');
+    }
+    for (const label of ['Current time', 'Current 1-go streak', 'Current play streak']) {
+      expect(pair(label)!.flame, label).toBeNull();
+    }
+    // Three flames on the whole panel, nowhere else.
+    expect(panel().querySelectorAll('.stat-flame').length).toBe(3);
+  });
+
+  it('puts no flame beside a dash — a badge for an achievement nobody has', async () => {
+    // Reachable on a full panel: three countable games, none of them timed.
+    await render([
+      { date: day(0), tries: 2 },
+      { date: day(1), tries: 3 },
+      { date: day(2), tries: 3 },
+    ], 2);
+    expect(pair('Fastest time')!.value).toBe('—');
+    expect(pair('Fastest time')!.flame).toBeNull();
+    // The two streaks are always numbers, so they keep theirs.
+    expect(pair('Longest play streak')!.flame).not.toBeNull();
   });
 
   it('shows a dash for Current time when this game has no valid time', async () => {

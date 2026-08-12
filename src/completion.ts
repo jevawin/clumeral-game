@@ -166,9 +166,20 @@ function statBox(title: string, iconId: string, pairs: string): string {
  * conforming HTML and a screen reader must hear the label first.
  */
 function statPair(shortLabel: string, fullLabel: string, value: string, isBest = false): string {
+  // The flame marks a record, and it goes inside the dd so it inherits the
+  // number's colour rather than declaring one — which is what keeps "the same
+  // colour as the number" true in both modes and all four themes (brief 17).
+  // Inside the dd also keeps it out of the spoken label entirely.
+  //
+  // Not on a dash: formatDuration returns '—' when there is no time to show, and
+  // a flame is a badge for an achievement nobody has yet (brief 46). Only the
+  // Time box can hit this — the two streaks are always numbers.
+  const flame = isBest && value !== '—'
+    ? '<svg class="stat-flame" aria-hidden="true"><use href="/sprites.svg#icon-flame"/></svg>'
+    : '';
   return `<div class="stat-box__pair">
     <dt><span class="stat-box__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
-    <dd class="stat-box__value${isBest ? ' stat-box__value--best' : ''}">${value}</dd>
+    <dd class="stat-box__value${isBest ? ' stat-box__value--best' : ''}">${flame}${value}</dd>
   </div>`;
 }
 

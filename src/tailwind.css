@@ -617,6 +617,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   /* The one exception to "every figure is the player's own accent" (brief 81). */
   .stat-box__value--best { color: var(--color-accent-best); }
+  /* The flame beside a record. Sized to the text and given no colour of its own,
+     so currentColor takes the number's — including the --best one above. */
+  .stat-flame {
+    inline-size: 1em;
+    block-size: 1em;
+    vertical-align: -0.125em;
+    margin-inline-end: 0.25rem;
+  }
   /* 14px: rung 3 sits between All time's two sizes (0.9375rem and 0.8125rem),
      and is the size the fit arithmetic at brief 69 was done at. */
   .stat-box__label {
