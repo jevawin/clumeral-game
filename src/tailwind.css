@@ -575,7 +575,6 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   @media (min-width: 22.5rem) {
     .stat-boxes { grid-template-columns: repeat(3, 1fr); }
-    .stat-boxes--two { grid-template-columns: repeat(2, 1fr); }
   }
   /* No .stat-box rule, deliberately (brief 13). The records used to sit in boxes
      borrowing the play screen's digit-box styling; the background, border, radius

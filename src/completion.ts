@@ -54,6 +54,8 @@ const dom = {
 const NOTES = {
   plays: 'Daily puzzles you have finished.',
   firstGoWins: 'Puzzles you got on your first guess.',
+  avgGoes: 'Your average number of guesses.',
+  avgTime: 'How long you usually take.',
 } as const;
 
 const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
@@ -399,17 +401,6 @@ export function renderCompletion(
             statPair('Current', 'Current play streak', String(stats.playStreak)))}
         </div>`));
 
-      // Two boxes, one figure each (brief 67, 72). Neither is a record, so both
-      // take the player's own accent — "Best" is the only exception to that, and
-      // an average is not one.
-      blocks.push(block('average', 'Average',
-        `<div class="stat-boxes stat-boxes--two">
-          ${statBox('Time', 'icon-stopwatch',
-            statPair('Avg.', 'Average time', formatDuration(stats.avgTimeSeconds)))}
-          ${statBox('Goes', 'icon-calculator-check',
-            statPair('Avg.', 'Average goes', stats.avgGoes ?? '—'))}
-        </div>`));
-
       const firstGo = stats.firstGoPercent === null
         ? String(stats.firstGoWins)
         : `${stats.firstGoWins} (${stats.firstGoPercent}%)`;
@@ -418,6 +409,8 @@ export function renderCompletion(
         `<dl class="m-0">
           ${statRow('Plays', String(stats.plays), NOTES.plays)}
           ${statRow('First-go wins', firstGo, NOTES.firstGoWins)}
+          ${statRow('Average goes', stats.avgGoes ?? '—', NOTES.avgGoes)}
+          ${statRow('Average time', formatDuration(stats.avgTimeSeconds), NOTES.avgTime)}
         </dl>
         ${goesChart(stats.goesDistribution)}`));
     }
