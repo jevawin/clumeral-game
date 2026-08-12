@@ -1,0 +1,70 @@
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// One content width for every screen (brief 56), so the content area never
+// changes width as a player moves from one screen to the next.
+//
+// Before this, nothing in the repo tested a width or a padding at all — the
+// three screens had drifted to two different shapes and no test noticed. Every
+// assertion in this file is therefore new ground: it is the only thing standing
+// between "standardised" and "standardised until somebody edits one of them".
+//
+// The Worker-rendered pages cannot import the token, so their numbers are
+// checked by the width they work out to rather than by matching strings.
+
+const root = resolve(__dirname, '..');
+const read = (p: string) => readFileSync(resolve(root, p), 'utf-8');
+
+const tailwind = read('src/tailwind.css');
+const indexHtml = read('index.html');
+const welcome = read('src/welcome.ts');
+const archive = read('src/worker/puzzles.ts');
+const stats = read('src/worker/stats.ts');
+
+const PAGE_MAX_PX = 480;
+
+/** The body of the first rule with this exact selector. */
+function rule(css: string, selector: string): string {
+  const m = new RegExp(`(^|[};{])\\s*${selector}\\s*\\{([^}]*)\\}`, 'm').exec(css);
+  if (!m) throw new Error(`no rule for "${selector}"`);
+  return m[2];
+}
+
+function decl(body: string, prop: string): string {
+  // A declaration follows a semicolon, an opening brace, the end of a comment,
+  // or the start of a line — these rules are written for humans, not minified.
+  const m = new RegExp(`(?:^|;|\\{|\\*/)\\s*${prop}\\s*:\\s*([^;]+)`, 'm').exec(body);
+  if (!m) throw new Error(`no "${prop}" in rule body`);
+  return m[1].trim();
+}
+
+/** Lengths are declared for humans — 32rem, 1rem, 480px. Compare by value. */
+function px(value: string): number {
+  const m = /^(-?[\d.]+)(px|rem)$/.exec(value.trim());
+  if (!m) throw new Error(`not a simple length: ${value}`);
+  return m[2] === 'rem' ? Number(m[1]) * 16 : Number(m[1]);
+}
+
+describe('the page column token', () => {
+  it('declares one width and one gutter', () => {
+    const theme = rule(tailwind, '@theme');
+    expect(decl(theme, '--page-max')).toBe('480px');
+    expect(decl(theme, '--page-gutter')).toBe('1rem');
+  });
+
+  it('caps and centres with .page-col, and puts the gutter outside it', () => {
+    // The split is the whole point: padding INSIDE a capped box eats the content
+    // width, which is how two screens ended up 32px narrower than the third.
+    const col = rule(tailwind, '\\.page-col');
+    expect(decl(col, 'max-inline-size')).toBe('var(--page-max)');
+    expect(decl(col, 'margin-inline')).toBe('auto');
+    expect(decl(rule(tailwind, '\\.page-pad'), 'padding-inline')).toBe('var(--page-gutter)');
+  });
+
+  it('puts both in the utilities layer, so a stray max-w-* cannot beat them', () => {
+    const utilities = tailwind.slice(tailwind.indexOf('@layer utilities {'));
+    expect(utilities).toContain('.page-col');
+    expect(utilities).toContain('.page-pad');
+  });
+});

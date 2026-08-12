@@ -99,6 +99,21 @@
 
   --font-sans: "Quicksand", system-ui, sans-serif;
   --font-mono: "Inconsolata", ui-monospace, monospace;
+
+  /* The page column. One width for every screen (brief 56), so the content area
+     never changes width as you move from one screen to the next — which is the
+     jumping around this is here to stop.
+
+     480px is above the widest phone in portrait: a Galaxy S24 Ultra reports 480
+     and a Pixel 8 Pro 448. That is what makes the rule hold — a phone always
+     fills its screen and only a desktop ever meets the cap.
+
+     The gutter lives OUTSIDE the cap, so content is min(480, viewport - 32).
+     Deliberately px and not rem: at large browser text the column stops growing
+     rather than outrunning the screen. Components inside it keep their rem
+     breakpoints so they still stack — see .stat-boxes. */
+  --page-max: 480px;
+  --page-gutter: 1rem;
 }
 
 /* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
@@ -742,6 +757,17 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 }
 
 @layer utilities {
+  /* The page column, in two halves: .page-col caps and centres the content,
+     .page-pad puts the gutter on the element OUTSIDE it. Splitting them is the
+     point — padding inside a capped box eats the content width, which is how
+     /welcome and /solved ended up 32px narrower than /play on a large phone.
+
+     In utilities rather than base so they outrank Tailwind's own max-w-* on
+     layer order: a stray max-w-[390px] left on an element would otherwise
+     silently win. */
+  .page-col { inline-size: 100%; max-inline-size: var(--page-max); margin-inline: auto; }
+  .page-pad { padding-inline: var(--page-gutter); }
+
   /* Counter warn colour — toggled by modals.ts counterEl.classList.add("warn") */
   .warn { color: var(--color-accent); }
 
