@@ -50,6 +50,11 @@ Settled: pending · Ack: pending
    cap only does anything on a tablet or desktop, where a full-width completion panel would
    stretch a two-column layout across 1000px. Dropping it is a different change from the one
    asked for, and a bigger one.
+   **Settled: Jamie, 2026-08-12 — keep the cap as it is.** His reasoning, recorded because
+   it corrects mine: `/play` is not really unbounded either. Its clues stop expanding at
+   mobile width because of caps further in, so the two screens already behave the same way
+   on a wide window. The padding is the only thing that differs, and the padding is the only
+   thing that changes.
 
 ### The panel
 
@@ -81,7 +86,33 @@ Folded into section 3. Files touched: `index.html` and `src/welcome.ts` for the 
 ## 7. How it looks
 Settled: pending · Ack: pending
 
-*(to be written)*
+15. The three bests keep their three-column grid, their icons, their titles and their
+    number-over-label pairs. Only the background, the border and the offset shadow go. The
+    padding those boxes carried is replaced by a little vertical space, so the columns still
+    read as three groups rather than one run of text. No dividing lines. (assumed)
+16. Losing the boxes leaves the panel with no borrowed play-screen styling, which was the
+    reason redesign item 20 gave for having them. That reason goes with them; the panel now
+    follows the theme through colour alone. (assumed)
+17. The flame is Lucide `flame`, sized to the text (`1em`), sitting inline before the
+    number with a small gap. It inherits the number's colour rather than declaring one, so
+    the "same colour as the number" holds automatically in both modes and all four themes.
+    (assumed)
+18. Three flames only — the fastest time and the two best streaks. None on a "Current"
+    figure, none in Today, none in All time. (assumed)
+19. With the Average block gone the panel is three blocks again: Today, Best, All time.
+    (assumed)
+20. Average time and average goes become rows inside All time, after Plays and First-go
+    wins and before the chart — the order they had before the redesign moved them out.
+    (assumed)
+21. **How far does "all fonts, not the monospaced one" reach?**
+    My rec: the completion panel only — its headings, the Today figures, the box titles and
+    numbers, the All-time rows and the goes chart. Why: Inconsolata is also doing real work
+    elsewhere on the site, and it is load-bearing in at least one place. The digit boxes,
+    the keyboard keys, the clue tags and the "Your guesses" label all use it, and the
+    keyboard in particular relies on every key being the same width so the rows line up.
+    Changing those is a redesign of the play screen, not a tidy-up of the stats panel, and
+    it would land unreviewed in a pull request about stats. Happy to do it — as its own
+    piece of work, where it can be looked at properly.
 
 ## 8. Copy & wording
 Settled: pending · Ack: pending
