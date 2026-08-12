@@ -342,6 +342,28 @@ he had never actually specified the sizing, so he specified it.
 
 ---
 
+## 15. Jamie's corrections after reading the plan
+
+59. **The header keeps no width cap. Settled: Jamie, 2026-08-12.** The plan proposed capping
+    it, on the reasoning that a full-bleed header beside a capped column misaligns on a
+    desktop. Jamie: the header is deliberately full width, and the jumping around he means is
+    **the same content area changing width between one page view and the next**, not chrome
+    against content. So the header stays exactly as it is — and the menu-positioning bug the
+    plan found goes with it, because nothing about the header moves.
+    The footer is untouched for the same reason. It has no horizontal padding at all today,
+    so its text meets the screen edge at 320px; that is real but small, was not asked for,
+    and is left as a possible follow-up rather than smuggled in here.
+60. **`/archive` keeps its 16px gutter, and needs no change at all.** Its `main` is already
+    `max-width: 32rem` with `1rem` of horizontal padding, which under `box-sizing: border-box`
+    is 480px of content behind a 16px gutter — the target, already met. The only edit is a
+    comment recording that, so nobody "fixes" the 32rem into something else.
+61. **All content is top-aligned. New, Jamie, 2026-08-12.** The second kind of jumping
+    around: on a desktop, `/welcome` and `/solved` centre their content vertically while
+    `/play` sits at the top, so moving between screens walks the content up and down. Every
+    screen now starts at the top.
+
+---
+
 ## Closing
 
 **Settled 2026-08-12.** Jamie signed section 9 (his, blocking) and section 8, settled the
