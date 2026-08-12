@@ -33,6 +33,9 @@ Settled: Jamie 2026-08-12 (accepted all recommendations) · Ack: Override: Jamie
 5. The goes chart keeps its shape, its `6+` tail and its wording. (assumed)
 6. Nothing about score saving appears on this panel, in any mode — unchanged from the
    redesign. (assumed)
+6a. **`/stats` keeps its own 24px margin and 40rem measure.** It is the team's dashboard,
+   not a player screen: read on a laptop, and its width has nothing to do with the 390px
+   phone layout the three player screens share. See item 41. (assumed)
 
 ## 3. How it works
 Settled: Jamie 2026-08-12 (item 8 decided by him, rest accepted) · Ack: Override: Jamie 2026-08-12
@@ -81,7 +84,8 @@ n/a — nothing is stored or read.
 
 ## 6. How it fits
 Folded into section 3. Files touched: `index.html` and `src/welcome.ts` for the margin;
-`src/completion.ts`, `src/tailwind.css` and `public/sprites.svg` for the panel.
+`src/completion.ts`, `src/tailwind.css` and `public/sprites.svg` for the panel; and
+`docs/DESIGN-SYSTEM.md`, which this work makes wrong in five places (item 45).
 
 ## 7. How it looks
 Settled: Jamie 2026-08-12 (item 21 decided by him, rest accepted) · Ack: Override: Jamie 2026-08-12 (Dave sees it on the preview)
@@ -168,7 +172,7 @@ Settled: Jamie 2026-08-12 (his section, signed) · Ack: n/a
 n/a — presentational only, no event of any kind.
 
 ## 11. Done / test plan
-Settled: Jamie 2026-08-12 (blanket authorisation to proceed) · Ack: n/a
+Settled: Jamie 2026-08-12 (blanket authorisation to proceed) · Ack: Override: Jamie 2026-08-12
 
 32. **QA level: light**, as the redesign was. No worker change, no storage change, no
     routing change, and no figure's arithmetic moves. The diff is markup, CSS, copy and one
@@ -194,13 +198,114 @@ Settled: Jamie 2026-08-12 (blanket authorisation to proceed) · Ack: n/a
 
 ---
 
+## 12. What `da-brief` found
+Run 2026-08-12, fresh context. 1 High, 6 Medium, 5 Low. Every one is answered below with a
+new numbered item; item numbers stay append-only, so 38 onwards.
+
+### The High — item 7 was factually wrong, and it changes what "standardise" means
+
+38. **`/play` DOES have a 390px cap. The difference is where the padding sits, not whether
+    there is a cap.** `index.html:214` puts `px-4` on the section, **outside**
+    `max-w-[390px]` on the div inside it. `src/welcome.ts:123` and `index.html:345` put
+    `px-6` **inside** the cap. So the content widths are:
+    - `/play` — `min(390, viewport − 32)`
+    - welcome and solved, after dropping to `px-4` — `min(390, viewport) − 32`
+
+    These are equal only up to a 390px-wide screen. On a 393px iPhone 14 Pro, a 412px Pixel
+    or a 430px Pro Max, `/play` gives 390px of content and the other two give 358px. My
+    arithmetic in item 7 picked the one width where the mismatch is invisible.
+    Jamie's reasoning in item 8 stands as a decision — the cap stays — but the detail was
+    wrong too: the cap is explicit, not emergent from the clues.
+39. **So there are two different changes hiding behind "standardise the margin".**
+    (a) Match the declaration: `px-6` → `px-4` on welcome and solved. One-line change. The
+    32px mismatch on a phone wider than 390px stays.
+    (b) Match what is actually on screen: move the padding outside the cap on welcome and
+    solved, the way `/play` does it. Then all three are `min(390, viewport − 32)` at every
+    width and the screens genuinely match.
+    My rec: **(b)**. Why: (a) makes the three declarations look the same while leaving the
+    screens different on most current phones, which is the opposite of standardising and is
+    the kind of thing nobody finds again. (b) is a handful of class moves and no new
+    concept. **Jamie's call.**
+40. Item 35's test has to assert whichever of those was chosen, measured the same way for
+    all three screens. A test comparing a padding class on structurally different elements
+    would pass while the screens still differ — which is how the wrong answer survives.
+
+### The Mediums
+
+41. **`/stats` is 24px, not 16px** (`src/worker/stats.ts:300`, `padding: 1.5rem`, inside a
+    40rem cap). Item 7 said it already matched and it does not. `/archive` really is 16px.
+    Recommendation: leave `/stats` alone and say so — it is the team's own dashboard, not a
+    player screen, it is read on a laptop, and its 40rem measure has nothing to do with the
+    390px phone layout the other three share. Added to section 2 rather than section 3.
+    (assumed — say if you want it changed too)
+42. **Item 34's shadow guard would have read the wrong file.** `.stat-box` gets its offset
+    shadow from the `shadow-box` **utility in the markup** (`src/completion.ts`), not from a
+    declaration in `src/tailwind.css`. A guard reading only the stylesheet would pass before
+    the change, after it, and again if someone put `shadow-box` back — which is the exact
+    regression it exists to catch. The guard must also assert `src/completion.ts` emits no
+    `shadow-box` on a `.stat-box`. (assumed)
+43. **Item 12 reverses a decision that was made for Dave.** Redesign item 84 cut three rows
+    out of All time, and it was Jamie's answer to Dave's complaint that the panel repeated
+    numbers and ran long. Putting two of them back partly undoes that, and Dave has not been
+    asked. Recorded here so it is visible rather than buried; **Dave should say whether the
+    two averages coming back bothers him**, and the preview is the fastest way for him to
+    judge it.
+44. **The ack bookkeeping was wrong.** Section 11 is joint and was marked `Ack: n/a`, which
+    is only correct for an owned section. Sections 1, 2, 3 and 11 have no Dave ack either,
+    and the Closing named only 7 and 8. Both fixed below.
+45. **`docs/DESIGN-SYSTEM.md` goes stale in five places** and nothing said so: the "four
+    blocks in reading order" line, the class list, the short-label/spoken-label pairs, the
+    Inconsolata entry as it applies to the panel, and a `max-w-sm` line that is already wrong
+    against the real `max-w-[390px]`. Added to section 6 and to the done list. (assumed)
+46. **A flame beside an em-dash.** `bestTimeSeconds` is `null` whenever no game carries a
+    time, and that is reachable on a full panel — there is already a test for it. Item 18's
+    unconditional "three flames" would render 🔥 — under "Fastest".
+    Recommendation: **no flame when the value is a dash.** A flame is a badge for an
+    achievement, and there is no achievement. Only the Time box can hit this; the two
+    streaks are always numbers. (assumed)
+47. **The reviewer challenged the on-screen words** "Fastest / Streak / Streak" as not
+    parallel with each other, and "Streak" as not parallel with the "Current" underneath it.
+    **Noted, not reopened.** Jamie chose those three words on 2026-08-12 with the built
+    screen in front of him, which is exactly the position the objection is arguing from. The
+    speech half — where the ambiguity genuinely bites, because there is no flame in speech —
+    is fixed by item 25. If the words grate on the preview they are one string each.
+
+### The Lows, all taken
+
+48. Item 20's row order, stated literally instead of by reference to a commit nobody can
+    see: **Plays, First-go wins, Average goes, Average time**, then the chart.
+49. **Item 21's list was not exhaustive**: `.stat-hero` also declares Inconsolata and is
+    panel markup — it is the `Solved!` line for a player who solved with saving off. It
+    changes with the rest. Item 34's guard would have caught the miss, which is the guard
+    doing its job, but the prose should not disagree with it.
+50. **Redesign item 69's three-column fit arithmetic was done in Inconsolata**, and both the
+    font change and the loss of the boxes' padding move it — in opposite directions, roughly
+    16px per column back from the padding against a wider typeface. It should land fine, but
+    item 30 argued only from the margin. The 320px check in item 37 is where this is
+    settled, and it is now an explicit thing to look at rather than a general eyeball.
+51. **Name what separates the three columns** once the borders go: a wider column gap, not
+    vertical space. Vertical space does nothing for a horizontal grid. The gap goes from
+    `0.5rem` to about `1rem`.
+52. **`.stat-boxes--two` becomes dead CSS** when the Average block goes, and is deleted with
+    it. The two sprite symbols are not dead — the Best boxes still use both.
+
+---
+
 ## Closing
 
 **Settled 2026-08-12.** Jamie signed section 9 (his, blocking) and section 8, settled the
 margin in section 3 and the font reach in section 7, and then authorised the run through
 `da-brief`, Plan, `da-plan` and Build in one go.
 
-**Dave's ack on sections 7 and 8 is outstanding, and Jamie's authorisation stands as the
-override** — recorded as an override, never as an ack, and following the same pattern as
-2026-08-11: Dave challenges the look when there is a version on the preview to look at,
-which is faster for him than reading a description of it. `Override: Jamie 2026-08-12.`
+**Dave's ack is outstanding on sections 1, 2, 3, 7, 8 and 11, and Jamie's authorisation
+stands as the override** — recorded as an override, never as an ack, and following the same
+pattern as 2026-08-11: Dave challenges the look when there is a version on the preview to
+look at, which is faster for him than reading a description of it. `Override: Jamie
+2026-08-12.`
+
+One thing in there is more than a formality, and item 43 says so: putting the two averages
+back partly reverses redesign item 84, which was Jamie's answer to Dave's own complaint that
+the panel repeated itself and ran long. Dave should see that on the preview and say.
+
+**`da-brief` run and answered 2026-08-12** — items 38 to 52. One question is still open and
+blocking: **item 39**, which of the two margin changes Jamie means.
