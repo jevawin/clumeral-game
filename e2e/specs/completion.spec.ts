@@ -31,7 +31,6 @@ test.describe("completion screen", () => {
 
     await expect(completion.thisGame).toBeVisible();
     await expect(completion.best).toBeVisible();
-    await expect(completion.average).toBeVisible();
     await expect(completion.allTime).toBeVisible();
     await expect(completion.stat("Plays")).toHaveText("3");
     await expect(completion.stat("Average goes")).toHaveText("3.0");

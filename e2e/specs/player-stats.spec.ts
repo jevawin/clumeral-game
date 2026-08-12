@@ -53,7 +53,7 @@ async function startToday(
 }
 
 test.describe("player stats — the panel after a solve", () => {
-  test("shows all four blocks with the figures from history plus this game", async ({ page }) => {
+  test("shows all three blocks with the figures from history plus this game", async ({ page }) => {
     await startToday(page, PAST);
     await solvePuzzle(page);
     await expectActiveScreen(page, "completion");
@@ -61,18 +61,21 @@ test.describe("player stats — the panel after a solve", () => {
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
     await expect(completion.best).toBeVisible();
-    await expect(completion.average).toBeVisible();
     await expect(completion.allTime).toBeVisible();
 
-    // Three boxes in Best, two in Average (redesign brief 62).
+    // Three records in Best. The Average block is gone — its two figures are
+    // All-time rows again (polish brief 12).
     await expect(completion.best.locator(".stat-box")).toHaveCount(3);
-    await expect(completion.average.locator(".stat-box")).toHaveCount(2);
+    await expect(completion.average).toHaveCount(0);
+    // A flame on each record and on nothing else (polish brief 10, 18).
+    await expect(completion.panel.locator(".stat-flame")).toHaveCount(3);
 
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is
     // where the first-go streak breaks. Labels are the spoken ones — the visible
     // word is just "Current".
     await expect(completion.stat("Current play streak")).toHaveText("5");
+    await expect(completion.stat("Longest 1-go streak")).toHaveText("2");
     await expect(completion.stat("Current 1-go streak")).toHaveText("2");
     await expect(completion.stat("Plays")).toHaveText("5");
     await expect(completion.stat("First-go wins")).toHaveText("2 (40%)");
@@ -82,12 +85,14 @@ test.describe("player stats — the panel after a solve", () => {
     // The arithmetic behind them is pinned exactly in tests/player-stats.spec.ts;
     // what this proves is that real numbers reach the real panel at all.
     await expect(completion.stat("Average time")).toHaveText(/^\d+m \d\ds$/);
-    await expect(completion.stat("Best time")).toHaveText(/^\d+m \d\ds$/);
+    await expect(completion.stat("Fastest time")).toHaveText(/^\d+m \d\ds$/);
 
-    // The two surviving explanatory lines. The three streak ones and the
-    // fastest-win one went with the redesign (brief 45, 84).
+    // The four All-time explanatory lines. The three streak ones went with the
+    // redesign (brief 45); the two averages brought theirs back with them.
     await expect(completion.panel).toContainText("Daily puzzles you have finished.");
     await expect(completion.panel).toContainText("Puzzles you got on your first guess.");
+    await expect(completion.panel).toContainText("Your average number of guesses.");
+    await expect(completion.panel).toContainText("How long you usually take.");
 
     // Six chart rows, counts as text beside the bars.
     await expect(completion.goesRows).toHaveCount(6);
