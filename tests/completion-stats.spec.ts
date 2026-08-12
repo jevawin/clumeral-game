@@ -134,7 +134,7 @@ describe('the completion panel', () => {
     expect(stat('First-go wins')).toBe('1 (20%)');
     expect(pair('Average goes')!.value).toBe('2.4');
     expect(pair('Average time')!.value).toBe('4m 06s'); // (221+48+300+260+400)/5 = 245.8s
-    expect(pair('Best time')!.value).toBe('0m 48s');
+    expect(pair('Fastest time')!.value).toBe('0m 48s');
   });
 
   it('shows only This game for a brand-new player, with the third-game line', async () => {
@@ -252,17 +252,21 @@ describe('the completion panel', () => {
     for (const t of block('best')!.querySelectorAll('.stat-box__title')) {
       expect(t.tagName).toBe('H4');
     }
-    expect(pair('Best time')!.value).toBe('0m 48s');
+    expect(pair('Fastest time')!.value).toBe('0m 48s');
     expect(pair('Current time')!.value).toBe('3m 41s');
-    expect(pair('Best 1-go streak')!.value).toBe('1');
+    expect(pair('Longest 1-go streak')!.value).toBe('1');
     expect(pair('Current 1-go streak')!.value).toBe('0');
-    expect(pair('Best play streak')!.value).toBe('5');
+    expect(pair('Longest play streak')!.value).toBe('5');
     expect(pair('Current play streak')!.value).toBe('5');
   });
 
-  it('says the short word on screen and the full one in speech (brief 78)', async () => {
+  it('says the short word on screen and the full one in speech (brief 78, 25)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(pair('Best time')!.short).toBe('Best');
+    // Not prefixes of each other: "Streak" alone would announce two figures both
+    // called "streak", and speech gets neither the flame nor the position.
+    expect(text()).not.toContain('Best time');
+    expect(pair('Fastest time')!.short).toBe('Fastest');
+    expect(pair('Longest 1-go streak')!.short).toBe('Streak');
     expect(pair('Current 1-go streak')!.short).toBe('Current');
     // The visible label is never the whole label — the words a screen reader
     // hears are always the full ones.
@@ -271,7 +275,7 @@ describe('the completion panel', () => {
 
   it('colours only the Best figures with the second accent (brief 81)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    for (const label of ['Best time', 'Best 1-go streak', 'Best play streak']) {
+    for (const label of ['Fastest time', 'Longest 1-go streak', 'Longest play streak']) {
       expect(pair(label)!.isBest, label).toBe(true);
     }
     for (const label of ['Current time', 'Current 1-go streak', 'Current play streak']) {
@@ -310,7 +314,7 @@ describe('the completion panel', () => {
     ];
     await render(history, 2, false, { seconds: 80 });
     expect(figures()).toEqual(['2 goes', '1m 20s']);
-    expect(pair('Best time')!.value).toBe('1m 20s');
+    expect(pair('Fastest time')!.value).toBe('1m 20s');
     expect(pair('Current time')!.value).toBe('1m 20s');
   });
 
@@ -426,7 +430,7 @@ describe('the completion panel', () => {
     await render(history, 1, false, { seconds: 3900 });
     expect(figures()).toEqual(['1 go', '1h 05m']);
     expect(pair('Average time')!.value).toBe('22m 40s');
-    expect(pair('Best time')!.value).toBe('1m 00s');
+    expect(pair('Fastest time')!.value).toBe('1m 00s');
   });
 
   it('shows a dash for a figure nobody has data for', async () => {
@@ -437,7 +441,7 @@ describe('the completion panel', () => {
     ], 2);
     // A dash is right HERE — a box needs a placeholder rather than a gap.
     expect(pair('Average time')!.value).toBe('—');
-    expect(pair('Best time')!.value).toBe('—');
+    expect(pair('Fastest time')!.value).toBe('—');
   });
 });
 

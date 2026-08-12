@@ -155,9 +155,11 @@ function statBox(title: string, iconId: string, pairs: string): string {
  * One number and its label (brief 78).
  *
  * The short word on screen and the full one in speech are two separate spans,
- * not a prefix and a hidden suffix: "Avg." is not the start of "Average time",
- * so a suffix could never have produced the Average block's labels. One
- * mechanism, both blocks.
+ * and they are not prefixes of each other — "Streak" against "Longest 1-go
+ * streak". That matters most in speech: on screen the flame and the position
+ * tell you which of the two figures is the record, and a screen reader gets
+ * neither, so "Streak" alone would announce two figures both called "streak"
+ * with no way to tell them apart (brief 25).
  *
  * The number sits above its label on screen while the DOM stays `dt` then `dd`
  * — the reversal is CSS (`.stat-box__pair`), because `dd` before `dt` is not
@@ -372,13 +374,13 @@ export function renderCompletion(
       blocks.push(block('best', 'Best',
         `<div class="stat-boxes">
           ${statBox('Time', 'icon-stopwatch',
-            statPair('Best', 'Best time', formatDuration(stats.bestTimeSeconds), true) +
+            statPair('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), true) +
             statPair('Current', 'Current time', formatDuration(showTime ? seconds : null)))}
           ${statBox('1-go', 'icon-calculator-check',
-            statPair('Best', 'Best 1-go streak', String(stats.bestFirstGoStreak), true) +
+            statPair('Streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), true) +
             statPair('Current', 'Current 1-go streak', String(stats.firstGoStreak)))}
           ${statBox('Plays', 'icon-gamepad',
-            statPair('Best', 'Best play streak', String(stats.bestPlayStreak), true) +
+            statPair('Streak', 'Longest play streak', String(stats.bestPlayStreak), true) +
             statPair('Current', 'Current play streak', String(stats.playStreak)))}
         </div>`));
 
