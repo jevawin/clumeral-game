@@ -63,9 +63,12 @@ describe('the page column token', () => {
   });
 
   it('puts both in the utilities layer, so a stray max-w-* cannot beat them', () => {
+    // Matched as RULES, not as text. The comment above them mentions both class
+    // names, so a `toContain` here would go on passing after somebody moved the
+    // rules to @layer base — which is the exact regression this names.
     const utilities = tailwind.slice(tailwind.indexOf('@layer utilities {'));
-    expect(utilities).toContain('.page-col');
-    expect(utilities).toContain('.page-pad');
+    expect(utilities).toMatch(/^\s*\.page-col\s*\{/m);
+    expect(utilities).toMatch(/^\s*\.page-pad\s*\{/m);
   });
 });
 
@@ -91,6 +94,18 @@ describe('the screens all use it', () => {
     // One wrapper per screen: two in index.html, one rendered by welcome.ts.
     expect([...indexHtml.matchAll(/page-col/g)].length).toBe(2);
     expect(welcome).toContain('page-col');
+  });
+
+  it('never puts the gutter back inside the column', () => {
+    // The original defect, and the one every other assertion here would miss:
+    // px-6 on the capped div passes "has page-col", passes "section has
+    // page-pad" and passes "no max-w-[" — while quietly making the content 32px
+    // narrower than /play again.
+    for (const [, classes] of indexHtml.matchAll(/class="([^"]*\bpage-col\b[^"]*)"/g)) {
+      expect(classes, 'horizontal padding belongs on the section, not the column')
+        .not.toMatch(/\b(px|pl|pr|p)-\d/);
+    }
+    expect(welcome).not.toMatch(/class="[^"]*\bpage-col\b[^"]*\b(px|pl|pr|p)-\d/);
   });
 
   it('starts every screen at the top, never centred vertically (brief 61)', () => {

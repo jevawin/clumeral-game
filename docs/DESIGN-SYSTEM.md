@@ -183,6 +183,11 @@ The duplication goes away with #200, which migrates `/archive` to a SPA route.
 - The Worker-rendered pages cannot import the token, so `/archive` and `/stats` repeat the
   numbers. `tests/page-width.spec.ts` asserts the width they *work out to*, not the strings.
   `/archive`'s `32rem` is already 480px of content behind its 1rem padding — leave it.
+- **One divergence, accepted.** `/archive` is in `rem` and everything else is in `px`, so at
+  200% browser text its column grows to 600px of content while the app stays at 480. At
+  default text they are identical. Both choices are deliberate: `px` stops the app column
+  outrunning the window, and the `rem` genuinely helps `/archive`'s large-text case. If one
+  of them ever has to give, this is the note saying it was a trade-off and not an oversight.
 - **The header and footer are deliberately full width** and have no cap. The jumping around
   this solves is the content area changing width between page views, not chrome sitting at a
   different edge from the content.

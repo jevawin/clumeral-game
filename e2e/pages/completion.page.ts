@@ -5,13 +5,16 @@ export class CompletionPage {
   readonly screen: Locator;
   readonly heading: Locator;
   readonly subheading: Locator;
-  /** The container the four blocks are written into. */
+  /** The container the three blocks are written into. */
   readonly panel: Locator;
   readonly thisGame: Locator;
   readonly best: Locator;
+  /** Absent since the averages moved back into All time. Kept so the tests that
+   *  assert it has count 0 still say something. */
   readonly average: Locator;
   readonly allTime: Locator;
-  /** Every box on the panel, across the Best and Average blocks. */
+  /** Every record on the panel. Kept as .stat-box even though the box itself is
+   *  gone — the class is the grouping, not the styling. */
   readonly boxes: Locator;
   readonly goesRows: Locator;
   /** The one polite announcement of the result. */

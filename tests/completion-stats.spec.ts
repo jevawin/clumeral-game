@@ -585,8 +585,11 @@ describe('the panel colours itself once, at the top', () => {
     // html/body. Swept across the whole panel section rather than listing the
     // seven rules, so a rule added later is covered too. The play screen keeps
     // Inconsolata — its keypad needs every key the same width (brief 21).
+    // The slice runs to .digit-box, which is the first rule AFTER the panel —
+    // ending it at .goes-row__fill would leave .goes-row__count unswept.
     const start = css.indexOf('[data-completion-panel] {');
-    const panel = css.slice(start, css.indexOf('.goes-row__fill'));
+    const panel = css.slice(start, css.indexOf('.digit-box {'));
+    expect(panel).toContain('.goes-row__count');
     expect(panel).not.toContain('Inconsolata');
   });
 
@@ -598,7 +601,8 @@ describe('the panel colours itself once, at the top', () => {
     // stylesheet-only guard would miss entirely.
     expect(css).not.toMatch(/(^|[};])\s*\.stat-box\s*\{/m);
     for (const rule of css.matchAll(/\.stat-box[\w-]*\s*\{([^}]*)\}/g)) {
-      expect(rule[1]).not.toMatch(/background-color|border:|box-shadow/);
+      // Shorthands too — background: and border-width: would otherwise slip past.
+      expect(rule[1]).not.toMatch(/background|border|box-shadow/);
     }
     const completion = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
     expect(completion).not.toMatch(/class="stat-box[^"]*shadow-box/);

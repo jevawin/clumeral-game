@@ -18,6 +18,24 @@ Two things the build settled that the plan did not name:
 - **`.stat-boxes--two` went with the Average block**, as planned, and nothing else referenced
   it.
 
+**`da-build` run and answered, 2026-08-12** — no High, no Medium, nine Low. Seven fixed:
+two stale comments (`/stats`' chart derivation and `.stat-boxes`' "Best and Average"), two
+stale docstrings in the e2e page object, and three test defects — the utilities-layer guard
+was satisfied by a comment rather than by the rules, nothing stopped the gutter being put
+back *inside* the column, and the Inconsolata sweep stopped one rule short of the panel's
+end. The two remaining are recorded below rather than fixed.
+
+**Two things `da-build` found that are accepted, not fixed:**
+1. **`/archive` is `32rem`, everything else is `480px`.** At default text they are the same
+   480px of content; at 200% browser text `/archive` grows to 600px while the app stays at
+   480. That is a real divergence from "one width everywhere", and it is deliberate on both
+   sides: the `rem` genuinely helps `/archive`'s large-text case, and `da-plan` reversed the
+   original proposal to convert it. Recorded in `docs/DESIGN-SYSTEM.md` as a trade-off rather
+   than left looking like an oversight.
+2. **Tailwind scans comments and markdown**, so the new prose emits about 60 bytes of dead
+   utilities into the bundle — including one invalid rule from this plan's own
+   `max-w-[…px]`. Pre-existing pattern, no behaviour, not worth contorting the prose for.
+
 Earlier: **`da-plan` run and answered, 2026-08-12.** The review returned 2 High, 6 Medium and
 10 Low. Every one is fixed in place below; what it changed is listed at the end.
 
@@ -366,7 +384,6 @@ read carefully; CI is the first real signal.
   `Best time` becomes `Fastest time`; `Current 1-go streak` and `Current play streak` are
   unchanged; the two-boxes-in-Average assertion goes and the three-in-Best one stays.
 - `e2e/specs/completion.spec.ts` — the `completion.average` reference goes.
-- The new header-alignment check from task 3.
 
 Commit: `test(e2e): three blocks and the new labels`
 
@@ -394,11 +411,14 @@ Commit: `docs(design-system): the page column and the polished panel`
 wider diff than the redesign was: it touches every page, not one panel.
 
 - `npm test` after every task; `npm run build` before the pull request.
-- Playwright by CI. The header-alignment check is the only new one and it must run on a
-  desktop project — the two mobile projects are 390px and 393px and never meet the cap.
+- Playwright by CI. No new e2e check: the header-alignment one was written for the header
+  work, and that work is gone (b59). The two mobile projects are 390px and 393px, so
+  neither would exercise the cap anyway — only the desktop projects do.
 - By eye on the preview with `?demo=stats`: both modes, all four themes, and specifically at
-  **320px, 375px, 480px and a desktop width**, which are the four cases the cap and the
-  gutter behave differently at.
+  **320px, 360px, 375px, 480px and a desktop width**. 360px is the one `da-build` added and
+  it is the tightest: it is the narrowest width at which the three records render across
+  rather than stacked, so it is where the font change, the lost box padding and the new
+  flame all press on the same line at once.
 - The 320px check also settles b50 — redesign item 69's three-column fit was calculated in
   Inconsolata, and both the font change and the loss of the box padding move it.
 - **Dave is asked one specific thing on the preview** (b43): whether the two averages coming

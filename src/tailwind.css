@@ -562,10 +562,12 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--color-accent);
   }
 
-  /* Best and Average — boxes across, stacking below 360px. 22.5rem rather than
-     360px so the stack also happens at large browser text on a wide screen,
-     which is what brief 53 is really about. */
-  /* 1rem rather than 0.5rem: with no borders left, the gap is the only thing
+  /* The three records, across, stacking below 360px. 22.5rem rather than 360px so
+     the stack also happens at large browser text on a wide screen, which is what
+     brief 53 is really about — and note the page column itself is in px, so these
+     two answer different questions on purpose.
+
+     The gap is 1rem rather than 0.5rem: with no borders left it is the only thing
      separating the three records, and vertical space cannot do that job for a
      horizontal grid (brief 51). */
   .stat-boxes {

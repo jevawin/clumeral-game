@@ -353,11 +353,10 @@ export function renderDashboard(
   .axis { fill: var(--ink-muted); font-family: "Inconsolata", monospace; font-size: 14px; }
   .direct { fill: var(--ink); font-family: "Inconsolata", monospace; font-size: 16px; font-weight: 700; }
   /* Text inside the SVG is drawn in viewBox units, and the viewBox scales with the
-     container — so a size tuned on desktop shrinks with everything else. The
-     container is 592px wide on desktop (scale ~0.99) but 327px on a 375px phone
-     (scale ~0.55), where 11 units would render at 6px. These steps hold axis text
-     at roughly 10-14 real pixels across the range, which is also the size the
-     87-unit label budget in chart.ts assumes. */
+     container — so a size tuned at one width shrinks at another. The container is
+     480px above a 512px window (scale 0.8) and 343px on a 375px phone (~0.57).
+     The steps below hold axis text at roughly 10-13 real pixels across that
+     range, which is also the size the 87-unit label budget in chart.ts assumes. */
   /* The 640px step is gone: above 512px the container is a constant 480px, so
      the scale no longer changes with the window and a step there would have made
      the text JUMP SMALLER as the window grew past 641px. Below 512px the
