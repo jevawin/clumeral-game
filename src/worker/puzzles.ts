@@ -174,6 +174,13 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     font-size: 1.25rem;
   }
 
+  /* Already on the page column, and deliberately left alone (brief 60).
+     32rem = 512px, minus the 1rem gutter each side under box-sizing: border-box,
+     is 480px of content behind a 16px gutter — which is exactly --page-max and
+     --page-gutter in src/tailwind.css. Do not "standardise" this into
+     calc(480px + 2rem): that is the same number today and stops scaling with the
+     root font size, which is the large-text case the rem is here for.
+     tests/page-width.spec.ts asserts the 480 rather than the 32rem. */
   main.archive {
     flex: 1;
     width: 100%;

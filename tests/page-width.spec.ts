@@ -110,3 +110,34 @@ describe('the screens all use it', () => {
     expect(added![1]).not.toContain('justify-center');
   });
 });
+
+describe('the Worker-rendered pages agree, without being able to import the token', () => {
+  // Asserted as the width they WORK OUT TO, not by looking for the strings
+  // "480px" and "1rem". Both stylesheets use 1rem a dozen times over for button
+  // padding and the like, so a substring check would pass whatever the page
+  // container happened to say.
+  const container = (css: string, selector: string) => {
+    const body = rule(css, selector);
+    const pad = decl(body, 'padding').split(/\s+/);
+    // One value means all four sides; the horizontal one is the second of two or
+    // more, matching the CSS shorthand.
+    const horizontal = pad.length === 1 ? pad[0] : pad[1];
+    return px(decl(body, 'max-width')) - 2 * px(horizontal);
+  };
+
+  it('/archive gives 480px of content behind a 16px gutter', () => {
+    expect(container(archive, 'main\\.archive')).toBe(PAGE_MAX_PX);
+    expect(px(decl(rule(archive, 'main\\.archive'), 'padding').split(/\s+/)[1])).toBe(16);
+  });
+
+  it('/stats gives 480px of content behind a 16px gutter', () => {
+    // Its <body> IS the container — no header, no footer, no <main>.
+    const body = rule(stats, 'body');
+    expect(px(decl(body, 'padding'))).toBe(16);
+    // max-width is a calc() here, so read the parts rather than the whole.
+    const m = /calc\((\d+)px \+ (\d)rem\)/.exec(decl(body, 'max-width'));
+    expect(m, '/stats max-width is not the expected calc()').not.toBeNull();
+    expect(Number(m![1])).toBe(PAGE_MAX_PX);
+    expect(Number(m![2]) * 16).toBe(2 * 16);
+  });
+});
