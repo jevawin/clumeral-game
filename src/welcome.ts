@@ -116,9 +116,11 @@ function renderWelcome(): void {
   const puzzleNumHtml = num > 0 ? `<p class="text-base text-text text-center">Puzzle #${num} · ${formattedDate}</p>` : "";
 
   // Section is `flex flex-col flex-1` (filling remaining viewport between header
-   // and footer). Set items-center + justify-center on the section so content
-  // vertically centres without relying on min-h-full inside.
-  screen.classList.add("items-center", "justify-center");
+  // and footer). items-center centres the column horizontally; there is NO
+  // justify-center, deliberately (brief 61). Welcome used to centre vertically
+  // while /play started at the top, so moving between screens walked the content
+  // up and down the window on a desktop. Every screen now starts at the top.
+  screen.classList.add("items-center");
   screen.innerHTML = `
     <div class="page-col flex flex-col items-center gap-6 py-8">
       <div class="flex flex-col items-center gap-1">

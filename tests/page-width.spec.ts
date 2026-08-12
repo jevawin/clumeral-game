@@ -92,4 +92,21 @@ describe('the screens all use it', () => {
     expect([...indexHtml.matchAll(/page-col/g)].length).toBe(2);
     expect(welcome).toContain('page-col');
   });
+
+  it('starts every screen at the top, never centred vertically (brief 61)', () => {
+    // /welcome and /solved used to centre while /play started at the top, so
+    // moving between screens walked the content up and down the window. Scoped
+    // to the screen containers: justify-center inside a digit chip is fine and
+    // is not what moved.
+    for (const [, classes] of indexHtml.matchAll(/<section data-screen="\w+"[^>]*class="([^"]*)"/g)) {
+      expect(classes).not.toContain('justify-center');
+    }
+    for (const [, classes] of indexHtml.matchAll(/class="(page-col[^"]*)"/g)) {
+      expect(classes).not.toContain('justify-center');
+    }
+    // welcome.ts sets its section's classes at runtime rather than in markup.
+    const added = /screen\.classList\.add\(([^)]*)\)/.exec(welcome);
+    expect(added, 'no classList.add on the welcome section').not.toBeNull();
+    expect(added![1]).not.toContain('justify-center');
+  });
 });
