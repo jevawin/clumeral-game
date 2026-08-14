@@ -152,19 +152,13 @@ function statRow(label: string, value: string, note: string): string {
  * all-time total two blocks down, and a screen reader has no column heading to
  * disambiguate them.
  */
-function statColumn(
-  shortLabel: string,
-  fullLabel: string,
-  value: string,
-  iconId: string,
-  isBest = false,
-): string {
+function statColumn(shortLabel: string, fullLabel: string, value: string, iconId: string): string {
   // The icon is a watermark: big, faint, rotated, and clipped by the box's own
   // corner (brief 76). Decorative in the strongest sense — it is a texture, not
   // a label, so it is aria-hidden and the words carry everything.
   return `<div class="stat-col">
     <dt><span class="stat-col__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
-    <dd class="stat-col__value${isBest ? ' stat-col__value--best' : ''}">${value}</dd>
+    <dd class="stat-col__value">${value}</dd>
     <svg class="stat-col__mark" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
   </div>`;
 }
@@ -395,8 +389,8 @@ export function renderCompletion(
 
       blocks.push(block('records', 'Records',
         `<dl class="stat-cols stat-cols--two">
-          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator-check', true)}
-          ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), 'icon-stopwatch', true)}
+          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator-check')}
+          ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), 'icon-stopwatch')}
         </dl>`, 'icon-trophy'));
 
       const firstGo = stats.firstGoPercent === null

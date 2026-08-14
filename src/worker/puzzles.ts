@@ -73,17 +73,20 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     --chroma-grape: 0.237;
     --accent-h: 145;
     --accent-c: var(--chroma-lime);
-    /* The completion panel's "best" colour. /archive never shows it, but the
-       parity test compares every --accent-* declaration between the two
-       stylesheets on purpose: a token in one file and not the other is the #243
-       failure it exists to catch. */
-    --accent-best-h: 5;
-    --accent-best-c: var(--chroma-cherry);
+    /* The completion panel's other three theme colours. /archive never shows
+       them, but the parity test compares every --accent-* declaration between
+       the two stylesheets on purpose: a token in one file and not the other is
+       the #243 failure it exists to catch. */
+    --accent-2-h: 5;   --accent-2-c: var(--chroma-cherry);
+    --accent-3-h: 262; --accent-3-c: var(--chroma-blueberry);
+    --accent-4-h: 305; --accent-4-c: var(--chroma-grape);
     --color-bg:      #FAFAFA;
     --color-surface: #FFFFFF;
     --color-text:    #262624;
     --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
-    --color-accent-best: oklch(var(--accent-l) var(--accent-best-c) var(--accent-best-h));
+    --color-accent-2: oklch(var(--accent-l) var(--accent-2-c) var(--accent-2-h));
+    --color-accent-3: oklch(var(--accent-l) var(--accent-3-c) var(--accent-3-h));
+    --color-accent-4: oklch(var(--accent-l) var(--accent-4-c) var(--accent-4-h));
     --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
     --color-success: oklch(var(--accent-l) var(--chroma-lime) 145);
     --color-error:   oklch(var(--accent-l) var(--chroma-cherry) 5);
@@ -96,7 +99,9 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
     --chroma-blueberry:   0.111;
     --chroma-grape: 0.140;
     --accent-c: var(--chroma-lime);
-    --accent-best-c: var(--chroma-cherry);
+    --accent-2-c: var(--chroma-cherry);
+    --accent-3-c: var(--chroma-blueberry);
+    --accent-4-c: var(--chroma-grape);
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
     --color-text:    #FAF8F4;
@@ -107,10 +112,10 @@ export function renderArchivePage(puzzles: PuzzleSummary[]): string {
      src/tailwind.css. The inline script above sets the attribute from the saved
      accent. Chroma is truncated to 3dp, never rounded: Cherry dark's sRGB ceiling
      is 0.135523, so 0.136 would clip and shift lightness. */
-  :root[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); --accent-best-h: 5; --accent-best-c: var(--chroma-cherry); }
-  :root[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); --accent-best-h: 262; --accent-best-c: var(--chroma-blueberry); }
-  :root[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); --accent-best-h: 305; --accent-best-c: var(--chroma-grape); }
-  :root[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); --accent-best-h: 145; --accent-best-c: var(--chroma-lime); }
+  :root[data-theme="Lime"] { --accent-h: 145; --accent-c: var(--chroma-lime); --accent-2-h: 5; --accent-2-c: var(--chroma-cherry); --accent-3-h: 262; --accent-3-c: var(--chroma-blueberry); --accent-4-h: 305; --accent-4-c: var(--chroma-grape); }
+  :root[data-theme="Cherry"] { --accent-h: 5; --accent-c: var(--chroma-cherry); --accent-2-h: 262; --accent-2-c: var(--chroma-blueberry); --accent-3-h: 305; --accent-3-c: var(--chroma-grape); --accent-4-h: 145; --accent-4-c: var(--chroma-lime); }
+  :root[data-theme="Blueberry"] { --accent-h: 262; --accent-c: var(--chroma-blueberry); --accent-2-h: 305; --accent-2-c: var(--chroma-grape); --accent-3-h: 145; --accent-3-c: var(--chroma-lime); --accent-4-h: 5; --accent-4-c: var(--chroma-cherry); }
+  :root[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); --accent-2-h: 145; --accent-2-c: var(--chroma-lime); --accent-3-h: 5; --accent-3-c: var(--chroma-cherry); --accent-4-h: 262; --accent-4-c: var(--chroma-blueberry); }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { font-family: "Quicksand", system-ui, sans-serif; }

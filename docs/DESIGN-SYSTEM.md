@@ -240,29 +240,38 @@ Three blocks in reading order: **Today**, **Best**, **All time**.
   Numbers are bold; box titles are the same size and not bold; labels are regular in the
   ordinary foreground colour. All-caps stays on the block headings and never appears
   inside a box.
-- **The records are Fastest, Streak, Streak** -- the visible words in the Time, 1-go and
-  Plays boxes, over an unchanged "Current". In speech they read **"Fastest time", "Longest
-  1-go streak", "Longest play streak"**, because "Streak" alone would announce two figures
-  both called "streak": on screen the flame and the position tell them apart, and a screen
-  reader gets neither.
-- **A flame marks each record**, inside the `dd` so it inherits the number's colour rather
-  than declaring one. Never beside a dash -- a badge for an achievement nobody has yet.
-- **The records have no box.** Background, border, radius, padding and the offset shadow all
-  went. What separates the three columns is the 1rem grid gap, and nothing else; vertical
-  space cannot do that job for a horizontal grid.
+- **Section headings are 24px, normal case, with no rule beside them** and a decorative icon
+  in the section's own colour -- a flame for Streaks, a trophy for Records, a calendar for
+  All time.
+- **Figures sit in boxes borrowing the undo/reset controls' resting state**: surface fill,
+  the same 1.5px border (in the section's colour) and the same radius. The box's own icon is
+  repeated as a **watermark** -- 4rem, rotated 45deg, faint, run off the bottom-right corner
+  so the box clips it. `overflow: hidden` on `.stat-col` is what does the clipping.
+- **The label is above the number, in the DOM as well as on screen.** The redesign needed
+  `column-reverse` to put the number on top; this layout does not, so the visual order and
+  the reading order agree again. Do not add it back.
+- **Labels 16px, numbers 20-28px, subtitles never below 14px.** The number's `clamp` tops
+  out where three boxes still fit a 390px screen.
 - **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
   at all and inherit from `html`/`body`, which is why removal was the right edit rather than
   an override. The play screen keeps Inconsolata: its keypad relies on every key being the
   same width.
 - **The two averages live in All time**, as rows with their explanatory lines, alongside
   plays and first-go wins. They had their own block briefly and it repeated the panel.
-- **Two accents, one exception.** Every figure takes the player's own `--color-accent`
-  except the three record numbers, which take `--color-accent-best` -- the next theme
-  along, wrapping Grape back to Lime. It is CSS, not JavaScript: chroma differs per theme
-  and per mode, and the panel renders once, so deriving it at render time would freeze the
-  best colour when someone switched theme on `/solved`. The mapping is pinned in
-  `tests/accent-best.spec.ts`, and mirrored into the Worker's inline style because
-  `tests/token-parity.spec.ts` compares every `--accent-*` declaration between the two.
+- **All four theme colours are on screen at once**, in picker order from the player's own:
+  their solve keeps `--color-accent`, then Streaks takes `--color-accent-2`, Records
+  `--color-accent-3` and All time `--color-accent-4`. Change theme and all four rotate
+  together. Each section sets `--section-accent` once and every icon, number and box border
+  inside reads from it, so there is no per-figure colour class to get wrong.
+- **Colour lands on icons, numbers and box borders only.** Never on a label, a heading or a
+  divider: everything a player has to read stays in the foreground colour.
+- It is CSS, not JavaScript. Chroma differs per theme *and* per mode, and the panel renders
+  once, so deriving the colours at render time would freeze three of them the moment
+  somebody switched theme on `/solved`. Each slot names the other hue's own `--chroma-*`
+  rather than reusing the current theme's -- borrowing Lime's chroma for Cherry puts Cherry
+  out of gamut. The mapping is pinned in `tests/accent-rotation.spec.ts`, and mirrored into
+  the Worker's inline style because `tests/token-parity.spec.ts` compares every `--accent-*`
+  declaration between the two.
 - **The boxes borrow the play screen's digit-box styling** -- surface background, 1.5px
   border, 0.25rem radius, the `shadow-box` utility -- so a theme change moves both screens
   together.
@@ -278,9 +287,9 @@ Three blocks in reading order: **Today**, **Best**, **All time**.
   "Current" on screen; "Fastest time", "Longest 1-go streak", "Current play streak" in a
   visually hidden span. Two spans, not a prefix and a suffix -- neither is the start of the
   other.
-- **Today's time appears twice, and three times on a personal-best day.** Once under the
-  stopwatch in Today, then as Best over Current in the Time box. Jamie's call, over Dave's
-  objection to the repeat; if it grates, it is one `statPair` call to change.
+- **There is no Today block.** The two figures for this game sit centred directly under the
+  solved message, which reads `Puzzle #160 solved! You took:` -- and gains those three words
+  only when there are figures to follow them.
 - **Times use unit letters, never a colon**: `0m 30s`, `4m 06s`, `1h 04m`. `4:06` can read
   as four hours at a glance, and the separator the hero used to need -- a bullet, or the
   pipe Dave suggested -- sits right beside a number, where a pipe is hard to tell from a 1.
@@ -289,17 +298,17 @@ Three blocks in reading order: **Today**, **Best**, **All time**.
   is dropped entirely from the play screen's sentence. On the panel an unknown time drops
   the stopwatch figure altogether rather than showing an empty one. (Jamie and Dave,
   2026-08-11.)
-- **All time is open, not folded, but quiet**: smaller type, muted colour, plain rows
-  rather than boxes. Plays, first-go wins, average goes, average time, then the chart. The
-  fastest first-go win is gone for good -- "Fastest" in the Time box is the same idea told
-  better.
+- **All time is open, not folded, but quiet**: plain rows rather than boxes, and no dividing
+  lines between them. Plays, first-go wins, average goes, average time, then the chart. The
+  fastest first-go win is gone for good -- "Fastest" under Records is the same idea told
+  better. The goes chart's bars stay on the player's own accent.
 - **The explanatory lines live in All time only.** Inside a box, "Best" over "Current"
   under a labelled icon is already the explanation, and three sentences in three small
   boxes was the clutter the redesign was called for.
 - **No new type sizes, and exactly one new colour token.** Everything is built from
-  `--color-text`, `--color-accent`, `--color-accent-best`, `--color-border` and
-  `--color-surface`. The best accent is one of the same four theme accents at the same
-  `--accent-l`, so `tests/palette-contrast.spec.ts` already covers its contrast.
+  `--color-text`, `--color-accent`, `--color-accent-2/3/4`, `--color-border` and
+  `--color-surface`. All four accents are the same four theme accents at the same
+  `--accent-l`, so `tests/palette-contrast.spec.ts` already covers every one of them.
 - **Blocks are absent, not hidden**, when they do not apply. A hidden block can still
   reach the accessibility tree, and an empty "All time" heading reads as broken.
 - **The goes chart's bars are `aria-hidden`**; the count beside each bar is the accessible

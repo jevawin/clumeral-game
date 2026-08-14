@@ -63,19 +63,28 @@
   --accent-h: 145;
   --accent-c: var(--chroma-lime);
 
-  /* The second accent, for "best" figures on the completion panel: the NEXT
-     theme along, wrapping Grape back to Lime (redesign brief 31, 60). Chroma
-     names the next hue's own --chroma-* variable rather than reusing the
-     current one, so it follows dark mode and stays inside sRGB. Defaults are
-     Lime's next colour, Cherry. */
-  --accent-best-h: 5;
-  --accent-best-c: var(--chroma-cherry);
+  /* The other three themes, in picker order from the player's own (brief 79).
+     Streaks takes 2, Records takes 3 and All time takes 4, so every one of the
+     four theme colours is on the completion screen at once and they rotate
+     together when the player changes theme.
+
+     Each names the OTHER hue's own --chroma-* variable rather than reusing the
+     current one, so every colour follows dark mode and stays inside sRGB —
+     borrowing Lime's chroma for Cherry would put Cherry out of gamut. Contrast
+     is unaffected: all four sit at --accent-l, which is what the AA guarantee
+     rests on, and tests/palette-contrast.spec.ts already covers all four.
+     Defaults are Lime's rotation. */
+  --accent-2-h: 5;   --accent-2-c: var(--chroma-cherry);
+  --accent-3-h: 262; --accent-3-c: var(--chroma-blueberry);
+  --accent-4-h: 305; --accent-4-c: var(--chroma-grape);
 
   --color-bg:      #FAFAFA;
   --color-surface: #FFFFFF;
   --color-text:    #262624;
   --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
-  --color-accent-best: oklch(var(--accent-l) var(--accent-best-c) var(--accent-best-h));
+  --color-accent-2: oklch(var(--accent-l) var(--accent-2-c) var(--accent-2-h));
+  --color-accent-3: oklch(var(--accent-l) var(--accent-3-c) var(--accent-3-h));
+  --color-accent-4: oklch(var(--accent-l) var(--accent-4-c) var(--accent-4-h));
   --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
 
   /* Success and error are the Lime and Cherry themes reused, not colours of their
@@ -127,10 +136,10 @@
    its 0.135523 limit and out of gamut, which clips and shifts lightness — the
    one thing the AA guarantee rests on. tests/palette-contrast.spec.ts checks
    the gamut, not just the ratio. */
-html[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); --accent-best-h: 5; --accent-best-c: var(--chroma-cherry); }
-html[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); --accent-best-h: 262; --accent-best-c: var(--chroma-blueberry); }
-html[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); --accent-best-h: 305; --accent-best-c: var(--chroma-grape); }
-html[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); --accent-best-h: 145; --accent-best-c: var(--chroma-lime); }
+html[data-theme="Lime"] { --accent-h: 145; --accent-c: var(--chroma-lime); --accent-2-h: 5; --accent-2-c: var(--chroma-cherry); --accent-3-h: 262; --accent-3-c: var(--chroma-blueberry); --accent-4-h: 305; --accent-4-c: var(--chroma-grape); }
+html[data-theme="Cherry"] { --accent-h: 5; --accent-c: var(--chroma-cherry); --accent-2-h: 262; --accent-2-c: var(--chroma-blueberry); --accent-3-h: 305; --accent-3-c: var(--chroma-grape); --accent-4-h: 145; --accent-4-c: var(--chroma-lime); }
+html[data-theme="Blueberry"] { --accent-h: 262; --accent-c: var(--chroma-blueberry); --accent-2-h: 305; --accent-2-c: var(--chroma-grape); --accent-3-h: 145; --accent-3-c: var(--chroma-lime); --accent-4-h: 5; --accent-4-c: var(--chroma-cherry); }
+html[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); --accent-2-h: 145; --accent-2-c: var(--chroma-lime); --accent-3-h: 5; --accent-3-c: var(--chroma-cherry); --accent-4-h: 262; --accent-4-c: var(--chroma-blueberry); }
 
 /* Default body font — Quicksand 300 to match the clue lead style. Buttons / headings / tag pills override via font-bold etc. */
 html, body { font-family: var(--font-sans); font-weight: 400; }
@@ -149,7 +158,9 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     --chroma-blueberry:   0.111;
     --chroma-grape: 0.140;
     --accent-c: var(--chroma-lime);
-    --accent-best-c: var(--chroma-cherry);
+    --accent-2-c: var(--chroma-cherry);
+    --accent-3-c: var(--chroma-blueberry);
+    --accent-4-c: var(--chroma-grape);
 
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
@@ -513,9 +524,15 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     inline-size: 1.5rem;
     block-size: 1.5rem;
     flex: none;
-    color: var(--color-accent);
   }
-  [data-stat-block="records"] .stat-block__icon { color: var(--color-accent-best); }
+  /* One section per theme colour, in picker order from the player's own, so all
+     four are on screen together and rotate with the theme (brief 79). Colour is
+     carried by the icons and the numbers ONLY — never by a label, a heading or a
+     border of anything the player has to read (brief 80). */
+  [data-stat-block="streak"]   { --section-accent: var(--color-accent-2); }
+  [data-stat-block="records"]  { --section-accent: var(--color-accent-3); }
+  [data-stat-block="all-time"] { --section-accent: var(--color-accent-4); }
+  .stat-block__icon { color: var(--section-accent); }
 
   /* This game — the hero. The only thing that changed in the last ten seconds,
      so it is the largest type on the panel (brief 80). */
@@ -593,7 +610,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     position: relative;
     overflow: hidden;
     background: var(--color-surface);
-    border: 1.5px solid var(--color-border);
+    border: 1.5px solid var(--section-accent);
     border-radius: var(--radius-sm);
     padding: 0.625rem 0.75rem;
   }
@@ -635,11 +652,8 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     font-weight: 700;
     font-size: clamp(1.25rem, 6.5vw, 1.75rem);
     line-height: 1.2;
-    color: var(--color-accent);
+    color: var(--section-accent);
   }
-  /* Records take the second accent; Streaks keep the player's own. That is the
-     current-versus-best distinction the second colour exists for (brief 70). */
-  .stat-col__value--best { color: var(--color-accent-best); }
 
   /* All time — open, but quiet: plain rows, smaller type, no boxes (brief 81). */
   .stat-row {
@@ -652,9 +666,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
        different weight, so it needs to read as one group with clear air between
        it and the next. */
     padding-block: 0.625rem;
-    border-block-end: 1px solid var(--color-border);
   }
-  .stat-row:last-of-type { border-block-end: 0; }
   .stat-row dt { font-size: 1rem; color: var(--color-text); }
   /* :not(.stat-note) rather than restating the family and weight on .stat-note —
      .stat-note is (0,1,0) and this selector is (0,1,1), so it could never win on
@@ -663,7 +675,8 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .stat-row dd:not(.stat-note) {
     margin: 0;
     font-weight: 700;
-    color: var(--color-text);
+    font-size: 1.125rem;
+    color: var(--section-accent);
   }
   /* The line that says what the number means — the whole point of this build,
      so it is text under the stat, never a tooltip (brief 95). */

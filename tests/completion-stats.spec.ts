@@ -56,16 +56,13 @@ function blockText(id: string): string {
 }
 
 /** One column, found by the full words a screen reader hears (brief 67). */
-function col(fullLabel: string): {
-  value: string; short: string; isBest: boolean;
-} | null {
+function col(fullLabel: string): { value: string; short: string } | null {
   for (const el of panel().querySelectorAll('.stat-col')) {
     if (el.querySelector('.sr-only')?.textContent?.trim() !== fullLabel) continue;
     const value = el.querySelector('.stat-col__value')!;
     return {
       value: value.textContent!.trim(),
       short: el.querySelector('.stat-col__label')!.textContent!.trim(),
-      isBest: value.classList.contains('stat-col__value--best'),
     };
   }
   return null;
@@ -280,13 +277,15 @@ describe('the completion panel', () => {
     expect(col('Fastest time')!.value).toBe('0m 48s');
   });
 
-  it('colours Records with the second accent and Streak with the first (brief 70)', async () => {
+  it('takes its colour from the section, not from the figure (brief 79)', async () => {
+    // Streaks, Records and All time each set --section-accent once; every icon,
+    // number and box border inside reads from it. So there is no per-figure
+    // colour class left to get wrong, and the four theme colours cannot drift
+    // apart from the section they belong to.
     await render(RETURNING, 2, false, { seconds: 221 });
-    for (const label of ['Longest 1-go streak', 'Fastest time']) {
-      expect(col(label)!.isBest, label).toBe(true);
-    }
-    for (const label of ['Current play streak', 'Current 1-go streak', 'Average time']) {
-      expect(col(label)!.isBest, label).toBe(false);
+    expect(panel().querySelector('.stat-col__value--best')).toBeNull();
+    for (const id of ['streak', 'records', 'all-time']) {
+      expect(block(id)!.getAttribute('data-stat-block')).toBe(id);
     }
   });
 
@@ -310,6 +309,12 @@ describe('the completion panel', () => {
   it('drops the rule beside every heading (brief 73)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     expect(panel().querySelector('.stat-block__rule')).toBeNull();
+  });
+
+  it('draws no line between All-time entries (brief 81)', () => {
+    const sheet = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+    const rule = /\.stat-row\s*\{[^}]*\}/.exec(sheet)![0];
+    expect(rule).not.toContain('border');
   });
 
   it('says the short word on screen and the full one in speech', async () => {
