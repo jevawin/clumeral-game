@@ -364,6 +364,45 @@ he had never actually specified the sizing, so he specified it.
 
 ---
 
+## 16. The restructure — Jamie's layout of 2026-08-12
+**Short form: this section only, no question-and-answer — Jamie's explicit direction**
+("skip the q and a I just want to see and tweak until I'm happy"). Settled: Jamie
+2026-08-12 · Ack: Override: Jamie 2026-08-12. Everything below is his own sketch, written
+down so it survives a context clear. Where his sketch left something unsaid I have taken the
+reading that keeps the most of what is already there, and said so.
+
+62. **The Today block goes entirely** — no heading, no rule. The two figures move up under
+    the solved message, centred, on their own line, at the size and colour they have now.
+63. **The heading gains three words**: `Puzzle #160 solved! You took:` — and only when there
+    are figures to follow it. A random puzzle says `Puzzle solved!`, and a reload after a
+    saving-off solve has no goes and no time, so "You took:" would dangle over nothing.
+64. **"Best" becomes two sections: "Streak" and "Records"**, each with a heading, a rule and
+    a Lucide icon — a flame on Streak and a trophy on Records.
+65. **Streak has three columns**: Plays, 1-go solve, Avg. time — the current play streak, the
+    current 1-go streak, and the average time.
+66. **Records has two columns**: 1-go streak and Fastest — the best 1-go streak and the best
+    time.
+67. **The label sits ABOVE the number now**, which is the reverse of today. That is a
+    simplification, not a complication: the visual order and the DOM order agree again, so
+    the `column-reverse` the redesign needed can go.
+68. **No icons on the content** — the stopwatch, calculator and gamepad come off the column
+    headings, and the flames come off the numbers. Icons appear only on the two section
+    headings and on the two figures under the solved message.
+69. **A line under the Streak columns**: "Come back tomorrow to maintain your streak!"
+70. **Numbers stay bold. Streak takes the player's own accent, Records takes the second
+    accent.** His words were "keep the bold theme and secondary colour for records and
+    streak", which does not say which section gets which. This reading keeps the
+    current-versus-best distinction the second accent exists for — and if he meant both
+    sections in the second colour, it is one class to move.
+71. **No boxes** — unchanged from item 13, and he confirmed it: "let's see this first".
+72. **Two consequences of the sketch that are worth seeing before they are accepted**, both
+    built as drawn rather than quietly corrected:
+    - **The best play streak disappears from the panel.** Records has two columns in the
+      sketch and the third figure is not among them.
+    - **Average time appears twice** — once in Streak, once in All time, which is unchanged.
+
+---
+
 ## Closing
 
 **Settled 2026-08-12.** Jamie signed section 9 (his, blocking) and section 8, settled the
