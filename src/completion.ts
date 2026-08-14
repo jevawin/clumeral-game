@@ -116,17 +116,15 @@ function formatCountdown(isRandom: boolean): string | null {
 
 // A block is a <section> with its own heading, so a screen reader can jump
 // between them. The rule beside the heading is decorative.
-function block(id: string, heading: string, body: string, iconId?: string): string {
-  // The icon is decorative and sits inside the heading, before the word. Only
-  // the two streak-ish sections have one (brief 64); All time does not.
-  const icon = iconId
-    ? `<svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>`
-    : '';
+function block(id: string, heading: string, body: string, iconId: string): string {
+  // Every section has a heading with a decorative icon and no rule beside it
+  // (brief 73). The icon takes the section's own colour: the player's accent,
+  // except Records, which takes the second one — the same current-versus-record
+  // distinction the numbers carry.
   return `<section data-stat-block="${id}" class="stat-block" aria-labelledby="stat-head-${id}">
-    <div class="stat-block__head">
-      <h3 id="stat-head-${id}">${icon}${heading}</h3>
-      <span class="stat-block__rule" aria-hidden="true"></span>
-    </div>
+    <h3 id="stat-head-${id}" class="stat-block__head">
+      <svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${heading}
+    </h3>
     ${body}
   </section>`;
 }
@@ -154,10 +152,20 @@ function statRow(label: string, value: string, note: string): string {
  * all-time total two blocks down, and a screen reader has no column heading to
  * disambiguate them.
  */
-function statColumn(shortLabel: string, fullLabel: string, value: string, isBest = false): string {
+function statColumn(
+  shortLabel: string,
+  fullLabel: string,
+  value: string,
+  iconId: string,
+  isBest = false,
+): string {
+  // The icon is a watermark: big, faint, rotated, and clipped by the box's own
+  // corner (brief 76). Decorative in the strongest sense — it is a texture, not
+  // a label, so it is aria-hidden and the words carry everything.
   return `<div class="stat-col">
     <dt><span class="stat-col__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
     <dd class="stat-col__value${isBest ? ' stat-col__value--best' : ''}">${value}</dd>
+    <svg class="stat-col__mark" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
   </div>`;
 }
 
@@ -323,7 +331,13 @@ export function renderCompletion(
   // is cleared rather than left saying the same thing twice.
   // Recomputed below the panel branch would be too late, so the mode is worked
   // out first and the heading reads from it.
-  if (dom.subheading) dom.subheading.textContent = '';
+  // Cleared AND hidden. It is a flex child of a `gap-6` stack, so an empty one
+  // still contributes 24px — which is half of why the figures sat so far below
+  // the heading (brief 72).
+  if (dom.subheading) {
+    dom.subheading.textContent = '';
+    dom.subheading.classList.add('hidden');
+  }
 
   const isArchivedOtherDate =
     !isRandom &&
@@ -368,18 +382,21 @@ export function renderCompletion(
       // Two sections where there used to be one (brief 64): where you are now,
       // then what you have ever done. The colours carry that distinction —
       // Streak in the player's own accent, Records in the second one.
-      blocks.push(block('streak', 'Streak',
-        `<dl class="stat-cols">
-          ${statColumn('Plays', 'Current play streak', String(stats.playStreak))}
-          ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak))}
-          ${statColumn('Avg. time', 'Average time', formatDuration(stats.avgTimeSeconds))}
-        </dl>
-        <p class="stat-note">${STREAK_LINE}</p>`, 'icon-flame'));
+      // The line sits under the heading and above the boxes (brief 74), so it
+      // reads as the section's own sentence rather than a footnote to the last
+      // number in it.
+      blocks.push(block('streak', 'Streaks',
+        `<p class="stat-note">${STREAK_LINE}</p>
+        <dl class="stat-cols">
+          ${statColumn('Plays', 'Current play streak', String(stats.playStreak), 'icon-gamepad')}
+          ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak), 'icon-calculator-check')}
+          ${statColumn('Avg. time', 'Average time', formatDuration(stats.avgTimeSeconds), 'icon-stopwatch')}
+        </dl>`, 'icon-flame'));
 
       blocks.push(block('records', 'Records',
         `<dl class="stat-cols stat-cols--two">
-          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), true)}
-          ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), true)}
+          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator-check', true)}
+          ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), 'icon-stopwatch', true)}
         </dl>`, 'icon-trophy'));
 
       const firstGo = stats.firstGoPercent === null
@@ -393,7 +410,7 @@ export function renderCompletion(
           ${statRow('Average goes', stats.avgGoes ?? '—', NOTES.avgGoes)}
           ${statRow('Average time', formatDuration(stats.avgTimeSeconds), NOTES.avgTime)}
         </dl>
-        ${goesChart(stats.goesDistribution)}`));
+        ${goesChart(stats.goesDistribution)}`, 'icon-calendar'));
     }
 
     dom.panel.innerHTML = blocks.join('');

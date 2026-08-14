@@ -262,7 +262,7 @@ describe('the completion panel', () => {
   it('splits into Streak and Records, each with an icon (brief 64, 65, 66)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
 
-    expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Streak');
+    expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Streaks');
     expect(block('records')!.querySelector('h3')!.textContent!.trim()).toBe('Records');
     for (const id of ['streak', 'records']) {
       const icon = block(id)!.querySelector('h3 .stat-block__icon');
@@ -290,14 +290,26 @@ describe('the completion panel', () => {
     }
   });
 
-  it('puts no icon on any figure, only on the two headings (brief 68)', async () => {
+  it('gives every section a heading icon, and every box a watermark (brief 73, 76)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    for (const id of ['streak', 'records']) {
-      expect(block(id)!.querySelectorAll('.stat-col svg').length, id).toBe(0);
+    // All three sections have one now, All time included.
+    for (const id of ['streak', 'records', 'all-time']) {
+      expect(block(id)!.querySelector('h3 .stat-block__icon'), id).not.toBeNull();
+    }
+    // One watermark per box, decorative, and no other icon inside a box.
+    const marks = panel().querySelectorAll('.stat-col__mark');
+    expect(marks.length).toBe(5);
+    for (const mark of marks) expect(mark.getAttribute('aria-hidden')).toBe('true');
+    for (const c of panel().querySelectorAll('.stat-col')) {
+      expect(c.querySelectorAll('svg').length).toBe(1);
     }
     // The two figures under the solved message keep theirs.
     expect(panel().querySelectorAll('.stat-figure__icon').length).toBe(2);
-    expect(panel().querySelectorAll('.stat-flame').length).toBe(0);
+  });
+
+  it('drops the rule beside every heading (brief 73)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(panel().querySelector('.stat-block__rule')).toBeNull();
   });
 
   it('says the short word on screen and the full one in speech', async () => {
@@ -313,14 +325,19 @@ describe('the completion panel', () => {
     for (const dt of panel().querySelectorAll('dt')) {
       expect(dt.closest('dl'), dt.textContent!).not.toBeNull();
     }
-    // Label first in the DOM as well as on screen now (brief 67).
+    // Label first in the DOM as well as on screen now (brief 67). The watermark
+    // is a third child and comes last, so it never lands between the two.
     for (const el of panel().querySelectorAll('.stat-col')) {
-      expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD']);
+      expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD', 'svg']);
     }
   });
 
   it('asks the player back tomorrow, under the streak columns (brief 69)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
+    // Under the heading and above the boxes, so it reads as the section's own
+    // sentence rather than a footnote to the last number (brief 74).
+    const kids = [...block('streak')!.children].map((el) => el.tagName);
+    expect(kids).toEqual(['H3', 'P', 'DL']);
     expect(blockText('streak')).toContain('Come back tomorrow to maintain your streak!');
     expect(blockText('records')).not.toContain('Come back tomorrow');
   });
