@@ -58,6 +58,7 @@ const NOTES = {
   avgTime: 'How long you usually take.',
 } as const;
 
+const STREAK_LINE = 'Come back tomorrow to maintain your streak!';
 const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
 const RANDOM_LINE = "Random puzzles don't count towards your stats.";
 const CHART_LABEL = 'How many goes you take';
@@ -115,10 +116,15 @@ function formatCountdown(isRandom: boolean): string | null {
 
 // A block is a <section> with its own heading, so a screen reader can jump
 // between them. The rule beside the heading is decorative.
-function block(id: string, heading: string, body: string): string {
+function block(id: string, heading: string, body: string, iconId?: string): string {
+  // The icon is decorative and sits inside the heading, before the word. Only
+  // the two streak-ish sections have one (brief 64); All time does not.
+  const icon = iconId
+    ? `<svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>`
+    : '';
   return `<section data-stat-block="${id}" class="stat-block" aria-labelledby="stat-head-${id}">
     <div class="stat-block__head">
-      <h3 id="stat-head-${id}">${heading}</h3>
+      <h3 id="stat-head-${id}">${icon}${heading}</h3>
       <span class="stat-block__rule" aria-hidden="true"></span>
     </div>
     ${body}
@@ -137,55 +143,21 @@ function statRow(label: string, value: string, note: string): string {
 }
 
 /**
- * One box: a title with its icon, and a description list of one or two pairs.
+ * One column: a label with the number under it (brief 65, 66, 67).
  *
- * "Box" is now only a name for the grouping: the background, border and offset
- * shadow all went (brief 13), so what separates the three on screen is the gap
- * between the columns.
+ * The label is above the number on screen AND first in the DOM, so the visual
+ * order and the reading order finally agree — the redesign's `column-reverse`
+ * is gone with the layout that needed it.
  *
- * The `dl` sits INSIDE the box, below the `h4`. A `dt` with no `dl` ancestor is
- * not a description list at all — it breaks the pairing brief 46 relies on and
- * trips axe's definition-list rule at serious level, which the accessibility
- * spec runs over /solved in both colour schemes.
+ * The label still carries two spans: the short word that is shown and the full
+ * one that is spoken. "Plays" on its own means the play streak here and the
+ * all-time total two blocks down, and a screen reader has no column heading to
+ * disambiguate them.
  */
-function statBox(title: string, iconId: string, pairs: string): string {
-  return `<div class="stat-box">
-    <h4 class="stat-box__title">
-      <svg class="stat-box__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${title}
-    </h4>
-    <dl class="m-0">${pairs}</dl>
-  </div>`;
-}
-
-/**
- * One number and its label (brief 78).
- *
- * The short word on screen and the full one in speech are two separate spans,
- * and they are not prefixes of each other — "Streak" against "Longest 1-go
- * streak". That matters most in speech: on screen the flame and the position
- * tell you which of the two figures is the record, and a screen reader gets
- * neither, so "Streak" alone would announce two figures both called "streak"
- * with no way to tell them apart (brief 25).
- *
- * The number sits above its label on screen while the DOM stays `dt` then `dd`
- * — the reversal is CSS (`.stat-box__pair`), because `dd` before `dt` is not
- * conforming HTML and a screen reader must hear the label first.
- */
-function statPair(shortLabel: string, fullLabel: string, value: string, isBest = false): string {
-  // The flame marks a record, and it goes inside the dd so it inherits the
-  // number's colour rather than declaring one — which is what keeps "the same
-  // colour as the number" true in both modes and all four themes (brief 17).
-  // Inside the dd also keeps it out of the spoken label entirely.
-  //
-  // Not on a dash: formatDuration returns '—' when there is no time to show, and
-  // a flame is a badge for an achievement nobody has yet (brief 46). Only the
-  // Time box can hit this — the two streaks are always numbers.
-  const flame = isBest && value !== '—'
-    ? '<svg class="stat-flame" aria-hidden="true"><use href="/sprites.svg#icon-flame"/></svg>'
-    : '';
-  return `<div class="stat-box__pair">
-    <dt><span class="stat-box__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
-    <dd class="stat-box__value${isBest ? ' stat-box__value--best' : ''}">${flame}${value}</dd>
+function statColumn(shortLabel: string, fullLabel: string, value: string, isBest = false): string {
+  return `<div class="stat-col">
+    <dt><span class="stat-col__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
+    <dd class="stat-col__value${isBest ? ' stat-col__value--best' : ''}">${value}</dd>
   </div>`;
 }
 
@@ -349,9 +321,8 @@ export function renderCompletion(
 
   // Heading. The old subheading is now the figures inside the Today block, so it
   // is cleared rather than left saying the same thing twice.
-  if (dom.heading) {
-    dom.heading.textContent = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
-  }
+  // Recomputed below the panel branch would be too late, so the mode is worked
+  // out first and the heading reads from it.
   if (dom.subheading) dom.subheading.textContent = '';
 
   const isArchivedOtherDate =
@@ -367,6 +338,15 @@ export function renderCompletion(
   const mode = panelMode(isRandom, isArchivedOtherDate, tries, stats);
   const seconds = validSeconds(opts.seconds);
 
+  // "You took:" leads into the two figures, so it is only correct when there
+  // are figures to follow it (brief 63). A reload after a saving-off solve has
+  // neither the goes nor the time, and the sentence would dangle over nothing.
+  const hasFigures = tries !== null && Number.isInteger(tries) && tries >= 1;
+  if (dom.heading) {
+    const solved = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
+    dom.heading.textContent = hasFigures ? `${solved} You took:` : solved;
+  }
+
   if (dom.panel) {
     // Archive replays keep the minimal panel they have today: no streaks, no
     // totals and no timing (brief 54).
@@ -379,27 +359,28 @@ export function renderCompletion(
       mode === 'new' ? `<p class="stat-note">${NEW_PLAYER_LINE}</p>` : '',
     ].join('');
 
-    // The id stays `this-game` while the heading becomes `Today` (brief 66):
-    // every existing locator and the e2e page object key off the id.
-    const blocks = [block('this-game', 'Today', thisGame)];
+    // No Today block any more (brief 62) — no heading, no rule. The figures sit
+    // directly under the solved message, centred, and the two notes that used to
+    // live in that block sit under them.
+    const blocks = [`<div data-stat-block="this-game">${thisGame}</div>`];
 
     if (mode === 'full') {
-      // Three boxes: your record over where you are now. Today's time appears
-      // here as well as in Today, and on a personal-best day the same number
-      // appears three times — deliberate, and standing as Jamie's override of
-      // Dave's objection to the repeat (brief 71, 73).
-      blocks.push(block('best', 'Best',
-        `<div class="stat-boxes">
-          ${statBox('Time', 'icon-stopwatch',
-            statPair('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), true) +
-            statPair('Current', 'Current time', formatDuration(showTime ? seconds : null)))}
-          ${statBox('1-go', 'icon-calculator-check',
-            statPair('Streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), true) +
-            statPair('Current', 'Current 1-go streak', String(stats.firstGoStreak)))}
-          ${statBox('Plays', 'icon-gamepad',
-            statPair('Streak', 'Longest play streak', String(stats.bestPlayStreak), true) +
-            statPair('Current', 'Current play streak', String(stats.playStreak)))}
-        </div>`));
+      // Two sections where there used to be one (brief 64): where you are now,
+      // then what you have ever done. The colours carry that distinction —
+      // Streak in the player's own accent, Records in the second one.
+      blocks.push(block('streak', 'Streak',
+        `<dl class="stat-cols">
+          ${statColumn('Plays', 'Current play streak', String(stats.playStreak))}
+          ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak))}
+          ${statColumn('Avg. time', 'Average time', formatDuration(stats.avgTimeSeconds))}
+        </dl>
+        <p class="stat-note">${STREAK_LINE}</p>`, 'icon-flame'));
+
+      blocks.push(block('records', 'Records',
+        `<dl class="stat-cols stat-cols--two">
+          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), true)}
+          ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), true)}
+        </dl>`, 'icon-trophy'));
 
       const firstGo = stats.firstGoPercent === null
         ? String(stats.firstGoWins)

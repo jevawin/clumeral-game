@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 
 const sheet = readFileSync(resolve(__dirname, '..', 'public/sprites.svg'), 'utf-8');
 
-const PANEL_ICONS = ['icon-stopwatch', 'icon-gamepad', 'icon-calculator-check', 'icon-flame'];
+const PANEL_ICONS = ['icon-stopwatch', 'icon-gamepad', 'icon-calculator-check', 'icon-flame', 'icon-trophy'];
 
 function symbol(id: string): string {
   const m = new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`).exec(sheet);

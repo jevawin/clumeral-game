@@ -60,20 +60,22 @@ test.describe("player stats — the panel after a solve", () => {
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
-    await expect(completion.best).toBeVisible();
+    await expect(completion.streak).toBeVisible();
+    await expect(completion.records).toBeVisible();
     await expect(completion.allTime).toBeVisible();
 
-    // Three records in Best. The Average block is gone — its two figures are
-    // All-time rows again (polish brief 12).
-    await expect(completion.best.locator(".stat-box")).toHaveCount(3);
+    // Three columns under Streak, two under Records (brief 65, 66).
+    await expect(completion.streak.locator(".stat-col")).toHaveCount(3);
+    await expect(completion.records.locator(".stat-col")).toHaveCount(2);
     await expect(completion.average).toHaveCount(0);
-    // A flame on each record and on nothing else (polish brief 10, 18).
-    await expect(completion.panel.locator(".stat-flame")).toHaveCount(3);
+    // Icons on the two headings and on nothing else (brief 68).
+    await expect(completion.streak.locator(".stat-col svg")).toHaveCount(0);
+    await expect(completion.records.locator(".stat-col svg")).toHaveCount(0);
 
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is
     // where the first-go streak breaks. Labels are the spoken ones — the visible
-    // word is just "Current".
+    // word is just "Plays" or "1-go streak".
     await expect(completion.stat("Current play streak")).toHaveText("5");
     await expect(completion.stat("Longest 1-go streak")).toHaveText("2");
     await expect(completion.stat("Current 1-go streak")).toHaveText("2");
@@ -105,6 +107,9 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.thisGame).toContainText("1 go");
     await expect(completion.thisGame).toContainText(/\d+m \d\ds/);
     await expect(completion.thisGame).not.toContainText("Solved in");
+    // The heading leads into them (brief 63).
+    await expect(completion.heading).toHaveText(/^Puzzle #\d+ solved! You took:$/);
+    await expect(completion.panel).toContainText("Come back tomorrow to maintain your streak!");
     await expect(completion.live).toHaveText(/^Solved in 1\. .*seconds?\. Play streak 5\.$/);
   });
 
@@ -122,11 +127,12 @@ test.describe("player stats — the panel after a solve", () => {
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
-    await expect(completion.best).toHaveCount(0);
+    await expect(completion.streak).toHaveCount(0);
+    await expect(completion.records).toHaveCount(0);
     await expect(completion.average).toHaveCount(0);
     await expect(completion.allTime).toHaveCount(0);
-    // No boxes at all on a first game — absent, not empty (redesign brief 62).
-    await expect(completion.boxes).toHaveCount(0);
+    // No figure columns at all on a first game — absent, not empty.
+    await expect(completion.cols).toHaveCount(0);
     await expect(completion.panel).toContainText(
       "Your streaks and all-time stats start from your third game.",
     );
@@ -141,7 +147,8 @@ test.describe("player stats — score saving switched off", () => {
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
-    await expect(completion.best).toHaveCount(0);
+    await expect(completion.streak).toHaveCount(0);
+    await expect(completion.records).toHaveCount(0);
     await expect(completion.average).toHaveCount(0);
     await expect(completion.allTime).toHaveCount(0);
     // P-01: the panel says nothing at all about score saving, in any mode. The
