@@ -76,29 +76,26 @@ test.describe("player stats — the panel after a solve", () => {
     // solved first go, and so was yesterday; the day before took three, which is
     // where the first-go streak breaks. Labels are the spoken ones — the visible
     // word is just "Plays" or "1-go streak".
-    await expect(completion.stat("Current play streak")).toHaveText("5");
+    await expect(completion.stat("Current day streak")).toHaveText("5");
     await expect(completion.stat("Longest 1-go streak")).toHaveText("2");
     await expect(completion.stat("Current 1-go streak")).toHaveText("2");
-    await expect(completion.stat("Plays")).toHaveText("5");
-    await expect(completion.stat("First-go wins")).toHaveText("2 (40%)");
-    // (1 + 3 + 2 + 4 + 1) / 5
-    await expect(completion.stat("Average goes")).toHaveText("2.2");
     // How long today's solve took is real wall time, so these assert the SHAPE.
     // The arithmetic behind them is pinned exactly in tests/player-stats.spec.ts;
     // what this proves is that real numbers reach the real panel at all.
     await expect(completion.stat("Average time")).toHaveText(/^\d+m \d\ds$/);
     await expect(completion.stat("Fastest time")).toHaveText(/^\d+m \d\ds$/);
 
-    // The four All-time explanatory lines. The three streak ones went with the
-    // redesign (brief 45); the two averages brought theirs back with them.
-    await expect(completion.panel).toContainText("Daily puzzles you have finished.");
-    await expect(completion.panel).toContainText("Puzzles you got on your first guess.");
-    await expect(completion.panel).toContainText("Your average number of guesses.");
-    await expect(completion.panel).toContainText("How long you usually take.");
+    // All time reads as four sentences, number first (brief 82).
+    await expect(completion.allTimeLines).toHaveCount(4);
+    await expect(completion.allTimeLines.nth(0)).toHaveText("5 puzzles solved");
+    await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) solved in one");
+    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\d+m \d\ds average time$/);
+    // (1 + 3 + 2 + 4 + 1) / 5
+    await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 average attempts");
 
     // Six chart rows, counts as text beside the bars.
     await expect(completion.goesRows).toHaveCount(6);
-    await expect(completion.panel).toContainText("How many goes you take");
+    await expect(completion.panel).toContainText("Attempts distribution");
 
     // Two figures rather than a sentence, and the one announcement — goes, time,
     // play streak, nothing else, with the time spelled out for speech rather

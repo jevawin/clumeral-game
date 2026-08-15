@@ -18,6 +18,8 @@ export class CompletionPage {
   readonly allTime: Locator;
   /** Every figure column, across Streak and Records. */
   readonly cols: Locator;
+  /** Every All-time line: "17 puzzles solved". */
+  readonly allTimeLines: Locator;
   readonly goesRows: Locator;
   /** The one polite announcement of the result. */
   readonly live: Locator;
@@ -36,6 +38,7 @@ export class CompletionPage {
     this.average = page.locator('[data-stat-block="average"]');
     this.allTime = page.locator('[data-stat-block="all-time"]');
     this.cols = page.locator(".stat-col");
+    this.allTimeLines = page.locator(".stat-line");
     this.goesRows = page.locator("[data-goes-row]");
     this.live = page.locator("[data-completion-live]");
     this.countdown = page.locator("[data-completion-countdown]");
@@ -50,14 +53,14 @@ export class CompletionPage {
   /**
    * The value shown for a labelled stat, anywhere on the panel.
    *
-   * Two shapes: the all-time rows, whose `dt` is the whole label, and the figure
-   * columns, whose `dt` holds a short visible word plus the full one in a
-   * visually hidden span. Matching either means the label passed here is always
-   * the words a screen reader hears — "Current play streak", not "Current".
+   * Figure columns only. The All-time figures are sentences now — "17 puzzles
+   * solved" — so they are read straight off the panel text rather than looked up
+   * by label. The label passed here is always the words a screen reader hears:
+   * "Current day streak", not "Days".
    */
   stat(label: string): Locator {
     return this.panel
-      .locator(".stat-row, .stat-col")
+      .locator(".stat-col")
       .filter({ has: this.page.locator("dt, .sr-only", { hasText: new RegExp(`^${label}$`) }) })
       .locator("dd")
       .first();

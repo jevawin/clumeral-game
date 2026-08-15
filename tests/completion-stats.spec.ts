@@ -36,14 +36,10 @@ function block(id: string): HTMLElement | null {
   return panel().querySelector(`[data-stat-block="${id}"]`);
 }
 
-/** The value shown for a labelled stat, anywhere on the panel. */
-function stat(label: string): string | null {
-  for (const row of panel().querySelectorAll('dt')) {
-    if (row.textContent?.trim() === label) {
-      return (row.parentElement?.querySelector('dd')?.textContent ?? '').trim();
-    }
-  }
-  return null;
+/** Every All-time line, whitespace-collapsed: "17 puzzles solved". */
+function allTimeLines(): string[] {
+  return [...panel().querySelectorAll('.stat-line')]
+    .map((el) => el.textContent!.replace(/\s+/g, ' ').trim());
 }
 
 function text(): string {
@@ -128,13 +124,17 @@ describe('the completion panel', () => {
 
     expect(figures()).toEqual(['2 goes', '3m 41s']);
 
-    expect(col('Current play streak')!.value).toBe('5');
+    expect(col('Current day streak')!.value).toBe('5');
     expect(col('Current 1-go streak')!.value).toBe('0');
-    expect(stat('Plays')).toBe('5');
-    expect(stat('First-go wins')).toBe('1 (20%)');
-    expect(stat('Average goes')).toBe('2.4');
-    expect(stat('Average time')).toBe('4m 06s'); // (221+48+300+260+400)/5 = 245.8s
     expect(col('Fastest time')!.value).toBe('0m 48s');
+
+    // The number first, then what it means (brief 82).
+    expect(allTimeLines()).toEqual([
+      '5 puzzles solved',
+      '1 (20%) solved in one',
+      '4m 06s average time', // (221+48+300+260+400)/5 = 245.8s
+      '2.4 average attempts',
+    ]);
   });
 
   it('shows only This game for a brand-new player, with the third-game line', async () => {
@@ -259,7 +259,7 @@ describe('the completion panel', () => {
   it('splits into Streak and Records, each with an icon (brief 64, 65, 66)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
 
-    expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Streaks');
+    expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Current streaks');
     expect(block('records')!.querySelector('h3')!.textContent!.trim()).toBe('Records');
     for (const id of ['streak', 'records']) {
       const icon = block(id)!.querySelector('h3 .stat-block__icon');
@@ -267,8 +267,8 @@ describe('the completion panel', () => {
       expect(icon!.getAttribute('aria-hidden')).toBe('true');
     }
 
-    expect(colLabels('streak')).toEqual(['Plays', '1-go solve', 'Avg. time']);
-    expect(col('Current play streak')!.value).toBe('5');
+    expect(colLabels('streak')).toEqual(['Days', '1-go solve', 'Avg. time']);
+    expect(col('Current day streak')!.value).toBe('5');
     expect(col('Current 1-go streak')!.value).toBe('0');
     expect(col('Average time')!.value).toBe('4m 06s');
 
@@ -313,15 +313,15 @@ describe('the completion panel', () => {
 
   it('draws no line between All-time entries (brief 81)', () => {
     const sheet = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
-    const rule = /\.stat-row\s*\{[^}]*\}/.exec(sheet)![0];
+    const rule = /\.stat-line\s*\{[^}]*\}/.exec(sheet)![0];
     expect(rule).not.toContain('border');
   });
 
   it('says the short word on screen and the full one in speech', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    // "Plays" means the streak here and the all-time total two blocks down, and
-    // a screen reader has no column heading to tell them apart.
-    expect(col('Current play streak')!.short).toBe('Plays');
+    // "Days" on its own does not say days of what, and a screen reader has no
+    // column heading to lean on.
+    expect(col('Current day streak')!.short).toBe('Days');
     expect(col('Longest 1-go streak')!.short).toBe('1-go streak');
   });
 
@@ -355,6 +355,7 @@ describe('the completion panel', () => {
     ], 2);
     expect(col('Fastest time')!.value).toBe('—');
     expect(col('Average time')!.value).toBe('—');
+    expect(allTimeLines()).toContain('— average time');
   });
 
   it('puts no explanatory line under the Records columns (brief 45)', async () => {
@@ -376,14 +377,18 @@ describe('the completion panel', () => {
     expect(figures()).toEqual([]);
   });
 
-  it('puts an explanatory line under every all-time stat (brief 135)', async () => {
+  it('needs no explanatory lines — the figures read as sentences (brief 82)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    const t = text();
-    for (const line of [
+    // The old two-part row needed a note under it to say what the number meant.
+    // "5 puzzles solved" says it in the line itself.
+    expect(panel().querySelector('.stat-note.stat-row')).toBeNull();
+    for (const gone of [
       'Daily puzzles you have finished.',
       'Puzzles you got on your first guess.',
+      'Your average number of guesses.',
+      'How long you usually take.',
     ]) {
-      expect(t, line).toContain(line);
+      expect(text(), gone).not.toContain(gone);
     }
   });
 
@@ -395,7 +400,7 @@ describe('the completion panel', () => {
       .toEqual(['1', '2', '3', '4', '5', '6+']);
     expect([...rows].map((r) => r.querySelector('[data-goes-count]')!.textContent))
       .toEqual(['1', '2', '1', '1', '0', '0']);
-    expect(text()).toContain('How many goes you take');
+    expect(text()).toContain('Attempts distribution');
   });
 
   it('drops the stopwatch figure entirely when this game has no valid time', async () => {
@@ -420,7 +425,7 @@ describe('the completion panel', () => {
     ];
     await render(history, 1, false, { seconds: 3900 });
     expect(figures()).toEqual(['1 go', '1h 05m']);
-    expect(stat('Average time')).toBe('22m 40s');
+    expect(allTimeLines()).toContain('22m 40s average time');
     expect(col('Fastest time')!.value).toBe('1m 00s');
   });
 
@@ -431,7 +436,7 @@ describe('the completion panel', () => {
       { date: day(2), tries: 3 },
     ], 2);
     // A dash is right HERE — a box needs a placeholder rather than a gap.
-    expect(stat('Average time')).toBe('—');
+    expect(allTimeLines()).toContain('— average time');
     expect(col('Fastest time')!.value).toBe('—');
   });
 });

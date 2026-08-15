@@ -46,22 +46,14 @@ const dom = {
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
 //
-// Explanatory lines under the All-time rows only. The boxes carry none: the
-// redesign dropped them because "Best" over "Current" under a labelled icon is
-// already the explanation, and three sentences inside three small boxes was the
-// clutter the redesign was called for (redesign brief 45).
-
-const NOTES = {
-  plays: 'Daily puzzles you have finished.',
-  firstGoWins: 'Puzzles you got on your first guess.',
-  avgGoes: 'Your average number of guesses.',
-  avgTime: 'How long you usually take.',
-} as const;
+// No explanatory lines anywhere on the panel now. The All-time figures read as
+// sentences — "17 puzzles solved" — so they explain themselves, and the boxes
+// above never had one (brief 45, 82).
 
 const STREAK_LINE = 'Come back tomorrow to maintain your streak!';
 const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
 const RANDOM_LINE = "Random puzzles don't count towards your stats.";
-const CHART_LABEL = 'How many goes you take';
+const CHART_LABEL = 'Attempts distribution';
 
 
 // ─── Which blocks exist ──────────────────────────────────────────────────────
@@ -129,15 +121,20 @@ function block(id: string, heading: string, body: string, iconId: string): strin
   </section>`;
 }
 
-// Every number is a <dl> pair, so it is read with its label attached rather than
-// as a loose figure (brief 97). The explanatory line is a second <dd> under the
-// number — valid against a single <dt>, and it reads in the right order.
-function statRow(label: string, value: string, note: string): string {
-  return `<div class="stat-row">
-    <dt>${label}</dt>
-    <dd>${value}</dd>
-    <dd class="stat-note">${note}</dd>
-  </div>`;
+/**
+ * One All-time line: the number, then what it means (brief 82).
+ *
+ * A sentence rather than a description list, and that is the point — "17 puzzles
+ * solved" reads correctly out loud exactly as it is written, so the label and the
+ * separate explanatory note the old two-part row needed have collapsed into the
+ * line itself. Nothing is left that only makes sense beside a heading.
+ */
+function statLine(value: string, words: string): string {
+  return `<p class="stat-line"><span class="stat-line__value">${value}</span> ${words}</p>`;
+}
+
+function plural(n: number, word: string): string {
+  return n === 1 ? word : `${word}s`;
 }
 
 /**
@@ -235,7 +232,7 @@ export function todayFigures(tries: number | null, seconds: number | null, showT
   // does not validate. Anything that is not a real count of goes is "played,
   // not recorded", which is already a state this handles.
   if (tries === null || !Number.isInteger(tries) || tries < 1) return '<p class="stat-hero">Solved!</p>';
-  const goes = figure('icon-calculator-check', 'Goes', `${tries} ${tries === 1 ? 'go' : 'goes'}`);
+  const goes = figure('icon-calculator', 'Goes', `${tries} ${tries === 1 ? 'go' : 'goes'}`);
   const time = showTime && seconds !== null
     ? figure('icon-stopwatch', 'Time', formatDuration(seconds))
     : '';
@@ -379,17 +376,17 @@ export function renderCompletion(
       // The line sits under the heading and above the boxes (brief 74), so it
       // reads as the section's own sentence rather than a footnote to the last
       // number in it.
-      blocks.push(block('streak', 'Streaks',
+      blocks.push(block('streak', 'Current streaks',
         `<p class="stat-note">${STREAK_LINE}</p>
         <dl class="stat-cols">
-          ${statColumn('Plays', 'Current play streak', String(stats.playStreak), 'icon-gamepad')}
-          ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak), 'icon-calculator-check')}
+          ${statColumn('Days', 'Current day streak', String(stats.playStreak), 'icon-gamepad')}
+          ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak), 'icon-calculator')}
           ${statColumn('Avg. time', 'Average time', formatDuration(stats.avgTimeSeconds), 'icon-stopwatch')}
         </dl>`, 'icon-flame'));
 
       blocks.push(block('records', 'Records',
         `<dl class="stat-cols stat-cols--two">
-          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator-check')}
+          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator')}
           ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), 'icon-stopwatch')}
         </dl>`, 'icon-trophy'));
 
@@ -398,12 +395,10 @@ export function renderCompletion(
         : `${stats.firstGoWins} (${stats.firstGoPercent}%)`;
 
       blocks.push(block('all-time', 'All time',
-        `<dl class="m-0">
-          ${statRow('Plays', String(stats.plays), NOTES.plays)}
-          ${statRow('First-go wins', firstGo, NOTES.firstGoWins)}
-          ${statRow('Average goes', stats.avgGoes ?? '—', NOTES.avgGoes)}
-          ${statRow('Average time', formatDuration(stats.avgTimeSeconds), NOTES.avgTime)}
-        </dl>
+        `${statLine(String(stats.plays), `${plural(stats.plays, 'puzzle')} solved`)}
+        ${statLine(firstGo, 'solved in one')}
+        ${statLine(formatDuration(stats.avgTimeSeconds), 'average time')}
+        ${statLine(stats.avgGoes ?? '—', 'average attempts')}
         ${goesChart(stats.goesDistribution)}`, 'icon-calendar'));
     }
 
