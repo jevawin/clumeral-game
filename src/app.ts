@@ -8,6 +8,7 @@ import { startingBoard, isStartingBoard, createHistory } from './undo-stack.ts';
 import { createPlayTimer, playTimeToSend } from './play-timer.ts';
 import { validSeconds } from './player-stats.ts';
 import { createSaveWarning, WARNING_TEXT } from './save-warning.ts';
+import { applyDemoParam } from './demo-history.ts';
 import { matchShortcut, modifierLabel, isTypingTarget } from './shortcuts.ts';
 import type { EntryKind } from './undo-stack.ts';
 import { initTheme } from './theme.ts';
@@ -20,6 +21,14 @@ import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
 import { renderCompletion, resetCompletionAnnouncement, heroLine } from './completion.ts';
 import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
+
+// ─── Demo history (preview only) ─────────────────────────────────────────────
+//
+// FIRST, before anything reads storage: isNewUser below and the boot-time
+// todayEntry() both read dlng_history at module scope, so seeding after them
+// would show a half-seeded screen until the next reload. No-ops on clumeral.com.
+applyDemoParam(new URL(window.location.href));
+
 
 // ─── Analytics ───────────────────────────────────────────────────────────────
 

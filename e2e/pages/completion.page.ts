@@ -8,8 +8,18 @@ export class CompletionPage {
   /** The container the three blocks are written into. */
   readonly panel: Locator;
   readonly thisGame: Locator;
-  readonly streaks: Locator;
+  /** Where you are now. */
+  readonly streak: Locator;
+  /** What you have ever done. */
+  readonly records: Locator;
+  /** Absent since the averages moved back into All time. Kept so the tests that
+   *  assert it has count 0 still say something. */
+  readonly average: Locator;
   readonly allTime: Locator;
+  /** Every figure column, across Streak and Records. */
+  readonly cols: Locator;
+  /** Every All-time line: "17 puzzles solved". */
+  readonly allTimeLines: Locator;
   readonly goesRows: Locator;
   /** The one polite announcement of the result. */
   readonly live: Locator;
@@ -23,8 +33,12 @@ export class CompletionPage {
     this.subheading = page.locator("[data-completion-subheading]");
     this.panel = page.locator("[data-completion-panel]");
     this.thisGame = page.locator('[data-stat-block="this-game"]');
-    this.streaks = page.locator('[data-stat-block="streaks"]');
+    this.streak = page.locator('[data-stat-block="streak"]');
+    this.records = page.locator('[data-stat-block="records"]');
+    this.average = page.locator('[data-stat-block="average"]');
     this.allTime = page.locator('[data-stat-block="all-time"]');
+    this.cols = page.locator(".stat-col");
+    this.allTimeLines = page.locator(".stat-line");
     this.goesRows = page.locator("[data-goes-row]");
     this.live = page.locator("[data-completion-live]");
     this.countdown = page.locator("[data-completion-countdown]");
@@ -36,11 +50,18 @@ export class CompletionPage {
     await this.page.goto("/solved");
   }
 
-  /** The value shown for a labelled stat, anywhere on the panel. */
+  /**
+   * The value shown for a labelled stat, anywhere on the panel.
+   *
+   * Figure columns only. The All-time figures are sentences now — "17 puzzles
+   * solved" — so they are read straight off the panel text rather than looked up
+   * by label. The label passed here is always the words a screen reader hears:
+   * "Current day streak", not "Days".
+   */
   stat(label: string): Locator {
     return this.panel
-      .locator(".stat-row, .stat-streak")
-      .filter({ has: this.page.locator("dt", { hasText: new RegExp(`^${label}$`) }) })
+      .locator(".stat-col")
+      .filter({ has: this.page.locator("dt, .sr-only", { hasText: new RegExp(`^${label}$`) }) })
       .locator("dd")
       .first();
   }
