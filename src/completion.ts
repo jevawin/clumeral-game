@@ -122,15 +122,18 @@ function block(id: string, heading: string, body: string, iconId: string): strin
 }
 
 /**
- * One All-time line: the number, then what it means (brief 82).
+ * One All-time figure: the number, with what it means under it (brief 83).
  *
- * A sentence rather than a description list, and that is the point — "17 puzzles
- * solved" reads correctly out loud exactly as it is written, so the label and the
- * separate explanatory note the old two-part row needed have collapsed into the
- * line itself. Nothing is left that only makes sense beside a heading.
+ * Still a paragraph rather than a description list, and that is the point — the
+ * two spans read as "17 puzzles solved" in one breath, in the order they are
+ * written. So the number can sit above its label on screen without the DOM and
+ * the picture disagreeing, which is what a `dt`/`dd` pair would have forced.
  */
 function statLine(value: string, words: string): string {
-  return `<p class="stat-line"><span class="stat-line__value">${value}</span> ${words}</p>`;
+  return `<p class="stat-line">
+    <span class="stat-line__value">${value}</span>
+    <span class="stat-line__label">${words}</span>
+  </p>`;
 }
 
 function plural(n: number, word: string): string {
@@ -395,10 +398,12 @@ export function renderCompletion(
         : `${stats.firstGoWins} (${stats.firstGoPercent}%)`;
 
       blocks.push(block('all-time', 'All time',
-        `${statLine(String(stats.plays), `${plural(stats.plays, 'puzzle')} solved`)}
-        ${statLine(firstGo, 'solved in one')}
-        ${statLine(formatDuration(stats.avgTimeSeconds), 'average time')}
-        ${statLine(stats.avgGoes ?? '—', 'average attempts')}
+        `<div class="stat-lines">
+          ${statLine(String(stats.plays), `${plural(stats.plays, 'Puzzle')} solved`)}
+          ${statLine(firstGo, 'Solved in one')}
+          ${statLine(formatDuration(stats.avgTimeSeconds), 'Average time')}
+          ${statLine(stats.avgGoes ?? '—', 'Average attempts')}
+        </div>
         ${goesChart(stats.goesDistribution)}`, 'icon-calendar'));
     }
 

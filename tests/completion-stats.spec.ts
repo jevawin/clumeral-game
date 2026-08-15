@@ -130,10 +130,10 @@ describe('the completion panel', () => {
 
     // The number first, then what it means (brief 82).
     expect(allTimeLines()).toEqual([
-      '5 puzzles solved',
-      '1 (20%) solved in one',
-      '4m 06s average time', // (221+48+300+260+400)/5 = 245.8s
-      '2.4 average attempts',
+      '5 Puzzles solved',
+      '1 (20%) Solved in one',
+      '4m 06s Average time', // (221+48+300+260+400)/5 = 245.8s
+      '2.4 Average attempts',
     ]);
   });
 
@@ -230,9 +230,11 @@ describe('the completion panel', () => {
 
   it('has no "Solved in" sentence anywhere on the panel (brief 38)', async () => {
     // The sentence lives on the /play screen now and only there. The two screens
-    // diverged on purpose (brief 39).
+    // diverged on purpose (brief 39). Scoped to the figures — All time carries a
+    // "Solved in one" label, which is a different phrase that happens to start
+    // with the same two words.
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(text()).not.toContain('Solved in');
+    expect(blockText('this-game')).not.toContain('Solved in');
   });
 
   it('gives each figure a word only a screen reader hears (brief 47)', async () => {
@@ -355,7 +357,7 @@ describe('the completion panel', () => {
     ], 2);
     expect(col('Fastest time')!.value).toBe('—');
     expect(col('Average time')!.value).toBe('—');
-    expect(allTimeLines()).toContain('— average time');
+    expect(allTimeLines()).toContain('— Average time');
   });
 
   it('puts no explanatory line under the Records columns (brief 45)', async () => {
@@ -425,7 +427,7 @@ describe('the completion panel', () => {
     ];
     await render(history, 1, false, { seconds: 3900 });
     expect(figures()).toEqual(['1 go', '1h 05m']);
-    expect(allTimeLines()).toContain('22m 40s average time');
+    expect(allTimeLines()).toContain('22m 40s Average time');
     expect(col('Fastest time')!.value).toBe('1m 00s');
   });
 
@@ -436,7 +438,7 @@ describe('the completion panel', () => {
       { date: day(2), tries: 3 },
     ], 2);
     // A dash is right HERE — a box needs a placeholder rather than a gap.
-    expect(allTimeLines()).toContain('— average time');
+    expect(allTimeLines()).toContain('— Average time');
     expect(col('Fastest time')!.value).toBe('—');
   });
 });

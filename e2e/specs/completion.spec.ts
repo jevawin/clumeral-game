@@ -33,8 +33,8 @@ test.describe("completion screen", () => {
     await expect(completion.streak).toBeVisible();
     await expect(completion.records).toBeVisible();
     await expect(completion.allTime).toBeVisible();
-    await expect(completion.allTimeLines.nth(0)).toHaveText("3 puzzles solved");
-    await expect(completion.allTimeLines.nth(3)).toHaveText("3.0 average attempts");
+    await expect(completion.allTimeLines.nth(0)).toHaveText("3 Puzzles solved");
+    await expect(completion.allTimeLines.nth(3)).toHaveText("3.0 Average attempts");
     await expect(completion.stat("Current day streak")).toHaveText("3");
   });
 

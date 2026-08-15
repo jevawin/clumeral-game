@@ -87,11 +87,11 @@ test.describe("player stats — the panel after a solve", () => {
 
     // All time reads as four sentences, number first (brief 82).
     await expect(completion.allTimeLines).toHaveCount(4);
-    await expect(completion.allTimeLines.nth(0)).toHaveText("5 puzzles solved");
-    await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) solved in one");
-    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\d+m \d\ds average time$/);
+    await expect(completion.allTimeLines.nth(0)).toHaveText("5 Puzzles solved");
+    await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) Solved in one");
+    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\d+m \d\ds Average time$/);
     // (1 + 3 + 2 + 4 + 1) / 5
-    await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 average attempts");
+    await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 Average attempts");
 
     // Six chart rows, counts as text beside the bars.
     await expect(completion.goesRows).toHaveCount(6);

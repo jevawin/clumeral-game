@@ -655,19 +655,27 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--section-accent);
   }
 
-  /* All time — one line per figure, the number first and then what it means
-     (brief 82). No dividing rules, and no separate explanatory line: the sentence
-     is the explanation. */
+  /* All time — a two-column grid, the number with its label under it (brief 83).
+     No borders, no boxes and no dividing rules: the grid does the separating. */
+  .stat-lines {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.875rem 1rem;
+  }
   .stat-line {
-    font-size: 1rem;
-    line-height: 1.5;
+    line-height: 1.3;
     color: var(--color-text);
-    padding-block: 0.1875rem;
   }
   .stat-line__value {
+    display: block;
     font-weight: 700;
-    font-size: 1.125rem;
+    font-size: 1.375rem;
     color: var(--section-accent);
+  }
+  .stat-line__label {
+    display: block;
+    font-size: 1rem;
+    margin-block-start: 0.125rem;
   }
 
   /* Attempts distribution. The bar is decorative; the count beside it is the
