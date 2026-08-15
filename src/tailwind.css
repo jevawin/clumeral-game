@@ -63,7 +63,7 @@
   --accent-h: 145;
   --accent-c: var(--chroma-lime);
 
-  /* The other three themes, in picker order from the player's own (brief 79).
+  /* The other three themes, in picker order from the player's own (polish brief 97).
      Streaks takes 2, Records takes 3 and All time takes 4, so every one of the
      four theme colours is on the completion screen at once and they rotate
      together when the player changes theme.
@@ -507,7 +507,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--color-text);
   }
 
-  /* Section heading (brief 73): large, normal case, no rule beside it, and a
+  /* Section heading (polish brief 91): large, normal case, no rule beside it, and a
      decorative icon in the section's own colour — the player's accent, except
      Records, which takes the second one. Same distinction the numbers carry. */
   .stat-block__head {
@@ -526,9 +526,9 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     flex: none;
   }
   /* One section per theme colour, in picker order from the player's own, so all
-     four are on screen together and rotate with the theme (brief 79). Colour is
+     four are on screen together and rotate with the theme (polish brief 97). Colour is
      carried by the icons and the numbers ONLY — never by a label, a heading or a
-     border of anything the player has to read (brief 80). */
+     border of anything the player has to read (polish brief 98). */
   [data-stat-block="streak"]   { --section-accent: var(--color-accent-2); }
   [data-stat-block="records"]  { --section-accent: var(--color-accent-3); }
   [data-stat-block="all-time"] { --section-accent: var(--color-accent-4); }
@@ -556,7 +556,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      hour-long time makes the pair too wide for a 320px screen. */
   /* Directly under the solved message now, with no block heading above them
      (brief 62), so they centre rather than sitting hard left. */
-  /* Half the distance to the line above (brief 72). The panel is a flex child of
+  /* Half the distance to the line above (polish brief 90). The panel is a flex child of
      a 1.5rem stack, so pulling 0.75rem back off the top halves that one gap
      without touching the rhythm of everything below. The empty subheading that
      used to double it is hidden in completion.ts. */
@@ -602,7 +602,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     .stat-cols { grid-template-columns: repeat(3, 1fr); }
     .stat-cols--two { grid-template-columns: repeat(2, 1fr); }
   }
-  /* The box (brief 75): the undo/reset controls' resting state — surface fill,
+  /* The box (polish brief 93): the undo/reset controls' resting state — surface fill,
      the same 1.5px border and the same radius — so the panel borrows a shape the
      player already knows from the play screen rather than inventing one.
      `overflow: hidden` is load-bearing: it is what clips the watermark. */
@@ -614,7 +614,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     border-radius: var(--radius-sm);
     padding: 0.625rem 0.75rem;
   }
-  /* The watermark (brief 76): the box's own icon, big, faint and rotated, run
+  /* The watermark (polish brief 94): the box's own icon, big, faint and rotated, run
      off the bottom-right corner so the border crops it. Behind the text, and
      `pointer-events: none` so it can never eat a tap. */
   .stat-col__mark {
@@ -633,7 +633,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      not, so the visual order and the reading order agree again. Do not add it
      back without reading that brief item first.
 
-     16px label, 24px number — brief 77's floor and its "larger is larger". The
+     16px label, 24px number — polish brief 95's floor and its "larger is larger". The
      number's clamp tops out where three boxes still fit a 390px screen: 358px of
      content, less two 8px gaps and six 12px paddings, is 42px of text per box at
      the narrow end, which is what pins the lower bound rather than the upper. */
@@ -655,7 +655,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--section-accent);
   }
 
-  /* All time — a two-column grid, the number with its label under it (brief 83).
+  /* All time — a two-column grid, the number with its label under it (polish brief 101).
      No borders, no boxes and no dividing rules: the grid does the separating. */
   .stat-lines {
     display: grid;

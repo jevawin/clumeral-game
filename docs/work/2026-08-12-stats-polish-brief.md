@@ -403,6 +403,96 @@ reading that keeps the most of what is already there, and said so.
 
 ---
 
+## 17. The design rounds — Jamie's iteration on the preview, 2026-08-12 to 08-15
+
+**Short form, and no question-and-answer: Jamie's standing direction** ("skip the q and a I
+just want to see and tweak until I'm happy"). Settled: Jamie · Ack: Override: Jamie ·
+Dave saw each round on the preview and commented in the chat.
+
+Numbering continues at 90: section 16 ran to 72, and these were drafted against a
+placeholder that collided with it. Every code comment for these items says **"polish brief
+N"** in full, because a bare "brief N" was already ambiguous between this file and the
+redesign brief beside it.
+
+Five rounds, each a message from Jamie against the previous preview. Written up here after
+the fact, at his instruction, because the chat is the only other place they exist and a
+context clear would take them. Where a round reversed an earlier item it says so.
+
+### Round A — the boxed layout (his mockup, 08-12)
+
+90. **The two figures sit half as far below the solved message.** The empty subheading
+    paragraph was the hidden half of that gap: it is a flex child of a 1.5rem stack, so an
+    empty one still contributed 24px. It is now hidden as well as cleared.
+91. **Section headings: 24px, normal case, no rule beside them, decorative icon in front.**
+    A flame on Streaks, a trophy on Records, a calendar on All time.
+92. **The "come back tomorrow" line moved above the figures**, under its heading. Revised
+    again in round E.
+93. **Figures sit in boxes borrowing the undo/reset controls' resting state** — surface
+    fill, the same 1.5px border, the same radius. Reverses item 13, which had removed them.
+94. **Each box carries a watermark**: its own icon at 4rem, rotated 45°, faint, run off the
+    bottom-right corner so the box clips it. `overflow: hidden` on the box is what crops it.
+95. **Type: labels 16px, numbers 20–28px, no subtitle below 14px.** The number's upper bound
+    is set by three boxes still fitting a 390px screen.
+96. **All time keeps its figures but reads a notch larger.**
+
+### Round B — four colours at once (08-12)
+
+97. **All four theme colours appear on the completion screen together**, in picker order
+    from the player's own: their solve keeps `--color-accent`, Streaks takes 2, Records 3,
+    All time 4. Change theme and all four rotate. This replaced the single "best" colour of
+    items 10 and 70 with a four-slot rotation, and the `--color-accent-best` token with
+    `--color-accent-2/3/4`, mirrored into the Worker stylesheet for the parity test.
+    Each slot names the *other* hue's own chroma, not the current theme's — borrowing Lime's
+    chroma for Cherry puts Cherry out of gamut in dark mode.
+98. **Colour lands on icons, numbers and box borders only** — never a label, a heading or a
+    divider. Each section sets `--section-accent` once and everything inside reads from it,
+    so no per-figure colour class survives to drift.
+99. **No dividing lines between All-time entries.**
+
+### Round C — words and order (08-15)
+
+100. **The plain Lucide `calculator` replaces the homemade calculator-with-tick**, which
+    reverses redesign item 79. "Streaks" became **"Current streaks"** and the "Plays" column
+    became **"Days"** (spoken: "Current day streak"). All time was reordered number-first,
+    and the chart relabelled **"Attempts distribution"**.
+    Two consequences worth naming: the four explanatory lines went, because "5 puzzles
+    solved" is its own explanation; and the All-time figures stopped being a description
+    list, because a sentence does not need one. Both are simplifications, not losses.
+101. **The chart's bars take the section's colour**, so they match the numbers above them
+    rather than the player's own accent. Reverses the "graph goes back to current theme
+    colour" half of round B.
+
+### Round D — Dave on the watermark (08-15)
+
+102. **The stopwatch watermark overlaps the average time.** Dave raised it, Jamie looked and
+    called it unavoidable at that size unless the figure got its own row, Dave accepted.
+    **Open, and cheap to change if it grates in use**: dropping the watermark's opacity or
+    pushing it further into the corner would both help without a layout change.
+
+### Round E — the grid (08-15)
+
+103. **The "come back tomorrow" line sits tight under its heading and well clear of the
+    figures**, so it reads as belonging to the title. Revises item 74, which had only moved
+    it above them. Done with `:has()`, which degrades to the ordinary spacing where it is
+    unsupported.
+104. **All time is a two-by-two grid**, number above label, no borders and no boxes — the
+    grid does the separating. Labels are capitalised ("Puzzles solved"), because they are
+    labels under a number again rather than the tail of a sentence.
+105. **Still not a description list.** The number sits above its label on screen AND first in
+    the DOM, which a `dt`/`dd` pair could not do without the `column-reverse` mismatch item
+    67 removed. Two spans in a paragraph read as "17 Puzzles solved" in one breath.
+
+### Two things carried across all five rounds, unresolved
+
+106. **Dave's two questions from 08-12 have never been answered**, by anyone: whether average
+    time belongs under Current streaks at all, and whether the best play streak should
+    reappear somewhere — it has been off the panel since item 72's sketch dropped it.
+107. **Dave's chart ideas are parked, not rejected** (08-12): a distribution of everyone's
+    times for the day with an arrow at yours, and a radial or hexagonal shape instead of the
+    bar chart. Neither is in this pull request; both want their own brief.
+
+---
+
 ## Closing
 
 **Settled 2026-08-12.** Jamie signed section 9 (his, blocking) and section 8, settled the
@@ -424,5 +514,21 @@ Jamie's own specification in section 13: 400px inner cap, 16px section padding, 
 outside the cap.
 
 Section 13 is now fully settled by items 53 to 58: **480px inner cap, 16px section padding,
-padding outside the cap, on every page including `/archive` and `/stats`.** Nothing is open.
-The brief is closed and ready for Plan.
+padding outside the cap, on every page including `/archive` and `/stats`.**
+
+**Reopened twice after that, and both rounds are written up rather than lost:** section 16
+(items 62–72) is Jamie's restructure of 2026-08-12, and section 17 (items 90–107) is the five
+rounds of design iteration that followed it, up to 2026-08-15. Both were built without a
+question-and-answer pass, at his explicit direction, and reviewed on the preview instead.
+
+**Three things are open and none of them block the pull request:**
+- **Item 102** — the stopwatch watermark overlaps the average time. Dave raised it, Jamie
+  accepted it as unavoidable at that size, and there are two cheap changes if it grates.
+- **Item 106** — Dave's two questions from 08-12 have never been answered by anyone: whether
+  average time belongs under Current streaks, and whether the best play streak should come
+  back. It has been off the panel since section 16.
+- **Item 107** — Dave's chart ideas are parked, not rejected, and want their own brief.
+
+**Not re-reviewed.** `da-brief`, `da-plan` and `da-build` all ran against the state at item
+89. Sections 16 and 17 have had none of the three, by Jamie's choice to iterate on the
+preview instead. A `da-build` before merge would be the cheapest way to close that gap.

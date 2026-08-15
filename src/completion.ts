@@ -46,9 +46,9 @@ const dom = {
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
 //
-// No explanatory lines anywhere on the panel now. The All-time figures read as
-// sentences — "17 puzzles solved" — so they explain themselves, and the boxes
-// above never had one (brief 45, 82).
+// No explanatory lines anywhere on the panel now. Every All-time figure carries
+// its own label — "17" over "Puzzles solved" — so it explains itself, and the
+// boxes above never had one (brief 45, polish brief 100, 104).
 
 const STREAK_LINE = 'Come back tomorrow to maintain your streak!';
 const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
@@ -110,9 +110,10 @@ function formatCountdown(isRandom: boolean): string | null {
 // between them. The rule beside the heading is decorative.
 function block(id: string, heading: string, body: string, iconId: string): string {
   // Every section has a heading with a decorative icon and no rule beside it
-  // (brief 73). The icon takes the section's own colour: the player's accent,
-  // except Records, which takes the second one — the same current-versus-record
-  // distinction the numbers carry.
+  // (polish brief 91). The icon takes the section's own colour, which the CSS
+  // sets once per section — Streaks, Records and All time take the three theme
+  // colours the player did not pick, so all four are on screen at once
+  // (polish brief 97).
   return `<section data-stat-block="${id}" class="stat-block" aria-labelledby="stat-head-${id}">
     <h3 id="stat-head-${id}" class="stat-block__head">
       <svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${heading}
@@ -122,7 +123,7 @@ function block(id: string, heading: string, body: string, iconId: string): strin
 }
 
 /**
- * One All-time figure: the number, with what it means under it (brief 83).
+ * One All-time figure: the number, with what it means under it (polish brief 101).
  *
  * Still a paragraph rather than a description list, and that is the point — the
  * two spans read as "17 puzzles solved" in one breath, in the order they are
@@ -154,7 +155,7 @@ function plural(n: number, word: string): string {
  */
 function statColumn(shortLabel: string, fullLabel: string, value: string, iconId: string): string {
   // The icon is a watermark: big, faint, rotated, and clipped by the box's own
-  // corner (brief 76). Decorative in the strongest sense — it is a texture, not
+  // corner (polish brief 94). Decorative in the strongest sense — it is a texture, not
   // a label, so it is aria-hidden and the words carry everything.
   return `<div class="stat-col">
     <dt><span class="stat-col__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
@@ -327,7 +328,7 @@ export function renderCompletion(
   // out first and the heading reads from it.
   // Cleared AND hidden. It is a flex child of a `gap-6` stack, so an empty one
   // still contributes 24px — which is half of why the figures sat so far below
-  // the heading (brief 72).
+  // the heading (polish brief 90).
   if (dom.subheading) {
     dom.subheading.textContent = '';
     dom.subheading.classList.add('hidden');
@@ -376,7 +377,7 @@ export function renderCompletion(
       // Two sections where there used to be one (brief 64): where you are now,
       // then what you have ever done. The colours carry that distinction —
       // Streak in the player's own accent, Records in the second one.
-      // The line sits under the heading and above the boxes (brief 74), so it
+      // The line sits under the heading and above the boxes (polish brief 92), so it
       // reads as the section's own sentence rather than a footnote to the last
       // number in it.
       blocks.push(block('streak', 'Current streaks',
