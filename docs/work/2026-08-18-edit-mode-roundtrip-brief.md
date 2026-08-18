@@ -695,3 +695,215 @@ Settled: Jamie 2026-08-18 · Ack: pending (Dave)
 **The brief is not closeable until Dave acks the joint sections, or Jamie overrides as dev
 lead.** Dave has not been in the conversation at any point on 2026-08-18. Silence is not
 consent.
+
+---
+
+# da-brief review, 2026-08-18 — findings and fixes
+
+Fresh-context review of this file. Five High, twelve Medium, five Low. Items 92-113 below are
+the fixes. Numbers stay append-only, so the original items stand as written and are corrected
+here rather than edited in place.
+
+## H2 — "unconsumed" was undefined, and it is the cross-repo interface
+
+92. **`/fold` renames; the game reads only bare `.json`.** When `/fold` has taken a session it
+    renames `<ts>.json` to `<ts>.json.folded`. Replay (item 51) reads `*.json` and ignores
+    `*.json.folded`. Item 50 stands unchanged — we still never delete a session we did not
+    write. Without this the two items contradict: replaying everything forever re-applies
+    patches on top of source that already carries them, which for a stepper walk compounds
+    invisibly, and replaying nothing makes Dave's entire route deliver an unedited page.
+    This is a **contract with `pi-dev-bot`** and goes in the schema below, not just here.
+
+## H3 — the session file schema, which is this brief's stated deliverable
+
+93. **The contract.** `/fold` is written against this and nothing else. One file per Done.
+
+    ```json
+    {
+      "version": 1,
+      "createdAt": "2026-08-18T23:41:07.221Z",
+      "branch": "dev/edit-mode-roundtrip",
+      "sha": "2896500c1d0e...",
+      "viewport": { "width": 402, "height": 874, "dpr": 3 },
+      "theme": { "mode": "dark", "name": "Lime" },
+      "patches": [ { "...": "see 94-96" } ]
+    }
+    ```
+
+    `branch` and `sha` are the fix for a failure nobody had noticed: `/fold` locates elements
+    by grepping the before-class string, so if the tree moves between Done and `/fold` the
+    grep silently finds nothing, or finds the wrong element. `viewport` is item 41. `theme` is
+    finding M6 — an edit made in dark mode changes light mode too, invisibly, and `/fold`
+    currently receives no indication which one Jamie was looking at when he judged it right.
+    `version` is there so the other repo can refuse a file it does not understand.
+
+94. **Patch kind `classes`** — the ordinary case.
+
+    ```json
+    { "kind": "classes",
+      "breadcrumb": "main > .card > .row > button",
+      "tag": "button",
+      "text": "Submit",
+      "before": ["rounded-lg", "bg-bg", "px-4", "mt-4"],
+      "after":  ["rounded-lg", "bg-bg", "px-4", "mt-6"],
+      "flags": ["runtime-controlled"] }
+    ```
+
+95. **Patch kind `css`** — the desktop free-CSS box (item 15, which said the file must carry
+    more than one kind of patch and then never resolved it).
+
+    ```json
+    { "kind": "css",
+      "breadcrumb": "main > .card", "tag": "div", "text": "",
+      "declarations": "margin-top: 1rem;",
+      "note": "not applied literally - the bot converts it" }
+    ```
+
+96. **Patch kind `raw`** — the desktop raw class field, where Jamie typed a string rather than
+    picking from search. Same shape as `classes`, plus `"typed": "<what he typed>"`, because
+    what he typed may not be a class the build contains (see item 99).
+
+97. **Item 87's Done criterion is corrected** to require all three patch kinds and the
+    round-trip test in item 85 to cover all three. As written, §11 could go green with the
+    free-CSS box entirely unbuilt.
+
+## H4 and M3 — classes that do not exist in the build, and fail silently
+
+98. **The stylesheet is a closed set, and the brief never said so.** All three measured options
+    in item 44 are base utilities with **no variants at all** — `md:mt-4` and `dark:bg-accent`
+    are not in any of them. But item 35 has search offering `md:mt-4`, because the catalogue
+    can compose it from `getVariants()`. So Jamie taps a chip and nothing moves. That is
+    exactly the "the tap looks broken" failure item 38 exists to prevent, arriving by a
+    different door.
+
+99. **Two fixes, both cheap.**
+    - **Search offers only what the current stylesheet actually contains.** The catalogue is
+      filtered against the built set, not composed freely. No variants are offered unless the
+      on-demand half exists.
+    - **The overlay checks the class did something.** After applying, compare computed style
+      before and after; if nothing changed, say so: *"That class is not in this build."* This
+      also covers the raw class field and any typo, which search cannot protect.
+    §8 gains that message. This is the general property the brief never stated and it needs
+    stating: **anything outside the built set fails silently unless we look.**
+
+## H5 and M1 — the safety assertion cannot use a sentinel class
+
+100. **A named sentinel fails the moment it is named.** `mt-11` is in production *today*,
+     because the spike note writes it in prose and Tailwind scans markdown. Pick a fresh
+     sentinel, write it in the plan, commit the plan on the branch, and it ships too. The
+     assertion eats itself.
+
+101. **Assert the general property instead:** every class selector in the built stylesheet
+     must appear literally in `src/` or `index.html`. That is one assertion, it needs no
+     sentinel, it cannot be defeated by writing a class name in a document, and it catches
+     an edit-mode leak and issue #312's leak with the same test.
+
+102. **This branch has made #312 measurably worse and it is recorded, not argued.** Production
+     CSS was 50,555 bytes before the spike note; it is 51,143 now. Eighteen classes exist in
+     the production stylesheet solely because they appear in prose — including `row-7447`,
+     which is a table row number from the spike note. Item 12 keeps #312 out of scope, so this
+     work accepts ~0.6 kB of dead CSS and the plan file will add a little more. Item 101's
+     assertion cannot be switched on until #312 is fixed, so it lands **red** and is the first
+     thing #312's branch turns green.
+
+## M4 — Dave gets a pencil button that can never work
+
+103. **The read-only origin serves the overlay in replay-only mode: no pencil, no panel.**
+     Otherwise Dave edits, taps Done, and receives item 74's message — *"check the dev server
+     is running and tap Done again"* — which is wrong in every particular and tells him to
+     retry forever. The one message written carefully because it loses work is the one the
+     wrong person sees.
+
+## M5 — back after returning to play mode
+
+104. **Edit mode keeps owning back until its own entries are exhausted, even in play mode.**
+     Item 30 makes flipping to play mode normal — that is how a change gets tried in use. If
+     back is handed straight back to the router at that moment, the first press re-renders the
+     screen and destroys every edit. So the interception outlives the mode, and only lifts
+     when the last edit entry has been popped.
+
+105. **The undo stack persists alongside the patch set** (item 52). They are different objects
+     and only one was covered: after a reload the browser still holds the pushed history
+     entries, and without the inverses the overlay cannot honour them.
+
+## M7 — the dev stylesheet is served uncompressed
+
+106. **Gzip it in the dev server.** The design named two costs planning must carry; this brief
+     carried the phone-parse one into items 45-47 and left this one in a subordinate clause.
+     At 1.16 MB per page load over Tailscale to a phone it is, in the design's own words, the
+     dominant cost of edit mode, and it is a few lines.
+
+## M8 — the read-only proxy has no home
+
+107. **It is part of edit mode's dev tooling and starts with the dev server**, not a separate
+     thing anyone has to remember. §6's "new files plus a Vite plugin" (item 55) is corrected:
+     there is also a second listener, started and stopped by the same plugin, and it refuses
+     anything that is not GET or HEAD. If the dev server is not up it serves 503 rather than
+     failing to start.
+
+## M9 — two paths are asserted gitignored and neither is
+
+108. **Adding `.edit-sessions/` and the generated class list to `.gitignore` is a task, not an
+     assumption.** Item 59 already spells out the consequence of forgetting: 386 kB of class
+     names committed is #312's failure mode at full volume, with every class in the project
+     landing in the production stylesheet. Item 101's assertion catches it.
+
+## M10 — the runtime-class detector may be unable to fire
+
+109. **Give it a stated observation window.** Item 30 stops the game rendering while edit mode
+     is on, so a class the game would reset on its next render never gets reset, and item 37's
+     detector never fires for the `.hidden` game-state case — the case it was written for.
+     The check therefore runs **across a play-mode round trip**: on returning from play mode
+     the overlay re-reads the class lists of every edited element and flags what moved. That
+     is the only moment the game has actually rendered.
+
+## M11 — the six component classes
+
+110. **Hand-listed in the generator, not converted to `@utility`.** The spike preferred
+     converting, but that edits `src/tailwind.css`, which item 55 forbids and which is the file
+     that produces the production stylesheet. Six strings in a dev-only generator is the
+     simpler thing and it touches nothing that ships (item 82).
+
+## M2 and M12 — scope, and four recommendations recorded as settled without an answer
+
+111. **Four items were written as "My rec:" and then counted as settled with no reply
+     recorded.** Correcting that rather than leaving it: **items 26** (the second port — the
+     mechanism the whole read-only guarantee rests on), **27** (test it as a positive),
+     **29** (the tunnel, including a `dev.clumeral.com` record on the production zone), and
+     **32** (the selection label drops the source location, which *contradicts the approved
+     design*). Item 16 shows the right handling — recommend, get an answer, reopen if the
+     answer differs. These four need a word.
+
+112. **The on-demand half's scope is genuinely unresolved.** Item 4 says the deliverable is
+     Units 1-4; item 47 makes the on-demand rebuild conditional on a measurement that happens
+     *during* the build; item 87 puts that measurement inside Done. So the plan cannot know its
+     own scope. And if the answer turns out to be "we need it", it arrives with no §7 (what is
+     on screen during a 0.3-1.9 s rebuild), no §8 (no "rebuilding" and no "rebuild failed"
+     copy) and no §11.
+     My rec: **out of scope for this brief.** Build the pre-built stylesheet, Jamie measures on
+     the iPhone, and if it struggles the on-demand half gets its own short brief with the
+     three sections it needs. Consequence, stated plainly: **no variants and no colours in edit
+     mode until then** if the non-colour line is taken — item 99 makes that visible rather than
+     silent.
+
+## Low findings
+
+113. **Fixed in passing:** item 44's figures came from a script run on 2026-08-18 against
+     `getClassList()` and the compiler, and the table used MiB while the spike note used MB —
+     4.99 MiB and 5.24 MB are the same number (L1). "Position" in item 44's family list is not
+     one of the design's four stepper families and is dropped. Production and preprod are one
+     artefact, so item 7's assertion is written once, not twice (L2). `sessionStorage` is keyed
+     to a branch name the plugin injects, since the browser cannot know it (L3). Item 26's
+     header-sniffing fallback is **rejected outright** rather than called "weaker" — if a
+     `cloudflared` change stops setting the header the guard silently stops guarding, and item
+     91 says nothing would notice (L4). `dev.clumeral.com` is a new record on the production
+     zone pointing at a home Pi; it is unrelated to the `workers.dev` pre-prod decision in
+     CLAUDE.md, and that doc should say so when this lands (L5).
+
+## Still open
+
+- **H1 — the brief cannot close.** Eight sections read `Ack: pending (Dave)`, and §4 (maths)
+  is Dave's own section marked n/a in his absence. Either Dave acks, or Jamie records an
+  override as dev lead. Silence is not consent.
+- **Item 111** — four recommendations need a yes or a different answer.
+- **Item 112** — the on-demand scope boundary.
