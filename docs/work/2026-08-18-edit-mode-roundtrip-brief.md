@@ -142,3 +142,32 @@ than amended. Items 17-20 replace it.
     mirroring — a socket broadcasting class changes from Jamie's browser to Dave's — which is
     real-time but is a whole extra mechanism, a new failure mode, and the only thing it buys
     is watching the edit happen rather than seeing the result.
+
+### Item 16 resolved — Jamie 2026-08-18, 22:13: "After I press done is fine. Cloudflare
+tunnel also fine. No tailscale."
+
+21. **Dave sees a replayed session, not a live one.** Item 20 accepted: the dev server hands
+    the saved session to any page load and the overlay re-applies it, so Dave refreshes after
+    Jamie taps Done. Live mirroring is not built. (settled — Jamie 2026-08-18)
+
+22. **Dave's route is a Cloudflare tunnel. Tailscale is not used at all.** This supersedes the
+    Tailscale half of item 8 and the recommendation in item 18. (settled — Jamie 2026-08-18)
+
+23. **Dropping Tailscale collides with the write guard, and something has to give.** Item 19
+    said the middleware refuses writes from anywhere but localhost. That was safe while
+    Tailscale carried Jamie and the tunnel carried nobody. With no Tailscale, if Jamie edits
+    *through the tunnel* then a localhost-only guard refuses Jamie too, and edit mode cannot
+    write anything. The two ways out:
+
+    - **(a) Jamie edits on the home network.** His phone reaches the Pi directly, the guard
+      stays "local network only", and the tunnel is read-only by construction — no Cloudflare
+      Access, no allowlist, nothing to configure. Costs: editing only works at home.
+    - **(b) Jamie edits through the tunnel too.** Then the server cannot tell Jamie from Dave
+      by address, so it needs identity: a named tunnel behind Cloudflare Access with both
+      emails allowed, and the middleware permitting writes only for Jamie's. Costs: a one-off
+      Cloudflare Access setup, and every edit depends on it working.
+
+    My rec: **(a)**, with (b) as a later addition if editing away from home turns out to
+    matter. Why: it needs no new configuration, it keeps item 8's "never exposed
+    unauthenticated" true without an auth layer to get wrong, and the failure mode is
+    "edit mode is unavailable" rather than "the write guard is misconfigured".
