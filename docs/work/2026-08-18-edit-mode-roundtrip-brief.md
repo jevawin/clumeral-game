@@ -233,7 +233,7 @@ Settled: Jamie 2026-08-18 (items 9-15, 21-29) · Ack: pending (Dave)
 ---
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-18 (items 30-46) · Ack: pending (Dave)
 
 Behaviour taken straight from the design doc, recorded so it survives the context clear.
 
@@ -364,3 +364,47 @@ Behaviour taken straight from the design doc, recorded so it survives the contex
     arrives before the expensive half is written, not after.
     Note this **re-sequences** Jamie's hybrid decision of 2026-08-18 rather than reversing it:
     the hybrid stays the plan of record unless the phone says otherwise.
+
+47. **Item 46 accepted — "build it that way".** The pre-built stylesheet ships first, Jamie
+    loads it on the iPhone 16 Pro, and the on-demand rebuild machinery is built only if that
+    measurement calls for it. The hybrid remains the documented fallback. (settled — Jamie
+    2026-08-18)
+
+---
+
+## 4. Maths
+Settled: pending · Ack: n/a (Dave owns maths; nothing here touches it)
+
+48. **Nothing.** Edit mode does not touch puzzle generation, clue selection, filtering or
+    seeding. It changes class attributes in a browser and writes a JSON file. No `puzzle.ts`
+    change, no generator change, no archive implication. Marked n/a with that reason, and
+    flagged to Dave in case he disagrees. (assumed)
+
+---
+
+## 5. State & persistence
+Settled: pending · Ack: pending
+
+49. **The finished session file.** `.edit-sessions/<timestamp>.json` in the game working tree,
+    gitignored, one file per tap of Done. (assumed — the design)
+
+50. **Files are not cleaned up by us.** They accumulate until `/fold` consumes them, which is
+    the other repo's business. Nothing here deletes a session it did not write. (assumed)
+
+51. **What Dave's replay applies.** Every session file that `/fold` has not yet consumed, in
+    timestamp order — not just the newest. Why: Jamie can tap Done several times before
+    anything is folded, and replaying only the last one would silently drop every earlier
+    element he touched. (assumed, but it is the kind of thing that fails quietly, so §11 gets
+    a test for it)
+
+52. **Does an unfinished edit survive the tab going away?**
+    My rec: **yes — keep the working patch set in `sessionStorage`, keyed to the branch.**
+    Why: this is phone editing. Safari discards backgrounded tabs, the screen locks, a
+    notification pulls him out. Losing twenty minutes of tweaks to an accidental app switch
+    would make edit mode untrustworthy, and the fix is a few lines. `sessionStorage` rather
+    than `localStorage` so it clears with the tab and cannot resurrect a stale edit days
+    later against different source. The alternative — hold it in memory only — is simpler and
+    is exactly the mistake undo/reset made once already.
+
+53. **Edit mode itself is remembered the same way**, so a reload does not silently drop Jamie
+    back into play mode with his selection lost. (assumed — follows from 52)
