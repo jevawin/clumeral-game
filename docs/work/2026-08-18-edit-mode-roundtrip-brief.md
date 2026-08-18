@@ -203,3 +203,29 @@ fine to be a public url like the previous links."
 27. **Test it as a positive.** Assert that a POST to the tunnel port is refused, not merely
     that a POST to the dev port succeeds. Per the project rule: remove the guard and watch
     that test go red. (assumed)
+
+### Jamie 2026-08-18, 22:26 — tunnel versus nginx and a DNS record
+
+28. **These are two separate decisions and only one of them is a choice.** The exposure route
+    (how Dave's request reaches the Pi) and the write guard (what stops him writing) are
+    independent. The second port from item 26 is wanted either way.
+
+29. **Exposure route — recommendation: `cloudflared` tunnel, not DNS to the home IP.** Why it
+    is genuinely easier, not just different:
+
+    - **Nothing is opened on the home router.** The tunnel dials *out* from the Pi. An `A`
+      record pointing at the home address means a permanently open inbound port, and that port
+      reaches a machine holding the repo and a bot token.
+    - **No certificate to obtain or renew**, because TLS terminates at Cloudflare.
+    - **No nginx**, so nothing to configure or keep patched.
+    - **No changing-IP problem**, which is the only thing the DNS-API idea solves — and the
+      tunnel does not have it, so the API updates are work that buys nothing.
+    - `dev.clumeral.com` is still available: a *named* tunnel creates that record once and it
+      never needs touching. clumeral.com is already on Cloudflare.
+
+    A quick tunnel (one command, no account, a throwaway `trycloudflare.com` address that
+    changes each run) is the zero-setup start; the named tunnel is the tidy version. Both
+    point at the read-only port, so both are safe by construction.
+
+## 2. Out of scope — status
+Settled: pending Jamie's confirmation of items 24-29 · Ack: pending (Dave)
