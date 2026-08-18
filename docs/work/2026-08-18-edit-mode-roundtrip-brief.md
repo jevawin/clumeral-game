@@ -228,4 +228,69 @@ fine to be a public url like the previous links."
     point at the read-only port, so both are safe by construction.
 
 ## 2. Out of scope — status
-Settled: pending Jamie's confirmation of items 24-29 · Ack: pending (Dave)
+Settled: Jamie 2026-08-18 (items 9-15, 21-29) · Ack: pending (Dave)
+
+---
+
+## 3. How it works
+Settled: pending · Ack: pending
+
+Behaviour taken straight from the design doc, recorded so it survives the context clear.
+
+30. **Mode toggle.** A floating pencil button, bottom-right, flips play mode and edit mode. In
+    edit mode every pointer event is intercepted at the document level in the capture phase,
+    so no tap reaches the game. Flipping back restores normal play, so a change can be tried
+    in use. (assumed — the design; load-bearing, because taps are gameplay)
+
+31. **Selection.** A tap selects the topmost element under the point. A horizontally
+    scrollable breadcrumb reaches any ancestor in one tap, and thumb-sized arrows step to
+    parent, first child and siblings for elements whose boxes are identical. (assumed)
+
+32. **The selection label cannot show a source location, and the design says it does.** This
+    is an internal contradiction in the design, not a new decision: build-time source stamping
+    was rejected, so nothing in the browser knows which file an element came from.
+    My rec: the label shows the tag, the breadcrumb path and the first few words of visible
+    text. Why: that is exactly what the design tells the bot to grep on, so the label shows
+    the operator the same evidence the bot will use. Two identical boxes are told apart by
+    their path, which is what the breadcrumb already gives.
+
+33. **Panel, phone.** Collapsible bottom sheet: breadcrumb, nav arrows, class chips (tap to
+    remove, `+` opens search), steppers, then undo / reset element / Done. When search is
+    focused the sheet collapses to search and results only and the selected element is
+    scrolled above it, so the keyboard cannot cover the thing being edited. (assumed)
+
+34. **Panel, desktop.** The same panel docked right, plus a raw class field and a free-CSS
+    box. (assumed — see item 15 for the consequence on the file format)
+
+35. **Search.** Prefix match only. Matches the segment after the last `:`, so `mt` finds
+    `md:mt-4`. Strips a leading `-`, so `mt` finds `-mt-4`. Groups by family and caps results,
+    because `bg` and `text` run to thousands. (assumed)
+
+36. **Steppers walk the scale**; search picks the utility. Two jobs, which is why search never
+    has to enumerate every step. (assumed)
+
+37. **JS-controlled classes.** Some classes are set at runtime by theme or game state. The
+    overlay notices when the class list changes after an edit and flags it in the patch rather
+    than losing the change silently. (assumed)
+
+38. **Replace, do not append — and the two awkward cases.** Adding `mt-6` to an element that
+    has `mt-4` must remove `mt-4`, or CSS order decides the winner and the tap looks broken.
+    The design calls the family map the single most likely source of silent wrongness. Two
+    cases it leaves open:
+
+    **(a) `p-4` versus `px-4`.** Three options: treat all padding as one family, so setting
+    left-and-right silently drops top-and-bottom; treat them as unrelated and let both sit
+    there, which is correct CSS but leaves a chip list nobody can read; or **expand on
+    conflict** — adding `px-6` to `p-4` rewrites the element to `py-4 px-6`.
+    My rec: **expand on conflict.** Nothing is lost, the chips show exactly what is applied,
+    and `/fold` receives an unambiguous statement of intent.
+
+    **(b) `text-sm` versus `text-text`.** The same prefix carries size and colour, so a prefix
+    map cannot tell them apart.
+    My rec: **classify by what the value is, using Tailwind's own data rather than a
+    hand-written list.** The design system knows which utilities take a colour — they are the
+    ones carrying opacity modifiers — so the split comes from the same source as the
+    catalogue and cannot drift from it. The same rule covers `border-2` against
+    `border-accent`, which has the identical shape.
+
+39. **Where the pre-built / on-demand line falls.** Open — asked next, after 38 settles.
