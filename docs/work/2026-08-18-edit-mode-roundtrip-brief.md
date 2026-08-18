@@ -109,3 +109,36 @@ Settled: pending · Ack: pending
     he would be looking at is a draft the bot is about to rewrite — the overlay's output is
     deliberately not code anyone would keep. The cost of saying no: Dave cannot weigh in until
     the PR exists, so a change he dislikes costs one extra round trip.
+
+### Item 16 reopened — Jamie 2026-08-18, 22:07
+
+Jamie asked for the simplest way to give Dave a view-only link, ideally showing "the version
+in editing". That contradicts the recommendation in item 16, so the item is reopened rather
+than amended. Items 17-20 replace it.
+
+17. **A link alone does not show Dave anything.** This is the part that is easy to miss.
+    Jamie's edits live in the DOM of Jamie's browser and nowhere else until he taps Done. If
+    Dave loads the same URL he gets a fresh page with none of them. So "give Dave a link" and
+    "let Dave see the edits" are two separate pieces of work, and only the first is network
+    plumbing. (established — follows from Unit 3's design)
+
+18. **Getting Dave a link — recommendation: share the Pi with Dave's own Tailscale account.**
+    Why: no public exposure at all, he authenticates as himself, it works on his phone, and
+    we add no infrastructure. Fallback if that is friction: a named Cloudflare Tunnel behind
+    Cloudflare Access restricted to Dave's email — we already have the Cloudflare account.
+    Rejected: dynamic DNS and a port forward (opens the home network, no auth, changing IP),
+    and a bare `trycloudflare.com` quick tunnel (a public unauthenticated URL to a server that
+    writes files, which item 8 forbids).
+
+19. **Whichever route, the write guard is app-level, not network-level.** The middleware
+    refuses POSTs that do not come from localhost, so "view only" is enforced by the server
+    rather than by who was given the link. Cheap, and it makes item 8 true by construction
+    instead of by promise. Needs a test. (assumed)
+
+20. **How much of the edit does Dave see — replayed, or live?**
+    My rec: **replay the saved session on load.** When Jamie taps Done the session file
+    already exists; the dev server hands it to any page load and the overlay re-applies it. So
+    Dave sees the edit one beat later, after Done, on his own refresh. The alternative is live
+    mirroring — a socket broadcasting class changes from Jamie's browser to Dave's — which is
+    real-time but is a whole extra mechanism, a new failure mode, and the only thing it buys
+    is watching the edit happen rather than seeing the result.
