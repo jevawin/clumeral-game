@@ -294,3 +294,50 @@ Behaviour taken straight from the design doc, recorded so it survives the contex
     `border-accent`, which has the identical shape.
 
 39. **Where the pre-built / on-demand line falls.** Open — asked next, after 38 settles.
+
+### Jamie 2026-08-18, 22:36 — three corrections
+
+40. **Item 38(a) was wrong: padding needs no special handling at all.** Jamie: "why do you
+    need to add top and bottom padding if I say inline only?" Correct, and the CSS backs him
+    up. Tested on this Tailwind build by compiling the shorthand and the axis utility together
+    and reading the output order:
+
+    ```
+    .m-2@5309  .mx-8@5360  .p-4@5564  .px-6@5616  .py-2@5676  .pt-1@5735
+    ```
+
+    Tailwind always emits the shorthand **before** the more specific utility, so `p-4 px-6`
+    resolves to "6 left and right, 4 top and bottom" whatever order the class attribute is in.
+    Keeping both is not a mess, it is the correct answer, and it is exactly what "inline only"
+    means. **No cross-family rule for padding, margin or inset.** Only a genuine same-family
+    collision — `px-4` against `px-6` — replaces.
+
+41. **The overlay records the viewport width it was edited at.** Jamie cannot see clamp or
+    responsive behaviour on one device, so the width is the missing context. It goes in the
+    patch, and the conversation about other widths happens with the bot afterwards — Jamie
+    confirms or changes the suggestions. The overlay does not try to offer them itself.
+    (settled — Jamie 2026-08-18)
+
+42. **The session is a starting point for design iteration with the bot, not a patch to
+    apply.** Jamie: "all of this goes back to you for design iteration. Not direct to the
+    build." This is the principle that settles item 40 and several like it: the overlay should
+    record what Jamie did, plainly and losslessly, and must not be clever on his behalf. He is
+    looking at the result while he works, so a change that looks wrong is caught by his eyes,
+    not by our rules. (settled — Jamie 2026-08-18)
+
+43. **Item 38(b) accepted** — text size against text colour is split using Tailwind's own
+    data, and the same rule covers `border-2` against `border-accent`. (settled — Jamie)
+
+44. **Where the pre-built / on-demand line falls — measured, 2026-08-18.**
+
+    | pre-built set | classes | stylesheet |
+    |---|---|---|
+    | stepper families only (spacing, size, radius, text size, position) | 4,399 | **0.43 MB** |
+    | everything that is not a colour | 8,397 | **1.16 MB** |
+    | everything | 23,031 | 4.99 MB |
+
+    My rec: **pre-build everything that is not a colour.** Why: at 1.16 MB it is a quarter of
+    the full build and the unmeasured phone-parse risk stops mattering, while the rule itself
+    is one sentence rather than a curated family list that will drift. Colours are the genuine
+    explosion — shade times opacity — and they are also where a one-beat rebuild is least
+    annoying, because picking a colour is a considered act rather than a stepper tap.
