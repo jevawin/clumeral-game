@@ -455,7 +455,7 @@ Settled: Jamie 2026-08-18 (items 55-60, injected by the plugin) · Ack: pending 
 ---
 
 ## 7. How it looks
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-18 (items 61-64, sealed) · Ack: pending (Dave)
 
 61. **Layout comes from the design and is not re-litigated:** pencil button bottom-right,
     collapsible bottom sheet on phone, the same panel docked right on desktop, selected
@@ -481,3 +481,34 @@ Settled: pending · Ack: pending
     follow the app's own look. The alternative — a scoped class prefix and hard-coded values,
     no shadow root — is quicker to write and looks more native, but inherited properties still
     reach it, so the failure it is meant to prevent is only made less likely, not impossible.
+
+65. **Item 64 settled: seal it.** The panel renders in a shadow root with hand-written CSS and
+    Jamie's edits cannot reach it. (settled — Jamie 2026-08-18)
+
+66. **The back gesture undoes an edit.** Jamie 2026-08-18: "log changes to history so back
+    button undoes. If I ever accidentally fuck anything I can use back button to undo." Each
+    committed change pushes a history entry; going back applies its inverse. The panel keeps
+    its undo button too — back is the gesture, the button is the visible affordance.
+    (settled — Jamie)
+
+67. **This collides with the game's router, and getting it wrong destroys edits rather than
+    undoing them.** `src/router.ts:199` listens for `popstate` and re-renders the screen. A
+    re-render rebuilds DOM, which would throw away exactly the class changes back was supposed
+    to step through — the failure is silent and looks like "back wipes everything". So while
+    edit mode is on, **edit mode owns back**, intercepting it before the router in the same
+    way and for the same reason it already intercepts taps. Leaving edit mode hands it back.
+    The plan must establish *how* that interception is guaranteed given the router registers
+    its listener at boot, and §11 needs a positive test: back undoes one step and the screen
+    does not re-render. (established — needs a mechanism decided in planning)
+
+68. **One entry per settled change, not per increment.** Holding `+` on a stepper walks the
+    scale; each tap should not become its own history entry, or backing out of a ten-tap
+    adjustment takes ten swipes. Rapid steps on the same property collapse into one entry once
+    they stop. (assumed)
+
+69. **What does back do when there is nothing left to undo?**
+    My rec: **it leaves edit mode and returns to play mode, and one more back leaves the page
+    as normal.** Why: back always doing *something* is the expectation on a phone, and
+    "exit the tool" is the natural next step outwards. The alternative is to swallow it so the
+    page never escapes mid-edit, which is safer against accidental exits but means back
+    silently does nothing, which reads as broken.
