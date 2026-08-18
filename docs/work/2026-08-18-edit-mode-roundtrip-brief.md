@@ -383,7 +383,7 @@ Settled: pending · Ack: n/a (Dave owns maths; nothing here touches it)
 ---
 
 ## 5. State & persistence
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-18 (items 49-54) · Ack: pending (Dave)
 
 49. **The finished session file.** `.edit-sessions/<timestamp>.json` in the game working tree,
     gitignored, one file per tap of Done. (assumed — the design)
@@ -408,3 +408,46 @@ Settled: pending · Ack: pending
 
 53. **Edit mode itself is remembered the same way**, so a reload does not silently drop Jamie
     back into play mode with his selection lost. (assumed — follows from 52)
+
+54. **Item 52 accepted, on the phone not the server** — Jamie 2026-08-18: "keep it on my phone
+    not on the server." `sessionStorage` in Jamie's browser. Nothing unfinished is sent to the
+    Pi, so the server holds only what Done produced. This also keeps item 51 honest: Dave can
+    only ever see finished sessions, because unfinished ones do not exist outside Jamie's
+    phone. (settled — Jamie)
+
+---
+
+## 6. How it fits
+Settled: pending · Ack: pending
+
+55. **All new code, in its own place.** Edit mode is new files under `src/edit-mode/` plus a
+    Vite plugin in `vite.config.ts`. No existing game module changes behaviour. (assumed)
+
+56. **The dev-only wiring is the plugin's job, not `index.html`'s.** The plugin swaps the
+    stylesheet link and injects the overlay when serving, so the committed `index.html` has no
+    edit-mode markup in it at all. (assumed)
+
+57. **What it reads from the existing app.** `theme.ts` toggles `.dark` and several modules
+    toggle `.hidden`; those are the runtime-controlled classes behind item 37. Edit mode
+    observes them and never writes them. (assumed)
+
+58. **`shortcuts.ts` must be suspended in edit mode.** Keyboard shortcuts are gameplay, and
+    edit mode already intercepts pointer events for the same reason. Play mode restores them.
+    (assumed — same logic as item 30, which the design made explicit only for taps)
+
+59. **The generated class list is never committed.** It is produced when the dev server starts
+    and written somewhere gitignored. Why this matters beyond tidiness: a committed file of
+    23,031 class names is 386 kB of source that Tailwind's automatic scan would read, which is
+    issue #312's failure mode at full volume — every class in the project would land in the
+    production stylesheet. (assumed, and it needs the §11 assertion to catch a regression)
+
+60. **How does the overlay get into the page — imported by the app, or injected by the
+    plugin?**
+    My rec: **injected by the plugin, with zero references from game code.** The obvious
+    alternative is an import in `app.ts` wrapped in a dev-only condition, which the bundler
+    strips for production. It works, but it makes the safety guarantee depend on
+    tree-shaking behaving — a bundler upgrade or a stray re-export could quietly put the
+    overlay back in a deployed artefact, and the only thing standing between that and
+    production is a test we hope still runs. If no game module ever names edit mode, there is
+    nothing to strip and nothing to get wrong. Cost: the plugin has to do a little HTML
+    rewriting that an import would not.
