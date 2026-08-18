@@ -341,3 +341,26 @@ Behaviour taken straight from the design doc, recorded so it survives the contex
     is one sentence rather than a curated family list that will drift. Colours are the genuine
     explosion — shade times opacity — and they are also where a one-beat rebuild is least
     annoying, because picking a colour is a considered act rather than a stepper tap.
+
+### Jamie 2026-08-18, 22:52 — "iPhone 16 Pro. Will it choke?"
+
+45. **Almost certainly not, but this is judgement, not measurement.** Nothing here has been
+    run on an iPhone — the Pi cannot, and CI's WebKit is not an iPhone either. What is
+    measured: the non-colour set is 1.16 MB and about 8,400 rules; the full set is 4.99 MB and
+    about 23,000. What is judgement: parsing a megabyte of CSS is milliseconds on an A18 Pro,
+    and unmatched rules cost almost nothing to match because browsers index selectors by their
+    class, so the cost is close to linear in *file size* rather than in rules considered per
+    element. The larger real cost is transfer, and the dev server currently sends it
+    uncompressed (spike note, cost 1).
+
+46. **The on-demand half exists to hedge a risk nobody has confirmed, and the hedge can be
+    dropped in a minute of testing.** Jamie has the phone. Once the pre-built stylesheet
+    exists he can load it and know. So:
+    My rec: **build the pre-built half first, have Jamie load it on the iPhone, and only build
+    the on-demand rebuild machinery if that measurement says we need it.** If the full 4.99 MB
+    is comfortable, the on-demand mechanism, its rebuild wait and its failure modes all
+    disappear, and the class catalogue becomes simply "everything". If it is not, we already
+    know the line at 1.16 MB works and we build the tail as designed. Either way the answer
+    arrives before the expensive half is written, not after.
+    Note this **re-sequences** Jamie's hybrid decision of 2026-08-18 rather than reversing it:
+    the hybrid stays the plan of record unless the phone says otherwise.
