@@ -76,13 +76,47 @@ Tailwind v4 compiles only the classes it finds in source. Adding `mt-7` in the b
 nothing if no file uses `mt-7`. Edit mode therefore needs a complete build of the project's
 scale loaded alongside the normal stylesheet.
 
-**This is unverified and is the first thing to spike.** The likely route is generating a
-safelist from the `@theme` tokens in `src/tailwind.css`, but the mechanism for that in
-Tailwind v4 must be established by testing or by reading Tailwind's own docs — not inferred
-from a config key name. If it turns out to be impractical, the fallback is a separate
-edit-mode-only stylesheet built from the token cross-product, and the design survives.
+**Settled by measurement, 2026-08-18** — see
+`docs/superpowers/notes/2026-08-18-tailwind-full-build-spike.md`. The route is a dev-only
+stylesheet that imports the real one and points a single `@source` at a class list generated
+from Tailwind's own design system (`__unstable__loadDesignSystem().getClassList()`), so the
+list cannot drift from `@theme`. Two undocumented behaviours it relies on were tested, not
+read: `@source` accepts a single file, and an explicit `@source` is scanned even when the
+file is gitignored. The design's fallback (a hand-built token cross-product) is not needed.
+Production was proved unaffected — same content hash, same 50,555 bytes.
 
-Same work also produces Unit 2, so the spike de-risks two units at once.
+### The variant decision — hybrid, Jamie 2026-08-18
+
+The generated list is base utilities only: 23,031 classes, a 5.24 MB unminified dev
+stylesheet. Variants multiply it — three of them across everything reaches 24.6 MB, and all
+88 is not worth costing. Neither pre-building a guessed shortlist nor rebuilding for every
+class is right, so:
+
+- **Pre-build the cheap families** — spacing, sizing, radius, text size. These are what the
+  `-`/`+` steppers walk, and steppers must stay instant.
+- **Build on demand for the expensive tail** — colour x shade x opacity, and every variant.
+  The overlay appends the picked class to the generated list and the dev server rebuilds
+  (measured: 0.32 s after a source edit, 1.93 s after a stylesheet edit). One beat of lag the
+  first time a class is used, and no shortlist to maintain or outgrow.
+
+The on-demand half needs no new plumbing: it is the same dev-server middleware as Unit 4.
+Planning must settle where the pre-built/on-demand line falls and confirm the pre-built half
+is small enough that the phone-parse risk below stops mattering.
+
+**Two costs the spike measured that planning must carry:**
+
+1. **Vite dev serves the stylesheet uncompressed** — over Tailscale to a phone that is the
+   dominant cost, not the compile. A gzip middleware in the dev server is a few lines.
+2. **Nobody has measured what a phone browser does with a six-figure line count of CSS.**
+   Playwright is CI-only here, so the Pi could not answer it. Ten minutes for whoever next
+   runs the browser suite; the hybrid split above is chosen partly so this cannot bite.
+
+Same work also produces Unit 2, so the spike de-risked two units at once. Two Unit 2 findings
+land with it: the six component classes are plain CSS and the design system does not know
+them, so they are either listed by hand in the generator or converted to `@utility` in
+`src/tailwind.css` (tidier, and a real source change, so it belongs in planning); and
+`getVariants()` returns the 88 variants separately, so search can compose a variant with a
+utility without either list enumerating the product.
 
 ## Unit 2 — class catalogue
 
@@ -247,15 +281,19 @@ that write files into the working tree.
 - **Unit 4:** a patch round-trips to JSON and back without losing the before-class list.
 - **Unit 5:** grep-location succeeds on a unique class string and *asks* rather than guessing on
   a duplicated one.
-- **Safety:** production bundle contains no overlay code.
+- **Safety:** production bundle contains no overlay code, **and no edit-mode-only utility**.
+  The spike showed the production gate is thinner than it looks — it holds only because
+  nothing imports the edit entry, so the moment dev points at that entry the gate becomes
+  "the swap only happens in dev". Assert against the built CSS, not a config flag.
 
 Per the project's own hard-won rule: revert each fix and watch the test go red. A green suite
 that passes without the fix pins nothing.
 
 ## Open questions to settle during planning
 
-1. Exactly how a complete Tailwind v4 build is produced for dev (Unit 1 spike). Everything else
-   is unblocked; this one must be established by test or vendor docs, not inferred.
+1. ~~Exactly how a complete Tailwind v4 build is produced for dev (Unit 1 spike).~~ **Closed
+   2026-08-18 by measurement** — see Unit 1 above and the spike note. Left open by it, for
+   planning: where the pre-built/on-demand line falls, and the phone-parse measurement.
 2. The cross-family rules in the replace map (`p-4` vs `px-4`, and `text-sm` vs `text-text` — the same `text-` prefix covers size and colour).
 3. Whether Dave should ever be able to *view* an uncommitted edit session, or only the PR
    preview. Currently: only the PR preview.
