@@ -418,7 +418,7 @@ Settled: Jamie 2026-08-18 (items 49-54) · Ack: pending (Dave)
 ---
 
 ## 6. How it fits
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-18 (items 55-60, injected by the plugin) · Ack: pending (Dave)
 
 55. **All new code, in its own place.** Edit mode is new files under `src/edit-mode/` plus a
     Vite plugin in `vite.config.ts`. No existing game module changes behaviour. (assumed)
@@ -451,3 +451,33 @@ Settled: pending · Ack: pending
     production is a test we hope still runs. If no game module ever names edit mode, there is
     nothing to strip and nothing to get wrong. Cost: the plugin has to do a little HTML
     rewriting that an import would not.
+
+---
+
+## 7. How it looks
+Settled: pending · Ack: pending
+
+61. **Layout comes from the design and is not re-litigated:** pencil button bottom-right,
+    collapsible bottom sheet on phone, the same panel docked right on desktop, selected
+    element outlined with a label. (assumed)
+
+62. **Bottom-right is free, but the overlay has to clear what is already there.** `index.html`
+    has a fixed bottom-centre stack at `z-[300]`. The overlay sits above everything the game
+    uses, and the pencil must not cover the bottom-centre stack on a narrow screen. (assumed)
+
+63. **The panel never becomes selectable.** Tapping the overlay adjusts the overlay; only the
+    page underneath can be selected. (assumed — otherwise the tool can select itself and the
+    breadcrumb becomes nonsense)
+
+64. **Should the panel be immune to Jamie's edits, or should it change with them?**
+    My rec: **immune — the overlay renders in a shadow root with its own hand-written CSS.**
+    Why it matters: Jamie can select `<body>` and add a text size or a colour, and by design
+    that inherits into everything, including the panel. A bad edit could then make the panel
+    unreadable — and the only way out of an unreadable panel is the panel. Worse, an edit that
+    quietly restyles the tool makes it impossible to judge what the edit did to the *game*,
+    which is the entire point of looking.
+    The cost is real and Jamie should weigh it: inside a shadow root the panel **cannot use
+    the project's Tailwind classes or tokens**, so its styling is written by hand and will not
+    follow the app's own look. The alternative — a scoped class prefix and hard-coded values,
+    no shadow root — is quicker to write and looks more native, but inherited properties still
+    reach it, so the failure it is meant to prevent is only made less likely, not impossible.
