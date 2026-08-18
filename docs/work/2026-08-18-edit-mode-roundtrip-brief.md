@@ -171,3 +171,35 @@ tunnel also fine. No tailscale."
     matter. Why: it needs no new configuration, it keeps item 8's "never exposed
     unauthenticated" true without an auth layer to get wrong, and the failure mode is
     "edit mode is unavailable" rather than "the write guard is misconfigured".
+
+### Item 23 resolved — Jamie 2026-08-18, 22:17
+
+"I edit on the same network via tailscale. The tunnel is read only always, hence it being
+fine to be a public url like the previous links."
+
+24. **Jamie reaches the dev server over Tailscale; Dave reaches it over a Cloudflare tunnel;
+    the tunnel is read-only always.** Item 22's "no Tailscale" meant *Dave* does not go on the
+    tailnet — Jamie still does. Item 8 stands as originally written. A public tunnel URL is
+    acceptable, on the same footing as the existing preview links, **because it is read-only.**
+    Everything therefore rests on the read-only half actually being true. (settled — Jamie)
+
+25. **A tunnel makes Dave's traffic look local, so an address-based write guard fails open.**
+    This is the trap and it is worth stating flatly: `cloudflared` connects to the dev server
+    as a normal local client, so requests that started at Dave's phone arrive from
+    `127.0.0.1`. A guard reading "allow writes from localhost and the tailnet" would therefore
+    **allow Dave and no-one else would notice.** Item 19's guard as written is not merely
+    insufficient, it is inverted. (established)
+
+26. **How the read-only half is enforced.**
+    My rec: **point the tunnel at a second port that has no write handler at all.** A small
+    read-only proxy listens on its own port, forwards GET and HEAD to the dev server, and
+    answers everything else with 405. Jamie keeps using the dev server's own port over
+    Tailscale. Why this rather than inspecting headers: nothing reaching the tunnel port can
+    write, whatever it claims to be, so the guarantee is structural rather than a matter of
+    trusting `cf-connecting-ip` — which anything able to reach the port could set. Cheap
+    fallback if the proxy proves annoying: reject writes on any request carrying
+    `cf-connecting-ip` or `x-forwarded-for`. Weaker, and it needs its own test.
+
+27. **Test it as a positive.** Assert that a POST to the tunnel port is refused, not merely
+    that a POST to the dev port succeeds. Per the project rule: remove the guard and watch
+    that test go red. (assumed)
