@@ -597,7 +597,7 @@ Settled: Jamie 2026-08-18 (owner's call) · Ack: n/a (owned section)
 ---
 
 ## 10. Analytics
-Settled: pending · Ack: n/a
+Settled: Jamie 2026-08-18 (n/a, no objection) · Ack: n/a
 
 83. **None.** Edit mode never reaches a player, never reaches production, and has one user who
     is in the room. There is no question about it that a number would answer. Marked n/a with
@@ -606,7 +606,7 @@ Settled: pending · Ack: n/a
 ---
 
 ## 11. Done / test plan
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-18 · Ack: pending (Dave)
 
 84. **The existing end-to-end suite structurally cannot test edit mode, and that is a
     feature.** `playwright.config.ts` builds the app and serves the *built* output
@@ -649,3 +649,49 @@ Settled: pending · Ack: pending
     a read-only port that quietly is not. Item 82 says prefer simplicity, and these are the
     three where simplicity would cost real safety. The cost is a second Playwright project
     with a different web server command, and CI time.
+
+89. **Item 88 settled — Jamie 2026-08-18: "Cut. I will be the tester."** No second Playwright
+    project. The automated suite is the vitest list in item 85 plus the built-artefact
+    assertions, both of which run in CI as now.
+
+90. **The three cut tests become a written acceptance checklist Jamie runs once, by hand.**
+    They are not dropped, because two of them cannot be caught by using the tool normally.
+    Recorded here so they survive the context clear:
+
+    1. **Back undoes one step and does not wipe the page.** Make three changes, press back
+       three times, check each one reverses in turn and the screen does not reload.
+    2. **Play mode comes back intact.** Leave edit mode, then play the game with a keyboard on
+       desktop — arrow keys, digit entry, submit. This is the one that fails silently, and it
+       is a defect in the shipped game, not in the tool (item 76).
+    3. **The public link cannot write.** Open the tunnel URL, make a change, tap Done, and
+       confirm it is refused. **This one cannot be found by normal use** — a broken write guard
+       looks exactly like a working one from Jamie's side, because his own saves come in over
+       Tailscale and succeed either way.
+
+91. **Consequence, recorded rather than argued.** With no browser regression test, the three
+    above are verified once and then only by whoever happens to notice. Item 90.3 in particular
+    will not resurface on its own if a later change breaks it. Jamie's call, made knowing that;
+    the cost is a real one and it is written here so a future reader knows it was chosen, not
+    overlooked.
+
+---
+
+## Sign-off
+
+| Section | Settled | Ack |
+|---|---|---|
+| 1. What it is | Jamie 2026-08-18 | **pending — Dave** |
+| 2. Out of scope | Jamie 2026-08-18 | **pending — Dave** |
+| 3. How it works | Jamie 2026-08-18 | **pending — Dave** |
+| 4. Maths | n/a, nothing touched | n/a (Dave owns; flagged) |
+| 5. State & persistence | Jamie 2026-08-18 | **pending — Dave** |
+| 6. How it fits | Jamie 2026-08-18 | **pending — Dave** |
+| 7. How it looks | Jamie 2026-08-18 | **pending — Dave** |
+| 8. Copy & wording | Jamie 2026-08-18 | **pending — Dave** |
+| 9. Accessibility | Jamie 2026-08-18 (owner) | n/a |
+| 10. Analytics | n/a, none | n/a |
+| 11. Done / test plan | Jamie 2026-08-18 | **pending — Dave** |
+
+**The brief is not closeable until Dave acks the joint sections, or Jamie overrides as dev
+lead.** Dave has not been in the conversation at any point on 2026-08-18. Silence is not
+consent.
