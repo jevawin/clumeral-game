@@ -519,7 +519,7 @@ Settled: Jamie 2026-08-18 (items 61-64, sealed) · Ack: pending (Dave)
 ---
 
 ## 8. Copy & wording
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-18 (accepted all recommendations) · Ack: pending (Dave)
 
 The only reader is Jamie, so the register is terse. Two moments earn full sentences because
 getting them wrong loses work.
@@ -548,3 +548,37 @@ getting them wrong loses work.
     is often "save what I have, keep going" rather than "I am finished". The alternative —
     close the panel and drop to play mode — reads as more final than it is, and makes a
     second round of edits start from scratch.
+
+---
+
+## 9. Accessibility
+Settled: pending — **Jamie's call, blocking** · Ack: n/a (owned section)
+
+76. **Edit mode must not damage the game's accessibility, in either direction.** It intercepts
+    pointer events at the document level and suspends `shortcuts.ts`; if the teardown is
+    incomplete, play mode comes back with keyboard control quietly broken and nothing says so.
+    §11 tests the restore, not just the intercept. (assumed — non-negotiable whatever else is
+    decided)
+
+77. **The overlay is inert in play mode** — not merely invisible, but not reachable by
+    keyboard and not announced by a screen reader, apart from the pencil button itself.
+    (assumed)
+
+78. **Focus is never trapped.** The bottom sheet takes focus while open and gives it back; the
+    Escape key and the back gesture both leave. (assumed — a dev tool that traps focus is
+    unrecoverable without closing the tab)
+
+79. **The shadow root must not disturb the page's own structure** — no extra landmarks, no
+    heading levels injected into the game's outline. (assumed)
+
+80. **What accessibility bar does the tool itself hold to?**
+    My rec: **"does not break the game, is operable by keyboard on desktop, and is not audited
+    further."** Why: edit mode never reaches a player, so its own contrast and semantics are
+    not a product obligation, and item 64's sealed shadow root means its colours are
+    hand-written and outside the palette guarantees the project relies on — auditing it would
+    mean maintaining a second contrast story for a tool one person uses.
+    The honest cost of that: Jamie is the person who uses it, and if the panel is hard to read
+    on a bright day, that is a real problem for the one user it has. The alternative is to
+    hold it to the same AA bar as the game, which is maybe half a day of work and a second set
+    of contrast tests to keep passing forever.
+    **This is Jamie's to decide and it blocks the section.**
