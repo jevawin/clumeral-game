@@ -32,7 +32,7 @@ assumptions so they stay referenceable.
 ---
 
 ## 1. What it is
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-18 · Ack: pending (Dave)
 
 1. **The problem.** Jamie designs by changing things in the browser and looking at the
    result. Today the only way those changes reach the codebase is to describe them to the bot
@@ -62,3 +62,50 @@ Settled: pending · Ack: pending
    last step. Preprod is also Dave's route, and he only looks. Gating to dev alone makes the
    safety test simpler too — the overlay is absent from every deployed artefact, not just
    production.
+
+7. **The safety test is now stronger, so it must assert more.** Edit mode must be absent from
+   **every deployed artefact — preprod as well as production** — and that is asserted against
+   the built output, never a config flag. It covers all three parts: the overlay code, the
+   dev-server middleware, and the edit-mode stylesheet, plus the edit-mode-only utilities the
+   spike proved can leak into the CSS. Concrete assertions land in §11. (Jamie 2026-08-18)
+
+8. **How Jamie reaches the dev server, which is now the only route.** Over Tailscale from his
+   phone, or a cloudflared tunnel if a public link is ever wanted. The server accepts POSTs
+   that write files into the working tree, so it is **never exposed unauthenticated**. This is
+   a constraint on the design, not an implementation detail. (Jamie 2026-08-18)
+
+## 2. Out of scope
+Settled: pending · Ack: pending
+
+9. **Unit 5, `/fold`.** Lives in `pi-dev-bot` and is being built separately. We own the file
+   format it reads; we do not own what it does with it. (assumed — Jamie's boundary)
+
+10. **Arbitrary values.** `mt-[13px]` is not offered and cannot be typed. Hitting the edge of
+    the scale is information: Jamie says so in words and the token set gets discussed.
+    (assumed — closed in the design, not reopened here)
+
+11. **Any change to preprod or production behaviour.** Both stay exactly as they are today.
+    (assumed — follows from item 6)
+
+12. **Fixing the docs class-scanning leak.** That is issue #312 and a separate branch. This
+    work must not make it worse, but does not fix it. (assumed — Jamie 2026-08-18)
+
+13. **Screenshots and computed CSS.** The patch carries class lists and identifying context,
+    nothing rendered. (assumed — the design rejected both)
+
+14. **Build-time source stamping.** No Vite plugin writing `data-src` onto elements. The bot
+    greps and asks when ambiguous. A clean later addition if real use needs it. (assumed —
+    rejected in the design)
+
+15. **The desktop panel is IN scope**, including its raw class field and free-CSS box. It is
+    part of Unit 3 as designed. Note the consequence for §3 and the contract: a free-CSS entry
+    is not a class change, so the session file has to carry more than one kind of patch.
+    (assumed — the design specifies it)
+
+16. **Can Dave ever view an uncommitted edit session, or only the PR preview?**
+    My rec: **only the PR preview — out of scope.** Why: an uncommitted session exists only on
+    the Pi's dev server behind Tailscale, so letting Dave see it means either adding him to
+    the tailnet or standing up a tunnel to a server that accepts file-writing POSTs. And what
+    he would be looking at is a draft the bot is about to rewrite — the overlay's output is
+    deliberately not code anyone would keep. The cost of saying no: Dave cannot weigh in until
+    the PR exists, so a change he dislikes costs one extra round trip.
