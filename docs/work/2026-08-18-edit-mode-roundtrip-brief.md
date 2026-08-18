@@ -552,7 +552,7 @@ getting them wrong loses work.
 ---
 
 ## 9. Accessibility
-Settled: pending — **Jamie's call, blocking** · Ack: n/a (owned section)
+Settled: Jamie 2026-08-18 (owner's call) · Ack: n/a (owned section)
 
 76. **Edit mode must not damage the game's accessibility, in either direction.** It intercepts
     pointer events at the document level and suspends `shortcuts.ts`; if the teardown is
@@ -582,3 +582,70 @@ Settled: pending — **Jamie's call, blocking** · Ack: n/a (owned section)
     hold it to the same AA bar as the game, which is maybe half a day of work and a second set
     of contrast tests to keep passing forever.
     **This is Jamie's to decide and it blocks the section.**
+
+81. **Item 80 settled — Jamie 2026-08-18: "Only me using it. No accessibility needs.
+    Prioritise simplicity of code and testing."** The overlay is not audited, not held to AA,
+    and items 77-79 drop from requirements to "if it falls out for free". **Item 76 stands
+    and is not part of that concession**, because it is about the *game's* accessibility, not
+    the tool's: leaving play mode with keyboard control broken is a defect in the shipped
+    product, and it fails silently.
+
+82. **"Prioritise simplicity of code and testing" is a standing instruction, not a §9
+    footnote.** It applies to every section below and to planning. Where two designs both
+    work, the simpler one wins even if it does less. (settled — Jamie 2026-08-18)
+
+---
+
+## 10. Analytics
+Settled: pending · Ack: n/a
+
+83. **None.** Edit mode never reaches a player, never reaches production, and has one user who
+    is in the room. There is no question about it that a number would answer. Marked n/a with
+    that reason, and consistent with item 82. (assumed)
+
+---
+
+## 11. Done / test plan
+Settled: pending · Ack: pending
+
+84. **The existing end-to-end suite structurally cannot test edit mode, and that is a
+    feature.** `playwright.config.ts` builds the app and serves the *built* output
+    (`npm run e2e:serve`, `reuseExistingServer: false`). Edit mode is absent from that build
+    by design, so the suite as it stands can prove edit mode is **gone** and can never prove
+    it **works**. Both halves of that matter. (established — read from the config)
+
+85. **So the split, chosen for item 82's simplicity:** put the logic in plain functions tested
+    in vitest, and add **one** Playwright project pointed at the dev server for the few things
+    only a browser can settle.
+
+    **vitest — cheap, fast, most of the value:**
+    - the replace map: same-family replacement happens; appending `mt-6` to `mt-4` would have
+      been a no-op and the overlay does not do it; padding shorthand and axis coexist (item 40)
+    - text size against text colour, and border width against border colour (item 43)
+    - the catalogue holds every spacing step and all six component classes
+    - a patch round-trips to JSON and back with the before-class list intact
+    - replay applies every unconsumed session in timestamp order, not just the newest (item 51)
+
+    **Playwright against the dev server — only what needs a real browser:**
+    - back undoes one step **and the screen does not re-render** (item 67 — the silent one)
+    - play mode restores taps and keyboard after edit mode (item 76 — the other silent one)
+    - a POST to the read-only port is refused (item 26, asserted positively)
+
+    **Playwright against the built output, in the existing suite:**
+    - no overlay code, no middleware, no edit-mode stylesheet, no edit-mode-only utility, in
+      **production and preprod** builds alike (items 7 and 59)
+
+86. **Every one of these is reverted and watched go red** before it counts, per the project
+    rule. A test that passes without its fix pins nothing. (assumed)
+
+87. **Done means:** Jamie opens the dev server on his phone, taps the pencil, changes a class,
+    sees it apply, taps Done, and `.edit-sessions/<timestamp>.json` is on disk with the before
+    and after class lists and the viewport width in it. Plus the iPhone measurement from item
+    46, which decides whether the on-demand half gets built at all.
+
+88. **Is one new Playwright project acceptable, or should the browser half be cut entirely?**
+    My rec: **keep the three browser tests.** Why: all three cover failures that are invisible
+    when they happen — back wiping edits, keyboard staying broken after play mode returns, and
+    a read-only port that quietly is not. Item 82 says prefer simplicity, and these are the
+    three where simplicity would cost real safety. The cost is a second Playwright project
+    with a different web server command, and CI time.
