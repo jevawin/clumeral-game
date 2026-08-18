@@ -512,3 +512,39 @@ Settled: Jamie 2026-08-18 (items 61-64, sealed) · Ack: pending (Dave)
     "exit the tool" is the natural next step outwards. The alternative is to swallow it so the
     page never escapes mid-edit, which is safer against accidental exits but means back
     silently does nothing, which reads as broken.
+
+70. **Item 69 settled: back out.** Once every edit is undone, back returns to play mode; one
+    more back leaves the page as normal. (settled — Jamie 2026-08-18)
+
+---
+
+## 8. Copy & wording
+Settled: pending · Ack: pending
+
+The only reader is Jamie, so the register is terse. Two moments earn full sentences because
+getting them wrong loses work.
+
+71. **Controls.** Pencil button announces "Edit mode" and "Exit edit mode". Panel footer:
+    **Undo**, **Reset element**, **Done**. Search placeholder: "Search classes". (assumed)
+
+72. **Search finds nothing.** Not a bare "no results" — the design treats the edge of the
+    scale as information, so it says so: *"Nothing on the scale matches. Describe what you
+    want in words instead."* (assumed — it turns a dead end into the intended next step)
+
+73. **A class was overwritten by the game.** The item 37 flag needs to be visible, not just
+    recorded in the file: *"The game reset this class after your change. It is set in code, so
+    the bot will need to change a condition rather than a class."* (assumed)
+
+74. **Done could not reach the server.** This is the one that loses work, so it is explicit
+    about the fact that nothing is lost yet: *"Could not save. Your changes are still here —
+    check the dev server is running and tap Done again."* (assumed — follows from item 54,
+    the edit lives on the phone until Done succeeds)
+
+75. **What happens after Done succeeds?**
+    My rec: **confirm, name the next step, and stay in edit mode.** Something like *"Saved.
+    Tap /fold in Telegram to turn this into a pull request."* Why: Done is the seam between
+    the two halves of this system, and the second half is a command in a different app that
+    nothing on screen would otherwise mention. Staying in edit mode matters because a session
+    is often "save what I have, keep going" rather than "I am finished". The alternative —
+    close the panel and drop to play mode — reads as more final than it is, and makes a
+    second round of edits start from scratch.
