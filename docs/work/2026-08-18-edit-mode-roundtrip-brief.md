@@ -680,21 +680,22 @@ Settled: Jamie 2026-08-18 · Ack: pending (Dave)
 
 | Section | Settled | Ack |
 |---|---|---|
-| 1. What it is | Jamie 2026-08-18 | **pending — Dave** |
-| 2. Out of scope | Jamie 2026-08-18 | **pending — Dave** |
-| 3. How it works | Jamie 2026-08-18 | **pending — Dave** |
-| 4. Maths | n/a, nothing touched | n/a (Dave owns; flagged) |
-| 5. State & persistence | Jamie 2026-08-18 | **pending — Dave** |
-| 6. How it fits | Jamie 2026-08-18 | **pending — Dave** |
-| 7. How it looks | Jamie 2026-08-18 | **pending — Dave** |
-| 8. Copy & wording | Jamie 2026-08-18 | **pending — Dave** |
+| 1. What it is | Jamie 2026-08-18 | Dave 2026-08-19 |
+| 2. Out of scope | Jamie 2026-08-18 | Dave 2026-08-19 |
+| 3. How it works | Jamie 2026-08-18 | Dave 2026-08-19 |
+| 4. Maths | n/a, nothing touched | Dave 2026-08-19 (owner confirmed n/a) |
+| 5. State & persistence | Jamie 2026-08-18 | Dave 2026-08-19 |
+| 6. How it fits | Jamie 2026-08-18 | Dave 2026-08-19 |
+| 7. How it looks | Jamie 2026-08-18 | Dave 2026-08-19 |
+| 8. Copy & wording | Jamie 2026-08-18 | Dave 2026-08-19 |
 | 9. Accessibility | Jamie 2026-08-18 (owner) | n/a |
 | 10. Analytics | n/a, none | n/a |
-| 11. Done / test plan | Jamie 2026-08-18 | **pending — Dave** |
+| 11. Done / test plan | Jamie 2026-08-18 | Dave 2026-08-19 |
 
-**The brief is not closeable until Dave acks the joint sections, or Jamie overrides as dev
-lead.** Dave has not been in the conversation at any point on 2026-08-18. Silence is not
-consent.
+**Dave acked every joint section on 2026-08-19**, after a plain-language summary of what the
+tool is, that he gets a read-only link showing only saved work, that nothing about
+clumeral.com changes, that maths is untouched, that the tool itself gets no accessibility
+work, and that testing is Jamie by hand. He confirmed §4 as n/a as its owner.
 
 ---
 
@@ -907,3 +908,27 @@ here rather than edited in place.
   override as dev lead. Silence is not consent.
 - **Item 111** — four recommendations need a yes or a different answer.
 - **Item 112** — the on-demand scope boundary.
+
+## Closing state, 2026-08-19
+
+114. **Item 112 settled — Jamie 2026-08-19: "Yes."** The on-demand half is out of this brief.
+     Build the pre-built stylesheet, Jamie measures on the iPhone 16 Pro, and if it struggles
+     the on-demand half gets its own short brief carrying the §7, §8 and §11 it would need.
+     Until then edit mode offers no colours and no responsive variants, and item 99 makes that
+     visible rather than silent.
+
+115. **Item 111 is the only thing still open.** Four recommendations were recorded as settled
+     with no answer on record, and the brief's own standard says silence is not consent:
+
+     - **26** — the tunnel points at a second port with no write handler, rather than the
+       server sniffing headers. This is the mechanism the entire read-only guarantee rests on.
+     - **27** — that guard is tested as a positive: a POST to the read-only port is refused,
+       and the test goes red when the guard is removed.
+     - **29** — `cloudflared` rather than nginx and a DNS record, optionally with a
+       `dev.clumeral.com` record on the production zone.
+     - **32** — the selection label shows the tag, the breadcrumb and the first few words of
+       text, and **not** the source location. This one **contradicts the approved design**,
+       which specifies a source location; nothing in the browser can know it now that
+       build-time stamping is rejected.
+
+     Jamie's word on these four closes the brief.
