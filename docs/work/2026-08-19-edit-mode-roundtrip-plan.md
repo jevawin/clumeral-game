@@ -307,30 +307,57 @@ today, and #312's branch turns it on by deleting one word. That is item 102's "l
 the first thing #312's branch turns green", expressed in a way that does not block every pull
 request in the meantime.
 
-### D8 — asserting against preprod
+### D8 — asserting against preprod, now that the real commands are known
 
 Jamie's instruction: *assert against every deployed artefact, preprod included, and against
 built output rather than a config flag.*
 
-Revision 1 proposed building twice (`vite build` and `vite build --mode preprod`) and comparing.
-The review showed that is a tautology dressed as a test: no `.env.preprod` exists, `mode` and
-`import.meta.env` appear nowhere in `src/` or the configs, so the two builds are identical *by
-construction* and the assertion can never go red. It was also unimplementable — both write to
-`dist/client` with no `--outDir`, so the second overwrites the first.
+Jamie supplied the Cloudflare commands on 2026-08-19, which closes the question revision 2 had
+to leave open. Production builds with `npm install && npm run build`. **Pre-prod's version step
+builds with `CLOUDFLARE_ENV=preprod npm run build`**, then applies the preprod migrations and
+uploads a version.
 
-The honest position is that **preprod and production are one artefact**, and the useful test is
-the one that proves that rather than assuming it. So:
+So **preprod is not the same command.** `CLOUDFLARE_ENV=preprod` is a real input that
+`@cloudflare/vite-plugin` reads. That kills the review's H1 objection — the comparison is no
+longer a tautology, because there is now something that could genuinely make the two artefacts
+differ. It also shows revision 1 was pulling the wrong lever: `--mode preprod` was never how
+this repo selects an environment.
 
-- Every absence assertion runs against the built `dist/` — the artefact both environments
-  deploy. Built output, never a config flag, exactly as instructed.
-- A second assertion pins the *sameness*: `package.json` has exactly one script that produces
-  client assets, and `wrangler.jsonc`'s `env.preprod` overrides neither `main` nor `assets`. If
-  anyone ever gives preprod its own build or its own asset root, that goes red and the single
-  assertion above stops being sufficient.
+**Both builds were run on this Pi, 2026-08-19, and diffed.** What `CLOUDFLARE_ENV=preprod`
+changes, in full:
 
-**One thing I cannot check from here, and it needs a yes before build starts.** The preprod build
-command lives in the Cloudflare "Workers Builds" dashboard, not in this repo. Everything above
-assumes it is the same `npm run build`. Flagged below as the one blocking question.
+| artefact | differs? |
+|---|---|
+| `dist/client/assets/**` (the CSS and JS) | **byte-identical** |
+| `dist/clumeral_game/index.js` (the Worker code) | **byte-identical** |
+| `dist/client/sw.js` | one line — `CACHE_NAME`, which is `Date.now()` from `vite.config.ts`, not the environment |
+| `dist/clumeral_game/wrangler.json` | **the only real difference** — `ENVIRONMENT`, the two D1 database ids, and `triggers.crons` emptied |
+
+It changes bindings and vars. It changes **no code and no stylesheet**. That is the answer that
+matters here: the client CSS and JS are the only places the overlay, the middleware or an
+edit-mode utility could hide, and they are provably the same file in both environments.
+
+So the assertion is genuinely two builds, and it is implementable:
+
+- CI runs `npm run build`, snapshots `dist/` aside, then runs `npm run build:preprod` — added to
+  `package.json` as `CLOUDFLARE_ENV=preprod npm run build` so it matches Cloudflare's own
+  command exactly and cannot drift from it.
+- The spec reads both directories from disk rather than shelling out to build, so it stays a
+  fast unit test in the `sw-precache.spec.ts` mould, and skips loudly if either is absent.
+- **Every absence assertion runs against both.** So the answer to the instruction is literal:
+  the overlay, the middleware, the edit-mode stylesheet and the edit-mode-only utilities are
+  asserted gone from the production artefact *and* the preprod artefact, from built output,
+  never from a config flag.
+- Plus a parity assertion: client assets and Worker code byte-identical across the two, `sw.js`
+  compared ignoring the `CACHE_NAME` line, `wrangler.json` excluded by name as the one file the
+  environment legitimately changes. If anyone ever makes `CLOUDFLARE_ENV` change emitted code,
+  that goes red and says so.
+
+Cost: one extra full build in the gate, roughly 40 seconds.
+
+Noted in passing, not acted on: preprod's `wrangler.json` carries `triggers.crons: []`, which
+independently confirms CLAUDE.md's claim that pre-prod versions never run `scheduled()` and so
+cannot write to the shared `PUZZLES` namespace.
 
 ### D9 — the assertions have to actually run
 
@@ -365,10 +392,11 @@ applies in serve mode only and no committed script changes.
    field in items 93-96 changes** — this adds the naming rule the contract was missing, and
    `/fold` needs it to sort.
 4. **CI gains a build step** so the safety assertions run at all (D9). About 40 seconds.
-5. **Blocking question — is the Cloudflare preprod build command the same `npm run build`?** It
-   is set in the Workers Builds dashboard, which I cannot read. D8 rests on it, and it is the
-   one thing that would make the preprod half of your instruction untrue without anything
-   noticing.
+5. **Answered 2026-08-19, and it was not the same command.** Preprod runs
+   `CLOUDFLARE_ENV=preprod npm run build`. I built both and diffed them: it changes bindings and
+   vars only, and the client CSS and JS come out byte-identical, so nothing about the plan's
+   shape changes. But the safety test now genuinely builds twice and asserts against both
+   artefacts, which is what was asked for and what revision 2 could not honestly promise. D8.
 
 ---
 
@@ -451,14 +479,19 @@ go red before it counts (item 86).
     module paths and identifiers do not, which is why revision 1's "no `src/edit-mode/` marker"
     assertion would have passed even with the overlay bundled.
   - `dist/` contains no `tailwind-edit` asset and no `.edit-sessions` reference.
-  - **preprod parity (D8):** `package.json` has exactly one script producing client assets, and
-    `wrangler.jsonc`'s `env.preprod` overrides neither `main` nor `assets` — so the artefact
-    asserted above is the one both environments deploy.
-  - Skips with a loud message if `dist/` is absent.
+  - **every assertion above runs against both artefacts** — the production build and the
+    `CLOUDFLARE_ENV=preprod` build (D8).
+  - **preprod parity:** `dist/client/assets/**` and `dist/clumeral_game/index.js` are
+    byte-identical across the two builds; `sw.js` matches ignoring the `CACHE_NAME` line;
+    `wrangler.json` is excluded, being the one file the environment legitimately changes.
+  - Skips with a loud message if either build directory is absent.
+- Add the `package.json` script `build:preprod` — `CLOUDFLARE_ENV=preprod npm run build`, the
+  same command Cloudflare's version step runs.
 - Test `tests/css-leak.spec.ts` — item 101's general assertion, written in full and
   `describe.skip`ped, with #312, the reason and the current failing count in the skip message
   (D7). Not a gate today; one word turns it on.
-- Modify `.github/workflows/ci-smoke.yml` — `npm run build` before `npm test` (D9).
+- Modify `.github/workflows/ci-smoke.yml` — before `npm test`: `npm run build`, snapshot `dist/`
+  aside, then `npm run build:preprod` (D8, D9).
 
 ### Stage B — the catalogue and search (Unit 2)
 
@@ -651,7 +684,8 @@ go red before it counts (item 86).
    actually hurts.
 2. **The iPhone measurement (A3) could say "narrow it".** That is why it is third rather than
    last. The fallback is measured: 0.43 MiB, the four stepper families.
-3. **Preprod's build command is assumed, not read** (D8, flag 5). Blocking.
+3. ~~Preprod's build command is assumed, not read.~~ **Closed 2026-08-19** — Jamie supplied it,
+   both builds were run and diffed, and D8 is rewritten against the measured result.
 4. **`@source not` is load-bearing for item 12.** If removed, edit-mode test literals go straight
    to the production stylesheet. A4's leak gate catches it on the next build.
 5. **D2's family map is generated, so a Tailwind change to emitted properties changes it
