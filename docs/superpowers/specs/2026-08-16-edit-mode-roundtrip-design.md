@@ -1,7 +1,16 @@
 # Edit-mode round-trip — design
 
 **Date:** 2026-08-16
-**Status:** approved in design, not yet planned or built
+**Status:** superseded in detail by the brief — `docs/work/2026-08-18-edit-mode-roundtrip-brief.md`
+
+> **Read the brief, not this, for anything the two disagree on (2026-08-19).** This spec is the
+> design of record and its rationale still stands, but three things moved during briefing:
+> edit mode is **dev-server-only** (preprod is a deployed Worker with no filesystem, so Done
+> would have had nowhere to write); Dave views a **replayed session over a Cloudflare tunnel**,
+> not just the PR preview; and the hybrid variant decision is **re-sequenced, not reversed** —
+> the pre-built stylesheet ships first and is measured on Jamie's iPhone, and the on-demand
+> rebuild machinery is built only if that measurement calls for it. The brief also freezes the
+> session-file schema (its items 93-96), which is the interface `/fold` is written against.
 **Repos touched:** `clumeral-game` (everything below), `pi-dev-bot` (the `/fold` command only)
 
 ## Problem
