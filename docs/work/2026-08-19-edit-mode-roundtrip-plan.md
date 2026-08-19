@@ -6,12 +6,15 @@
 **Design:** `docs/superpowers/specs/2026-08-16-edit-mode-roundtrip-design.md`
 **Spike:** `docs/superpowers/notes/2026-08-18-tailwind-full-build-spike.md`
 **Scope:** Units 1-4. Unit 5 (`/fold`) is `pi-dev-bot`'s and is not planned here.
+**Revision:** 2, after the `da-plan` review of 2026-08-19 (7 High, 10 Medium, 7 Low — all
+Medium-and-above fixed; see [Review fixes](#review-fixes) for what changed and why).
 
-This plan settles **how**. It does not reopen any product decision. Where it had to choose
-something the brief left unspecified, that choice is called out in
-[Decisions this plan makes](#decisions-this-plan-makes). Where it departs from the brief or
-adds to a published contract, that is in [Flagged to Jamie](#flagged-to-jamie) and needs a
-word before build starts.
+This plan settles **how**. It does not reopen any product decision. Choices the brief left to
+planning are in [Decisions](#decisions). Departures from the brief and additions to a published
+contract are in [Flagged to Jamie](#flagged-to-jamie).
+
+Every mechanism below that the plan calls load-bearing was **run on this Pi before it was
+written down**. Where a number appears, it was measured on 2026-08-19 against this tree.
 
 ---
 
@@ -20,8 +23,8 @@ word before build starts.
 From brief item 116:
 
 - Units 1-4, **dev server only**. Nothing reaches production or preprod (items 6, 7).
-- Pre-built **non-colour** stylesheet. **No on-demand rebuild half** — it is a separate brief
-  if the iPhone measurement calls for it (items 44, 114).
+- Pre-built **non-colour** stylesheet. **No on-demand rebuild half** — separate brief if the
+  iPhone measurement calls for it (items 44, 114).
 - **No colours and no variants offered.** Anything outside the built set is caught and
   reported, never silent (item 99).
 - The session file schema (items 93-96) is a **contract with `pi-dev-bot`** and is not
@@ -29,7 +32,7 @@ From brief item 116:
 - `/fold` renames a consumed session to `*.json.folded`; the game reads only bare `*.json`
   (item 92).
 - The safety assertion is *"every class in the built stylesheet appears in `src/` or
-  `index.html`"* — no sentinel (items 101, 102).
+  `index.html`"* — no sentinel — and **lands red until #312 is fixed** (items 101, 102).
 - Simplicity is the tie-break (item 82). Jamie is the tester (items 89, 90).
 
 ---
@@ -40,9 +43,8 @@ Jamie's instruction, 2026-08-19: *the pre-built stylesheet has to reach the iPho
 possible, because it is the measurement that decides whether the on-demand half gets built at
 all. Sequence it so that lands before anything that depends on the answer.*
 
-So the plan is deliberately front-loaded. **Stage A is three small tasks and ends at a gate.**
-Nothing in Stage A depends on the overlay, the catalogue, the panel or the middleware. At the
-end of it Jamie can open the dev server on his phone and get an answer.
+**Stage A is three tasks and ends at the gate.** Nothing before it depends on the overlay, the
+catalogue, the panel or the middleware.
 
 What the answer changes downstream:
 
@@ -52,83 +54,76 @@ What the answer changes downstream:
 | the **full** set (4.99 MiB) is also comfortable | catalogue becomes "everything" (brief item 46), colours are offered, and the follow-up brief for the on-demand half is never needed |
 | non-colour set struggles | Stage B narrows to the four stepper families (0.43 MiB, brief item 44), and the on-demand half gets its own brief |
 
-Because the middle row is a real possibility and costs nothing to test, **Task A2 ships both
-stylesheets behind one query flag**, so Jamie answers the whole question in one sitting rather
-than in two rounds a day apart.
+Because the middle row is real and costs nothing to test, **Task A2 ships both stylesheets as
+two separate entries**, so Jamie answers the whole question in one sitting.
 
 ---
 
-## Measured on the Pi, 2026-08-19, before writing this
-
-Re-run of the spike's numbers against the exact filter this plan uses, so the plan's central
-figures are observed rather than carried forward.
+## Measured on the Pi, 2026-08-19
 
 | set | classes | unminified | gzipped |
 |---|---|---|---|
 | non-colour (this plan's default) | **8,397** | **1,212,459 bytes (1.16 MiB), 33,702 lines** | **72 kB** |
 | everything (spike) | 23,031 | 5,244,578 bytes (5.24 MB) | 193 kB |
 
-The non-colour count reproduces brief item 44's 8,397 exactly, which confirms the filter in
-Task A2 is the same one that produced the brief's table.
+8,397 reproduces brief item 44 exactly, which confirms Task A2's filter is the one that produced
+the brief's table.
 
-**Gzip changes the shape of the question.** The spike's cost 1 (uncompressed dev serving) is
-fixed in Task A2, and once it is, even the *full* set is 193 kB on the wire. So transfer is no
-longer the thing being measured — parse and style-recalc on the phone is, and that is the only
-unknown left.
+**Gzip changes the shape of the question.** Once the spike's cost 1 is fixed (Task A2), even the
+*full* set is 193 kB on the wire. Transfer is no longer what is being measured — parse and
+style-recalc on the phone is, and that is the only unknown left.
 
 ---
 
 ## Module layout
 
-Two halves, deliberately in two places, because one runs in Node and one runs in a browser.
-
 ```
 edit-mode/                        Node. Imported ONLY by vite.config.ts.
   plugin.ts                       the Vite plugin (apply: 'serve')
-  classlist.ts                    design-system class list + the colour predicate
+  classlist.ts                    design-system class list, colour predicate, family map
   session-write.ts                POST handler -> .edit-sessions/<ts>.json
   session-read.ts                 GET handler -> unconsumed sessions, timestamp order
   readonly-proxy.ts               the second port (GET/HEAD only)
-  gzip.ts                         compression middleware for the dev stylesheet
+  gzip.ts                         compression for the dev stylesheets
   html.ts                         the index.html rewrite, as a pure function
 
 src/edit-mode/                    Browser. Imported by NOTHING in the game.
   overlay.ts                      entry — the only file the injected <script> names
   panel.ts                        shadow-root UI (hand-written CSS, item 65)
   select.ts                       selection, breadcrumb, nav arrows
-  families.ts                     family + colour classification (pure)
+  families.ts                     collision rules over the generated family map (pure)
   catalogue.ts                    catalogue + search (pure)
   patches.ts                      patch model + session JSON (pure)
   project.ts                      patch set -> DOM. Shared by editing and by replay.
   history.ts                      back ownership + undo (pure core)
   session-store.ts                sessionStorage persistence
 
-src/tailwind-edit.css             dev-only stylesheet entry (3 lines)
+src/tailwind-edit.css             dev-only entry, non-colour set
+src/tailwind-edit-all.css         dev-only entry, everything — for the A3 gate only
 .edit-mode/classlist.txt          generated, gitignored
+.edit-mode/classlist-all.txt      generated, gitignored
+.edit-mode/families.json          generated, gitignored
 .edit-sessions/                   generated, gitignored
 ```
 
-Why the split rather than one directory: `tsconfig.json` includes `src/**` with DOM libs and
-no `@types/node`, so Node code under `src/` would not typecheck. Keeping the Node half at the
-repo root avoids adding `@types/node` and changing how every existing file typechecks, for no
-benefit. (There is no `typecheck` script in CI today, so this is about editors, not the gate —
-but it is free to get right.)
+Two directories because one half runs in Node and one in a browser, and keeping them apart
+means `src/edit-mode/` can be `@source not`-excluded as a single unit without also excluding
+build tooling. (The earlier revision justified the split on `tsconfig.json`; the review showed
+that reasoning was wrong — TypeScript follows the import graph and `@types/node` is already
+present. The split stands on the exclusion argument, which is real.)
 
-**Nothing in `src/` imports `src/edit-mode/`.** That is brief item 60's guarantee: there is no
-dev-only condition for a bundler to strip, because the game never names edit mode. `vite build`
-starts from `index.html` and reaches neither directory.
+**Nothing in `src/` imports `src/edit-mode/`.** That is brief item 60's guarantee: no dev-only
+condition for a bundler to strip, because the game never names edit mode. `vite build` starts
+from `index.html` and reaches neither directory.
 
 ---
 
-## Decisions this plan makes
+## Decisions
 
-These are "how" questions the brief left to planning. None of them changes agreed behaviour.
+### D1 — the colour predicate
 
-### D1 — the colour predicate, and what it costs
-
-Brief item 43 said colour utilities are identified by *"carrying opacity modifiers"*. Tested on
-this build, that is nearly right and needs one word added. `getClassList()` returns
-`[name, { modifiers }]`, and:
+Brief item 43 said colour utilities are identified by *"carrying opacity modifiers"*. Tested,
+that needs one word added. `getClassList()` returns `[name, { modifiers }]`:
 
 ```
 text-sm        modifiers: ["tight","snug","normal","relaxed","loose"]   <- line heights
@@ -137,95 +132,133 @@ border-2       modifiers: []
 border-accent  modifiers: ["0","5", ... ,"100"]
 ```
 
-So the predicate is **"has modifiers, and every modifier is numeric"** — not "has modifiers".
-With that word, it reproduces the brief's 8,397 exactly, and it splits `text-sm` from
-`text-text` and `border-2` from `border-accent` from Tailwind's own data, which is what item 43
-asked for. One predicate does both jobs: it filters the stylesheet and it classifies for the
-replace map, so the two cannot drift apart.
+The predicate is **"has modifiers, and every modifier is numeric"** — not "has modifiers". With
+that word it reproduces 8,397 exactly.
 
-**The cost, which is real and is not in the brief:** shadow utilities take an opacity modifier
-too, so they classify as colour and drop out of the non-colour set. Verified:
+**The cost, which is not in the brief:** shadow utilities take an opacity modifier, so they
+classify as colour and drop out of the non-colour set. Verified:
 
 ```
 shadow-box COLOUR   shadow-box-active COLOUR   shadow-key COLOUR
 shadow-lg  COLOUR   shadow-md COLOUR   shadow-sm COLOUR   shadow-none non-colour
 ```
 
-So under "no colours", **edit mode offers no shadows at all**, including the project's own
-`shadow-box` and `shadow-key`. Item 99 makes that visible rather than silent — search will not
-offer them and the raw field will report them missing — but it is a consequence Jamie would not
-predict from the words "no colours". Flagged below.
+So under "no colours", **edit mode offers no shadows at all**, including our own `shadow-box`
+and `shadow-key`. Item 99 makes it visible rather than silent. Flagged below.
 
-### D2 — the patch set is the truth; the DOM is a projection
+### D2 — the family map is derived from CSS properties, not from prefixes
 
-Brief item 67 says back must not let the router re-render and wipe edits, and asks planning to
-establish *how* that is guaranteed given `src/router.ts:199` registers its `popstate` listener
-at boot.
+Brief item 38 calls the family map *"the single most likely source of silent wrongness"*, and
+the review was right that revision 1 left it as one undefined sentence. Tailwind's own data
+cannot supply it: `ClassMetadata` is `{ modifiers: string[] }` and nothing more. And the
+obvious prefix rule is **wrong** — `text-sm`, `text-center` and `text-2xl` are all non-colour
+with prefix `text`, so a prefix map would delete a font size when you centre text.
 
-Registration order cannot be the guarantee. `popstate` is dispatched **on `window`**, and for
-listeners on the event target itself the DOM spec runs capture and bubble listeners in
-registration order — so `{capture: true}` buys nothing and `stopImmediatePropagation()` only
-stops listeners registered *after* ours. Getting in first would work, but it depends on script
-evaluation order staying as it is forever, and the failure is silent.
+**A utility's family is the set of CSS properties it declares.** Two classes collide when their
+property sets are *exactly equal*; anything else coexists. The map is built by compiling the
+class list once — the same compile the stylesheet already does — and parsing each rule's
+declarations, dropping Tailwind's internal `--tw-*` custom properties.
 
-So the plan does not rely on it alone. **`project.ts` can rebuild the whole edited DOM from the
-patch set at any moment.** Back pops one entry from the patch set and re-projects. If the
-router re-rendered, re-projection puts the remaining edits back; if it did not, re-projection is
-a no-op. Correctness stops depending on listener order.
+Run on this tree, 2026-08-19:
 
-The overlay is still injected ahead of the app entry so it registers first and the re-render
-does not happen in practice — belt and braces, cheap, and it keeps Jamie's manual check (item
-90.1, "the screen does not reload") honest.
+```
+mt-4            margin-top                    p-4             padding
+mt-6            margin-top                    px-6            padding-inline
+px-4            padding-inline                py-2            padding-block
+text-sm         font-size,line-height         text-center     text-align
+text-2xl        font-size,line-height         text-accent     color
+border-2        border-style,border-width     border-solid    border-style
+border-accent   border-color                  rounded-lg      border-radius
+w-96            width                         h-96            height
+```
 
-This costs nothing extra, because re-projection is the same code Dave's replay needs (item 21).
-One mechanism, two users.
+Every case the brief and the review raised falls out correctly and without a hand-written list:
+
+- `mt-4` + `mt-6` → equal → **replace** (item 38).
+- `p-4` + `px-6` → `padding` vs `padding-inline` → **coexist**, which is item 40's ruling, now
+  derived rather than special-cased.
+- `px-4` + `px-6` → equal → **replace** — the genuine same-family collision item 40 kept.
+- `text-sm` + `text-center` + `text-accent` → three different sets → **coexist**. The prefix
+  rule would have destroyed the font size.
+- `border-2` + `border-solid` + `border-accent` → three different sets → **coexist** (item 43).
+
+Exact-equality is deliberately strict: `border-2` is a *superset* of `border-solid`, and under
+a subset rule adding one would eat the other. Under equality both stay, CSS order settles
+`border-style` to the same value either way, and nothing is lost. Item 42's principle — record
+what Jamie did, do not be clever on his behalf — points the same way.
+
+The map is generated, gitignored and served with the catalogue, so it cannot drift from the
+stylesheet it describes.
 
 ### D3 — the session filename format
 
-Brief item 93 specifies `.edit-sessions/<timestamp>.json` and item 51 requires replay in
-timestamp order, but nothing states the timestamp's format. `/fold` is being written now and has
-to glob and sort these, so the plan fixes it:
+Item 93 specifies `.edit-sessions/<timestamp>.json` and item 51 requires replay in timestamp
+order, but nothing states the format. `/fold` is being written now and has to glob and sort
+these, so the plan fixes it:
 
 ```
 .edit-sessions/2026-08-19T22-41-07-221Z.json
 ```
 
-`createdAt` with `:` and `.` replaced by `-`. Chosen so it sorts lexicographically (which is
-therefore also chronologically), is safe on any filesystem, and needs no parsing to order. This
-**adds to the published contract rather than changing a field** — flagged below so `/fold` is
-written against it.
+`createdAt` with `:` and `.` replaced by `-`. Sorts lexicographically (therefore
+chronologically), safe on any filesystem, needs no parsing to order. This **adds to the
+published contract; it changes no field.** Flagged below.
 
-### D4 — the read-only port, and how the overlay knows which it is on
+### D4 — the patch set is the truth; the DOM is a projection
 
-Brief item 26 settles the mechanism (a second listener with no write handler) and item 103 says
-that origin serves the overlay in replay-only mode — no pencil, no panel. The proxy therefore
-does two things: it refuses anything that is not GET or HEAD with a 405, and it rewrites the
-injected overlay tag to carry `data-edit-mode="replay"`. The overlay reads that attribute and
-never builds the panel.
+Item 67 asks planning to establish how back is guaranteed not to let the router re-render and
+wipe edits, given `src/router.ts:199` registers its `popstate` listener at boot.
+
+Registration order cannot be the guarantee. `popstate` is dispatched **on `window`**, and for
+listeners on the event target itself the DOM spec runs capture and bubble listeners in
+registration order — so `{capture: true}` buys nothing and `stopImmediatePropagation()` only
+stops listeners registered after ours.
+
+Three things together, and no one of them is relied on alone:
+
+1. **Every entry is pushed at the current URL.** `history.pushState({ clumeralEdit: n }, '',
+   location.href)`. So even if the router does run, `resolveRoute(location.pathname, ctx())`
+   resolves the screen already on display — a re-render of the same screen, never a navigation
+   to a different one. (Revision 1 never said what pushed the entries or what URL they carried;
+   the review was right that this was the hole.)
+2. **`project.ts` can rebuild the edited DOM from the patch set at any moment.** Back pops one
+   entry and re-projects. If the router re-rendered, re-projection puts the remaining edits
+   back; if it did not, re-projection is a no-op. Correctness stops depending on listener order.
+3. **The overlay is injected ahead of the app entry** so it registers first and the re-render
+   does not happen in practice — which keeps Jamie's manual check (item 90.1, "the screen does
+   not reload") honest rather than merely survivable.
+
+Point 2 costs nothing extra: it is the same code Dave's replay needs (item 21). One mechanism,
+two users.
+
+### D5 — the read-only port, and how the overlay knows which origin it is on
+
+Item 26 settles the mechanism; item 103 says that origin serves the overlay in replay-only mode.
+The proxy refuses anything that is not GET or HEAD with a 405, and rewrites the injected overlay
+tag to carry `data-edit-mode="replay"`. The overlay reads it and never builds the panel.
 
 The mode comes from **which listener served the page**, not from a header, so nothing Dave's
-browser can send changes it. That is item 25's trap closed: `cloudflared` making Dave's traffic
-look local cannot matter, because the tunnel port has no write handler to reach.
+browser can send changes it. That closes item 25's trap: `cloudflared` making Dave's traffic look
+local cannot matter, because the tunnel port has no write handler to reach. If the dev server is
+down the proxy answers 503 rather than failing to start (item 107).
 
-If the dev server is down, the proxy answers 503 rather than failing to start (item 107).
+### D6 — why `src/tailwind.css` gets three lines
 
-### D5 — where the CSS-leak guard has to sit, and why `src/tailwind.css` gets three lines
+This is the one place the plan touches an existing file, and item 55 says not to.
 
-This is the one place the plan touches an existing file, and brief item 55 says not to. The
-reason it has to:
+Tailwind v4 scans everything git does not ignore. That is issue #312, and it is why `mt-7` and
+`row-7447` are in the production stylesheet today. **Edit-mode source and its tests will contain
+class-name literals** — a family-map test asserting `mt-4` against `mt-6`, for instance — and
+every one would land in production CSS. Item 12 says this work must not make #312 worse. Without
+an exclusion it makes it worse by design.
 
-Tailwind v4 scans everything in the project that git does not ignore. That is issue #312, and
-it is why `mt-7` and `row-7447` are in the production stylesheet today. **Edit-mode source and
-its tests will contain class-name literals** — a family-map test asserting `mt-4` against
-`mt-6`, for instance — and every one of those would land in the production CSS. Brief item 12
-says this work must not make #312 worse. Without an exclusion, it makes it worse by design.
+I hit this by accident while measuring, which is the cleanest possible demonstration: a
+generated class list left in the working tree un-gitignored took the production stylesheet from
+**51,218 bytes to 1,412,751** in a single `npm run build`. That is item 59's stated failure mode,
+observed.
 
-I hit this by accident while measuring for this plan, which is the cleanest possible
-demonstration: a generated class list left in the working tree un-gitignored took the production
-stylesheet from **51,218 bytes to 1,412,751** in a single `npm run build`. That is brief item
-59's stated failure mode, observed rather than reasoned about.
-
-So `src/tailwind.css` gains exactly three lines:
+So `src/tailwind.css` gains exactly three lines, in **Task A1, before any class literal is
+committed**:
 
 ```css
 @source not "./edit-mode";
@@ -233,228 +266,303 @@ So `src/tailwind.css` gains exactly three lines:
 @source not "../tests";
 ```
 
-`@source not` only ever **removes** rules from the production stylesheet, so it cannot break the
-shipped app by adding something. Tested on this tree: excluding `docs/` and `tests/` drops 26
-selectors and 2,459 bytes, and **every one of the 26 is absent from `src/` and `index.html`** —
-they exist solely because a document mentions them. (`shadow-key` looks like a false positive
-but is not: it appears in `src/` only as the token name `--shadow-key`, never as a class.)
+`@source not` only ever **removes** rules, so it cannot break the shipped app by adding
+something. Tested: excluding `docs/` and `tests/` drops 26 selectors and 2,459 bytes, and every
+one is absent from `src/` and `index.html` — they exist solely because a document mentions them.
+(`shadow-key` looks like a false positive but is not: it appears in `src/` only as the token name
+`--shadow-key`, never as a class.)
 
-The plan does **not** exclude `docs/`. That is #312's job on #312's branch (item 12).
+**The spike's own fix is deliberately not taken.** Spike note line 214 suggests narrowing the
+whole scan to `@source "./src"` plus `index.html` — one line, no exclusion list, and it would
+close #312 outright. Item 82 makes simplicity the tie-break, so it deserves an answer rather
+than silence: it is rejected here because it is #312's fix, item 12 puts #312 out of scope, and
+the spike itself says it "would want its own check that nothing real gets dropped" — a check
+this branch is not scoped to build. Three narrow exclusions are the minimum that satisfies item
+12 without doing #312's job badly.
 
-### D6 — making the safety assertion green today without weakening it
+### D7 — the safety assertions, and honouring item 102 literally
 
-Brief item 101 wants *"every class selector in the built stylesheet appears literally in `src/`
-or `index.html`"*, and item 102 says it lands **red** until #312 is fixed. A permanently red
-test in CI blocks every pull request, so it cannot land red literally.
+Item 101 wants *"every class selector in the built stylesheet appears literally in `src/` or
+`index.html`"*, and item 102 says it **lands red** until #312 is fixed.
 
-The plan writes item 101's assertion exactly as specified, with one addition: a committed
-**allowlist of the classes that reach production only via prose in `docs/`** — 26 entries today,
-generated once, each one a piece of #312's debt made countable in the repo rather than described
-in a document. The test is green today, goes red the moment any *new* class leaks in from
-anywhere, and #312's branch deletes the allowlist file and the test turns green on its own
-terms.
+Revision 1 tried to make that green with an allowlist of docs-only classes. The review killed
+it, correctly and on two counts: the allowlist is far larger than the 26 figure suggested
+(measured against `src/` and `index.html`, well over a hundred selectors need escaping-aware
+matching before the real count is even knowable), its sources include `.planning/` as well as
+`docs/`, and — the deciding one — **making it green overrides a closed brief item without
+saying so.** Item 102 chose red deliberately.
 
-This is stronger than a skipped test and weaker than nothing. It catches an edit-mode leak on
-the first build.
+So the plan does what item 102 says, and splits the two jobs that revision 1 had conflated:
 
-### D7 — asserting against preprod as well as production
+**The gate that runs — a targeted, exact, green-today leak assertion.** Collect every
+class-shaped token in `src/edit-mode/`, `edit-mode/` and `tests/edit-mode-*.spec.ts`. None may
+appear as a selector in the built CSS unless it also appears elsewhere in `src/` or
+`index.html`. This is precisely "edit mode did not leak", it is green on this tree, it goes red
+the moment the `@source not` lines are removed or a new leak appears, and it does not wait on
+#312.
+
+**Item 101's general assertion — written, committed, and `describe.skip`ped** with the exact
+reason, the issue number and the current failing count in the skip message. It is not a gate
+today, and #312's branch turns it on by deleting one word. That is item 102's "lands red and is
+the first thing #312's branch turns green", expressed in a way that does not block every pull
+request in the meantime.
+
+### D8 — asserting against preprod
 
 Jamie's instruction: *assert against every deployed artefact, preprod included, and against
 built output rather than a config flag.*
 
-Preprod and production are one Worker and, as far as this repo can see, one build command. The
-brief assumed that (item 113, L2). The plan **tests it instead of assuming it**: a
-`build:preprod` script runs `vite build --mode preprod`, and the safety spec asserts the client
-CSS and JS assets are byte-identical to the production build's, then runs every absence
-assertion against both. If Cloudflare ever builds preprod differently, that test is what says so.
+Revision 1 proposed building twice (`vite build` and `vite build --mode preprod`) and comparing.
+The review showed that is a tautology dressed as a test: no `.env.preprod` exists, `mode` and
+`import.meta.env` appear nowhere in `src/` or the configs, so the two builds are identical *by
+construction* and the assertion can never go red. It was also unimplementable — both write to
+`dist/client` with no `--outDir`, so the second overwrites the first.
 
-Cost: one extra full build in CI, roughly 40 seconds.
+The honest position is that **preprod and production are one artefact**, and the useful test is
+the one that proves that rather than assuming it. So:
 
-**One thing I cannot check from here, and it needs a yes from Jamie.** The preprod build command
-lives in the Cloudflare "Workers Builds" dashboard, not in this repo, so I am assuming it is the
-same `npm run build`. If it is not, the parity assertion is testing a build nobody deploys.
-Flagged below.
+- Every absence assertion runs against the built `dist/` — the artefact both environments
+  deploy. Built output, never a config flag, exactly as instructed.
+- A second assertion pins the *sameness*: `package.json` has exactly one script that produces
+  client assets, and `wrangler.jsonc`'s `env.preprod` overrides neither `main` nor `assets`. If
+  anyone ever gives preprod its own build or its own asset root, that goes red and the single
+  assertion above stops being sufficient.
 
-### D8 — the assertions have to actually run
+**One thing I cannot check from here, and it needs a yes before build starts.** The preprod build
+command lives in the Cloudflare "Workers Builds" dashboard, not in this repo. Everything above
+assumes it is the same `npm run build`. Flagged below as the one blocking question.
+
+### D9 — the assertions have to actually run
 
 `npm test` runs on a clean checkout in `ci-smoke.yml`, before Playwright builds anything. So
 every build-output assertion in the repo currently **skips** in CI — including
 `tests/sw-precache.spec.ts`, which has been silently skipping since it was written.
 
-The plan adds a build step to `ci-smoke.yml` before `npm test`. Verified locally: with `dist/`
-present, all 37 files and 751 tests pass and `sw-precache.spec.ts` runs its 5 tests for real
-rather than skipping. So this fixes an existing hole as a side effect, at the cost of one build
-in the gate.
+The plan adds a build step to `ci-smoke.yml` before `npm test`. Verified: with `dist/` present,
+all 37 files and 751 tests pass and `sw-precache.spec.ts` runs its 5 assertions for real. Fixes
+an existing hole as a side effect, at the cost of one build in the gate.
+
+### D10 — the dev server has to be reachable from the phone
+
+`npm run dev` is bare `vite dev` and `vite.config.ts` sets no `server.host`, so Vite binds to
+localhost and **Jamie's phone cannot reach the Pi over Tailscale at all**. The A3 gate is the
+whole point of the sequencing and it could not have been run. `preview` already carries
+`--host`; `dev` does not. Task A2 adds `server.host: true` in the plugin's `config` hook, so it
+applies in serve mode only and no committed script changes.
 
 ---
 
 ## Flagged to Jamie
 
-Five things. Four are consequences, one is a question I cannot answer from here.
-
 1. **No shadows in edit mode.** "No colours" turns out to mean no `shadow-lg`, no `shadow-box`,
    no `shadow-key` — Tailwind's shadow utilities take an opacity modifier and so classify as
-   colour (D1). Search will not offer them and the raw field reports them missing. Says so here
-   rather than letting you find it by tapping.
-2. **`src/tailwind.css` gets three `@source not` lines**, against brief item 55's "no existing
-   module changes". Reason in D5: without it, edit mode's own test files ship their class
-   literals to the production stylesheet, which item 12 forbids. `@source not` can only remove
-   rules, never add them, and the 26 selectors it removes on this tree are used nowhere in the
-   app.
-3. **The session filename format is now fixed** at `2026-08-19T22-41-07-221Z.json` (D3). The
-   schema left `<timestamp>` unspecified and `/fold` has to sort these. **No field in items
-   93-96 changes** — this adds a naming rule the contract was missing.
-4. **CI gains a build step and one extra build** (D7, D8), so the safety assertions run at all
-   and cover preprod. About a minute on the gate.
-5. **Question — is the Cloudflare preprod build command the same `npm run build`?** It is set in
-   the Workers Builds dashboard, which I cannot read. Everything in D7 assumes yes.
+   colour (D1). Search will not offer them and the raw field reports them missing.
+2. **`src/tailwind.css` gets three `@source not` lines**, against item 55. Reason in D6: without
+   it, edit mode's own test files ship their class literals to the production stylesheet, which
+   item 12 forbids. `@source not` can only remove rules, and the selectors it removes on this
+   tree are used nowhere in the app.
+3. **The session filename format is now fixed** at `2026-08-19T22-41-07-221Z.json` (D3). **No
+   field in items 93-96 changes** — this adds the naming rule the contract was missing, and
+   `/fold` needs it to sort.
+4. **CI gains a build step** so the safety assertions run at all (D9). About 40 seconds.
+5. **Blocking question — is the Cloudflare preprod build command the same `npm run build`?** It
+   is set in the Workers Builds dashboard, which I cannot read. D8 rests on it, and it is the
+   one thing that would make the preprod half of your instruction untrue without anything
+   noticing.
 
 ---
 
 ## Tasks
 
-Each task is one commit, tests first. Brief item numbers in brackets. Every test is reverted
-and watched go red before it counts (item 86).
+One commit each, tests first. Brief item numbers in brackets. Every test is reverted and watched
+go red before it counts (item 86).
 
 ### Stage A — the stylesheet, and the measurement
 
-**A1 — ignore the generated paths.** [108, 59]
-- Modify: `.gitignore` — add `.edit-mode/` and `.edit-sessions/`.
+**A1 — ignore the generated paths, and close the leak before anything can use it.** [108, 59, 12]
+- Modify `.gitignore`: `.edit-mode/`, `.edit-sessions/`.
+- Modify `src/tailwind.css`: the three `@source not` lines (D6).
 - Test `tests/edit-mode-paths.spec.ts`: `git check-ignore -q` succeeds for
-  `.edit-mode/classlist.txt` and `.edit-sessions/x.json`. Asserts the property git enforces,
-  not the text of the file.
-- Why first: the class list is 386 kB of class names, and an un-ignored one puts every class in
-  the project into the production stylesheet (D5, observed).
+  `.edit-mode/classlist.txt` and `.edit-sessions/x.json` — the property git enforces, not the
+  text of the file.
+- **Why this is first, ahead of the gate:** A2 commits files full of class literals (`mt-11`,
+  `-mt-96`, `bg-accent`). Without the exclusions already in place, every one lands in the
+  production stylesheet on the A2 commit, which is what item 12 forbids. Free to order this way,
+  and it delays the gate by nothing.
 
-**A2 — the class list, the colour predicate, and the dev stylesheet.** [44, 43, 99, 110, 106]
+**A2 — the class list, the family map, and the dev stylesheets.** [44, 43, 38, 99, 110, 106]
 - Create `edit-mode/classlist.ts`:
-  - `loadClassList()` — `__unstable__loadDesignSystem(readFileSync('src/tailwind.css'))`,
-    returns `getClassList()`.
-  - `isColourUtility([name, meta])` — `meta.modifiers.length > 0 && every(/^\d+$/)` (D1).
-  - `COMPONENT_CLASSES` — the six, hand-listed here and not converted to `@utility` (item 110):
-    `digit-box`, `burger-btn`, `skip-link`, `toast-msg`, `warn`, `recurring`.
-  - `writeClassList(path, { colours })` — writes one class per line to `.edit-mode/classlist.txt`.
-- Create `src/tailwind-edit.css` — three lines: `@import "./tailwind.css";`,
-  `@source "../.edit-mode/classlist.txt";`, and a comment saying why it is gitignored (the spike
-  proved an explicit `@source` is scanned even when the file is not).
-- Create `edit-mode/gzip.ts` — gzip responses for `/src/tailwind-edit.css`. Spike cost 1; takes
-  1.16 MiB to 72 kB.
-- Create `edit-mode/html.ts` — `rewriteIndexHtml(html, opts)`, pure: swaps the
-  `/src/tailwind.css` link for `/src/tailwind-edit.css` and injects the overlay `<script
-  type="module">` **before** the app entry (D2). Pure so it is testable without a browser.
-- Create `edit-mode/plugin.ts` — `editMode()`, `apply: 'serve'`, `configureServer` +
-  `transformIndexHtml`. Generates the class list on server start. Honours
-  `?edit-classes=all` to regenerate with colours included, so Jamie can compare both sets on the
-  phone without a redeploy (see Sequencing).
+  - `loadDesignSystem()` — the call, verified working on this tree:
+    ```js
+    const ds = await __unstable__loadDesignSystem(
+      readFileSync('src/tailwind.css', 'utf8'), { base: process.cwd() })
+    ```
+    It is **async**, and it needs `base` — without it the call throws. (Revision 1 gave it
+    neither; the review caught it.)
+  - `isColourUtility([name, meta])` — `modifiers.length > 0 && every(/^\d+$/)` (D1).
+  - `buildFamilyMap(classes)` — compile once, parse each rule's declarations, drop `--tw-*`,
+    return `class -> sorted property list` (D2).
+  - `COMPONENT_CLASSES` — the six, hand-listed here rather than converted to `@utility`
+    (item 110): `digit-box`, `burger-btn`, `skip-link`, `toast-msg`, `warn`, `recurring`.
+  - `writeArtefacts()` — writes `classlist.txt`, `classlist-all.txt` and `families.json` into
+    `.edit-mode/` on dev-server start.
+- Create `src/tailwind-edit.css` and `src/tailwind-edit-all.css` — three lines each: the import,
+  one `@source` at the matching list, and a comment recording that the spike proved an explicit
+  `@source` is scanned even when the file is gitignored.
+  **Two entries rather than one mutating query flag** (revision 1's `?edit-classes=all`): the
+  flag regenerated a `@source` file at request time, with no ordering guarantee between the HTML
+  response and the CSS request that followed, so Jamie could have compared the same set against
+  itself and never known. Two static entries have no server state and cannot race.
+- Create `edit-mode/gzip.ts` — gzip for both stylesheets. Spike cost 1; 1.16 MiB → 72 kB.
+- Create `edit-mode/html.ts` — `rewriteIndexHtml(html, opts)`, pure. **At this task it swaps the
+  stylesheet link only.** The overlay `<script>` tag is not injected until C3, because until then
+  `src/edit-mode/overlay.ts` does not exist and every page load at the gate would 404 and log a
+  module error. (Revision 1 injected it in A2; the review caught it.)
+- Create `edit-mode/plugin.ts` — `editMode()`, `apply: 'serve'`, with `config` (sets
+  `server.host: true`, D10), `configureServer` and `transformIndexHtml`.
 - Modify `vite.config.ts` — add `editMode()` to `plugins`.
 - Tests `tests/edit-mode-classlist.spec.ts`:
   - `text-sm` is not a colour; `text-text` is. `border-2` is not; `border-accent` is. [43]
-  - `shadow-box` **is** classified colour — pinned deliberately, because it is D1's surprising
-    consequence and a future change to the predicate should have to argue with this line.
-  - the non-colour set contains `mt-11` and `-mt-96` and `mt-px`, and does not contain
-    `bg-accent`. [44]
-  - the non-colour count is within 8,000-9,000 — a band, not `8397`, so a Tailwind patch
-    release that adds one utility does not turn the suite red for no reason.
+  - `shadow-box` **is** classified colour — pinned deliberately, so a future change to the
+    predicate has to argue with this line (D1).
+  - the non-colour set contains `mt-11`, `-mt-96` and `mt-px`, and does not contain `bg-accent`.
+  - the non-colour count is within 8,000-9,000 — a band, not `8397`, so a Tailwind patch release
+    adding one utility does not turn the suite red for nothing.
   - the catalogue holds every `@theme` spacing step and all six component classes. [85]
-- Tests `tests/edit-mode-html.spec.ts`: the rewrite swaps the stylesheet link, injects the
-  overlay script before the app entry, and leaves the committed `index.html` untouched. [56]
+- Tests `tests/edit-mode-families.spec.ts` — the D2 map, including the cases a prefix rule gets
+  wrong: `mt-4`/`mt-6` equal; `px-4`/`px-6` equal; `p-4`/`px-6` different; **`text-sm`/`text-center`
+  different**; **`border-2`/`border-solid` different**; `text-sm`/`text-accent` different. [38, 40, 43]
+- Tests `tests/edit-mode-html.spec.ts`: the rewrite swaps the stylesheet link, injects **no**
+  script at this stage, and leaves the committed `index.html` untouched. [56]
 
 **A3 — GATE: Jamie measures on the iPhone 16 Pro.** [45, 46, 47, 87]
-- Not a code task. `npm run dev` on the Pi, Jamie loads it over Tailscale, then loads
-  `?edit-classes=all`, and reports whether either or both feel fine.
-- **Stage B does not start until this is answered**, because it sets the catalogue's contents.
+- Not a code task. `npm run dev` on the Pi (now reachable over Tailscale, D10), Jamie loads the
+  page, then loads the all-classes entry, and reports whether either or both feel fine.
+- **Stage B does not start until this is answered** — it sets the catalogue's contents.
 - Recorded in this file when it comes back.
 
-**A4 — the leak guard and the safety assertions.** [7, 12, 59, 101, 102] + Jamie's instruction 2
-- Modify `src/tailwind.css` — the three `@source not` lines (D5).
-- Add `package.json` script `build:preprod`: `vite build --mode preprod`.
-- Create `tests/fixtures/css-prose-allowlist.txt` — the 26 docs-only selectors, generated once,
-  with a header comment naming issue #312 (D6).
-- Test `tests/css-leak.spec.ts`: for the built production CSS, every class selector appears
-  literally in `src/` or `index.html`, or in the allowlist. Skips with a loud message if `dist/`
-  is absent. [101, 102]
+**A4 — the safety assertions.** [7, 59, 101, 102] + Jamie's instruction 2
 - Test `tests/edit-mode-safety.spec.ts`, against **built output, never a config flag**:
-  - production and preprod client CSS/JS assets are byte-identical (D7). `sw.js` is excluded —
-    it carries a `Date.now()` build hash.
-  - neither build's JS contains any `src/edit-mode/` module marker.
-  - neither build's CSS contains `mt-11` or any other class outside the production set — which
-    is `css-leak.spec.ts`'s assertion, run against both artefacts.
+  - **the leak gate (D7):** no class-shaped token from `src/edit-mode/`, `edit-mode/` or
+    `tests/edit-mode-*.spec.ts` appears as a selector in the built CSS unless it also appears
+    elsewhere in `src/` or `index.html`.
+  - the built JS contains none of the overlay's user-visible strings — item 72's *"Nothing on
+    the scale matches."* and item 71's *"Search classes"*. String literals survive minification;
+    module paths and identifiers do not, which is why revision 1's "no `src/edit-mode/` marker"
+    assertion would have passed even with the overlay bundled.
   - `dist/` contains no `tailwind-edit` asset and no `.edit-sessions` reference.
-- Modify `.github/workflows/ci-smoke.yml` — `npm run build && npm run build:preprod` before
-  `npm test` (D8).
+  - **preprod parity (D8):** `package.json` has exactly one script producing client assets, and
+    `wrangler.jsonc`'s `env.preprod` overrides neither `main` nor `assets` — so the artefact
+    asserted above is the one both environments deploy.
+  - Skips with a loud message if `dist/` is absent.
+- Test `tests/css-leak.spec.ts` — item 101's general assertion, written in full and
+  `describe.skip`ped, with #312, the reason and the current failing count in the skip message
+  (D7). Not a gate today; one word turns it on.
+- Modify `.github/workflows/ci-smoke.yml` — `npm run build` before `npm test` (D9).
 
 ### Stage B — the catalogue and search (Unit 2)
 
-**B1 — the catalogue.** [35, 36, 59, 99, 110]
-- Create `src/edit-mode/catalogue.ts`: built from the same generated list the stylesheet used,
-  so **search can only ever offer what the stylesheet contains** (item 99, first half). Served
-  by the plugin as JSON; never committed (item 59).
-- Tests: the catalogue is a strict subset of the class list; no variant is offered (item 98);
-  the six component classes are present. [98, 99, 110]
+**B1 — the catalogue and its endpoint.** [35, 36, 59, 98, 99, 110]
+- Create `src/edit-mode/catalogue.ts`: `createCatalogue(classes, families)` — takes the list as
+  arguments so it is testable without a server, and is built from the same generated list the
+  stylesheet used, so **search can only offer what the stylesheet contains** (item 99).
+- The plugin serves `/__edit-mode/catalogue.json` (list + family map). The read-only proxy
+  forwards it, or Dave's replay origin cannot project (D5).
+- Tests: the catalogue is a strict subset of the generated list; **no variant is offered**
+  (item 98 — `md:mt-4` composed from `getVariants()` is not in any built set and would look
+  broken when tapped); the six component classes are present; nothing is committed (item 59).
 
-**B2 — search.** [35]
-- Create the search function in `src/edit-mode/catalogue.ts`: prefix match on the segment after
-  the last `:`, leading `-` stripped, grouped by family, capped.
+**B2 — search.** [35, 72]
+- Prefix match on the segment after the last `:`, leading `-` stripped, grouped by family,
+  capped.
 - Tests: `mt` finds `mt-4` and `-mt-4`; `t-7` does **not** find `mt-7`; results are grouped and
-  capped; a query with no hits returns empty so the panel can show item 72's message.
+  capped; an empty result set is distinguishable so the panel can show item 72's message.
 
 ### Stage C — the overlay (Unit 3)
 
-**C1 — families and the replace map.** [38, 40, 43]
-- Create `src/edit-mode/families.ts`, pure. Same-family collision replaces (`px-4` → `px-6`).
-  **No cross-family rule for padding, margin or inset** — item 40 settled that Tailwind emits
-  the shorthand before the axis utility, so `p-4 px-6` is already correct and both are kept.
-  Colour-vs-size split reuses A2's predicate (D1).
-- Tests [85]: `mt-4` + `mt-6` replaces, and **appending would have been a no-op** — asserted as
-  the failing case, per the design; `p-4` + `px-6` keeps both; `text-sm` + `text-accent` keeps
+**C1 — collision rules.** [38, 40, 42, 43]
+- Create `src/edit-mode/families.ts`: apply D2's map. Exact property-set equality replaces;
+  everything else coexists. No hand-written cross-family rules for padding, margin or inset —
+  item 40's ruling now falls out of the map rather than being special-cased.
+- Tests [85]: `mt-4` + `mt-6` replaces, and **appending would have been a no-op**, asserted as
+  the failing case per the design; `p-4` + `px-6` keeps both; `text-sm` + `text-center` keeps
   both; `border-2` + `border-accent` keeps both.
 
-**C2 — the patch model and session JSON.** [93, 94, 95, 96, 97, 41, 92]
-- Create `src/edit-mode/patches.ts`, pure. Types for all three kinds — `classes`, `css`, `raw` —
-  and the session envelope exactly as items 93-96 publish it. Filename format per D3.
+**C2 — the patch model and session JSON.** [93, 94, 95, 96, 97, 41]
+- Create `src/edit-mode/patches.ts`, pure. All three kinds — `classes`, `css`, `raw` — and the
+  envelope exactly as items 93-96 publish it. Filename per D3.
+- **Populate, not just carry** (revision 1 tested only that fixture values survived):
+  `viewport` from `innerWidth`/`innerHeight`/`devicePixelRatio` (item 41); `theme.mode` from
+  `documentElement.classList`; `theme.name` from `documentElement.dataset.theme`, which
+  `src/colours.ts:58` already sets to the theme name ("Lime").
 - Tests: a session round-trips to JSON and back with the before-class list intact, **for all
-  three kinds** (item 97 corrects item 87 on exactly this); `viewport` and `theme` survive;
-  `version` is 1.
+  three kinds** (item 97 corrects item 87 on exactly this); a captured session reads its
+  viewport and theme from the document rather than from a fixture; `version` is 1.
 
 **C3 — the panel shell, mode toggle, and event interception.** [30, 58, 61-65, 71, 76]
 - Create `src/edit-mode/overlay.ts` and `panel.ts`. Shadow root, hand-written CSS (item 65).
-  Pencil bottom-right, clearing the existing `z-[300]` bottom-centre stack (item 62).
-- Pointer interception at document level, capture phase (item 30). `shortcuts.ts` suspended by
-  swallowing keydown in capture before the app's listener, and **restored on leaving edit
-  mode** (item 58).
-- Tests: entering and leaving edit mode leaves exactly the listener set it started with — item
-  76's silent failure, and the one part of §9 that is not conceded by item 81.
+  Pencil bottom-right, clearing the existing `z-[300]` bottom-centre stack at `index.html:157`
+  (item 62). `html.ts` starts injecting the script tag here (see A2).
+- **Correction to the brief's item 58, which planning has to make:** `src/shortcuts.ts` registers
+  no listeners at all — it exports `matchShortcut`, `modifierLabel` and `isTypingTarget`. The
+  keydown handlers are in `src/app.ts` (302, 736 capture, 1348, 1493). So "suspend
+  `shortcuts.ts`" is not a thing that can be done. What edit mode does instead: a capture-phase
+  keydown listener on `document`, registered before the app entry evaluates (D4 point 3), which
+  calls `stopImmediatePropagation()` while edit mode is on. The game's handlers never see the
+  event; nothing in the game changes.
+- Tests, **behavioural rather than structural**: a synthetic keydown reaches a spy registered
+  the way `app.ts` registers, does not reach it in edit mode, and reaches it again after leaving.
+  Counting listeners would pass with the keyboard dead — the realistic implementation keeps one
+  permanent listener behind a flag (item 104 requires the back interception to outlive the mode
+  anyway), so the listener set is identical either way. Item 76 is the one thing in §9 Jamie
+  refused to concede (item 81), so this test has to test the behaviour.
 
 **C4 — selection.** [31, 32, 63]
 - Create `src/edit-mode/select.ts`: topmost element under the point, breadcrumb, nav arrows.
   Label shows **tag, breadcrumb path and the first few words of text — no source location**
-  (item 32, approved 2026-08-19 as a departure from the design).
+  (brief item 32, approved 2026-08-19 as a deliberate departure from the design).
 - The panel is never selectable (item 63).
 - Tests: the breadcrumb reaches a wrapper with a pixel-identical box; a tap inside the shadow
   root selects nothing.
 
-**C5 — chips, steppers, applying, and the did-it-work check.** [33, 34, 36, 99, 15]
-- Chips, `+` search, steppers, and on desktop the raw class field and free-CSS box (item 15 —
-  these produce the `raw` and `css` patch kinds, and item 97 requires them built).
-- **After applying, compare computed style before and after; if nothing moved, say so** (item
-  99, second half) with item 8's wording: *"That class is not in this build."*
+**C5 — chips, steppers, applying, and the did-it-work check.** [15, 33, 34, 36, 99]
+- Chips, `+` search, steppers; on desktop the raw class field and free-CSS box (item 15 — these
+  produce the `raw` and `css` patch kinds, and item 97 requires them built, not deferred).
+- **Search-focus behaviour (item 33), which revision 1 traced to three tasks and implemented in
+  none:** focusing search collapses the sheet to search and results only, and scrolls the
+  selected element above it. It is what makes phone editing work at all — without it the
+  keyboard covers the thing being edited.
+- **After applying, compare computed style before and after; if nothing moved, say so**
+  (item 99) with §8's wording: *"That class is not in this build."*
 - Tests: the apply path reports a class that changes nothing; a `css` box entry produces a `css`
-  patch and is never applied literally.
+  patch and is never applied literally; focusing search collapses the sheet.
+- **Known limit, recorded rather than solved:** the computed-style check has a false-positive
+  mode — a class that *is* in the build but computes to the value already in force, or whose
+  effect lands on a descendant, reports as missing. Item 82 says take the simple thing; the
+  message is advisory and Jamie is looking at the screen. Written down so it is a known edge and
+  not a bug report later.
 
-**C6 — history, back, and undo.** [66, 67, 68, 69, 70, 104, 105]
-- Create `src/edit-mode/history.ts` and `project.ts`. Back pops one patch and re-projects (D2).
-  Rapid stepper taps on one property collapse into one entry (item 68). Interception **outlives
-  edit mode** and lifts only when the last entry is popped (item 104). When empty, back returns
-  to play mode; one more leaves the page (item 70).
-- Tests (pure, on the history core): ten stepper taps make one entry; popping the last entry
-  releases back; re-projection restores the remaining edits onto a rebuilt DOM.
+**C6 — history, back, undo and reset.** [66, 67, 68, 69, 70, 71, 104, 105]
+- Create `src/edit-mode/history.ts` and `project.ts`. Entries pushed at the current URL (D4.1);
+  back pops one and re-projects (D4.2). Interception **outlives edit mode** and lifts only when
+  the last entry is popped (item 104). When empty, back returns to play mode; one more leaves the
+  page (item 70).
+- **Reset element** (item 71's footer, named in the brief and missing from revision 1): restores
+  one element's original class list and pushes a single entry, so back steps over it like any
+  other change.
+- Rapid stepper taps on one property collapse into one entry (item 68) — a trailing debounce,
+  window stated in the code and pinned by the test.
+- Tests (pure, on the history core, with fake timers): ten taps inside the window make one entry
+  and a pause makes two; popping the last entry releases back; re-projection restores the
+  remaining edits onto a rebuilt DOM; reset element is one entry.
 - Jamie's manual check 90.1 covers the browser half.
 
 **C7 — persistence.** [52, 53, 54, 105]
-- Create `src/edit-mode/session-store.ts`: patch set **and** undo stack in `sessionStorage`,
-  keyed to the branch name the plugin injects (item 113, L3). Nothing unfinished is sent to the
-  Pi (item 54).
-- Tests: a reload restores both objects; a different branch key does not read the other's.
+- Create `src/edit-mode/session-store.ts`: patch set, undo stack, **whether edit mode was on, and
+  which element was selected** (item 53, missing from revision 1) — all in `sessionStorage`, keyed
+  to the branch name the plugin injects (item 113, L3). Nothing unfinished is sent to the Pi
+  (item 54).
+- Tests: a reload restores all four; a different branch key does not read the other's.
 
 **C8 — runtime-controlled classes.** [37, 57, 73, 109]
 - On returning from play mode, re-read the class list of every edited element and flag what
@@ -464,13 +572,13 @@ and watched go red before it counts (item 86).
 
 ### Stage D — the session transport (Unit 4)
 
-**D1 — write.** [49, 87, 74, 75]
-- Create `edit-mode/session-write.ts`: POST handler writing `.edit-sessions/<ts>.json` (D3),
-  with `branch` and `sha` from `git rev-parse` at request time (item 93).
+**D1 — write.** [49, 74, 75, 87, 93]
+- Create `edit-mode/session-write.ts`: POST handler writing `.edit-sessions/<ts>.json` (D3), with
+  `branch` and `sha` from `git rev-parse` at request time (item 93).
 - Failure returns non-2xx so the overlay shows item 74's message and **keeps the patch set**.
   Success shows item 75's and stays in edit mode.
-- Tests: a POST writes a well-formed file with all three patch kinds; a write failure leaves the
-  response non-2xx.
+- Tests: a POST writes a well-formed file carrying all three patch kinds; a write failure is
+  non-2xx and the client keeps its patches.
 
 **D2 — replay.** [21, 51, 92]
 - Create `edit-mode/session-read.ts`: every `*.json` in `.edit-sessions/`, timestamp order,
@@ -478,10 +586,11 @@ and watched go red before it counts (item 86).
 - Tests: three sessions replay oldest-first; a `.folded` one is skipped; **replaying only the
   newest is asserted wrong** — item 51's stated silent failure.
 
-**D3 — the read-only port.** [26, 27, 103, 107, 19, 25]
-- Create `edit-mode/readonly-proxy.ts`: second listener, started and stopped by the plugin
-  (item 107), forwards GET and HEAD, answers everything else 405, serves 503 if the dev server
-  is down. Serves the overlay in replay-only mode (item 103, D4).
+**D3 — the read-only port.** [19, 25, 26, 27, 103, 107]
+- Create `edit-mode/readonly-proxy.ts`: second listener started and stopped by the plugin
+  (item 107), forwards GET and HEAD including the catalogue endpoint, answers everything else
+  405, serves 503 if the dev server is down. Serves the overlay in replay-only mode (item 103,
+  D5).
 - Tests: a POST to the proxy is refused **as a positive assertion** (item 27); a GET is
   forwarded; the replay-mode HTML carries no pencil.
 
@@ -489,45 +598,46 @@ and watched go red before it counts (item 86).
 
 **E1 — docs and the acceptance checklist.** [90, 91, 113 L5]
 - Create `docs/EDIT-MODE.md`: how to start it, how Jamie reaches it, the session schema
-  (pointing at brief items 93-96 as the source of truth), and **Jamie's three-item manual
-  checklist verbatim from item 90**, with item 91's consequence recorded — these are verified
-  once and nothing will resurface them.
+  (pointing at brief items 93-96 as the source of truth), the filename rule from D3, and
+  **Jamie's three-item manual checklist verbatim from item 90**, with item 91's consequence
+  recorded — these are verified once and nothing will resurface them.
 - Modify `CLAUDE.md`: a line saying `dev.clumeral.com` is a record on the production zone
-  pointing at the Pi, and is unrelated to the `workers.dev` pre-prod decision (item 113, L5).
+  pointing at the Pi, unrelated to the `workers.dev` pre-prod decision (item 113, L5).
 
 ---
 
 ## Traceability
 
-Every numbered brief item, to a task or to a reason it needs no code.
-
 | items | where |
 |---|---|
 | 1-5, 9-14, 16-18, 20, 22-23, 28-29, 42, 45-47, 50, 82, 84, 88-89, 91 | context, decisions or Jamie's calls — no code |
 | 6, 55, 56, 60 | Module layout, A2 |
-| 7, 59, 101, 102 | A4 |
-| 8, 24, 19, 25, 26, 27, 103, 107 | D3 |
+| 7, 59, 101, 102 | A1, A4, D6, D7 |
+| 8, 19, 24-27, 103, 107 | D3, D5 |
 | 15, 34, 95, 96, 97 | C2, C5 |
 | 21, 51, 92 | D2 |
 | 30, 58, 76 | C3 |
 | 31, 32, 63 | C4 |
-| 33, 36, 99 | B1, B2, C5 |
-| 35 | B2 |
+| 33 | C5 |
+| 35, 72 | B2 |
+| 36, 99 | B1, C5 |
 | 37, 57, 73, 109 | C8 |
-| 38, 40, 43 | C1 |
+| 38, 40, 43 | D2, A2, C1 |
+| **39** | superseded by item 44 — the pre-built/on-demand line, answered by measurement |
 | 41, 93, 94 | C2 |
 | 44, 98, 106, 110 | A2, B1 |
 | 48, 83 | n/a — maths and analytics untouched |
 | 49, 74, 75, 87 | D1, A3 |
 | 52, 53, 54, 105 | C7 |
 | 61, 62, 64, 65 | C3 |
-| 66-70, 104 | C6 |
-| 71, 72 | C3, B2 |
-| 77-81 | dropped to "if it falls out for free" by item 81 |
+| 66-71, 104 | C6 (item 71's copy also in C3 and B2) |
+| 77-81 | dropped to "if it falls out for free" by item 81; item 76 excepted and tested in C3 |
 | 85, 86 | the test list, distributed across every task above |
 | 90 | E1 |
+| **100** | honoured by construction — no sentinel class anywhere in D7's assertions |
 | 108 | A1 |
-| 113 L1-L5 | A2 (L1), A4 (L2), C4 (L3, via item 32), D3 (L4 — header sniffing rejected), E1 (L5) |
+| **111, 112** | Jamie's closing answers; carried in "What the plan inherits" |
+| 113 L1-L5 | A2 (L1), D8 (L2), C7 (L3), D5 (L4 — header sniffing rejected), E1 (L5) |
 | 114, 115, 116 | inherited, above |
 
 ---
@@ -535,11 +645,49 @@ Every numbered brief item, to a task or to a reason it needs no code.
 ## Risks
 
 1. **`__unstable__loadDesignSystem` is marked unstable.** A Tailwind minor could rename it and
-   Stage A stops working. It has survived every 4.x release so far, and the spike's route A
+   Stage A stops working. It has survived every 4.x release, and the spike's route A
    (hand-written `@source inline(...)`) is the fallback. Cost if it goes: half a day, and the
-   family list becomes hand-maintained.
-2. **The iPhone measurement (A3) could say "narrow it".** That is the point of putting it third
-   rather than last. The fallback is measured and known: 0.43 MiB, the four stepper families.
-3. **Preprod's build command is assumed, not read** (D7, flagged item 5).
-4. **`@source not` is load-bearing for item 12.** If it is ever removed, edit-mode test literals
-   go straight to the production stylesheet. `css-leak.spec.ts` catches it on the next build.
+   family list becomes hand-maintained — which D2 exists to avoid, so this is the risk that
+   actually hurts.
+2. **The iPhone measurement (A3) could say "narrow it".** That is why it is third rather than
+   last. The fallback is measured: 0.43 MiB, the four stepper families.
+3. **Preprod's build command is assumed, not read** (D8, flag 5). Blocking.
+4. **`@source not` is load-bearing for item 12.** If removed, edit-mode test literals go straight
+   to the production stylesheet. A4's leak gate catches it on the next build.
+5. **D2's family map is generated, so a Tailwind change to emitted properties changes it
+   silently.** The A2 tests pin the cases that matter, including the ones a prefix rule gets
+   wrong, so a shift shows up as a red test rather than as a class that quietly stops replacing.
+
+---
+
+## Review fixes
+
+`da-plan`, 2026-08-19: 7 High, 10 Medium, 7 Low. Every Medium-and-above is fixed above. What
+changed, and the four places the review was itself wrong:
+
+**High.** H1/H2 — the preprod double-build was a tautology and unimplementable; replaced by D8's
+sameness assertion. H3/H4 — the `mt-11` contradiction and the undersized allowlist; both gone
+with D7's split. H5 — `loadDesignSystem` needs `await` and `base`; the verified call is now in
+A2. **The review also claimed it needs a hand-written `loadStylesheet`; it does not** — the
+two-argument form above was run on this tree and returned 23,031 classes. H6 — the gate was
+unreachable without `--host`; D10. H7 — the family map was undefined and a prefix rule would have
+silently deleted `text-sm` when centring text; D2 derives it from CSS property sets instead, with
+the counterexamples pinned as tests.
+
+**Medium.** M1 — `@source not` moved to A1, ahead of the first class literal. M2 — the overlay
+script tag no longer injected before the overlay exists. M3 — the JS absence assertion now pins
+strings that survive minification. M4 — the teardown test is behavioural, and the brief's "suspend
+`shortcuts.ts`" is corrected to the real handlers in `app.ts`. M5 — entries are pushed at the
+current URL, so a re-render cannot navigate. M6 — `viewport` and `theme` are populated and
+tested from the document; **the review said `theme.name` has no accessible source, which is
+wrong** — `src/colours.ts:58` sets `documentElement.dataset.theme`. M7 — the query flag became
+two static stylesheet entries. M8 — items 33, 53 and Reset element now have tasks. M9 — D7 no
+longer overrides item 102. M10 — the spike's own narrowing is now weighed and explicitly
+rejected, with the reason.
+
+**Low.** L1 — `.planning/` is a real leak source and is #312's, noted in D6, deliberately not
+excluded here. L2 — the two-directory rationale was false as given and is rewritten. L3 — items
+39, 100, 111 and 112 added to the table. L4 — citation corrected: the message is item 99's,
+§8's wording. L5 — the computed-style false-positive is recorded in C5. L6 — the catalogue
+endpoint exists and the proxy forwards it. L7 — the debounce test uses fake timers and a stated
+window.
