@@ -931,4 +931,23 @@ here rather than edited in place.
        which specifies a source location; nothing in the browser can know it now that
        build-time stamping is rejected.
 
-     Jamie's word on these four closes the brief.
+     **Approved by Jamie, 2026-08-19: "All approved."** Items 26, 27, 29 and 32 stand as
+     written, including item 32's departure from the approved design — the selection label
+     carries no source location, because nothing in the browser can know one.
+
+116. **The brief is closed.** 2026-08-19. All eleven sections settled by Jamie, all joint
+     sections acked by Dave, §4 confirmed n/a by its owner, and every Medium-and-above finding
+     from the da-brief review either fixed in items 92-113 or settled in 114-115.
+
+     **What planning inherits, in one place:**
+     - Units 1-4, dev server only. Nothing reaches production or preprod (items 6, 7).
+     - Pre-built non-colour stylesheet, ~1.16 MB. **No on-demand half** — Jamie measures it on
+       the iPhone and it gets its own brief if needed (items 44, 114).
+     - **No colours and no variants offered**, and anything outside the built set is caught and
+       reported rather than failing silently (item 99).
+     - The session file schema in items 93-96 is a **contract with `pi-dev-bot`** and is the
+       one thing the plan must not paraphrase.
+     - `/fold` renames a consumed session; the game reads only bare `.json` (item 92).
+     - The safety assertion is "every class in the built stylesheet appears in `src/` or
+       `index.html`" — no sentinel — and it **lands red until #312 is fixed** (items 101, 102).
+     - Simplicity is the tie-break, and Jamie is the tester (items 82, 89, 90).
