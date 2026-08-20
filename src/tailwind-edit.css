@@ -1,0 +1,18 @@
+/* Edit mode — the non-colour build. DEV SERVER ONLY.
+ *
+ * Nothing imports this file. The Vite plugin swaps index.html's stylesheet link
+ * to point here when serving, and `vite build` never sees it — which is the
+ * whole production gate (brief items 7, 56, 60).
+ *
+ * The @source below points at a GITIGNORED generated file, on purpose. The
+ * spike established two undocumented behaviours this relies on, both by testing
+ * rather than by reading: @source accepts a single FILE, not just a directory;
+ * and an explicit @source is scanned even when the file is gitignored. Together
+ * those keep the list out of the production build's automatic scan while the
+ * dev entry still reads it.
+ *
+ * Contents: every utility that is not a colour, plus the ten named-scale
+ * shadows and the six component classes. ~8,400 classes, 1.16 MiB, 72 kB gzipped.
+ */
+@import "./tailwind.css";
+@source "../.edit-mode/non-colour/classlist.txt";

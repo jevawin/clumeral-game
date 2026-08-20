@@ -1,0 +1,11 @@
+/* Edit mode — the full build, colours included. DEV SERVER ONLY.
+ *
+ * Exists for the A3 measurement: Jamie loads both on the iPhone 16 Pro and says
+ * whether either struggles. If the full set is comfortable, edit mode offers
+ * colours and the on-demand rebuild half is never needed (brief items 46, 114).
+ *
+ * ~23,000 classes, 5.24 MB, 193 kB gzipped. See tailwind-edit.css for why the
+ * @source points at a gitignored file.
+ */
+@import "./tailwind.css";
+@source "../.edit-mode/all/classlist.txt";
