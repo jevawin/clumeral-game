@@ -6,7 +6,8 @@
 **Design:** `docs/superpowers/specs/2026-08-16-edit-mode-roundtrip-design.md`
 **Spike:** `docs/superpowers/notes/2026-08-18-tailwind-full-build-spike.md`
 **Scope:** Units 1-4. Unit 5 (`/fold`) is `pi-dev-bot`'s and is not planned here.
-**Revision:** 2, after the `da-plan` review of 2026-08-19 (7 High, 10 Medium, 7 Low — all
+**Revision:** 4 — approved by Jamie 2026-08-19 with two conditions, both answered (D1, D6b).
+Revision 2 was the `da-plan` review of 2026-08-19 (7 High, 10 Medium, 7 Low — all
 Medium-and-above fixed; see [Review fixes](#review-fixes) for what changed and why).
 
 This plan settles **how**. It does not reopen any product decision. Choices the brief left to
@@ -135,16 +136,37 @@ border-accent  modifiers: ["0","5", ... ,"100"]
 The predicate is **"has modifiers, and every modifier is numeric"** — not "has modifiers". With
 that word it reproduces 8,397 exactly.
 
-**The cost, which is not in the brief:** shadow utilities take an opacity modifier, so they
-classify as colour and drop out of the non-colour set. Verified:
+**The cost, and the exemption Jamie asked for.** Shadow utilities take an opacity modifier, so
+they classify as colour and would drop out of the non-colour set. Verified:
 
 ```
 shadow-box COLOUR   shadow-box-active COLOUR   shadow-key COLOUR
 shadow-lg  COLOUR   shadow-md COLOUR   shadow-sm COLOUR   shadow-none non-colour
 ```
 
-So under "no colours", **edit mode offers no shadows at all**, including our own `shadow-box`
-and `shadow-key`. Item 99 makes it visible rather than silent. Flagged below.
+Under a bare "no colours" rule, **edit mode would offer no shadows at all**, including our own
+`shadow-box` and `shadow-key`. Jamie asked for the named-scale shadows to be costed as an
+exemption, on the grounds that the game's look leans on them. **Measured on this tree,
+2026-08-19:**
+
+| set | bytes | gzipped |
+|---|---|---|
+| non-colour | 1,212,459 | 73,605 |
+| non-colour **+ the ten named-scale shadows** | 1,215,647 | 73,870 |
+| **delta** | **+3,188 bytes (+0.26%)** | +265 |
+
+Ten classes, all present in the design system: `shadow-2xs`, `shadow-xs`, `shadow-sm`,
+`shadow-md`, `shadow-lg`, `shadow-xl`, `shadow-2xl`, and our `shadow-box`, `shadow-box-active`,
+`shadow-key`.
+
+**Exempted.** Three kilobytes against losing the shadows the design leans on is not a trade
+worth making, and it is a rounding error on a 1.16 MiB sheet. `isColourUtility` gains a small,
+explicitly-named exemption list — named-scale only, never the colour-named ones
+(`shadow-accent`, `shadow-red-500` and the other 909 stay out).
+
+Adjacent and **not** taken, because Jamie named neither: the `drop-shadow-*` and
+`inset-shadow-*` named scales are the same shape and cost **9 classes, 756 bytes** together. Say
+the word and they go in on the same line; they are left out rather than quietly widened.
 
 ### D2 — the family map is derived from CSS properties, not from prefixes
 
@@ -280,6 +302,57 @@ the spike itself says it "would want its own check that nothing real gets droppe
 this branch is not scoped to build. Three narrow exclusions are the minimum that satisfies item
 12 without doing #312's job badly.
 
+### D6b — this branch and #312 both narrow the same file: who lands first, and what survives
+
+Jamie's condition, 2026-08-19: *say which lands first and how the second avoids undoing it. If
+#312 lands first, re-check whether the three lines are still needed at all.*
+
+**This branch lands first.** Issue #312 is open and unstarted — no branch, no work in progress —
+and this plan is approved and about to be built. So the three `@source not` lines go in first,
+and #312 is the one that has to be careful.
+
+**How #312 would undo it, precisely.** #312's fix (the spike's suggestion, spike note line 214)
+is to stop scanning the whole repo and name the real sources instead. Tested on this tree by
+building it:
+
+```css
+@import "tailwindcss/utilities" layer(utilities) source(none);
+@source "../src";
+@source "../index.html";
+@source not "../src/edit-mode";
+```
+
+| class | lives in | in production CSS? |
+|---|---|---|
+| `mt-9` | `src/probe-real.ts` | **yes** — real source still scanned |
+| `mt-11`, `mt-13` | `src/edit-mode/probe.ts` | **no** — the exclusion survives the narrowing |
+| `mt-7`, `row-7447` | prose in `docs/` | **no** — #312 closed |
+
+Production CSS goes from 51,218 to **36,750 bytes**, a 14.5 kB saving.
+
+Two things that answers:
+
+1. **`@source not` composes with `source(none)` narrowing.** Tested, not assumed — the
+   edit-mode classes stay out with both mechanisms in the same file.
+2. **The danger is specific and worth naming in #312's own issue:** narrowing to `@source
+   "../src"` puts `src/edit-mode/` back *inside* the scanned set. Without the exclusion line,
+   #312 would silently re-admit every class literal in the overlay. It is the exact opposite of
+   what #312 is for, and nothing would say so.
+
+**So, for whoever writes #312:**
+
+- **Keep `@source not "./edit-mode"`.** It is load-bearing under the narrowing, not redundant
+  with it.
+- **Delete the other two** — `@source not "../edit-mode"` and `@source not "../tests"`. Both
+  directories sit outside `../src`, so the narrowing excludes them on its own and the lines
+  become dead weight.
+- Task A4's leak gate is what catches a mistake here: it goes red if any edit-mode class
+  literal reaches the built CSS, whichever mechanism let it in.
+
+**And had #312 landed first?** One of the three lines would still be needed —
+`@source not "./edit-mode"` — for the reason above. The other two would never have been written.
+That is recorded so the answer does not change depending on who reads it.
+
 ### D7 — the safety assertions, and honouring item 102 literally
 
 Item 101 wants *"every class selector in the built stylesheet appears literally in `src/` or
@@ -381,13 +454,21 @@ applies in serve mode only and no committed script changes.
 
 ## Flagged to Jamie
 
-1. **No shadows in edit mode.** "No colours" turns out to mean no `shadow-lg`, no `shadow-box`,
-   no `shadow-key` — Tailwind's shadow utilities take an opacity modifier and so classify as
-   colour (D1). Search will not offer them and the raw field reports them missing.
+1. ~~No shadows in edit mode.~~ **Costed and exempted, 2026-08-19.** The ten named-scale
+   shadows — `shadow-2xs` through `shadow-2xl` plus our `shadow-box`, `shadow-box-active` and
+   `shadow-key` — cost **3,188 bytes, 0.26% of the sheet**, so they are in. Colour-named shadows
+   stay out. `drop-shadow-*` and `inset-shadow-*` named scales would be another 756 bytes and
+   are left out unless asked for (D1). Moot if A3 says the full set is fine, in which case
+   everything is offered anyway.
 2. **`src/tailwind.css` gets three `@source not` lines**, against item 55. Reason in D6: without
    it, edit mode's own test files ship their class literals to the production stylesheet, which
    item 12 forbids. `@source not` can only remove rules, and the selectors it removes on this
    tree are used nowhere in the app.
+   **Ordering against #312, as asked (D6b):** this branch lands first — #312 is open and
+   unstarted. When #312 narrows the scan it must **keep** `@source not "./edit-mode"`, because
+   narrowing to `../src` would otherwise put the overlay's own class literals back in scope; the
+   other two lines become redundant and should be deleted then. Tested by building it: the
+   exclusion survives the narrowing, and production CSS drops to 36,750 bytes.
 3. **The session filename format is now fixed** at `2026-08-19T22-41-07-221Z.json` (D3). **No
    field in items 93-96 changes** — this adds the naming rule the contract was missing, and
    `/fold` needs it to sort.
