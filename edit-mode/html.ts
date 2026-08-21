@@ -7,21 +7,16 @@
 // names edit mode, so there is no dev-only condition for a bundler to strip and
 // nothing to get wrong on a bundler upgrade.
 
-/** Which class set the page should load. */
-export type ClassSet = 'non-colour' | 'all';
-
 /**
- * Two separate stylesheet entries rather than one entry with a switch.
+ * The one dev stylesheet.
  *
- * The alternative — a query flag that regenerates the class list at request
- * time — has no ordering guarantee between the HTML response and the CSS
- * request that follows it, so the A3 measurement could compare one set against
- * itself and nobody would know. Two static files cannot race.
+ * There used to be two — a non-colour build and a full one — so Jamie could
+ * compare them on the phone for A3. A3 answered on 2026-08-21 (the full set is
+ * comfortable), so the second entry, the class-set type and the environment
+ * variable that chose between them are all gone. One file, one path, nothing to
+ * pick wrong.
  */
-export const EDIT_STYLESHEETS: Record<ClassSet, string> = {
-  'non-colour': '/src/tailwind-edit.css',
-  all: '/src/tailwind-edit-all.css',
-};
+export const EDIT_STYLESHEET = '/src/tailwind-edit.css';
 
 const PRODUCTION_STYLESHEET = '/src/tailwind.css';
 
@@ -34,17 +29,11 @@ const PRODUCTION_STYLESHEET = '/src/tailwind.css';
  *
  * The overlay <script> is deliberately NOT injected here. src/edit-mode/
  * overlay.ts does not exist until task C3, and injecting a tag that 404s would
- * put a module error on every page load during the A3 measurement — the one
- * task that has to work.
+ * put a module error on every page load.
  */
-export function rewriteIndexHtml(html: string, opts: { set: ClassSet }): string {
+export function rewriteIndexHtml(html: string): string {
   return html.replace(
     `href="${PRODUCTION_STYLESHEET}"`,
-    `href="${EDIT_STYLESHEETS[opts.set]}"`
+    `href="${EDIT_STYLESHEET}"`
   );
-}
-
-/** Which set a request asked for. `?classes=all` opts into the full build. */
-export function classSetFromUrl(url: string | undefined): ClassSet {
-  return url && /[?&]classes=all(&|$)/.test(url) ? 'all' : 'non-colour';
 }

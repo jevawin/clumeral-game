@@ -8,7 +8,7 @@
 
 import type { Plugin } from 'vite';
 import { writeArtefacts } from './classlist.ts';
-import { rewriteIndexHtml, classSetFromUrl } from './html.ts';
+import { rewriteIndexHtml } from './html.ts';
 import { gzipEditStylesheets } from './gzip.ts';
 
 export function editMode(): Plugin {
@@ -34,10 +34,9 @@ export function editMode(): Plugin {
       // stylesheets @source these files, so they must exist before the first
       // request for CSS arrives.
       try {
-        const { nonColour, all } = await writeArtefacts();
+        const { classes } = await writeArtefacts();
         server.config.logger.info(
-          `  ➜  edit mode: ${nonColour.toLocaleString()} classes (non-colour), ` +
-            `${all.toLocaleString()} with colours`
+          `  ➜  edit mode: ${classes.toLocaleString()} classes available`
         );
       } catch (err) {
         // Do not take the dev server down with us — the game still works
@@ -51,9 +50,7 @@ export function editMode(): Plugin {
 
     transformIndexHtml: {
       order: 'pre',
-      handler(html, ctx) {
-        return rewriteIndexHtml(html, { set: classSetFromUrl(ctx.originalUrl) });
-      },
+      handler: (html) => rewriteIndexHtml(html),
     },
   };
 }

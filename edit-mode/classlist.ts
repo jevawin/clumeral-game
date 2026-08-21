@@ -39,26 +39,6 @@ export const COMPONENT_CLASSES = [
 ] as const;
 
 /**
- * Named-scale shadows, kept despite classifying as colour.
- *
- * Tailwind's shadow utilities accept an opacity modifier, so isColourUtility
- * would drop every one of them — including the project's own tokens. Jamie,
- * 2026-08-19: the game's look leans on these and losing them is a worse trade
- * than the bytes. Measured cost: 3,188 bytes, 0.26% of the sheet.
- *
- * Named scale ONLY. The 909 colour-named shadows (shadow-accent,
- * shadow-red-500, …) are not exempted — they are the explosion the "no colours"
- * rule exists to avoid.
- */
-export const SHADOW_EXEMPTIONS = [
-  'shadow-2xs', 'shadow-xs', 'shadow-sm', 'shadow-md',
-  'shadow-lg', 'shadow-xl', 'shadow-2xl',
-  'shadow-box', 'shadow-box-active', 'shadow-key',
-] as const;
-
-const EXEMPT = new Set<string>(SHADOW_EXEMPTIONS);
-
-/**
  * Every class the design system knows about — 23,031 of them on this build.
  *
  * Marked unstable by Tailwind, and it is the one real dependency risk in Stage
@@ -79,6 +59,12 @@ export async function loadClassList(): Promise<ClassEntry[]> {
 /**
  * Is this utility a colour?
  *
+ * NOTE, after A3 (2026-08-21): this NO LONGER FILTERS THE STYLESHEET. Jamie's
+ * iPhone handled all 23,031 classes comfortably, so edit mode offers everything
+ * and there is nothing to filter out. The predicate stays because the FAMILY MAP
+ * still needs it — telling text-sm from text-accent is what stops the overlay
+ * deleting a font size when a colour is picked.
+ *
  * Tailwind does not label them, but it does say which utilities take an OPACITY
  * modifier, and those are exactly the ones whose value is a colour. That is the
  * brief's item 43 mechanism: classify from Tailwind's own data so the split
@@ -93,7 +79,6 @@ export async function loadClassList(): Promise<ClassEntry[]> {
  *   border-2      []                                           -> not a colour
  */
 export function isColourUtility([name, meta]: ClassEntry): boolean {
-  if (EXEMPT.has(name)) return false;
   const mods = meta?.modifiers;
   if (!Array.isArray(mods) || mods.length === 0) return false;
   return mods.every((m) => /^\d+$/.test(m));
@@ -190,31 +175,34 @@ export const ARTEFACT_DIR = resolve(REPO_ROOT, '.edit-mode');
 // 1.16 MiB was intended. Observed on the dev server, 2026-08-20; the spike did
 // not hit it because it only ever generated one list. One list per directory.
 export const ARTEFACTS = {
-  'non-colour': resolve(ARTEFACT_DIR, 'non-colour/classlist.txt'),
-  all: resolve(ARTEFACT_DIR, 'all/classlist.txt'),
+  // The class list sits in its own subdirectory with nothing beside it. An
+  // explicit `@source` at a file registers its whole DIRECTORY as a scan root,
+  // so a sibling file gets swept into the stylesheet too — which is how the
+  // non-colour build silently compiled all 23,031 classes during A2. One file
+  // per directory removes the trap rather than relying on remembering it.
+  classes: resolve(ARTEFACT_DIR, 'classes/classlist.txt'),
   families: resolve(ARTEFACT_DIR, 'families.json'),
 } as const;
 
 /**
- * Generate both class lists and the family map. Called when the dev server
- * starts.
+ * Generate the class list and the family map. Called when the dev server starts.
  *
  * Never committed (brief item 59): a committed 386 kB file of class names is
  * issue #312's failure mode at full volume, with every class in the project
  * landing in the production stylesheet.
  */
-export async function writeArtefacts(): Promise<{ nonColour: number; all: number }> {
+export async function writeArtefacts(): Promise<{ classes: number }> {
   const list = await loadClassList();
-  const nonColour = nonColourClasses(list);
-  const all = allClasses(list);
+  const classes = [...allClasses(list), ...COMPONENT_CLASSES];
 
-  mkdirSync(resolve(ARTEFACT_DIR, 'non-colour'), { recursive: true });
-  mkdirSync(resolve(ARTEFACT_DIR, 'all'), { recursive: true });
-  writeFileSync(ARTEFACTS['non-colour'], [...nonColour, ...COMPONENT_CLASSES].join('\n'));
-  writeFileSync(ARTEFACTS.all, [...all, ...COMPONENT_CLASSES].join('\n'));
+  mkdirSync(resolve(ARTEFACT_DIR, 'classes'), { recursive: true });
+  writeFileSync(ARTEFACTS.classes, classes.join('\n'));
 
-  const families = await buildFamilyMap(nonColour);
+  // Built over EVERY class, not just the non-colour ones. The map is what tells
+  // text-sm (font-size) from text-accent (color), so it has to know about the
+  // colours edit mode now offers.
+  const families = await buildFamilyMap(classes);
   writeFileSync(ARTEFACTS.families, JSON.stringify(Object.fromEntries(families)));
 
-  return { nonColour: nonColour.length, all: all.length };
+  return { classes: classes.length };
 }

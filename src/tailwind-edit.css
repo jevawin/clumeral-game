@@ -1,8 +1,15 @@
-/* Edit mode — the non-colour build. DEV SERVER ONLY.
+/* Edit mode — the dev stylesheet. DEV SERVER ONLY.
  *
  * Nothing imports this file. The Vite plugin swaps index.html's stylesheet link
  * to point here when serving, and `vite build` never sees it — which is the
  * whole production gate (brief items 7, 56, 60).
+ *
+ * Contents: EVERY class the design system knows about — 23,031 utilities plus
+ * the six component classes. 5.24 MB unminified, 193 kB gzipped.
+ *
+ * It is the full set because A3 said so. Jamie loaded it on an iPhone 16 Pro on
+ * 2026-08-21 and it felt identical to the normal build, so the non-colour
+ * variant this file used to have has no user and is gone (plan A3).
  *
  * The @source below points at a GITIGNORED generated file, on purpose. The
  * spike established two undocumented behaviours this relies on, both by testing
@@ -10,9 +17,6 @@
  * and an explicit @source is scanned even when the file is gitignored. Together
  * those keep the list out of the production build's automatic scan while the
  * dev entry still reads it.
- *
- * Contents: every utility that is not a colour, plus the ten named-scale
- * shadows and the six component classes. ~8,400 classes, 1.16 MiB, 72 kB gzipped.
  */
 @import "./tailwind.css";
-@source "../.edit-mode/non-colour/classlist.txt";
+@source "../.edit-mode/classes/classlist.txt";

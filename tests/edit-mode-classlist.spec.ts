@@ -5,7 +5,6 @@ import {
   nonColourClasses,
   allClasses,
   COMPONENT_CLASSES,
-  SHADOW_EXEMPTIONS,
   type ClassEntry,
 } from '../edit-mode/classlist.ts';
 
@@ -54,67 +53,25 @@ describe('the colour predicate (D1)', () => {
   });
 });
 
-describe('the named-scale shadow exemption (D1, Jamie 2026-08-19)', () => {
-  it('keeps the named-scale shadows despite their opacity modifiers', () => {
-    // These ARE colour-shaped by the predicate — they take an opacity modifier.
-    // They are exempted deliberately: 3,188 bytes, and the game's look leans on
-    // them. Colour-named shadows are not exempted.
-    for (const name of SHADOW_EXEMPTIONS) {
-      expect(isColourUtility(entry(name)), `${name} should be exempt`).toBe(false);
-    }
-  });
-
-  it('exempts exactly the ten named-scale shadows and no colour-named ones', () => {
-    expect(SHADOW_EXEMPTIONS).toHaveLength(10);
-    expect(isColourUtility(entry('shadow-accent'))).toBe(true);
-    expect(isColourUtility(entry('shadow-red-500'))).toBe(true);
-  });
-
-  it('includes the project shadow tokens the design leans on', () => {
-    for (const name of ['shadow-box', 'shadow-box-active', 'shadow-key']) {
-      expect(SHADOW_EXEMPTIONS).toContain(name);
-    }
-  });
-});
-
-describe('the non-colour set (brief item 44)', () => {
-  let nonColour: string[];
-
-  beforeAll(() => {
-    nonColour = nonColourClasses(list);
-  });
-
-  it('contains spacing steps that appear nowhere in the repo', () => {
-    // The whole point of Unit 1: a class no source file uses must still apply.
-    for (const name of ['mt-11', '-mt-96', 'mt-px', 'mt-auto']) {
-      expect(nonColour, `${name} missing`).toContain(name);
-    }
-  });
-
-  it('excludes colours', () => {
-    for (const name of ['bg-accent', 'text-text', 'border-accent']) {
-      expect(nonColour).not.toContain(name);
-    }
-  });
-
-  it('includes the exempted shadows', () => {
-    expect(nonColour).toContain('shadow-box');
-    expect(nonColour).toContain('shadow-lg');
-    expect(nonColour).not.toContain('shadow-accent');
-  });
-
-  it('is the expected order of magnitude', () => {
-    // A band rather than 8,407 exactly: a Tailwind patch release adding one
-    // utility should not turn the suite red for nothing. An order-of-magnitude
-    // change means the predicate broke, which is what this catches.
-    expect(nonColour.length).toBeGreaterThan(8_000);
-    expect(nonColour.length).toBeLessThan(9_000);
-  });
-
-  it('is a strict subset of the full set', () => {
+describe('the offered set, after A3 (plan A3, brief item 46)', () => {
+  it('offers every class the design system knows, colours included', () => {
+    // A3, 2026-08-21: the full set is comfortable on an iPhone 16 Pro, so the
+    // catalogue is EVERYTHING. The non-colour filter that used to shape this
+    // stylesheet has no user left.
     const all = allClasses(list);
-    expect(all.length).toBeGreaterThan(nonColour.length);
-    for (const name of nonColour) expect(all).toContain(name);
+    expect(all.length).toBeGreaterThan(20_000);
+    for (const name of ['mt-11', '-mt-96', 'mt-px', 'bg-accent', 'text-text', 'shadow-box']) {
+      expect(all, `${name} missing`).toContain(name);
+    }
+  });
+
+  it('still classifies colours, because the family map needs it', () => {
+    // The predicate no longer filters the stylesheet, but text-sm vs
+    // text-accent is still what stops a colour pick deleting a font size.
+    const nonColour = nonColourClasses(list);
+    expect(nonColour).toContain('text-sm');
+    expect(nonColour).not.toContain('text-accent');
+    expect(nonColour.length).toBeLessThan(allClasses(list).length);
   });
 });
 

@@ -6,7 +6,8 @@
 **Design:** `docs/superpowers/specs/2026-08-16-edit-mode-roundtrip-design.md`
 **Spike:** `docs/superpowers/notes/2026-08-18-tailwind-full-build-spike.md`
 **Scope:** Units 1-4. Unit 5 (`/fold`) is `pi-dev-bot`'s and is not planned here.
-**Revision:** 4 — approved by Jamie 2026-08-19 with two conditions, both answered (D1, D6b).
+**Revision:** 5 — A3 answered 2026-08-21 (the full set is fine); scope and dead code updated.
+Revision 4 — approved by Jamie 2026-08-19 with two conditions, both answered (D1, D6b).
 Revision 2 was the `da-plan` review of 2026-08-19 (7 High, 10 Medium, 7 Low — all
 Medium-and-above fixed; see [Review fixes](#review-fixes) for what changed and why).
 
@@ -24,10 +25,12 @@ written down**. Where a number appears, it was measured on 2026-08-19 against th
 From brief item 116:
 
 - Units 1-4, **dev server only**. Nothing reaches production or preprod (items 6, 7).
-- Pre-built **non-colour** stylesheet. **No on-demand rebuild half** — separate brief if the
-  iPhone measurement calls for it (items 44, 114).
-- **No colours and no variants offered.** Anything outside the built set is caught and
-  reported, never silent (item 99).
+- ~~Pre-built **non-colour** stylesheet~~ — **superseded by A3, 2026-08-21.** The stylesheet is
+  the full set, all 23,031 classes. **No on-demand rebuild half, and no follow-up brief** —
+  item 114's condition never fired.
+- ~~No colours offered.~~ **Colours are offered** (A3). **Variants are still not** — they are in
+  no built set, and brief item 98 is why offering one would look broken. Anything outside the
+  built set is caught and reported, never silent (item 99).
 - The session file schema (items 93-96) is a **contract with `pi-dev-bot`** and is not
   paraphrased.
 - `/fold` renames a consumed session to `*.json.folded`; the game reads only bare `*.json`
@@ -52,11 +55,14 @@ What the answer changes downstream:
 | iPhone verdict | consequence |
 |---|---|
 | non-colour set (1.16 MiB) is comfortable | build as planned — Stage B catalogue is the non-colour set |
-| the **full** set (4.99 MiB) is also comfortable | catalogue becomes "everything" (brief item 46), colours are offered, and the follow-up brief for the on-demand half is never needed |
+| **the full set (4.99 MiB) is also comfortable** | **← this is what happened.** Catalogue becomes "everything" (brief item 46), colours are offered, and the follow-up brief for the on-demand half is never needed |
 | non-colour set struggles | Stage B narrows to the four stepper families (0.43 MiB, brief item 44), and the on-demand half gets its own brief |
 
-Because the middle row is real and costs nothing to test, **Task A2 ships both stylesheets as
-two separate entries**, so Jamie answers the whole question in one sitting.
+**Answered 2026-08-21: the middle row.** See task A3 for the result, what kind of evidence it
+is, and the four consequences.
+
+Task A2 shipped both sets so the whole question could be answered in one sitting. With the
+answer in, there is one stylesheet and it is the full set.
 
 ---
 
@@ -99,10 +105,8 @@ src/edit-mode/                    Browser. Imported by NOTHING in the game.
   history.ts                      back ownership + undo (pure core)
   session-store.ts                sessionStorage persistence
 
-src/tailwind-edit.css             dev-only entry, non-colour set
-src/tailwind-edit-all.css         dev-only entry, everything — for the A3 gate only
-.edit-mode/classlist.txt          generated, gitignored
-.edit-mode/classlist-all.txt      generated, gitignored
+src/tailwind-edit.css             dev-only entry — every class (A3)
+.edit-mode/classes/classlist.txt  generated, gitignored, ALONE in its directory
 .edit-mode/families.json          generated, gitignored
 .edit-sessions/                   generated, gitignored
 ```
@@ -136,37 +140,27 @@ border-accent  modifiers: ["0","5", ... ,"100"]
 The predicate is **"has modifiers, and every modifier is numeric"** — not "has modifiers". With
 that word it reproduces 8,397 exactly.
 
-**The cost, and the exemption Jamie asked for.** Shadow utilities take an opacity modifier, so
-they classify as colour and would drop out of the non-colour set. Verified:
+**What this predicate is now for, after A3.** It no longer filters the stylesheet — edit mode
+offers every class, so nothing is filtered. It survives because **the family map needs it**
+(D2): telling `text-sm` from `text-accent`, and `border-2` from `border-accent`, is what stops
+picking a colour from silently deleting a font size.
+
+The named-scale shadow exemption that revision 4 costed at 3,188 bytes is **deleted**. It
+existed to rescue `shadow-box` and friends from the non-colour filter; with no filter there is
+nothing to rescue. Recorded rather than quietly dropped, because the measurement was asked for
+and answered: it was the right call on the evidence available at the time, and A3 made the
+question disappear rather than settling it the other way.
+
+For the record, the classification itself is unchanged and still correct — shadows do carry an
+opacity modifier and do classify as colour:
 
 ```
 shadow-box COLOUR   shadow-box-active COLOUR   shadow-key COLOUR
 shadow-lg  COLOUR   shadow-md COLOUR   shadow-sm COLOUR   shadow-none non-colour
 ```
 
-Under a bare "no colours" rule, **edit mode would offer no shadows at all**, including our own
-`shadow-box` and `shadow-key`. Jamie asked for the named-scale shadows to be costed as an
-exemption, on the grounds that the game's look leans on them. **Measured on this tree,
-2026-08-19:**
-
-| set | bytes | gzipped |
-|---|---|---|
-| non-colour | 1,212,459 | 73,605 |
-| non-colour **+ the ten named-scale shadows** | 1,215,647 | 73,870 |
-| **delta** | **+3,188 bytes (+0.26%)** | +265 |
-
-Ten classes, all present in the design system: `shadow-2xs`, `shadow-xs`, `shadow-sm`,
-`shadow-md`, `shadow-lg`, `shadow-xl`, `shadow-2xl`, and our `shadow-box`, `shadow-box-active`,
-`shadow-key`.
-
-**Exempted.** Three kilobytes against losing the shadows the design leans on is not a trade
-worth making, and it is a rounding error on a 1.16 MiB sheet. `isColourUtility` gains a small,
-explicitly-named exemption list — named-scale only, never the colour-named ones
-(`shadow-accent`, `shadow-red-500` and the other 909 stay out).
-
-Adjacent and **not** taken, because Jamie named neither: the `drop-shadow-*` and
-`inset-shadow-*` named scales are the same shape and cost **9 classes, 756 bytes** together. Say
-the word and they go in on the same line; they are left out rather than quietly widened.
+That matters for the family map, where `shadow-lg` and `shadow-box` both declare `box-shadow`
+and so replace one another, exactly as two margin steps do.
 
 ### D2 — the family map is derived from CSS properties, not from prefixes
 
@@ -454,12 +448,10 @@ applies in serve mode only and no committed script changes.
 
 ## Flagged to Jamie
 
-1. ~~No shadows in edit mode.~~ **Costed and exempted, 2026-08-19.** The ten named-scale
-   shadows — `shadow-2xs` through `shadow-2xl` plus our `shadow-box`, `shadow-box-active` and
-   `shadow-key` — cost **3,188 bytes, 0.26% of the sheet**, so they are in. Colour-named shadows
-   stay out. `drop-shadow-*` and `inset-shadow-*` named scales would be another 756 bytes and
-   are left out unless asked for (D1). Moot if A3 says the full set is fine, in which case
-   everything is offered anyway.
+1. ~~No shadows in edit mode.~~ ~~Costed and exempted 2026-08-19.~~ **Moot as of A3,
+   2026-08-21** — you called it. Every shadow is offered because every class is offered, so
+   there is no exemption list to maintain and the 3,188-byte question never arises. The
+   exemption code is deleted.
 2. **`src/tailwind.css` gets three `@source not` lines**, against item 55. Reason in D6: without
    it, edit mode's own test files ship their class literals to the production stylesheet, which
    item 12 forbids. `@source not` can only remove rules, and the selectors it removes on this
@@ -513,9 +505,10 @@ go red before it counts (item 86).
     return `class -> sorted property list` (D2).
   - `COMPONENT_CLASSES` — the six, hand-listed here rather than converted to `@utility`
     (item 110): `digit-box`, `burger-btn`, `skip-link`, `toast-msg`, `warn`, `recurring`.
-  - `writeArtefacts()` — writes `classlist.txt`, `classlist-all.txt` and `families.json` into
+  - `writeArtefacts()` — writes the class list and `families.json` into
     `.edit-mode/` on dev-server start.
-- Create `src/tailwind-edit.css` and `src/tailwind-edit-all.css` — three lines each: the import,
+- Create `src/tailwind-edit.css` — and, for the A3 gate only, `src/tailwind-edit-all.css`
+  (**deleted after A3**, see below). Three lines each: the import,
   one `@source` at the matching list, and a comment recording that the spike proved an explicit
   `@source` is scanned even when the file is gitignored.
   **Two entries rather than one mutating query flag** (revision 1's `?edit-classes=all`): the
@@ -544,11 +537,57 @@ go red before it counts (item 86).
 - Tests `tests/edit-mode-html.spec.ts`: the rewrite swaps the stylesheet link, injects **no**
   script at this stage, and leaves the committed `index.html` untouched. [56]
 
-**A3 — GATE: Jamie measures on the iPhone 16 Pro.** [45, 46, 47, 87]
-- Not a code task. `npm run dev` on the Pi (now reachable over Tailscale, D10), Jamie loads the
-  page, then loads the all-classes entry, and reports whether either or both feel fine.
-- **Stage B does not start until this is answered** — it sets the catalogue's contents.
-- Recorded in this file when it comes back.
+**A3 — GATE: Jamie measures on the iPhone 16 Pro.** [45, 46, 47, 87] — **ANSWERED 2026-08-21**
+
+**The result: the full set is fine.** Jamie loaded the everything build — 23,031 classes,
+5.25 MB — on an iPhone 16 Pro over the LAN, and it felt identical to the normal build:
+scrolling, tapping, opening the menu, playing a puzzle.
+
+**What kind of evidence that is, stated plainly because it matters.** It is a *subjective
+on-device feel test*, not instrumented numbers. Nobody measured parse time, style-recalc or
+memory. What makes it sufficient is not precision but margin: the question was "does this
+choke", and the answer was "indistinguishable from normal". A marginal result would have needed
+instrumenting; this one does not. Brief item 45 predicted exactly this and called it judgement
+rather than measurement — the phone has now confirmed the judgement, on the same terms.
+
+**Four consequences, Jamie 2026-08-21:**
+
+1. **The catalogue is EVERYTHING**, not the non-colour set.
+2. **Colours are offered**, which makes the named-scale shadow exemption moot. Dropped — the
+   shadows are in because everything is in, not because of a special case.
+3. **The on-demand rebuild half is not built and needs no follow-up brief.** Brief item 114's
+   conditional never fires. The hybrid decision of 2026-08-18 is fully retired.
+4. **The colour predicate survives, for a different job.** It no longer filters the stylesheet;
+   it still tells `text-sm` from `text-accent` for the family map (D2), which is what stops
+   picking a colour from deleting a font size.
+
+**Dead scope, removed rather than left lying around:**
+
+- `src/tailwind-edit-all.css` — deleted. One stylesheet now, and it is the full set.
+- `SHADOW_EXEMPTIONS` and the exemption branch in `isColourUtility` — deleted.
+- `classSetFromEnv`, the `EDIT_CLASS_SET` variable and the `dev:all` script — deleted. There is
+  nothing left to choose between.
+- The second generated class list. One list, in its own subdirectory.
+- **The family map is now built over all 23,031 classes**, not the non-colour subset — it has
+  to know `text-accent` declares `color` now that colours can be picked.
+
+**Two things A2 learned the hard way, recorded so they are not rediscovered:**
+
+- **An explicit `@source` at a file registers its whole DIRECTORY as a scan root.** With both
+  class lists side by side, the non-colour stylesheet swept up the all-colours list next to it
+  and compiled 5.24 MB where 1.16 MiB was intended. Found by serving it and measuring, not by
+  reading the code. The generated list now sits alone in `.edit-mode/classes/`.
+- **The query string never reaches the plugin.** `wrangler.jsonc` puts `/` in
+  `run_worker_first`, so the Cloudflare Worker serves the page and rewrites the request on the
+  way through. `?classes=all` was gone before `transformIndexHtml`, before a `use()`
+  middleware, and before one unshifted to the front of the stack — verified at all three
+  positions. Anything in this plan that wants per-request state on a page load has the same
+  problem and needs a different mechanism.
+
+**And one operational constraint, Jamie 2026-08-21:** **two `vite dev` servers cannot run in the
+same working directory.** They share Miniflare's SQLite state and the second dies with "database
+is locked". The pair that served A3 was luck, not design. If both sets ever need serving at once
+that needs its own answer — a second checkout, most likely. Nothing in Stage B onwards needs it.
 
 **A4 — the safety assertions.** [7, 59, 101, 102] + Jamie's instruction 2
 - Test `tests/edit-mode-safety.spec.ts`, against **built output, never a config flag**:
@@ -575,6 +614,9 @@ go red before it counts (item 86).
   aside, then `npm run build:preprod` (D8, D9).
 
 ### Stage B — the catalogue and search (Unit 2)
+
+*A3 settled this stage's contents: the catalogue is every class the design system knows,
+colours included. Variants are still excluded — brief item 98.*
 
 **B1 — the catalogue and its endpoint.** [35, 36, 59, 98, 99, 110]
 - Create `src/edit-mode/catalogue.ts`: `createCatalogue(classes, families)` — takes the list as
