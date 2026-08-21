@@ -10,6 +10,7 @@ import type { Plugin } from 'vite';
 import { writeArtefacts } from './classlist.ts';
 import { rewriteIndexHtml } from './html.ts';
 import { gzipEditStylesheets } from './gzip.ts';
+import { serveCatalogue } from './catalogue-route.ts';
 
 export function editMode(): Plugin {
   return {
@@ -28,6 +29,7 @@ export function editMode(): Plugin {
     },
 
     async configureServer(server) {
+      server.middlewares.use(serveCatalogue());
       server.middlewares.use(gzipEditStylesheets());
 
       // Generate the class lists and the family map once, at startup. The
