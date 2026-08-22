@@ -11,6 +11,8 @@ import { writeArtefacts } from './classlist.ts';
 import { rewriteIndexHtml } from './html.ts';
 import { gzipEditStylesheets } from './gzip.ts';
 import { serveCatalogue } from './catalogue-route.ts';
+import { receiveSession, serveReplay } from './session-routes.ts';
+import { startReadOnlyProxy } from './readonly-proxy.ts';
 
 export function editMode(): Plugin {
   return {
@@ -30,11 +32,25 @@ export function editMode(): Plugin {
 
     async configureServer(server) {
       server.middlewares.use(serveCatalogue());
+      // Done writes here; Dave's page reads the replay. Both before the gzip
+      // middleware, which only cares about the stylesheet.
+      server.middlewares.use(receiveSession());
+      server.middlewares.use(serveReplay());
       server.middlewares.use(gzipEditStylesheets());
 
       // Generate the class lists and the family map once, at startup. The
       // stylesheets @source these files, so they must exist before the first
       // request for CSS arrives.
+      // The read-only port the tunnel points at. Started and stopped with the
+      // dev server rather than being a separate thing anyone has to remember
+      // (brief item 107).
+      const devPort = server.config.server.port ?? 5173;
+      const proxy = startReadOnlyProxy({ port: devPort + 1, target: devPort });
+      server.httpServer?.on('close', () => proxy.close());
+      server.config.logger.info(
+        `  \u279c  edit mode: read-only view on port ${devPort + 1} (GET and HEAD only)`
+      );
+
       try {
         const { classes } = await writeArtefacts();
         server.config.logger.info(
