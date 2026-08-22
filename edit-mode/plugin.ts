@@ -9,6 +9,7 @@
 import type { Plugin } from 'vite';
 import { writeArtefacts } from './classlist.ts';
 import { rewriteIndexHtml } from './html.ts';
+import { gitInfo } from './sessions.ts';
 import { gzipEditStylesheets } from './gzip.ts';
 import { serveCatalogue } from './catalogue-route.ts';
 import { receiveSession, serveReplay } from './session-routes.ts';
@@ -68,7 +69,7 @@ export function editMode(): Plugin {
 
     transformIndexHtml: {
       order: 'pre',
-      handler: (html) => rewriteIndexHtml(html),
+      handler: (html) => rewriteIndexHtml(html, { branch: gitInfo().branch }),
     },
   };
 }

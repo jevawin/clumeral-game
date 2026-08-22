@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { rewriteIndexHtml, EDIT_STYLESHEET } from '../edit-mode/html.ts';
+import { rewriteIndexHtml, EDIT_STYLESHEET, OVERLAY_ENTRY } from '../edit-mode/html.ts';
 
 // A2 — the dev-server HTML rewrite (plan A2, brief items 56, 60).
 //
@@ -19,10 +19,13 @@ describe('the stylesheet swap (brief item 56)', () => {
   });
 
   it('changes nothing else about the page', () => {
+    // One href swapped and one script tag added — nothing else touched, so the
+    // dev server is the real page rather than an approximation of it.
     const out = rewriteIndexHtml(INDEX);
-    expect(out.length).toBeCloseTo(INDEX.length, -2);
     expect(out).toContain('<title>Clumeral</title>');
     expect(out).toContain('data-fb-modal');
+    expect(out).toContain('/src/app.ts');
+    expect(out.length - INDEX.length).toBeLessThan(200);
   });
 
   it('keeps the onerror reload guard on the swapped link', () => {
@@ -37,12 +40,34 @@ describe('the stylesheet swap (brief item 56)', () => {
   });
 });
 
-describe('the overlay script is NOT injected yet (plan A2)', () => {
-  it('injects no script tag, because src/edit-mode/overlay.ts does not exist', () => {
-    // Injecting it here would 404 on every page load and log a module error
-    // during the A3 iPhone measurement — the one task that has to work. C3
-    // starts injecting it, once there is something to inject.
-    expect(rewriteIndexHtml(INDEX)).not.toContain('edit-mode/overlay');
+describe('the overlay script (plan D2, D4, finding L3)', () => {
+  it('is injected', () => {
+    expect(rewriteIndexHtml(INDEX)).toContain(OVERLAY_ENTRY);
+  });
+
+  it('goes BEFORE the app entry', () => {
+    // Load-bearing rather than tidy: for listeners on the same target the DOM
+    // runs them in REGISTRATION order regardless of phase. Registering first is
+    // what lets edit mode take a keypress before app.ts sees it, and take back
+    // before the router re-renders.
+    const out = rewriteIndexHtml(INDEX);
+    const overlayAt = out.indexOf(OVERLAY_ENTRY);
+    const appAt = out.indexOf('/src/app.ts');
+    expect(overlayAt).toBeGreaterThan(-1);
+    expect(appAt).toBeGreaterThan(-1);
+    expect(overlayAt).toBeLessThan(appAt);
+  });
+
+  it('carries the branch, which the browser cannot know', () => {
+    // The session store is keyed to it: restoring one branch's patch set
+    // against another's markup would apply edits to whatever happened to match.
+    expect(rewriteIndexHtml(INDEX, { branch: 'dev/edit-mode-roundtrip' }))
+      .toContain('data-branch="dev/edit-mode-roundtrip"');
+  });
+
+  it('does not let a branch name break out of the attribute', () => {
+    const out = rewriteIndexHtml(INDEX, { branch: 'dev/"><script>bad()</script>' });
+    expect(out).not.toContain('<script>bad()');
   });
 });
 
