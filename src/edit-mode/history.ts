@@ -37,6 +37,17 @@ export interface Change {
    * up to mt-9 collapses but changing padding in between does not.
    */
   property: string;
+  /**
+   * Which patch kind this becomes in the session file.
+   *
+   * Carried PER CHANGE, not per session. Marking every patch `raw` because the
+   * raw field was used once would tell /fold that Jamie hand-typed classes he
+   * picked from search — and hand him a `typed` string that belongs to a
+   * different element (brief items 94, 96).
+   */
+  kind?: 'classes' | 'raw';
+  /** What he typed, on a `raw` change only. May not be a class this build has. */
+  typed?: string;
 }
 
 export interface HistoryOptions {
@@ -69,6 +80,14 @@ export interface History {
   projection(): Map<string, string[]>;
   /** Restore a saved history — a reload must not lose the inverses (M5). */
   restore(entries: Change[]): void;
+  /**
+   * What this element looked like before edit mode touched it.
+   *
+   * The `before` of its FIRST entry, rather than a separate map: a separate map
+   * lives only in memory, so after a reload Reset element would quietly restore
+   * nothing.
+   */
+  originalOf(target: string): string[] | undefined;
 }
 
 export function createHistory(options: HistoryOptions = {}): History {
@@ -114,6 +133,10 @@ export function createHistory(options: HistoryOptions = {}): History {
       const byTarget = new Map<string, string[]>();
       for (const entry of entries) byTarget.set(entry.target, entry.after);
       return byTarget;
+    },
+
+    originalOf(target) {
+      return entries.find((entry) => entry.target === target)?.before;
     },
 
     restore(saved) {

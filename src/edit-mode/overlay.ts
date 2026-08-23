@@ -73,9 +73,18 @@ async function start(): Promise<void> {
   let selected: Element | null = saved.selected
     ? findByBreadcrumb(document, saved.selected)
     : null;
-  // What each edited element started as, so Reset element can undo the lot.
-  const originals = new Map<string, string[]>();
-
+  /**
+   * The selected element's identity, FROZEN when it was selected.
+   *
+   * Not recomputed per change, and that is load-bearing. A crumb is written
+   * `tag.firstClass`, so removing or replacing an element's first class renames
+   * it: the second change to the same element would record a DIFFERENT target,
+   * giving one element two history entries, a projection with a stale key, and
+   * a session file naming an element /fold cannot grep. Freezing it at
+   * selection also means the recorded breadcrumb describes the element as
+   * SOURCE still has it, which is what /fold needs.
+   */
+  let selectedPath: string | null = saved.selected;
   const interceptor = createInterceptor(document, {
     isOwnUi: (target) => isOverlay(target as Node | null),
     onPointer: (event) => {
@@ -88,11 +97,7 @@ async function start(): Promise<void> {
   });
 
   function persist(): void {
-    store.save({
-      entries: [...history.entries],
-      mode,
-      selected: selected ? breadcrumbOf(selected) : null,
-    });
+    store.save({ entries: [...history.entries], mode, selected: selectedPath });
   }
 
   function draw(): void {
@@ -106,9 +111,7 @@ async function start(): Promise<void> {
 
   function select(el: Element): void {
     selected = el;
-    if (!originals.has(breadcrumbOf(el))) {
-      originals.set(breadcrumbOf(el), [...el.classList]);
-    }
+    selectedPath = breadcrumbOf(el);
     // Brief item 42: a pair already fighting in the markup is surfaced, not
     // tidied away. Anything changed there will look unpredictable.
     const conflicts = existingConflicts([...el.classList], families);
@@ -118,9 +121,14 @@ async function start(): Promise<void> {
   }
 
   /** Apply a new class list to the selected element and log it as one change. */
-  function change(next: string[], property: string): void {
-    if (!selected) return;
-    const target = breadcrumbOf(selected);
+  function change(
+    next: string[],
+    property: string,
+    kind: 'classes' | 'raw' = 'classes',
+    typed?: string
+  ): void {
+    if (!selected || !selectedPath) return;
+    const target = selectedPath;
     const before = [...selected.classList];
     const wasComputed = computedSnapshot(window, selected);
 
@@ -134,7 +142,7 @@ async function start(): Promise<void> {
 
     // A new history entry means a new back step; a collapsed one must not push,
     // or back gets an entry with nothing behind it.
-    if (history.record({ target, before, after: next, property }, Date.now())) {
+    if (history.record({ target, before, after: next, property, kind, typed }, Date.now())) {
       window.history.pushState({ clumeralEdit: history.entries.length }, '', location.href);
     }
     draw();
@@ -173,14 +181,16 @@ async function start(): Promise<void> {
     onUndo: () => backOneStep(),
     onResetElement: () => {
       if (!selected) return;
-      const original = originals.get(breadcrumbOf(selected));
+      // From the history rather than a separate map, so it still works after a
+      // reload — which is exactly when someone reaches for Reset.
+      const original = selectedPath ? history.originalOf(selectedPath) : undefined;
       if (original) change(original, 'reset');
     },
     onDone: () => void save(),
     onRawClasses: (value) => {
       if (!selected) return;
-      rawTyped = value;
-      change(value.split(/\s+/).filter(Boolean), 'raw');
+      // The kind and the typed string ride on THIS change only.
+      change(value.split(/\s+/).filter(Boolean), 'raw', 'raw', value);
     },
     onFreeCss: (value) => { freeCss = value; },
     onSearchFocus: (focused) => {
@@ -190,7 +200,6 @@ async function start(): Promise<void> {
     },
   });
 
-  let rawTyped = '';
   let freeCss = '';
 
   function setMode(next: 'play' | 'edit'): void {
@@ -225,20 +234,24 @@ async function start(): Promise<void> {
   }
 
   async function save(): Promise<void> {
-    const patches: Patch[] = history.entries.map((entry) => ({
-      kind: rawTyped ? 'raw' : 'classes',
-      breadcrumb: entry.target,
-      tag: findByBreadcrumb(document, entry.target)?.tagName.toLowerCase() ?? '',
-      text: findByBreadcrumb(document, entry.target)?.textContent?.trim().slice(0, 40) ?? '',
-      before: entry.before,
-      after: entry.after,
-      ...(rawTyped ? { typed: rawTyped } : {}),
-    } as Patch));
+    const patches: Patch[] = history.entries.map((entry) => {
+      const el = findByBreadcrumb(document, entry.target);
+      return {
+        kind: entry.kind ?? 'classes',
+        breadcrumb: entry.target,
+        tag: el?.tagName.toLowerCase() ?? '',
+        text: el?.textContent?.trim().slice(0, 40) ?? '',
+        before: entry.before,
+        after: entry.after,
+        // Only a raw change carries what was typed, and only its own (item 96).
+        ...(entry.kind === 'raw' && entry.typed ? { typed: entry.typed } : {}),
+      } as Patch;
+    });
 
-    if (freeCss && selected) {
+    if (freeCss && selected && selectedPath) {
       patches.push({
         kind: 'css',
-        breadcrumb: breadcrumbOf(selected),
+        breadcrumb: selectedPath,
         tag: selected.tagName.toLowerCase(),
         text: '',
         declarations: freeCss,
