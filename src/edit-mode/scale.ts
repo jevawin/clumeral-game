@@ -23,50 +23,73 @@ function suffixOf(name: string): string {
 }
 
 /**
+ * The t-shirt scale, in the order a human means it.
+ *
+ * `text-sm`, `rounded-lg` and friends have no number to sort by, and
+ * alphabetical gives `2xl, base, lg, sm, xl, xs` — which is not a scale, it is a
+ * list. Jamie's report: "some cycle-able chips aren't, like font".
+ */
+const SIZE_ORDER = [
+  '3xs', '2xs', 'xs', 'sm', 'base', 'md', 'lg', 'xl',
+  '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', '8xl', '9xl',
+];
+
+/**
  * Where a class sits on its scale.
  *
- * Numeric steps sort by value, so mt-10 comes after mt-9 rather than after
- * mt-1. Named steps (px, auto, full) have no place on a number line, so they
- * sort alphabetically after the numbers — predictable, and stepping still
- * reaches them.
+ * Three bands, in this order: numbers, named sizes, then anything else
+ * alphabetically. Named steps (px, auto, full) have no place on a number line
+ * but stepping must still reach them.
  *
- * Negatives sort below zero, which makes -mt-2, -mt-1, mt-0, mt-1 one
- * continuous scale. Stepping down past zero into the negatives is exactly what
- * "walk the scale" should mean.
+ * Negatives sort below zero, so -mt-2, -mt-1, mt-0, mt-1 is one continuous
+ * scale.
  */
 function order(name: string): [number, number, string] {
   const negative = name.startsWith('-');
   const suffix = suffixOf(name);
-  const value = Number.parseFloat(suffix);
-  if (Number.isNaN(value)) return [1, 0, suffix];
-  return [0, negative ? -value : value, ''];
+
+  // The WHOLE suffix must be a number. parseFloat('2xl') is 2, which sorted
+  // text-2xl as if it were the number two while text-sm sorted as text — so the
+  // font scale was in no order at all.
+  if (/^\d+(\.\d+)?$/.test(suffix)) {
+    const value = Number.parseFloat(suffix);
+    return [0, negative ? -value : value, ''];
+  }
+
+  const sizeAt = SIZE_ORDER.indexOf(suffix);
+  if (sizeAt !== -1) return [1, sizeAt, ''];
+
+  return [2, 0, suffix];
 }
 
 function compare(a: string, b: string): number {
-  const [groupA, valueA, textA] = order(a);
-  const [groupB, valueB, textB] = order(b);
-  if (groupA !== groupB) return groupA - groupB;
+  const [bandA, valueA, textA] = order(a);
+  const [bandB, valueB, textB] = order(b);
+  if (bandA !== bandB) return bandA - bandB;
   if (valueA !== valueB) return valueA - valueB;
   return textA.localeCompare(textB);
 }
 
-/**
- * Every step of the scale this class belongs to, in order.
- *
- * Matched on the PREFIX rather than the family map, and deliberately: the map
- * says mt-4 and -mt-4 are the same family (both margin-top), which is right for
- * deciding whether they fight — but the stepper needs them as one ordered line,
- * and it must not sweep in a different utility that happens to set the same
- * property.
- */
+/** Every step of the scale this class belongs to, in order. */
 export function scaleFor(catalogue: Catalogue, className: string): string[] {
   const bare = className.startsWith('-') ? className.slice(1) : className;
   const prefix = prefixOf(bare);
   if (!prefix) return [];
 
+  // Same prefix AND the same CSS properties.
+  //
+  // Prefix alone was wrong, and it is what broke the font steppers: `text-sm`,
+  // `text-2xl` and `text-accent` all have the prefix `text`, so the font-size
+  // scale swept in several hundred colours and stepping landed anywhere.
+  // Matching the family map too is the same rule used everywhere else — a
+  // utility's family is what it DECLARES, not what it is called.
+  const properties = catalogue.properties(className)?.join(',');
+  if (!properties) return [];
+
   const steps = catalogue.classes.filter((candidate) => {
     const candidateBare = candidate.startsWith('-') ? candidate.slice(1) : candidate;
-    return prefixOf(candidateBare) === prefix;
+    if (prefixOf(candidateBare) !== prefix) return false;
+    return catalogue.properties(candidate)?.join(',') === properties;
   });
 
   return steps.sort(compare);

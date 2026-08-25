@@ -11,14 +11,17 @@ const CLASSES = [
   '-mt-2', '-mt-1', 'mt-0', 'mt-0.5', 'mt-1', 'mt-2', 'mt-4', 'mt-9', 'mt-10', 'mt-96',
   'mt-px', 'mt-auto',
   'mb-4', 'px-4', 'px-6',
-  'text-sm', 'text-lg', 'flex',
+  'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl',
+  'text-accent', 'text-center', 'flex',
 ];
 
 const FAMILIES: Record<string, string[]> = Object.fromEntries([
   ...CLASSES.filter((c) => c.includes('mt-')).map((c) => [c, ['margin-top']]),
   ['mb-4', ['margin-bottom']],
   ['px-4', ['padding-inline']], ['px-6', ['padding-inline']],
-  ['text-sm', ['font-size', 'line-height']], ['text-lg', ['font-size', 'line-height']],
+  ...['text-xs','text-sm','text-base','text-lg','text-xl','text-2xl']
+    .map((n) => [n, ['font-size', 'line-height']] as [string, string[]]),
+  ['text-accent', ['color']], ['text-center', ['text-align']],
   ['flex', ['display']],
 ]);
 
@@ -104,10 +107,37 @@ describe('stepping', () => {
   });
 });
 
-describe('the text-size scale', () => {
-  it('walks named sizes even with no numbers in them', () => {
-    // Alphabetical is the only order available here, and it is at least
-    // predictable. Jamie is looking at the result while he taps.
-    expect(scaleFor(catalogue, 'text-sm')).toEqual(['text-lg', 'text-sm']);
+describe('the text-size scale (Jamie 2026-08-24: "font -/+ do nothing")', () => {
+  it('walks the t-shirt sizes in the order a human means them', () => {
+    // Alphabetically this is 2xl, base, lg, sm, xl, xs — a list, not a scale.
+    expect(scaleFor(catalogue, 'text-sm')).toEqual([
+      'text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl',
+    ]);
+  });
+
+  it('steps one size at a time', () => {
+    expect(step(catalogue, 'text-sm', 'up')).toBe('text-base');
+    expect(step(catalogue, 'text-base', 'down')).toBe('text-sm');
+    expect(step(catalogue, 'text-xl', 'up')).toBe('text-2xl');
+  });
+
+  it('does not read text-2xl as the number two', () => {
+    // parseFloat('2xl') is 2, which sorted text-2xl among the numbers while
+    // text-sm sorted as text. That is why the font stepper did nothing useful.
+    expect(scaleFor(catalogue, 'text-sm').indexOf('text-2xl')).toBe(5);
+  });
+
+  it('keeps colours and alignment off the font-size scale', () => {
+    // THE bug: text-sm, text-2xl and text-accent all have the prefix `text`, so
+    // grouping by prefix alone swept several hundred colours onto the font
+    // scale and stepping landed anywhere.
+    const scale = scaleFor(catalogue, 'text-sm');
+    expect(scale).not.toContain('text-accent');
+    expect(scale).not.toContain('text-center');
+  });
+
+  it('gives a colour its own scale rather than the font one', () => {
+    expect(scaleFor(catalogue, 'text-accent')).toEqual(['text-accent']);
+    expect(isSteppable(catalogue, 'text-accent')).toBe(false);
   });
 });

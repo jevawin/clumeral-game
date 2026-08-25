@@ -42,6 +42,9 @@ const PANEL_CSS = `
     right: 16px;
     /* Clear of the bottom-centre stack, and above the home indicator. */
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    /* ABOVE the sheet. Jamie, 2026-08-24: "no way to close edit mode" — the
+       sheet is fixed to the bottom and was covering the only way out. */
+    z-index: 2;
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -63,7 +66,16 @@ const PANEL_CSS = `
     bottom: 0;
     max-height: 60vh;
     overflow-y: auto;
+    z-index: 1;
+    /* The sheet scrolls itself; the page underneath keeps its own scroll.
+       Without this a flick inside the sheet drags the page instead once the
+       sheet is at its end (Jamie, 2026-08-24, item 2). */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    /* Right padding keeps the sheet clear of the pencil, so it never covers
+       the only way out. Must come AFTER the shorthand. */
     padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    padding-right: 84px;
     background: #ffffff;
     color: #1a1a1a;
     border-top: 2px solid #1a1a1a;
@@ -90,6 +102,71 @@ const PANEL_CSS = `
 
   .status { margin-top: 10px; font-size: 13px; line-height: 1.4; }
   .status:empty { display: none; }
+
+  /* Jamie, 2026-08-24: "tiny, barely tappable, too close to above and below".
+     It inherited nothing, so it rendered at the browser default next to 44px
+     buttons. */
+  input[type="search"], input[type="text"], textarea {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 48px;
+    margin: 8px 0;
+    padding: 0 12px;
+    border: 2px solid #1a1a1a;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1a1a1a;
+    /* 16px or larger, or iOS zooms the whole page when it takes focus. */
+    font: inherit;
+    font-size: 16px;
+  }
+  textarea { min-height: 72px; padding: 10px 12px; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 3px solid #0a6cff;
+    outline-offset: 1px;
+  }
+
+  /* A touch of colour so the controls are told apart at a glance
+     (Jamie, 2026-08-24, item 4). Hand-written: the shadow root cannot see the
+     project's theme tokens, which is the accepted cost of sealing it. */
+  .chip { background: #e8f0fe; border-color: #2b5fd9; color: #12306e; }
+  .crumb { background: #f3f0e8; font-size: 13px; min-height: 36px; }
+  .stepper button { background: #eef7ee; border-color: #2f7a34; color: #14401a; }
+  .footer button:last-child { background: #1a1a1a; color: #ffffff; }
+  .search-family { margin: 10px 0 4px; font-size: 12px; color: #555555; }
+  .search-group button { background: #f6f6f6; }
+`;
+
+/**
+ * The outline drawn over the selected element.
+ *
+ * Brief item 61 asked for this and it was never built — Jamie's first report
+ * was "highlight the element I'm on". A separate fixed box rather than an
+ * outline ON the element, because styling the element would change the very
+ * thing being judged, and would show up in its computed style.
+ */
+const HIGHLIGHT_CSS = `
+  .highlight {
+    position: fixed;
+    pointer-events: none;
+    border: 2px solid #0a6cff;
+    background: rgba(10, 108, 255, 0.08);
+    border-radius: 2px;
+    z-index: 0;
+  }
+  .highlight[hidden] { display: none; }
+  .highlight-label {
+    position: absolute;
+    top: -20px;
+    left: -2px;
+    padding: 1px 6px;
+    background: #0a6cff;
+    color: #ffffff;
+    font-size: 11px;
+    line-height: 18px;
+    white-space: nowrap;
+    border-radius: 2px;
+  }
 `;
 
 export interface Panel {
@@ -99,6 +176,8 @@ export interface Panel {
   readonly root: ShadowRoot;
   readonly sheet: HTMLElement;
   setMode(mode: 'play' | 'edit'): void;
+  /** Draw the outline over this element, or clear it when given nothing. */
+  highlight(el: Element | null, label?: string): void;
   /** Say something to Jamie. The copy lives in copy.ts. */
   say(message: string): void;
   onToggle(handler: () => void): void;
@@ -116,8 +195,16 @@ export function createPanel(doc: Document, options: PanelOptions = {}): Panel {
   const root = host.attachShadow({ mode: 'closed' });
 
   const style = doc.createElement('style');
-  style.textContent = PANEL_CSS;
+  style.textContent = PANEL_CSS + HIGHLIGHT_CSS;
   root.appendChild(style);
+
+  const highlight = doc.createElement('div');
+  highlight.className = 'highlight';
+  highlight.hidden = true;
+  const highlightLabel = doc.createElement('span');
+  highlightLabel.className = 'highlight-label';
+  highlight.appendChild(highlightLabel);
+  root.appendChild(highlight);
 
   const pencil = doc.createElement('button');
   pencil.className = 'pencil';
@@ -151,8 +238,24 @@ export function createPanel(doc: Document, options: PanelOptions = {}): Panel {
     host,
     root,
     sheet,
+    highlight(el, label = '') {
+      if (!el) {
+        highlight.hidden = true;
+        return;
+      }
+      const box = el.getBoundingClientRect();
+      highlight.hidden = false;
+      highlight.style.top = `${box.top}px`;
+      highlight.style.left = `${box.left}px`;
+      highlight.style.width = `${box.width}px`;
+      highlight.style.height = `${box.height}px`;
+      highlightLabel.textContent = label;
+    },
+
     setMode(mode) {
       pencil.dataset.mode = mode;
+      // Nothing is selected in play mode, so nothing should be outlined.
+      if (mode !== 'edit') highlight.hidden = true;
       pencil.setAttribute('aria-label', mode === 'edit' ? 'Exit edit mode' : 'Edit mode');
       sheet.hidden = mode !== 'edit';
       if (mode !== 'edit') status.textContent = '';

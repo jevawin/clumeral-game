@@ -101,6 +101,11 @@ async function start(): Promise<void> {
   }
 
   function draw(): void {
+    // Brief item 61, and Jamie's first report: show which element you are on.
+    panel.highlight(
+      mode === 'edit' ? selected : null,
+      selected ? crumb(selected) : ''
+    );
     controls.render({
       crumbs: selected ? ancestry(selected).map(crumb) : [],
       classes: selected ? [...selected.classList] : [],
@@ -112,6 +117,8 @@ async function start(): Promise<void> {
   function select(el: Element): void {
     selected = el;
     selectedPath = breadcrumbOf(el);
+    // The outline is drawn in page coordinates, so it has to follow the page.
+    el.scrollIntoView({ block: 'nearest' });
     // Brief item 42: a pair already fighting in the markup is surfaced, not
     // tidied away. Anything changed there will look unpredictable.
     const conflicts = existingConflicts([...el.classList], families);
@@ -289,6 +296,34 @@ async function start(): Promise<void> {
     if (action === 'undo') backOneStep();
     else setMode('play');
   }, { capture: true });
+
+  /**
+   * Put the edits back after the page comes back.
+   *
+   * Jamie, 2026-08-24: "navigating away from and back to Safari resets
+   * everything." The patch set survives — session-store.ts is tested — but
+   * src/router.ts listens for `visibilitychange` and `focus` and re-renders the
+   * screen, which rebuilds the DOM and throws the edits away. Nothing put them
+   * back, because re-projection only ran on undo.
+   *
+   * Re-projecting here is the same one-line answer as everywhere else: the
+   * patch set is the truth and the DOM is a projection of it.
+   */
+  function reproject(): void {
+    project(document, history.projection());
+    if (selectedPath) selected = findByBreadcrumb(document, selectedPath);
+    draw();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') reproject();
+  });
+  window.addEventListener('focus', reproject);
+  window.addEventListener('pageshow', reproject);
+  // The outline is positioned in viewport coordinates, so it has to be redrawn
+  // when the page moves under it.
+  window.addEventListener('scroll', () => draw(), { passive: true });
+  window.addEventListener('resize', () => draw());
 
   setMode(mode);
   project(document, history.projection());

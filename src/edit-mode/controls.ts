@@ -84,6 +84,14 @@ export function createControls(
     const results = doc.createElement('div');
     results.className = 'search-results';
 
+    // Jamie, 2026-08-24: "doesn't activate the keyboard when tapped". The
+    // collapse below keys on the focus event, so no focus meant the sheet
+    // collapsed with no way back — his "can't get out".
+    input.addEventListener('pointerdown', (event) => {
+      event.stopPropagation();
+      input.focus();
+    });
+
     input.addEventListener('focus', () => {
       // Brief item 33: the sheet collapses to search and results only, and the
       // selected element is scrolled above it. Without this the on-screen
@@ -150,6 +158,15 @@ export function createControls(
     // Collapsed: search and results only, so the keyboard cannot cover the
     // element being edited.
     if (searchOpen) {
+      const bar = row('search-bar');
+      // An explicit way out. Relying on blur alone left Jamie stuck when the
+      // input never took focus in the first place.
+      bar.appendChild(button('Close', () => {
+        searchOpen = false;
+        callbacks.onSearchFocus(false);
+        draw();
+      }, 'search-close'));
+      container.appendChild(bar);
       container.appendChild(searchBlock);
       return;
     }
