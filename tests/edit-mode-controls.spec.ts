@@ -180,6 +180,31 @@ describe('the keyboard must not cover the element being edited (brief item 33)',
   });
 });
 
+describe('telling your own classes from the element-s (Jamie 2026-08-26)', () => {
+  it('marks the classes added in this session', () => {
+    // "When I apply a class from search it's indistinguishable from the
+    // original classes." Knowing which are yours is most of knowing what you
+    // have done to an element.
+    controls.render({ crumbs: [], classes: ['mt-4', 'flex'], added: ['flex'], desktop: false });
+    const chips = findAll('.chip');
+    expect(chips[0].className).not.toContain('chip-added');
+    expect(chips[1].className).toContain('chip-added');
+  });
+
+  it('marks nothing when nothing has been added', () => {
+    controls.render({ crumbs: [], classes: ['mt-4'], added: [], desktop: false });
+    expect(find('.chip').className).not.toContain('chip-added');
+  });
+});
+
+describe('the sheet stays clear of the keyboard (Jamie 2026-08-26)', () => {
+  it('pins the search field so results scroll under it', () => {
+    // "The main box disappears" — the field scrolled away with the results.
+    const styles = document.querySelector('style');
+    expect(sheet.querySelector('.search-row')).toBeTruthy();
+  });
+});
+
 describe('the desktop extras (brief items 15, 34)', () => {
   it('are absent on a phone', () => {
     expect(find('.raw-classes')).toBeNull();

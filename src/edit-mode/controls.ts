@@ -16,6 +16,14 @@ export interface ControlsState {
   crumbs: string[];
   /** The selected element's classes, in order. */
   classes: string[];
+  /**
+   * Of those, the ones added in this session.
+   *
+   * Jamie, 2026-08-26: a class applied from search "is indistinguishable from
+   * the original classes". Knowing which are yours is most of knowing what you
+   * have done to an element.
+   */
+  added?: string[];
   /** Desktop gets the raw field and the free-CSS box (brief item 34). */
   desktop: boolean;
 }
@@ -49,7 +57,7 @@ export function createControls(
   callbacks: ControlsCallbacks
 ): Controls {
   let searchOpen = false;
-  let state: ControlsState = { crumbs: [], classes: [], desktop: false };
+  let state: ControlsState = { crumbs: [], classes: [], added: [], desktop: false };
 
   // Rebuilt on every draw.
   const container = doc.createElement('div');
@@ -200,9 +208,14 @@ export function createControls(
     }
 
     const chips = row('chips');
+    const added = new Set(state.added ?? []);
     for (const name of state.classes) {
       // Tap a chip to remove it (brief item 33).
-      chips.appendChild(button(`${name} ×`, () => callbacks.onRemoveClass(name), 'chip'));
+      chips.appendChild(button(
+        `${name} ×`,
+        () => callbacks.onRemoveClass(name),
+        added.has(name) ? 'chip chip-added' : 'chip'
+      ));
     }
     container.appendChild(chips);
 

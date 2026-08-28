@@ -27,6 +27,7 @@ const TAP_TARGET = '44px';
 const PANEL_CSS = `
   :host {
     all: initial;
+    --keyboard-inset: 0px;
     font-family: system-ui, -apple-system, sans-serif;
     /* Above everything the game uses. index.html's bottom-centre stack is
        z-[300], and the pencil must clear it on a narrow screen (item 62). */
@@ -63,8 +64,14 @@ const PANEL_CSS = `
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
-    max-height: 60vh;
+    /* SITS ABOVE THE KEYBOARD.
+       On iOS the on-screen keyboard shrinks the VISUAL viewport but leaves the
+       layout viewport alone, so a bottom of 0 means bottom of the PAGE - underneath
+       the keyboard, where nothing can be seen or tapped. --keyboard-inset is
+       set from window.visualViewport by the overlay (Jamie, 2026-08-26: "the
+       edit window hides behind the keyboard"). */
+    bottom: var(--keyboard-inset, 0px);
+    max-height: var(--sheet-max, 60vh);
     overflow-y: auto;
     z-index: 1;
     /* The sheet scrolls itself; the page underneath keeps its own scroll.
@@ -99,6 +106,27 @@ const PANEL_CSS = `
     cursor: pointer;
   }
   button:active { background: #ebebeb; }
+
+  /* The search field stays put while results scroll under it. It used to
+     scroll away with everything else — "the main box disappears". */
+  .search-row {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #ffffff;
+    margin: 0;
+    padding-top: 4px;
+  }
+  .search-bar { position: sticky; top: 0; z-index: 2; background: #ffffff; }
+
+  /* A class added in this session, told apart from what the element came with
+     (Jamie, 2026-08-26). */
+  .chip-added {
+    background: #e6f7ea;
+    border-color: #2f7a34;
+    color: #14401a;
+    font-weight: 700;
+  }
 
   .status { margin-top: 10px; font-size: 13px; line-height: 1.4; }
   .status:empty { display: none; }
@@ -178,6 +206,11 @@ export interface Panel {
   setMode(mode: 'play' | 'edit'): void;
   /** How tall the sheet currently is, so the page can be shortened to match. */
   sheetHeight(): number;
+  /**
+   * Lift the sheet clear of the on-screen keyboard, and cap its height to what
+   * is actually visible.
+   */
+  setViewport(inset: number, visibleHeight: number): void;
   /** Draw the outline over this element, or clear it when given nothing. */
   highlight(el: Element | null, label?: string): void;
   /** Say something to Jamie. The copy lives in copy.ts. */
@@ -240,6 +273,13 @@ export function createPanel(doc: Document, options: PanelOptions = {}): Panel {
     host,
     root,
     sheet,
+    setViewport(inset, visibleHeight) {
+      host.style.setProperty('--keyboard-inset', `${Math.max(0, Math.round(inset))}px`);
+      // Never taller than the space left above the keyboard, or the top of the
+      // sheet — the search field — is pushed off screen.
+      host.style.setProperty('--sheet-max', `${Math.round(visibleHeight * 0.6)}px`);
+    },
+
     sheetHeight() {
       return sheet.hidden ? 0 : sheet.getBoundingClientRect().height;
     },

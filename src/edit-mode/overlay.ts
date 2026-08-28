@@ -113,6 +113,21 @@ async function start(): Promise<void> {
     document.body.style.paddingBottom = height ? `${Math.ceil(height)}px` : '';
   }
 
+  /**
+   * Keep the sheet above the on-screen keyboard.
+   *
+   * iOS shrinks the VISUAL viewport when the keyboard opens and leaves the
+   * layout viewport alone, so anything at `bottom: 0` ends up underneath it.
+   * visualViewport is the only thing that knows how much room is really left.
+   */
+  function trackKeyboard(): void {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const inset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+    panel.setViewport(inset, vv.height);
+    fitPageToSheet();
+  }
+
   function persist(): void {
     store.save({ entries: [...history.entries], mode, selected: selectedPath });
   }
@@ -123,9 +138,14 @@ async function start(): Promise<void> {
       mode === 'edit' ? selected : null,
       selected ? crumb(selected) : ''
     );
+    // Which classes this session added, so the chips can say so.
+    const original = selectedPath ? history.originalOf(selectedPath) ?? [] : [];
+    const current = selected ? [...selected.classList] : [];
+
     controls.render({
       crumbs: selected ? ancestry(selected).map(crumb) : [],
-      classes: selected ? [...selected.classList] : [],
+      classes: current,
+      added: current.filter((name) => !original.includes(name)),
       // The raw field and free-CSS box are a desktop affordance (brief item 34).
       desktop: window.matchMedia('(min-width: 768px)').matches,
     });
@@ -348,6 +368,9 @@ async function start(): Promise<void> {
   if ('ResizeObserver' in window) {
     new ResizeObserver(fitPageToSheet).observe(panel.sheet);
   }
+  window.visualViewport?.addEventListener('resize', trackKeyboard);
+  window.visualViewport?.addEventListener('scroll', trackKeyboard);
+  trackKeyboard();
 
   setMode(mode);
   project(document, history.projection());
