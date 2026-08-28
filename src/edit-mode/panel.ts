@@ -176,6 +176,8 @@ export interface Panel {
   readonly root: ShadowRoot;
   readonly sheet: HTMLElement;
   setMode(mode: 'play' | 'edit'): void;
+  /** How tall the sheet currently is, so the page can be shortened to match. */
+  sheetHeight(): number;
   /** Draw the outline over this element, or clear it when given nothing. */
   highlight(el: Element | null, label?: string): void;
   /** Say something to Jamie. The copy lives in copy.ts. */
@@ -238,6 +240,10 @@ export function createPanel(doc: Document, options: PanelOptions = {}): Panel {
     host,
     root,
     sheet,
+    sheetHeight() {
+      return sheet.hidden ? 0 : sheet.getBoundingClientRect().height;
+    },
+
     highlight(el, label = '') {
       if (!el) {
         highlight.hidden = true;

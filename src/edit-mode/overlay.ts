@@ -96,6 +96,23 @@ async function start(): Promise<void> {
     },
   });
 
+  /**
+   * Shorten the page so it can be scrolled clear of the sheet.
+   *
+   * Jamie, 2026-08-25: "needs to make the actual viewport above the edit window
+   * shorter and scroll the full way down." The sheet is fixed over the bottom of
+   * the page, so without this the last screenful of content can never be reached
+   * — and it is usually the part being edited.
+   *
+   * An INLINE STYLE on <body>, deliberately: patches only ever record class
+   * lists, so this cannot leak into the session file and reach /fold as though
+   * Jamie had asked for it.
+   */
+  function fitPageToSheet(): void {
+    const height = mode === 'edit' ? panel.sheetHeight() : 0;
+    document.body.style.paddingBottom = height ? `${Math.ceil(height)}px` : '';
+  }
+
   function persist(): void {
     store.save({ entries: [...history.entries], mode, selected: selectedPath });
   }
@@ -112,6 +129,8 @@ async function start(): Promise<void> {
       // The raw field and free-CSS box are a desktop affordance (brief item 34).
       desktop: window.matchMedia('(min-width: 768px)').matches,
     });
+    // After the sheet has been laid out, so the measurement is the real one.
+    requestAnimationFrame(fitPageToSheet);
   }
 
   function select(el: Element): void {
@@ -324,6 +343,11 @@ async function start(): Promise<void> {
   // when the page moves under it.
   window.addEventListener('scroll', () => draw(), { passive: true });
   window.addEventListener('resize', () => draw());
+  // The sheet grows and shrinks as chips and steppers come and go, and the page
+  // has to keep matching it.
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(fitPageToSheet).observe(panel.sheet);
+  }
 
   setMode(mode);
   project(document, history.projection());

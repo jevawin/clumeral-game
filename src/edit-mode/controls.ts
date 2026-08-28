@@ -51,6 +51,7 @@ export function createControls(
   let searchOpen = false;
   let state: ControlsState = { crumbs: [], classes: [], desktop: false };
 
+  // Rebuilt on every draw.
   const container = doc.createElement('div');
   sheet.appendChild(container);
 
@@ -69,9 +70,10 @@ export function createControls(
     return div;
   }
 
+  const input = doc.createElement('input');
+
   function renderSearch(): HTMLElement {
     const wrap = row('search-row');
-    const input = doc.createElement('input');
     input.type = 'search';
     input.className = 'search-input';
     input.placeholder = COPY.searchPlaceholder;
@@ -150,26 +152,37 @@ export function createControls(
     return holder;
   }
 
+  /**
+   * Mounted ONCE and never detached.
+   *
+   * It used to live inside `container`, which draw() rebuilds with
+   * replaceChildren(). Detaching a focused element blurs it — so focusing the
+   * search box triggered a draw, the draw detached the box, the blur closed the
+   * search again, and the keyboard shut the instant it opened. Focus could not
+   * survive its own first render. Keeping it out of the rebuilt subtree is the
+   * whole fix (Jamie, 2026-08-25: "search doesn't work").
+   */
   const searchBlock = renderSearch();
+  const searchBar = row('search-bar');
+  const closeSearch = button('Close', () => {
+    searchOpen = false;
+    input.blur();
+    callbacks.onSearchFocus(false);
+    draw();
+  }, 'search-close');
+  searchBar.appendChild(closeSearch);
+  searchBar.hidden = true;
+  sheet.appendChild(searchBar);
+  sheet.appendChild(searchBlock);
 
   function draw(): void {
-    container.replaceChildren();
+    // Collapsed to search and results only, so the keyboard cannot cover the
+    // element being edited — by HIDING the rest, never by detaching it.
+    container.hidden = searchOpen;
+    searchBar.hidden = !searchOpen;
+    if (searchOpen) return;
 
-    // Collapsed: search and results only, so the keyboard cannot cover the
-    // element being edited.
-    if (searchOpen) {
-      const bar = row('search-bar');
-      // An explicit way out. Relying on blur alone left Jamie stuck when the
-      // input never took focus in the first place.
-      bar.appendChild(button('Close', () => {
-        searchOpen = false;
-        callbacks.onSearchFocus(false);
-        draw();
-      }, 'search-close'));
-      container.appendChild(bar);
-      container.appendChild(searchBlock);
-      return;
-    }
+    container.replaceChildren();
 
     if (state.crumbs.length) {
       const crumbs = row('breadcrumb');
@@ -192,8 +205,6 @@ export function createControls(
       chips.appendChild(button(`${name} ×`, () => callbacks.onRemoveClass(name), 'chip'));
     }
     container.appendChild(chips);
-
-    container.appendChild(searchBlock);
 
     // Steppers walk the scale; search picks the utility. Two jobs, which is why
     // search never has to enumerate every step (brief item 36).

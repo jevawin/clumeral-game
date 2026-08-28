@@ -138,12 +138,32 @@ describe('the keyboard must not cover the element being edited (brief item 33)',
   it('collapses the sheet to search and results when search is focused', () => {
     find('.search-input').dispatchEvent(new FocusEvent('focus'));
     expect(controls.searchOpen).toBe(true);
-    // Everything else is gone, so the sheet is short enough to sit above the
-    // keyboard.
-    expect(findAll('.chip')).toHaveLength(0);
-    expect(findAll('.crumb')).toHaveLength(0);
-    expect(findAll('.stepper')).toHaveLength(0);
+    // Everything else is HIDDEN, not removed — see the test below for why that
+    // distinction is the whole bug.
+    const rest = findAll('.chip')[0].closest('div[hidden]');
+    expect(rest).toBeTruthy();
     expect(find('.search-input')).toBeTruthy();
+  });
+
+  it('never detaches the search input, which is what broke it', () => {
+    // THE bug (Jamie, 2026-08-25: "search doesn't work"). draw() rebuilt its
+    // container with replaceChildren(), and the input lived inside it.
+    // Detaching a focused element BLURS it — so focus triggered a draw, the
+    // draw detached the input, the blur closed the search, and the keyboard
+    // shut the instant it opened. Focus could not survive its own first render.
+    const input = find('.search-input');
+    input.dispatchEvent(new FocusEvent('focus'));
+    expect(find('.search-input')).toBe(input);
+    controls.render({ crumbs: ['main'], classes: ['mt-4'], desktop: false });
+    expect(find('.search-input')).toBe(input);
+    expect(input.isConnected).toBe(true);
+  });
+
+  it('offers a Close that does not depend on a blur arriving', () => {
+    find('.search-input').dispatchEvent(new FocusEvent('focus'));
+    (find('.search-close') as HTMLElement).click();
+    expect(controls.searchOpen).toBe(false);
+    expect(findAll('.chip').length).toBeGreaterThan(0);
   });
 
   it('tells the overlay to scroll the element clear', () => {
