@@ -43,7 +43,7 @@ const PANEL_CSS = `
     pointer-events: none;
   }
   * { box-sizing: border-box; }
-  /* `hidden` only sets display:none as a DEFAULT, and .row sets display:flex,
+  /* the hidden attribute only sets display:none as a DEFAULT, and .row sets display:flex,
      which beats it — so a hidden row stayed on screen. That is the stray
      "Close" under the footer in Jamie's screenshot, 2026-08-26. */
   [hidden] { display: none !important; }
