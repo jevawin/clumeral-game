@@ -193,44 +193,68 @@ export function createControls(
     container.replaceChildren();
 
     if (state.crumbs.length) {
+      // Links with > between them, not a row of boxes. Jamie, 2026-08-26:
+      // "better separated so it's clearer it's breadcrumbs, and can be links
+      // instead of boxes so it's more compact."
       const crumbs = row('breadcrumb');
       state.crumbs.forEach((name, index) => {
-        crumbs.appendChild(button(name, () => callbacks.onCrumb(index), 'crumb'));
+        if (index > 0) {
+          const sep = doc.createElement('span');
+          sep.className = 'crumb-sep';
+          sep.textContent = '>';
+          crumbs.appendChild(sep);
+        }
+        const link = doc.createElement('a');
+        link.className = 'crumb';
+        link.setAttribute('role', 'button');
+        link.tabIndex = 0;
+        link.textContent = name;
+        link.addEventListener('click', () => callbacks.onCrumb(index));
+        crumbs.appendChild(link);
       });
       container.appendChild(crumbs);
 
+      // Words rather than arrows — they fit, and an arrow alone never says
+      // which way through the tree it goes.
       const arrows = row('nav');
-      arrows.appendChild(button('↑', () => callbacks.onNav('parent')));
-      arrows.appendChild(button('↓', () => callbacks.onNav('child')));
-      arrows.appendChild(button('←', () => callbacks.onNav('prev')));
-      arrows.appendChild(button('→', () => callbacks.onNav('next')));
+      const directions: [string, 'parent' | 'child' | 'prev' | 'next'][] = [
+        ['Parent', 'parent'], ['Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next'],
+      ];
+      for (const [label, direction] of directions) {
+        arrows.appendChild(button(label, () => callbacks.onNav(direction), 'nav-btn'));
+      }
       container.appendChild(arrows);
     }
 
+    // One chip per class, with its stepper built in where it has a scale.
+    // Separate stepper rows doubled the height of the sheet for no extra
+    // information (Jamie, 2026-08-26).
     const chips = row('chips');
     const added = new Set(state.added ?? []);
     for (const name of state.classes) {
-      // Tap a chip to remove it (brief item 33).
-      chips.appendChild(button(
-        `${name} ×`,
-        () => callbacks.onRemoveClass(name),
-        added.has(name) ? 'chip chip-added' : 'chip'
-      ));
+      const chip = doc.createElement('span');
+      chip.className = added.has(name) ? 'chip chip-added' : 'chip';
+
+      if (isSteppable(catalogue, name)) {
+        chip.appendChild(button('−', () => callbacks.onStep(name, 'down'), 'chip-step'));
+      }
+
+      const label = doc.createElement('button');
+      label.type = 'button';
+      label.className = 'chip-name';
+      label.textContent = name;
+      // Tapping the name removes the class (brief item 33). The × is gone: the
+      // whole chip was already the target, so the extra glyph only cost width.
+      label.addEventListener('click', () => callbacks.onRemoveClass(name));
+      chip.appendChild(label);
+
+      if (isSteppable(catalogue, name)) {
+        chip.appendChild(button('+', () => callbacks.onStep(name, 'up'), 'chip-step'));
+      }
+
+      chips.appendChild(chip);
     }
     container.appendChild(chips);
-
-    // Steppers walk the scale; search picks the utility. Two jobs, which is why
-    // search never has to enumerate every step (brief item 36).
-    for (const name of state.classes.filter((c) => isSteppable(catalogue, c))) {
-      const stepper = row('stepper');
-      const label = doc.createElement('span');
-      label.className = 'stepper-label';
-      label.textContent = name;
-      stepper.appendChild(button('−', () => callbacks.onStep(name, 'down')));
-      stepper.appendChild(label);
-      stepper.appendChild(button('+', () => callbacks.onStep(name, 'up')));
-      container.appendChild(stepper);
-    }
 
     if (state.desktop) {
       // Item 15: a free-CSS entry is not a class change, which is why the

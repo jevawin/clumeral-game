@@ -348,17 +348,57 @@ async function start(): Promise<void> {
    * Re-projecting here is the same one-line answer as everywhere else: the
    * patch set is the truth and the DOM is a projection of it.
    */
+  let projecting = false;
+
   function reproject(): void {
-    project(document, history.projection());
-    if (selectedPath) selected = findByBreadcrumb(document, selectedPath);
-    draw();
+    if (projecting) return;
+    projecting = true;
+    try {
+      project(document, history.projection());
+      if (selectedPath) selected = findByBreadcrumb(document, selectedPath);
+      draw();
+    } finally {
+      projecting = false;
+    }
   }
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') reproject();
+  /**
+   * Re-apply whenever the game rebuilds the page under us.
+   *
+   * Jamie, 2026-08-26: coming back to Safari "returns to a semi previous state
+   * but with elements deselected." The cause is a race, not lost data. The
+   * overlay's script runs BEFORE the app entry on purpose, and start() then
+   * awaits three fetches — so by the time it restores the patch set and looks
+   * up the selected element, the game has usually not rendered yet. It resolves
+   * against markup that does not exist, projects onto nothing, and the load
+   * event it was waiting for has long since fired.
+   *
+   * Watching the document answers all of it: whenever the game finishes
+   * rendering — first paint, a route change, or a wake-from-background
+   * re-render — the edits go back on and the selection is found again. The
+   * guard above stops our own writes retriggering it.
+   */
+  const observer = new MutationObserver(() => {
+    if (projecting || history.entries.length === 0) return;
+    scheduleReproject();
   });
-  window.addEventListener('focus', reproject);
-  window.addEventListener('pageshow', reproject);
+
+  let pending = 0;
+  function scheduleReproject(): void {
+    if (pending) return;
+    pending = requestAnimationFrame(() => {
+      pending = 0;
+      reproject();
+    });
+  }
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') scheduleReproject();
+  });
+  window.addEventListener('focus', scheduleReproject);
+  window.addEventListener('pageshow', scheduleReproject);
   // The outline is positioned in viewport coordinates, so it has to be redrawn
   // when the page moves under it.
   window.addEventListener('scroll', () => draw(), { passive: true });
@@ -373,7 +413,9 @@ async function start(): Promise<void> {
   trackKeyboard();
 
   setMode(mode);
-  project(document, history.projection());
+  // The game may not have rendered yet — the overlay deliberately runs first.
+  // The observer above catches it the moment it does.
+  reproject();
 }
 
 void start();

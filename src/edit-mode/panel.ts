@@ -125,8 +125,9 @@ const PANEL_CSS = `
     background: #e6f7ea;
     border-color: #2f7a34;
     color: #14401a;
-    font-weight: 700;
   }
+  .chip-added .chip-name { font-weight: 700; }
+  .chip-added .chip-step { background: rgba(47, 122, 52, 0.14); }
 
   .status { margin-top: 10px; font-size: 13px; line-height: 1.4; }
   .status:empty { display: none; }
@@ -157,9 +158,48 @@ const PANEL_CSS = `
   /* A touch of colour so the controls are told apart at a glance
      (Jamie, 2026-08-24, item 4). Hand-written: the shadow root cannot see the
      project's theme tokens, which is the accepted cost of sealing it. */
-  .chip { background: #e8f0fe; border-color: #2b5fd9; color: #12306e; }
-  .crumb { background: #f3f0e8; font-size: 13px; min-height: 36px; }
-  .stepper button { background: #eef7ee; border-color: #2f7a34; color: #14401a; }
+  /* A chip is one control: name in the middle, steppers either side where the
+     class sits on a scale. Separate stepper rows doubled the sheet's height. */
+  .chip {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid #2b5fd9;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #e8f0fe;
+    color: #12306e;
+  }
+  .chip button {
+    min-width: 0;
+    min-height: 40px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .chip-step {
+    width: 40px;
+    font-size: 20px;
+    font-weight: 700;
+    background: rgba(43, 95, 217, 0.12);
+  }
+  .chip-name { padding: 0 10px; font-size: 14px; }
+
+  /* Breadcrumbs read as a path, not a row of boxes. */
+  .breadcrumb { gap: 4px; font-size: 13px; }
+  .crumb {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 2px;
+    color: #12306e;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .crumb-sep { color: #999999; }
+
+  .nav-btn { min-height: 40px; font-size: 13px; padding: 0 10px; }
   .footer button:last-child { background: #1a1a1a; color: #ffffff; }
   .search-family { margin: 10px 0 4px; font-size: 12px; color: #555555; }
   .search-group button { background: #f6f6f6; }

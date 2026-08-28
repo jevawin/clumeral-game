@@ -51,9 +51,15 @@ describe('the breadcrumb and nav arrows (brief item 31)', () => {
     expect(calls.onCrumb).toHaveBeenCalledWith(1);
   });
 
-  it('offers all four directions', () => {
-    for (const [arrow, direction] of [['↑', 'parent'], ['↓', 'child'], ['←', 'prev'], ['→', 'next']]) {
-      byText(arrow).click();
+  it('separates the crumbs so they read as a path', () => {
+    // Jamie, 2026-08-26: links with > between them, not a row of boxes.
+    expect(findAll('.crumb-sep').map((s) => s.textContent)).toEqual(['>', '>']);
+  });
+
+  it('offers all four directions, in words', () => {
+    // An arrow alone never says which way through the TREE it goes.
+    for (const [label, direction] of [['Parent', 'parent'], ['Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next']]) {
+      byText(label).click();
       expect(calls.onNav).toHaveBeenCalledWith(direction);
     }
   });
@@ -61,33 +67,35 @@ describe('the breadcrumb and nav arrows (brief item 31)', () => {
 
 describe('class chips (brief item 33)', () => {
   it('shows one chip per class', () => {
-    expect(findAll('.chip').map((c) => c.textContent)).toEqual(['mt-4 ×', 'flex ×']);
+    expect(findAll('.chip-name').map((c) => c.textContent)).toEqual(['mt-4', 'flex']);
   });
 
-  it('removes a class when its chip is tapped', () => {
-    findAll('.chip')[0].click();
+  it('removes a class when its name is tapped', () => {
+    findAll('.chip-name')[0].click();
     expect(calls.onRemoveClass).toHaveBeenCalledWith('mt-4');
   });
 });
 
 describe('steppers walk the scale (brief item 36)', () => {
-  it('offers a stepper for a class that sits on a scale', () => {
-    const labels = findAll('.stepper-label').map((l) => l.textContent);
-    expect(labels).toContain('mt-4');
+  it('puts the stepper INSIDE the chip it applies to', () => {
+    // Jamie, 2026-08-26: separate stepper rows doubled the sheet's height for
+    // no extra information.
+    const chips = findAll('.chip');
+    expect(chips[0].querySelectorAll('.chip-step')).toHaveLength(2);
   });
 
-  it('offers no stepper for a class that does not', () => {
-    // `flex` is not a scale. A -/+ against it would be a control that cannot
-    // do anything.
-    expect(findAll('.stepper-label').map((l) => l.textContent)).not.toContain('flex');
+  it('offers no stepper for a class that does not sit on a scale', () => {
+    // `flex` is not a scale. A minus/plus against it would be a control that
+    // cannot do anything.
+    const chips = findAll('.chip');
+    expect(chips[1].querySelectorAll('.chip-step')).toHaveLength(0);
   });
 
-  it('steps up and down', () => {
-    const stepper = find('.stepper');
-    const [minus, , plus] = [...stepper.children] as HTMLElement[];
-    plus.click();
+  it('steps up and down from inside the chip', () => {
+    const steps = findAll('.chip')[0].querySelectorAll('.chip-step');
+    (steps[1] as HTMLElement).click();
     expect(calls.onStep).toHaveBeenCalledWith('mt-4', 'up');
-    minus.click();
+    (steps[0] as HTMLElement).click();
     expect(calls.onStep).toHaveBeenCalledWith('mt-4', 'down');
   });
 });
