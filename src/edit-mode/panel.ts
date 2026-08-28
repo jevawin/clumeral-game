@@ -15,8 +15,14 @@
 // me using it, no accessibility needs, prioritise simplicity"). Item 76 is the
 // exception and lives in intercept.ts: the GAME's keyboard must survive.
 
-/** Big enough for a thumb, per the design's nav-arrow sizing. */
-const TAP_TARGET = '44px';
+/**
+ * Big enough for a thumb, small enough to fit several across a phone.
+ *
+ * 44px each plus 8px gaps put three controls on a row and pushed everything
+ * else into a column — Jamie's screenshot, 2026-08-26: "everything is very
+ * spaced and columns, there's room left-to-right for more."
+ */
+const TAP_TARGET = '38px';
 
 /**
  * Hand-written, because the shadow root cannot see @theme.
@@ -37,6 +43,10 @@ const PANEL_CSS = `
     pointer-events: none;
   }
   * { box-sizing: border-box; }
+  /* `hidden` only sets display:none as a DEFAULT, and .row sets display:flex,
+     which beats it — so a hidden row stayed on screen. That is the stray
+     "Close" under the footer in Jamie's screenshot, 2026-08-26. */
+  [hidden] { display: none !important; }
 
   .pencil {
     position: fixed;
@@ -81,8 +91,8 @@ const PANEL_CSS = `
     -webkit-overflow-scrolling: touch;
     /* Right padding keeps the sheet clear of the pencil, so it never covers
        the only way out. Must come AFTER the shorthand. */
-    padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-    padding-right: 84px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    padding-right: 76px;
     background: #ffffff;
     color: #1a1a1a;
     border-top: 2px solid #1a1a1a;
@@ -91,13 +101,14 @@ const PANEL_CSS = `
   }
   .sheet[hidden] { display: none; }
 
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .row + .row { margin-top: 10px; }
+  .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .row + .row { margin-top: 6px; }
 
   button {
     min-width: ${TAP_TARGET};
     min-height: ${TAP_TARGET};
-    padding: 0 12px;
+    padding: 0 10px;
+    font-size: 14px;
     border: 1px solid #1a1a1a;
     border-radius: 8px;
     background: #ffffff;
@@ -127,9 +138,10 @@ const PANEL_CSS = `
     color: #14401a;
   }
   .chip-added .chip-name { font-weight: 700; }
-  .chip-added .chip-step { background: rgba(47, 122, 52, 0.14); }
+  .chip-added .chip-step { background: #2f7a34; color: #ffffff; }
+  .chip-added .chip-step:active { background: #1f5623; }
 
-  .status { margin-top: 10px; font-size: 13px; line-height: 1.4; }
+  .status { margin-top: 8px; font-size: 12px; line-height: 1.35; }
   .status:empty { display: none; }
 
   /* Jamie, 2026-08-24: "tiny, barely tappable, too close to above and below".
@@ -138,8 +150,8 @@ const PANEL_CSS = `
   input[type="search"], input[type="text"], textarea {
     flex: 1 1 auto;
     min-width: 0;
-    min-height: 48px;
-    margin: 8px 0;
+    min-height: 44px;
+    margin: 6px 0;
     padding: 0 12px;
     border: 2px solid #1a1a1a;
     border-radius: 8px;
@@ -171,35 +183,38 @@ const PANEL_CSS = `
   }
   .chip button {
     min-width: 0;
-    min-height: 40px;
+    min-height: 34px;
     border: 0;
     border-radius: 0;
     background: transparent;
     color: inherit;
     font: inherit;
   }
+  /* Always a filled background, so a stepper always looks like a button.
+     It used to be a 12% tint over a pale chip, which read as nothing. */
   .chip-step {
-    width: 40px;
-    font-size: 20px;
+    width: 30px;
+    font-size: 17px;
     font-weight: 700;
-    background: rgba(43, 95, 217, 0.12);
+    background: #2b5fd9;
+    color: #ffffff;
   }
-  .chip-name { padding: 0 10px; font-size: 14px; }
+  .chip-step:active { background: #1d47ab; }
+  .chip-name { padding: 0 8px; font-size: 13px; white-space: nowrap; }
 
   /* Breadcrumbs read as a path, not a row of boxes. */
-  .breadcrumb { gap: 4px; font-size: 13px; }
+  .breadcrumb { gap: 2px 4px; font-size: 12px; line-height: 1.3; }
   .crumb {
-    min-height: 32px;
-    display: inline-flex;
-    align-items: center;
-    padding: 0 2px;
+    display: inline;
+    padding: 0;
     color: #12306e;
     text-decoration: underline;
     cursor: pointer;
   }
-  .crumb-sep { color: #999999; }
+  .crumb-sep { color: #aaaaaa; }
 
-  .nav-btn { min-height: 40px; font-size: 13px; padding: 0 10px; }
+  .nav-btn { min-height: 34px; min-width: 0; font-size: 13px; padding: 0 8px; }
+  .footer button { min-height: 36px; font-size: 13px; }
   .footer button:last-child { background: #1a1a1a; color: #ffffff; }
   .search-family { margin: 10px 0 4px; font-size: 12px; color: #555555; }
   .search-group button { background: #f6f6f6; }

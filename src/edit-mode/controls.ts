@@ -218,7 +218,7 @@ export function createControls(
       // which way through the tree it goes.
       const arrows = row('nav');
       const directions: [string, 'parent' | 'child' | 'prev' | 'next'][] = [
-        ['Parent', 'parent'], ['Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next'],
+        ['↑ Parent', 'parent'], ['↓ Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next'],
       ];
       for (const [label, direction] of directions) {
         arrows.appendChild(button(label, () => callbacks.onNav(direction), 'nav-btn'));

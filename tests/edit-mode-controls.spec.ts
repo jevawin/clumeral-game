@@ -58,7 +58,7 @@ describe('the breadcrumb and nav arrows (brief item 31)', () => {
 
   it('offers all four directions, in words', () => {
     // An arrow alone never says which way through the TREE it goes.
-    for (const [label, direction] of [['Parent', 'parent'], ['Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next']]) {
+    for (const [label, direction] of [['↑ Parent', 'parent'], ['↓ Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next']]) {
       byText(label).click();
       expect(calls.onNav).toHaveBeenCalledWith(direction);
     }
@@ -165,6 +165,15 @@ describe('the keyboard must not cover the element being edited (brief item 33)',
     controls.render({ crumbs: ['main'], classes: ['mt-4'], desktop: false });
     expect(find('.search-input')).toBe(input);
     expect(input.isConnected).toBe(true);
+  });
+
+  it('keeps the Close hidden until search is open', () => {
+    // It was VISIBLE below the footer the whole time (Jamie's screenshot,
+    // 2026-08-26). `hidden` only sets display:none as a DEFAULT, and the row
+    // sets display:flex, which beats it.
+    expect(find('.search-bar').hidden).toBe(true);
+    find('.search-input').dispatchEvent(new FocusEvent('focus'));
+    expect(find('.search-bar').hidden).toBe(false);
   });
 
   it('offers a Close that does not depend on a blur arriving', () => {
