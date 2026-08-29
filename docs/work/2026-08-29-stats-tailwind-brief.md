@@ -133,7 +133,8 @@ Settled: Jamie 2026-08-29 (item 24: data labels) · Ack: n/a
     tests need gets a `data-` attribute and the four test files select on those.
 
 ## 7. How it looks
-Settled: Jamie 2026-08-29 (item 27: option b) · Ack: n/a
+Settled: Jamie 2026-08-29, RE-SETTLED after review (item 56: one fixed
+`text-3xl`; item 27's answer is void) · Ack: n/a
 
 25. **Identical, apart from the small shifts item 18 already allows.** Off-scale
     values round to the nearest step: `border-radius: 0.3125rem` becomes
@@ -350,6 +351,11 @@ below was re-checked by hand before being written down.
     Jamie will see and can then tune with the tool in minutes. On a 320px phone
     it is 3px larger than today's floor, so the plan must check the longest
     figure still fits.
+
+    **Answered, Jamie 2026-08-29:** "30". Option (a). `text-3xl` on both fluid
+    figures, no responsive variant, no arbitrary value. §7 is settled again on
+    this basis; item 27's answer is void and replaced by this one. The plan must
+    check the longest figure still fits a 320px screen.
 57. **§1 item 7 REOPENED — which branch?** Finding 49. Options: build on
     `dev/edit-mode-on-stats` and cherry-pick the conversion into #311 without
     edit mode; or land edit mode's own pull request first and rebase. Needs a
