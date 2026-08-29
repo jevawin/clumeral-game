@@ -22,7 +22,7 @@ let calls: Record<string, ReturnType<typeof vi.fn>>;
 
 function callbacks(): ControlsCallbacks {
   calls = {
-    onCrumb: vi.fn(), onNav: vi.fn(), onRemoveClass: vi.fn(), onAddClass: vi.fn(),
+    onCrumb: vi.fn(), onNav: vi.fn(), onToggleClass: vi.fn(), onAddClass: vi.fn(),
     onStep: vi.fn(), onUndo: vi.fn(), onResetElement: vi.fn(), onDone: vi.fn(),
     onRawClasses: vi.fn(), onFreeCss: vi.fn(), onSearchFocus: vi.fn(),
   };
@@ -57,11 +57,10 @@ describe('the breadcrumb and nav (brief item 31)', () => {
 
   it('offers all four directions, in words as well as arrows', () => {
     // An arrow alone never says which way through the TREE it goes.
-    const directions = [
-      ['↑ Parent', 'parent'], ['↓ Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next'],
-    ];
-    for (const [label, direction] of directions) {
-      byText(label).click();
+    const labels = findAll('.nav-btn').map((b) => b.textContent);
+    expect(labels).toEqual(['Parent', 'Child', 'Sib', 'Sib']);
+    findAll('.nav-btn').forEach((b) => b.click());
+    for (const direction of ['parent', 'child', 'prev', 'next']) {
       expect(calls.onNav).toHaveBeenCalledWith(direction);
     }
   });
@@ -72,9 +71,21 @@ describe('class chips (brief items 33, 36)', () => {
     expect(findAll('.chip-name').map((c) => c.textContent)).toEqual(['mt-4', 'flex']);
   });
 
-  it('removes a class when its name is tapped', () => {
+  it('switches a class off when its name is tapped, rather than deleting it', () => {
+    // Jamie, 2026-08-27: removing outright meant the only way back was undo,
+    // and you could not see what the element used to have.
     findAll('.chip-name')[0].click();
-    expect(calls.onRemoveClass).toHaveBeenCalledWith('mt-4');
+    expect(calls.onToggleClass).toHaveBeenCalledWith('mt-4');
+  });
+
+  it('keeps a switched-off class listed, marked off, with no stepper', () => {
+    controls.render({ crumbs: [], classes: ['flex'], off: ['mt-4'], desktop: false });
+    const names = findAll('.chip-name').map((c) => c.textContent);
+    expect(names).toContain('mt-4');
+    const offChip = findAll('.chip').find((c) => c.className.includes('chip-off'))!;
+    expect(offChip.querySelector('.chip-name')!.textContent).toBe('mt-4');
+    // Nothing to step while it is not applied.
+    expect(offChip.querySelectorAll('.chip-step')).toHaveLength(0);
   });
 
   it('puts the stepper INSIDE the chip it applies to', () => {
@@ -107,7 +118,7 @@ describe('class chips (brief items 33, 36)', () => {
 });
 
 describe('the class picker (Jamie 2026-08-26)', () => {
-  const open = () => byText('+ Add class').click();
+  const open = () => byText('Add class').click();
   const type = (value: string) => {
     const input = find('.search-input') as HTMLInputElement;
     input.value = value;
@@ -115,7 +126,7 @@ describe('the class picker (Jamie 2026-08-26)', () => {
   };
 
   it('offers a way in that sits with the classes it adds to', () => {
-    expect(byText('+ Add class')).toBeTruthy();
+    expect(byText('Add class')).toBeTruthy();
   });
 
   it('covers the panel rather than squeezing in beside it', () => {
@@ -132,7 +143,8 @@ describe('the class picker (Jamie 2026-08-26)', () => {
     open();
     const families = findAll('.picker-family');
     expect(families.length).toBeGreaterThan(0);
-    expect(families[0].textContent).toMatch(/^▸ .+ \(\d+\)$/);
+    expect(families[0].textContent).toMatch(/^.+ \(\d+\)$/);
+    expect(families[0].querySelector('svg.icon')).toBeTruthy();
   });
 
   it('expands a family to its classes, and folds it again', () => {
@@ -211,9 +223,17 @@ describe('the desktop extras (brief items 15, 34)', () => {
 });
 
 describe('the footer (brief item 71, reworded by Jamie 2026-08-26)', () => {
-  it('reads Undo, Reset, Save, each with an icon', () => {
+  it('reads Undo, Reset, Save', () => {
     expect(findAll('.footer button').map((b) => b.textContent))
-      .toEqual(['↶ Undo', '⟳ Reset', '✓ Save']);
+      .toEqual(['Undo', 'Reset', 'Save']);
+  });
+
+  it('draws its icons as SVG, not text characters', () => {
+    // A character renders at whatever size its font gives it, which is why the
+    // undo arrow came out tiny beside a tick (Jamie, 2026-08-27).
+    for (const b of findAll('.footer button')) {
+      expect(b.querySelector('svg.icon')).toBeTruthy();
+    }
   });
 
   it('has no Close, because tapping the pencil already does that', () => {
@@ -221,9 +241,9 @@ describe('the footer (brief item 71, reworded by Jamie 2026-08-26)', () => {
   });
 
   it('calls back for each', () => {
-    byText('↶ Undo').click();
-    byText('⟳ Reset').click();
-    byText('✓ Save').click();
+    byText('Undo').click();
+    byText('Reset').click();
+    byText('Save').click();
     expect(calls.onUndo).toHaveBeenCalledOnce();
     expect(calls.onResetElement).toHaveBeenCalledOnce();
     expect(calls.onDone).toHaveBeenCalledOnce();

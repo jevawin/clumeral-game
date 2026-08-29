@@ -18,7 +18,16 @@
 // before app.ts's handlers see it.
 
 /** Events that are gameplay, and so must not reach the page in edit mode. */
-const GAME_EVENTS = ['pointerdown', 'pointerup', 'click', 'keydown', 'keypress', 'keyup'] as const;
+const GAME_EVENTS = ['pointerdown', 'pointermove', 'pointerup', 'click', 'keydown', 'keypress', 'keyup'] as const;
+
+/**
+ * How far a finger may travel and still count as a tap rather than a scroll.
+ *
+ * Selecting on pointerDOWN meant every scroll changed the selection before the
+ * page had even moved (Jamie, 2026-08-27). Selecting on pointerUP within this
+ * radius is the ordinary way to tell a tap from a drag.
+ */
+const TAP_SLOP_PX = 10;
 
 export interface Interceptor {
   /** Take input away from the game. */
@@ -59,6 +68,7 @@ export interface InterceptorOptions {
  */
 export function createInterceptor(doc: Document, options: InterceptorOptions = {}): Interceptor {
   let active = false;
+  let downAt: { x: number; y: number } | null = null;
 
   const handler = (event: Event): void => {
     if (!active) return;
@@ -70,10 +80,28 @@ export function createInterceptor(doc: Document, options: InterceptorOptions = {
     // stopImmediatePropagation, not stopPropagation: the game's handlers are on
     // `document` too, and stopPropagation alone would still let them run.
     event.stopImmediatePropagation();
-    event.preventDefault();
+    // NOT prevented for pointer events: preventDefault on a pointerdown or move
+    // cancels the browser's own scrolling, and the page has to stay scrollable
+    // while edit mode is on.
+    if (event.type !== 'pointerdown' && event.type !== 'pointermove' && event.type !== 'pointerup') {
+      event.preventDefault();
+    }
 
-    if (event.type === 'keydown') options.onKey?.(event as KeyboardEvent);
-    else if (event.type === 'pointerdown') options.onPointer?.(event as PointerEvent);
+    if (event.type === 'keydown') {
+      options.onKey?.(event as KeyboardEvent);
+      return;
+    }
+
+    // A tap is a down and an up in roughly the same place. Anything else is a
+    // scroll, and must leave the selection alone.
+    const pointer = event as PointerEvent;
+    if (event.type === 'pointerdown') {
+      downAt = { x: pointer.clientX, y: pointer.clientY };
+    } else if (event.type === 'pointerup' && downAt) {
+      const travelled = Math.hypot(pointer.clientX - downAt.x, pointer.clientY - downAt.y);
+      downAt = null;
+      if (travelled <= TAP_SLOP_PX) options.onPointer?.(pointer);
+    }
   };
 
   for (const type of GAME_EVENTS) {

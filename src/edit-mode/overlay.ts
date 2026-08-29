@@ -85,10 +85,33 @@ async function start(): Promise<void> {
    * SOURCE still has it, which is what /fold needs.
    */
   let selectedPath: string | null = saved.selected;
+  /**
+   * Classes switched OFF, per element.
+   *
+   * Jamie's design: a chip is toggled rather than removed, so the class stays
+   * listed and greyed out and one more tap brings it back. Held here rather
+   * than in the DOM, because the class is genuinely absent from the element
+   * while it is off — that is the whole point of switching it off.
+   */
+  const switchedOff = new Map<string, Set<string>>();
+
+  function offFor(path: string | null): Set<string> {
+    if (!path) return new Set();
+    let set = switchedOff.get(path);
+    if (!set) { set = new Set(); switchedOff.set(path, set); }
+    return set;
+  }
   const interceptor = createInterceptor(document, {
     isOwnUi: (target) => isOverlay(target as Node | null),
     onPointer: (event) => {
+      // While the picker is up it covers the panel, and a tap that lands
+      // outside it must NOT reselect — that is what dropped the selection on
+      // the way to adding a class, so the class then had nowhere to go
+      // (Jamie, 2026-08-27: "seems functionally flakey").
+      if (controls.pickerOpen) return;
       const found = elementAtPoint(document, event.clientX, event.clientY);
+      // A tap that resolves to nothing is a tap on empty space. Keeping the
+      // current selection is friendlier than silently clearing it.
       if (found) select(found);
     },
     onKey: (event) => {
@@ -146,6 +169,7 @@ async function start(): Promise<void> {
       crumbs: selected ? ancestry(selected).map(crumb) : [],
       classes: current,
       added: current.filter((name) => !original.includes(name)),
+      off: [...offFor(selectedPath)],
       // The raw field and free-CSS box are a desktop affordance (brief item 34).
       desktop: window.matchMedia('(min-width: 768px)').matches,
     });
@@ -207,8 +231,19 @@ async function start(): Promise<void> {
         : nav.next(selected);
       if (next) select(next);
     },
-    onRemoveClass: (name) => {
-      if (selected) change(removeClass([...selected.classList], name), name);
+    onToggleClass: (name) => {
+      if (!selected || !selectedPath) return;
+      const off = offFor(selectedPath);
+      const property = (families[name] ?? [name]).join(', ');
+
+      if (off.has(name)) {
+        // Back on, in its original position if we can manage it.
+        off.delete(name);
+        change(applyClass([...selected.classList], name, families), property);
+      } else {
+        off.add(name);
+        change(removeClass([...selected.classList], name), property);
+      }
     },
     onAddClass: (name) => {
       if (selected) {

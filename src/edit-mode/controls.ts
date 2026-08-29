@@ -10,6 +10,7 @@ import type { Catalogue } from './catalogue.ts';
 import { search, familyLabel } from './catalogue.ts';
 import { isSteppable } from './scale.ts';
 import { COPY } from './copy.ts';
+import { icon } from './icons.ts';
 
 export interface ControlsState {
   /** Breadcrumb crumbs, outermost first. Empty when nothing is selected. */
@@ -18,6 +19,15 @@ export interface ControlsState {
   classes: string[];
   /** Of those, the ones added in this session. */
   added?: string[];
+  /**
+   * Classes switched off rather than removed.
+   *
+   * Jamie, 2026-08-24 and again 08-27: "tap chip to deselect, keep in list but
+   * greyed out, tap again to reapply. Then I can easily see what I removed and
+   * put it back." Removing outright meant the only way back was undo, and you
+   * could not see what the element used to have.
+   */
+  off?: string[];
   /** Desktop gets the raw field and the free-CSS box (brief item 34). */
   desktop: boolean;
 }
@@ -25,7 +35,8 @@ export interface ControlsState {
 export interface ControlsCallbacks {
   onCrumb(index: number): void;
   onNav(direction: 'parent' | 'child' | 'prev' | 'next'): void;
-  onRemoveClass(name: string): void;
+  /** Switch a class off, or back on if it is already off. */
+  onToggleClass(name: string): void;
   onAddClass(name: string): void;
   onStep(name: string, direction: 'up' | 'down'): void;
   onUndo(): void;
@@ -64,16 +75,30 @@ export function createControls(
 ): Controls {
   let pickerOpen = false;
   let expandedFamily: string | null = null;
-  let state: ControlsState = { crumbs: [], classes: [], added: [], desktop: false };
+  let state: ControlsState = { crumbs: [], classes: [], added: [], off: [], desktop: false };
 
   const container = doc.createElement('div');
   sheet.appendChild(container);
 
-  function button(label: string, onClick: () => void, className = ''): HTMLButtonElement {
+  function button(
+    label: string,
+    onClick: () => void,
+    className = '',
+    iconName?: string
+  ): HTMLButtonElement {
     const btn = doc.createElement('button');
     btn.type = 'button';
-    btn.textContent = label;
     if (className) btn.className = className;
+    // Lucide SVG rather than a text glyph: a character renders at whatever size
+    // its font gives it, which is why the undo arrow came out tiny beside a
+    // tick (Jamie, 2026-08-27).
+    btn.innerHTML = iconName ? icon(iconName) : '';
+    if (label) {
+      const text = doc.createElement('span');
+      text.textContent = label;
+      btn.appendChild(text);
+    }
+    if (!label && iconName) btn.setAttribute('aria-label', iconName);
     btn.addEventListener('click', onClick);
     return btn;
   }
@@ -110,7 +135,7 @@ export function createControls(
   });
 
   const pickerHead = row('picker-head');
-  pickerHead.appendChild(button('‹', () => closePicker(), 'picker-back'));
+  pickerHead.appendChild(button('', () => closePicker(), 'picker-back', 'back'));
   pickerHead.appendChild(filter);
 
   const results = doc.createElement('div');
@@ -172,12 +197,13 @@ export function createControls(
     // No filter: a menu of families. Tap one to see its classes.
     for (const { family, classes } of familyMenu()) {
       const heading = button(
-        `${expandedFamily === family ? '▾' : '▸'} ${family} (${classes.length})`,
+        `${family} (${classes.length})`,
         () => {
           expandedFamily = expandedFamily === family ? null : family;
           drawPicker();
         },
-        'picker-family'
+        'picker-family',
+        expandedFamily === family ? 'expanded' : 'collapsed'
       );
       results.appendChild(heading);
 
@@ -241,39 +267,51 @@ export function createControls(
 
       const arrows = row('nav');
       const directions: [string, 'parent' | 'child' | 'prev' | 'next'][] = [
-        ['↑ Parent', 'parent'], ['↓ Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next'],
+        ['Parent', 'parent'], ['Child', 'child'], ['Sib', 'prev'], ['Sib', 'next'],
       ];
       for (const [label, direction] of directions) {
-        arrows.appendChild(button(label, () => callbacks.onNav(direction), 'nav-btn'));
+        arrows.appendChild(button(label, () => callbacks.onNav(direction), 'nav-btn', direction));
       }
       container.appendChild(arrows);
     }
 
     // One chip per class, with its stepper built in where it has a scale.
+    // Switched-off classes stay in the list, greyed out, so you can see what
+    // you took off and put it back with one tap.
     const chips = row('chips');
     const added = new Set(state.added ?? []);
-    for (const name of state.classes) {
-      const chip = doc.createElement('span');
-      chip.className = added.has(name) ? 'chip chip-added' : 'chip';
+    const off = new Set(state.off ?? []);
+    const listed = [...state.classes, ...(state.off ?? []).filter((c) => !state.classes.includes(c))];
 
-      if (isSteppable(catalogue, name)) {
-        chip.appendChild(button('−', () => callbacks.onStep(name, 'down'), 'chip-step'));
+    for (const name of listed) {
+      const isOff = off.has(name);
+      const chip = doc.createElement('span');
+      chip.className = [
+        'chip',
+        added.has(name) ? 'chip-added' : '',
+        isOff ? 'chip-off' : '',
+      ].filter(Boolean).join(' ');
+
+      // A switched-off class has nothing to step.
+      const steppable = !isOff && isSteppable(catalogue, name);
+      if (steppable) {
+        chip.appendChild(button('', () => callbacks.onStep(name, 'down'), 'chip-step', 'minus'));
       }
 
       const label = doc.createElement('button');
       label.type = 'button';
       label.className = 'chip-name';
       label.textContent = name;
-      label.addEventListener('click', () => callbacks.onRemoveClass(name));
+      label.addEventListener('click', () => callbacks.onToggleClass(name));
       chip.appendChild(label);
 
-      if (isSteppable(catalogue, name)) {
-        chip.appendChild(button('+', () => callbacks.onStep(name, 'up'), 'chip-step'));
+      if (steppable) {
+        chip.appendChild(button('', () => callbacks.onStep(name, 'up'), 'chip-step', 'plus'));
       }
       chips.appendChild(chip);
     }
     // The way in to the picker sits with the classes it adds to.
-    chips.appendChild(button('+ Add class', openPicker, 'add-class'));
+    chips.appendChild(button('Add class', openPicker, 'add-class', 'plus'));
     container.appendChild(chips);
 
     if (state.desktop) {
@@ -294,9 +332,9 @@ export function createControls(
     // Icons and Jamie's wording, 2026-08-26. No Close: tapping the pencil
     // leaves edit mode, which is the same thing and one control fewer.
     const footer = row('footer');
-    footer.appendChild(button(`↶ ${COPY.undo}`, callbacks.onUndo));
-    footer.appendChild(button(`⟳ ${COPY.resetElement}`, callbacks.onResetElement));
-    footer.appendChild(button(`✓ ${COPY.done}`, callbacks.onDone, 'save-btn'));
+    footer.appendChild(button(COPY.undo, callbacks.onUndo, '', 'undo'));
+    footer.appendChild(button(COPY.resetElement, callbacks.onResetElement, '', 'reset'));
+    footer.appendChild(button(COPY.done, callbacks.onDone, 'save-btn', 'save'));
     container.appendChild(footer);
   }
 

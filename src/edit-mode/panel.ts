@@ -43,6 +43,12 @@ const PANEL_CSS = `
     pointer-events: none;
   }
   * { box-sizing: border-box; }
+  /* No double-tap-to-zoom anywhere in the tool. On a panel of small buttons a
+     stray second tap zooms the page instead of pressing anything (Jamie,
+     2026-08-27). */
+  :host, .sheet, .pencil, .picker, button, a, input, textarea {
+    touch-action: manipulation;
+  }
   /* the hidden attribute only sets display:none as a DEFAULT, and .row sets display:flex,
      which beats it — so a hidden row stayed on screen. That is the stray
      "Close" under the footer in Jamie's screenshot, 2026-08-26. */
@@ -140,6 +146,14 @@ const PANEL_CSS = `
   .chip-added .chip-name { font-weight: 700; }
   .chip-added .chip-step { background: #2f7a34; color: #ffffff; }
   .chip-added .chip-step:active { background: #1f5623; }
+
+  button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+  .icon { flex: none; }
+
+  /* A class switched off rather than removed: still listed, visibly inactive,
+     tap to bring it back (Jamie, 2026-08-27). */
+  .chip-off { opacity: 0.45; border-style: dashed; }
+  .chip-off .chip-name { text-decoration: line-through; }
 
   .status { margin-top: 8px; font-size: 12px; line-height: 1.35; }
   .status:empty { display: none; }

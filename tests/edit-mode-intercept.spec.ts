@@ -48,9 +48,18 @@ function press(key = 'z'): void {
   );
 }
 
-function tap(): void {
-  document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true }));
+/** A tap: down and up in the same place. */
+function tap(x = 50, y = 50): void {
+  document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+  document.body.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
   document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+}
+
+/** A scroll: down, drag, up somewhere else. */
+function scroll(): void {
+  document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 50, clientY: 300 }));
+  document.body.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, cancelable: true, clientX: 50, clientY: 200 }));
+  document.body.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, cancelable: true, clientX: 50, clientY: 120 }));
 }
 
 describe('play mode leaves the game alone', () => {
@@ -74,6 +83,21 @@ describe('edit mode takes input away from the game (brief item 30)', () => {
     // selecting an element also plays a move.
     tap();
     expect(gameHandler).not.toHaveBeenCalled();
+  });
+
+  it('selects on the way UP, so scrolling does not change the selection', () => {
+    // Jamie, 2026-08-27. Selecting on pointerdown meant every scroll picked a
+    // new element before the page had even moved.
+    interceptor.destroy();
+    const onPointer = vi.fn();
+    interceptor = createInterceptor(document, { onPointer });
+    interceptor.enable();
+
+    scroll();
+    expect(onPointer).not.toHaveBeenCalled();
+
+    tap();
+    expect(onPointer).toHaveBeenCalledOnce();
   });
 
   it('swallows keypresses, including the game shortcuts', () => {
@@ -131,6 +155,7 @@ describe('play mode comes back intact (brief item 76)', () => {
 
     interceptor.disable();
     tap();
+    // pointerdown and click both reach the game again.
     expect(gameHandler).toHaveBeenCalledTimes(2);
   });
 
