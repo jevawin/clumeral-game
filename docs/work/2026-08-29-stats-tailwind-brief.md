@@ -169,15 +169,15 @@ Settled: Jamie 2026-08-29 (item 27: option b) · Ack: n/a
     goes with them if nothing else needs it.
 
 ## 8. Copy and wording
-n/a proposed · Ack: n/a
+n/a — confirmed Jamie 2026-08-29 · Ack: n/a
 
 28. **Not one word changes.** Every heading, label, unit and screen-reader
     phrase in `src/completion.ts` is left exactly as it is. This is a styling
     conversion; the copy was settled in the stats briefs of 11 and 12 August.
-    (assumed — awaiting a word back)
+    (confirmed, Jamie 2026-08-29)
 
 ## 9. Accessibility
-Settled: pending · Ack: n/a · **Jamie's to sign, blocking**
+Settled: Jamie 2026-08-29 (accepted all recommendations) · Ack: n/a
 
 29. **The screen-reader wiring is untouched.** Seventeen `aria-` attributes and
     two `sr-only` spans in `src/completion.ts` stay exactly as they are. Only
@@ -204,8 +204,49 @@ Settled: pending · Ack: n/a · **Jamie's to sign, blocking**
     The alternative is `text-2xl` at the base, which is closer to today's look
     on a mid-size phone but tighter on a small one.
 
-## 10. Analytics
-Settled: pending · Ack: pending
+    **Answered, Jamie 2026-08-29:** "fine, we'll check accessibility once we
+    have a final design". `text-xl` at the base, `text-3xl` from `sm` up.
+34. **A full accessibility pass is DEFERRED, on purpose, and is still owed.**
+    Jamie, 2026-08-29, as above. This conversion is signed off on the basis that
+    it changes nothing about the screen-reader experience and only moves type
+    sizes slightly. It is NOT an accessibility review of the finished stats
+    panel, which cannot happen until the redesign that follows it is done.
+    Carried into §11 as a deliverable so it is not quietly forgotten.
 
+## 10. Analytics
+n/a proposed · Ack: n/a
+
+35. **No events added, and none removed.** Nothing about the panel's behaviour
+    changes, so there is nothing new to count, and the events already fired
+    around `/solved` are untouched. Adding an event here would only pollute a
+    baseline. (assumed — awaiting a word back)
 ## 11. Done / test plan
-Settled: pending · Ack: pending
+Settled: pending · Ack: n/a
+
+36. **The four test files move to `data-` labels** and keep passing:
+    `tests/completion-stats.spec.ts`, `tests/accent-rotation.spec.ts`,
+    `e2e/pages/completion.page.ts`, `e2e/specs/player-stats.spec.ts`. (item 24)
+37. **The old rules are gone.** A test asserts that none of the 22 class names
+    appears in the built stylesheet, so dead CSS cannot creep back. (assumed)
+38. **The plan lists every value that moves** before code is written, and the
+    pull request repeats the list. (items 18, 26)
+39. **Jamie looks at it on the phone**, at `/solved?demo=stats`, with edit mode
+    open — which is the acceptance test that matters, because the point is that
+    the panel becomes designable. (assumed)
+40. **The deferred accessibility pass is written into `CLAUDE.md`'s Outstanding
+    actions**, naming item 34, so it surfaces when the redesign lands. (assumed)
+41. **How do we PROVE it still looks the same?**
+    (a) a one-off comparison: record every element's computed styles before the
+        change and again after, and put the differences in the pull request —
+        no new test infrastructure, throwaway, proves it once;
+    (b) a permanent visual snapshot test in Playwright, comparing screenshots of
+        `/solved?demo=stats` on every run;
+    (c) a permanent computed-style test, asserting the panel's final styles
+        against a committed fixture.
+    My rec: (a). Why: the panel is about to be redesigned in edit mode, so any
+    permanent baseline would be obsolete within days and would fail on every
+    deliberate change — noise, not safety. Screenshot tests also need a baseline
+    per browser and per platform, and this box is arm64 while CI is not.
+    The cost: after the one-off run, nothing stops a later change drifting the
+    styles again.
+
