@@ -4,10 +4,14 @@ Date: 2026-08-29 · Branch: `dev/edit-mode-on-stats` · Asked for by: Jamie
 
 Full brief, all 11 sections. Not a small change: it restyles a whole screen.
 
+**Sign-off on this brief is Jamie alone.** Jamie, 2026-08-29: "Dave doesn't care
+about this bit stop asking him." So every section reads `Ack: n/a` rather than
+waiting on Dave.
+
 ---
 
 ## 1. What it is
-Settled: Jamie 2026-08-29 (item 7: into #311) · Ack: pending (Dave)
+Settled: Jamie 2026-08-29 (item 7: into #311) · Ack: n/a
 
 1. **The problem.** The stats panel on `/solved` is styled with hand-written CSS
    component classes — `stat-block`, `stat-line__value`, `goes-row__fill` and
@@ -34,7 +38,7 @@ Settled: Jamie 2026-08-29 (item 7: into #311) · Ack: pending (Dave)
    longer.
 
 ## 2. Out of scope
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-29 (item 13 answered) · Ack: n/a
 
 8. **Not a redesign.** The panel looks the same when this is finished. Any
    change to how it looks is a separate decision, made afterwards in edit mode.
@@ -59,7 +63,28 @@ Settled: pending · Ack: pending
     reason we are doing this. The cost is a few ugly-looking class names.
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: pending · Ack: n/a
+
+14. **Every state the panel has today survives.** The reveal gate before enough
+    games, absent values, an outlier time shown on its own, dark mode, and the
+    four coloured sections. (assumed — item 8 says this is not a redesign)
+15. **Dark mode needs no thought.** The colour tokens already flip, so a utility
+    built on a token flips with it. (assumed)
+16. **The goes chart bar keeps its inline width.** It is a computed percentage,
+    so it cannot be a class. (assumed — `style="inline-size: N%"` stays)
+17. **`data-stat-block` stays as a hook, stops being a styling mechanism.** The
+    e2e tests select on it. (assumed)
+18. **Exact match, or nearest step on the scale?**
+    Some rules use values off Tailwind's scale — `font-size: 1.75rem` is not
+    `text-3xl`. Two ways to go:
+    (a) arbitrary values, `text-[1.75rem]`, pixel-identical but the class does
+        not sit on a scale, so edit mode's − and + cannot step it;
+    (b) nearest scale value, `text-3xl`, so every class steps properly, at the
+        cost of the panel shifting very slightly.
+    My rec: (b), nearest scale value. Why: the whole point is to make the panel
+    designable, and a class that cannot be stepped is only half-converted. The
+    shifts are small and you are about to redesign it in edit mode anyway. I
+    would list every value that moves, in the plan, so nothing changes silently.
 
 ## 4. Maths
 n/a — presentational only, no puzzle generation or filtering. Awaiting a word back.
