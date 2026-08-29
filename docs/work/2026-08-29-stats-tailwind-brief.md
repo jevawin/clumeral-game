@@ -4,9 +4,11 @@ Date: 2026-08-29 · Branch: `dev/edit-mode-on-stats` · Asked for by: Jamie
 
 Full brief, all 11 sections. Not a small change: it restyles a whole screen.
 
-**Sign-off on this brief is Jamie alone.** Jamie, 2026-08-29: "Dave doesn't care
-about this bit stop asking him." So every section reads `Ack: n/a` rather than
-waiting on Dave.
+**Sign-off on this brief is Jamie alone. `Override: Jamie 2026-08-29`** —
+"Dave doesn't care about this bit stop asking him." Recorded as an override, not
+as consent: Dave was never asked and has not agreed to anything here. That
+includes §4, which is nominally Dave's section and was closed by Jamie. No maths
+is involved, so the substance is safe, but the record should say what happened.
 
 ---
 
@@ -368,3 +370,55 @@ below was re-checked by hand before being written down.
     covering at least: the pill radius (finding 50), the 1.5px border (51),
     `opacity-12` (50), the `1.25rem 1fr 2.25rem` grid, and the 22.5rem
     breakpoint (46).
+
+### Settled after the review
+
+60. **§1 item 7 RE-SETTLED — build here, copy the conversion into #311.**
+    Jamie, 2026-08-29: "Your rec." The work happens on
+    `dev/edit-mode-on-stats`, which is the only branch with both the stats panel
+    and edit mode, so item 39's acceptance test can actually be run. The
+    conversion commits are then cherry-picked onto `dev/stats-tweaks` for #311,
+    carrying this brief file with them. Edit mode never enters #311, so that
+    pull request stays a stats change rather than dragging 61 files of tooling.
+    The plan must keep the conversion commits clean and separate from any
+    edit-mode commit, or the cherry-pick will not be possible.
+61. **§3 item 58 SETTLED on the recommendation — the panel keeps ONE colour
+    class on its container**, and everything inherits from it, exactly as
+    `[data-completion-panel] { color: var(--color-text) }` does today. Not one
+    colour utility per element. This preserves the guard that fixed the shipped
+    dark-mode bug at finding 48. Stated back to Jamie 2026-08-29 for objection;
+    it changes no behaviour, so it is settled unless he says otherwise.
+
+### The 22 class names, listed (finding 53)
+
+Rules in `src/tailwind.css` lines 509-730:
+
+`goes-chart` `goes-row` `goes-row__count` `goes-row__fill` `goes-row__track`
+`stat-block__head` `stat-block__icon` `stat-col` `stat-col__label`
+`stat-col__mark` `stat-cols` `stat-cols--two` `stat-col__value` `stat-figure`
+`stat-figure__icon` `stat-figure__value` `stat-hero` `stat-line`
+`stat-line__label` `stat-lines` `stat-line__value` `stat-today`
+
+Plus `[data-stat-block="..."]` accent rules and
+`[data-completion-panel] { color }`.
+
+**Two more names appear in the markup with NO rule at all** — `stat-block` and
+`stat-note` — so item 37's test must not assert their absence from the
+stylesheet, because they were never in it. `completion-stats.spec.ts` selects on
+both, so they need `data-` labels like everything else.
+
+### Added to §11 from the review
+
+62. **Three stylesheet-source assertions must be REWRITTEN, not re-selected**
+    (finding 47): the two `[data-stat-block]` accent regexes and the
+    `.stat-col__label` colour regex in `tests/accent-rotation.spec.ts`, and the
+    `.stat-line` and panel-colour slices in `tests/completion-stats.spec.ts`.
+    They become assertions about the markup in `src/completion.ts`. Note that
+    `.stat-line`'s test uses a non-null assertion and will THROW, not fail
+    cleanly, if the rule simply disappears.
+63. **Item 37 is narrowed:** the "no dead CSS" test asserts the 22 names above
+    are absent from `src/tailwind.css`, read as source like the existing tests
+    do — not from the built stylesheet, and not including the two names that
+    never had rules.
+64. **`docs/DESIGN-SYSTEM.md` is updated too** (finding 54). It documents these
+    class names and is already stale, listing several that no longer exist.
