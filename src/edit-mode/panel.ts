@@ -214,6 +214,40 @@ const PANEL_CSS = `
   .crumb-sep { color: #aaaaaa; }
 
   .nav-btn { min-height: 34px; min-width: 0; font-size: 13px; padding: 0 8px; }
+
+  /* The way in to the class picker, sitting with the classes it adds to. */
+  .add-class {
+    min-height: 34px;
+    min-width: 0;
+    font-size: 13px;
+    border-style: dashed;
+    border-color: #2b5fd9;
+    color: #12306e;
+  }
+  .save-btn { background: #1a1a1a; color: #ffffff; border-color: #1a1a1a; }
+
+  /* The picker covers the panel: its own filter, its own list, nothing else. */
+  .picker { display: flex; flex-direction: column; min-height: 0; }
+  .picker[hidden] { display: none !important; }
+  .picker-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #ffffff;
+    padding-bottom: 4px;
+  }
+  .picker-back { min-width: 34px; min-height: 44px; font-size: 20px; padding: 0 8px; }
+  .picker-list { overflow-y: auto; }
+  .picker-family {
+    display: block;
+    width: 100%;
+    text-align: left;
+    min-height: 36px;
+    margin-top: 4px;
+    font-size: 13px;
+    background: #f3f3f3;
+  }
+  .picker-class { min-height: 34px; min-width: 0; font-size: 13px; padding: 0 8px; }
   .footer button { min-height: 36px; font-size: 13px; }
   .footer button:last-child { background: #1a1a1a; color: #ffffff; }
   .search-family { margin: 10px 0 4px; font-size: 12px; color: #555555; }

@@ -3,7 +3,8 @@ import { createControls, type Controls, type ControlsCallbacks } from '../src/ed
 import { createCatalogue } from '../src/edit-mode/catalogue.ts';
 import { COPY } from '../src/edit-mode/copy.ts';
 
-// C5 — the controls inside the sheet (brief items 15, 33, 34, 36, 71, 72).
+// C5 — the controls inside the sheet (brief items 15, 33, 34, 36, 71, 72),
+// reshaped by Jamie's use on the phone across 2026-08-24 to 08-26.
 
 const CLASSES = ['mt-4', 'mt-5', 'mt-6', 'px-4', 'px-6', 'flex', 'rounded-lg', 'text-sm', 'text-lg'];
 const FAMILIES: Record<string, string[]> = {
@@ -37,13 +38,11 @@ beforeEach(() => {
 
 const find = (selector: string) => sheet.querySelector(selector) as HTMLElement;
 const findAll = (selector: string) => [...sheet.querySelectorAll(selector)] as HTMLElement[];
-const byText = (text: string) =>
-  findAll('button').find((b) => b.textContent === text)!;
+const byText = (text: string) => findAll('button').find((b) => b.textContent === text)!;
 
-describe('the breadcrumb and nav arrows (brief item 31)', () => {
+describe('the breadcrumb and nav (brief item 31)', () => {
   it('shows a tappable crumb per ancestor', () => {
-    const crumbs = findAll('.crumb');
-    expect(crumbs.map((c) => c.textContent)).toEqual(['main', 'div.card', 'button']);
+    expect(findAll('.crumb').map((c) => c.textContent)).toEqual(['main', 'div.card', 'button']);
   });
 
   it('selects an ancestor in one tap', () => {
@@ -52,20 +51,23 @@ describe('the breadcrumb and nav arrows (brief item 31)', () => {
   });
 
   it('separates the crumbs so they read as a path', () => {
-    // Jamie, 2026-08-26: links with > between them, not a row of boxes.
+    // Links with > between them, not a row of boxes.
     expect(findAll('.crumb-sep').map((s) => s.textContent)).toEqual(['>', '>']);
   });
 
-  it('offers all four directions, in words', () => {
+  it('offers all four directions, in words as well as arrows', () => {
     // An arrow alone never says which way through the TREE it goes.
-    for (const [label, direction] of [['↑ Parent', 'parent'], ['↓ Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next']]) {
+    const directions = [
+      ['↑ Parent', 'parent'], ['↓ Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next'],
+    ];
+    for (const [label, direction] of directions) {
       byText(label).click();
       expect(calls.onNav).toHaveBeenCalledWith(direction);
     }
   });
 });
 
-describe('class chips (brief item 33)', () => {
+describe('class chips (brief items 33, 36)', () => {
   it('shows one chip per class', () => {
     expect(findAll('.chip-name').map((c) => c.textContent)).toEqual(['mt-4', 'flex']);
   });
@@ -74,21 +76,16 @@ describe('class chips (brief item 33)', () => {
     findAll('.chip-name')[0].click();
     expect(calls.onRemoveClass).toHaveBeenCalledWith('mt-4');
   });
-});
 
-describe('steppers walk the scale (brief item 36)', () => {
   it('puts the stepper INSIDE the chip it applies to', () => {
-    // Jamie, 2026-08-26: separate stepper rows doubled the sheet's height for
-    // no extra information.
-    const chips = findAll('.chip');
-    expect(chips[0].querySelectorAll('.chip-step')).toHaveLength(2);
+    // Separate stepper rows doubled the sheet's height for no extra
+    // information (Jamie, 2026-08-26).
+    expect(findAll('.chip')[0].querySelectorAll('.chip-step')).toHaveLength(2);
   });
 
   it('offers no stepper for a class that does not sit on a scale', () => {
-    // `flex` is not a scale. A minus/plus against it would be a control that
-    // cannot do anything.
-    const chips = findAll('.chip');
-    expect(chips[1].querySelectorAll('.chip-step')).toHaveLength(0);
+    // `flex` is not a scale. A minus/plus against it could not do anything.
+    expect(findAll('.chip')[1].querySelectorAll('.chip-step')).toHaveLength(0);
   });
 
   it('steps up and down from inside the chip', () => {
@@ -98,127 +95,95 @@ describe('steppers walk the scale (brief item 36)', () => {
     (steps[0] as HTMLElement).click();
     expect(calls.onStep).toHaveBeenCalledWith('mt-4', 'down');
   });
-});
 
-describe('search (brief items 35, 72)', () => {
-  function type(value: string): void {
-    const input = find('.search-input') as HTMLInputElement;
-    input.value = value;
-    input.dispatchEvent(new Event('input'));
-  }
-
-  it('offers matches grouped by family', () => {
-    type('mt');
-    expect(findAll('.search-family').map((f) => f.textContent)).toEqual(['margin-top']);
-    expect(findAll('.search-group button').map((b) => b.textContent)).toEqual(['mt-4', 'mt-5', 'mt-6']);
-  });
-
-  it('adds the class when a result is tapped', () => {
-    type('px');
-    findAll('.search-group button')[1].click();
-    expect(calls.onAddClass).toHaveBeenCalledWith('px-6');
-  });
-
-  it('says what to do instead when nothing matches', () => {
-    // Brief item 72: not a bare "no results" — the edge of the scale is the
-    // intended next step.
-    type('zzz');
-    expect(find('.search-empty').textContent).toBe(COPY.searchEmpty);
-    expect(COPY.searchEmpty).toContain('Describe what you want in words');
-  });
-
-  it('shows nothing at all for an empty query', () => {
-    type('');
-    expect(find('.search-empty')).toBeNull();
-    expect(findAll('.search-group button')).toHaveLength(0);
-  });
-
-  it('does not let the phone autocorrect a class name', () => {
-    // Capitalisation and autocorrect mangle class names into things the
-    // catalogue will never match.
-    const input = find('.search-input');
-    expect(input.getAttribute('autocapitalize')).toBe('off');
-    expect(input.getAttribute('autocorrect')).toBe('off');
-  });
-});
-
-describe('the keyboard must not cover the element being edited (brief item 33)', () => {
-  it('collapses the sheet to search and results when search is focused', () => {
-    find('.search-input').dispatchEvent(new FocusEvent('focus'));
-    expect(controls.searchOpen).toBe(true);
-    // Everything else is HIDDEN, not removed — see the test below for why that
-    // distinction is the whole bug.
-    const rest = findAll('.chip')[0].closest('div[hidden]');
-    expect(rest).toBeTruthy();
-    expect(find('.search-input')).toBeTruthy();
-  });
-
-  it('never detaches the search input, which is what broke it', () => {
-    // THE bug (Jamie, 2026-08-25: "search doesn't work"). draw() rebuilt its
-    // container with replaceChildren(), and the input lived inside it.
-    // Detaching a focused element BLURS it — so focus triggered a draw, the
-    // draw detached the input, the blur closed the search, and the keyboard
-    // shut the instant it opened. Focus could not survive its own first render.
-    const input = find('.search-input');
-    input.dispatchEvent(new FocusEvent('focus'));
-    expect(find('.search-input')).toBe(input);
-    controls.render({ crumbs: ['main'], classes: ['mt-4'], desktop: false });
-    expect(find('.search-input')).toBe(input);
-    expect(input.isConnected).toBe(true);
-  });
-
-  it('keeps the Close hidden until search is open', () => {
-    // It was VISIBLE below the footer the whole time (Jamie's screenshot,
-    // 2026-08-26). `hidden` only sets display:none as a DEFAULT, and the row
-    // sets display:flex, which beats it.
-    expect(find('.search-bar').hidden).toBe(true);
-    find('.search-input').dispatchEvent(new FocusEvent('focus'));
-    expect(find('.search-bar').hidden).toBe(false);
-  });
-
-  it('offers a Close that does not depend on a blur arriving', () => {
-    find('.search-input').dispatchEvent(new FocusEvent('focus'));
-    (find('.search-close') as HTMLElement).click();
-    expect(controls.searchOpen).toBe(false);
-    expect(findAll('.chip').length).toBeGreaterThan(0);
-  });
-
-  it('tells the overlay to scroll the element clear', () => {
-    find('.search-input').dispatchEvent(new FocusEvent('focus'));
-    expect(calls.onSearchFocus).toHaveBeenCalledWith(true);
-  });
-
-  it('puts everything back when search is dismissed', () => {
-    find('.search-input').dispatchEvent(new FocusEvent('focus'));
-    find('.search-input').dispatchEvent(new FocusEvent('blur'));
-    expect(controls.searchOpen).toBe(false);
-    expect(findAll('.chip')).toHaveLength(2);
-    expect(calls.onSearchFocus).toHaveBeenLastCalledWith(false);
-  });
-});
-
-describe('telling your own classes from the element-s (Jamie 2026-08-26)', () => {
   it('marks the classes added in this session', () => {
-    // "When I apply a class from search it's indistinguishable from the
-    // original classes." Knowing which are yours is most of knowing what you
-    // have done to an element.
+    // "Indistinguishable from the original classes" otherwise. Knowing which
+    // are yours is most of knowing what you have done to an element.
     controls.render({ crumbs: [], classes: ['mt-4', 'flex'], added: ['flex'], desktop: false });
     const chips = findAll('.chip');
     expect(chips[0].className).not.toContain('chip-added');
     expect(chips[1].className).toContain('chip-added');
   });
-
-  it('marks nothing when nothing has been added', () => {
-    controls.render({ crumbs: [], classes: ['mt-4'], added: [], desktop: false });
-    expect(find('.chip').className).not.toContain('chip-added');
-  });
 });
 
-describe('the sheet stays clear of the keyboard (Jamie 2026-08-26)', () => {
-  it('pins the search field so results scroll under it', () => {
-    // "The main box disappears" — the field scrolled away with the results.
-    const styles = document.querySelector('style');
-    expect(sheet.querySelector('.search-row')).toBeTruthy();
+describe('the class picker (Jamie 2026-08-26)', () => {
+  const open = () => byText('+ Add class').click();
+  const type = (value: string) => {
+    const input = find('.search-input') as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  };
+
+  it('offers a way in that sits with the classes it adds to', () => {
+    expect(byText('+ Add class')).toBeTruthy();
+  });
+
+  it('covers the panel rather than squeezing in beside it', () => {
+    open();
+    expect(controls.pickerOpen).toBe(true);
+    expect(find('.picker').hidden).toBe(false);
+    // HIDDEN, not detached — detaching blurs the filter, which is what made the
+    // old inline search impossible to type into.
+    expect(findAll('.chip')[0].closest('div[hidden]')).toBeTruthy();
+  });
+
+  it('lists families to browse before anything is typed', () => {
+    // 23,000 classes is a menu of families, not a list of classes.
+    open();
+    const families = findAll('.picker-family');
+    expect(families.length).toBeGreaterThan(0);
+    expect(families[0].textContent).toMatch(/^▸ .+ \(\d+\)$/);
+  });
+
+  it('expands a family to its classes, and folds it again', () => {
+    open();
+    findAll('.picker-family')[0].click();
+    expect(findAll('.picker-class').length).toBeGreaterThan(0);
+    findAll('.picker-family')[0].click();
+    expect(findAll('.picker-class')).toHaveLength(0);
+  });
+
+  it('turns into a plain filter over everything once you type', () => {
+    open();
+    type('mt');
+    expect(findAll('.picker-class').map((b) => b.textContent)).toEqual(['mt-4', 'mt-5', 'mt-6']);
+  });
+
+  it('adds the class and closes', () => {
+    open();
+    type('px');
+    findAll('.picker-class')[1].click();
+    expect(calls.onAddClass).toHaveBeenCalledWith('px-6');
+    expect(controls.pickerOpen).toBe(false);
+  });
+
+  it('says what to do instead when nothing matches', () => {
+    // Brief item 72: the edge of the scale is the intended next step, not a
+    // dead end.
+    open();
+    type('zzz');
+    expect(find('.search-empty').textContent).toBe(COPY.searchEmpty);
+  });
+
+  it('closes from its own back control', () => {
+    open();
+    (find('.picker-back') as HTMLElement).click();
+    expect(controls.pickerOpen).toBe(false);
+    expect(findAll('.chip').length).toBeGreaterThan(0);
+  });
+
+  it('does not let the phone autocorrect a class name', () => {
+    open();
+    expect(find('.search-input').getAttribute('autocapitalize')).toBe('off');
+    expect(find('.search-input').getAttribute('autocorrect')).toBe('off');
+  });
+
+  it('never detaches the filter, which is what broke the old search', () => {
+    open();
+    const input = find('.search-input');
+    controls.render({ crumbs: ['main'], classes: ['mt-4'], desktop: false });
+    expect(find('.search-input')).toBe(input);
+    expect(input.isConnected).toBe(true);
   });
 });
 
@@ -245,16 +210,20 @@ describe('the desktop extras (brief items 15, 34)', () => {
   });
 });
 
-describe('the footer (brief item 71)', () => {
-  it('offers undo, reset element and done', () => {
-    const labels = findAll('.footer button').map((b) => b.textContent);
-    expect(labels).toEqual([COPY.undo, COPY.resetElement, COPY.done]);
+describe('the footer (brief item 71, reworded by Jamie 2026-08-26)', () => {
+  it('reads Undo, Reset, Save, each with an icon', () => {
+    expect(findAll('.footer button').map((b) => b.textContent))
+      .toEqual(['↶ Undo', '⟳ Reset', '✓ Save']);
+  });
+
+  it('has no Close, because tapping the pencil already does that', () => {
+    expect(findAll('button').map((b) => b.textContent)).not.toContain('Close');
   });
 
   it('calls back for each', () => {
-    byText(COPY.undo).click();
-    byText(COPY.resetElement).click();
-    byText(COPY.done).click();
+    byText('↶ Undo').click();
+    byText('⟳ Reset').click();
+    byText('✓ Save').click();
     expect(calls.onUndo).toHaveBeenCalledOnce();
     expect(calls.onResetElement).toHaveBeenCalledOnce();
     expect(calls.onDone).toHaveBeenCalledOnce();

@@ -1,13 +1,13 @@
 // Clumeral edit mode — the controls inside the sheet.
 //
-// Breadcrumb, nav arrows, class chips, search, steppers, and on desktop a raw
-// class field and a free-CSS box (brief items 33, 34, 15).
+// Breadcrumb, nav, class chips, the class picker, and on desktop a raw class
+// field and a free-CSS box (brief items 33, 34, 15).
 //
 // Rendered into the sealed shadow root, so none of it can use the project's
 // Tailwind classes — the styling lives in panel.ts and is hand-written.
 
 import type { Catalogue } from './catalogue.ts';
-import { search } from './catalogue.ts';
+import { search, familyLabel } from './catalogue.ts';
 import { isSteppable } from './scale.ts';
 import { COPY } from './copy.ts';
 
@@ -16,13 +16,7 @@ export interface ControlsState {
   crumbs: string[];
   /** The selected element's classes, in order. */
   classes: string[];
-  /**
-   * Of those, the ones added in this session.
-   *
-   * Jamie, 2026-08-26: a class applied from search "is indistinguishable from
-   * the original classes". Knowing which are yours is most of knowing what you
-   * have done to an element.
-   */
+  /** Of those, the ones added in this session. */
   added?: string[];
   /** Desktop gets the raw field and the free-CSS box (brief item 34). */
   desktop: boolean;
@@ -45,10 +39,22 @@ export interface ControlsCallbacks {
 
 export interface Controls {
   render(state: ControlsState): void;
-  /** Is the sheet collapsed to search and results only? */
-  readonly searchOpen: boolean;
+  /** Is the class picker covering the panel? */
+  readonly pickerOpen: boolean;
+  /** Close the picker. The pencil does this too, which is why there is no Close. */
+  closePicker(): void;
   destroy(): void;
 }
+
+/**
+ * How many families to list before the filter narrows things.
+ *
+ * The catalogue is 23,000 classes across 21,000 property signatures, so the
+ * unfiltered list is a menu of families, not of classes. Typing turns it into a
+ * filter over everything (Jamie, 2026-08-26: "might be a massive list but then
+ * search is just a text filter and list can be grouped").
+ */
+const FAMILY_MENU_CAP = 40;
 
 export function createControls(
   doc: Document,
@@ -56,10 +62,10 @@ export function createControls(
   catalogue: Catalogue,
   callbacks: ControlsCallbacks
 ): Controls {
-  let searchOpen = false;
+  let pickerOpen = false;
+  let expandedFamily: string | null = null;
   let state: ControlsState = { crumbs: [], classes: [], added: [], desktop: false };
 
-  // Rebuilt on every draw.
   const container = doc.createElement('div');
   sheet.appendChild(container);
 
@@ -78,124 +84,143 @@ export function createControls(
     return div;
   }
 
-  const input = doc.createElement('input');
+  // ── The class picker ──────────────────────────────────────────────────────
+  //
+  // Jamie's design, 2026-08-26: an "Add class" button that covers the panel with
+  // a picker. Better than an inline search box, because the picker owns the
+  // whole sheet and nothing has to shuffle around the keyboard.
+  //
+  // Mounted ONCE and never detached: removing a focused element blurs it, which
+  // is what made the old inline search impossible to type into.
 
-  function renderSearch(): HTMLElement {
-    const wrap = row('search-row');
-    input.type = 'search';
-    input.className = 'search-input';
-    input.placeholder = COPY.searchPlaceholder;
-    // Phones capitalise and autocorrect by default, which mangles class names
-    // into things the catalogue will never match.
-    input.setAttribute('autocapitalize', 'off');
-    input.setAttribute('autocorrect', 'off');
-    input.setAttribute('spellcheck', 'false');
+  const picker = doc.createElement('div');
+  picker.className = 'picker';
+  picker.hidden = true;
 
-    const results = doc.createElement('div');
-    results.className = 'search-results';
+  const filter = doc.createElement('input');
+  filter.type = 'search';
+  filter.className = 'search-input';
+  filter.placeholder = COPY.searchPlaceholder;
+  filter.setAttribute('autocapitalize', 'off');
+  filter.setAttribute('autocorrect', 'off');
+  filter.setAttribute('spellcheck', 'false');
+  filter.addEventListener('pointerdown', (event) => {
+    event.stopPropagation();
+    filter.focus();
+  });
 
-    // Jamie, 2026-08-24: "doesn't activate the keyboard when tapped". The
-    // collapse below keys on the focus event, so no focus meant the sheet
-    // collapsed with no way back — his "can't get out".
-    input.addEventListener('pointerdown', (event) => {
-      event.stopPropagation();
-      input.focus();
-    });
+  const pickerHead = row('picker-head');
+  pickerHead.appendChild(button('‹', () => closePicker(), 'picker-back'));
+  pickerHead.appendChild(filter);
 
-    input.addEventListener('focus', () => {
-      // Brief item 33: the sheet collapses to search and results only, and the
-      // selected element is scrolled above it. Without this the on-screen
-      // keyboard covers the very element being edited.
-      searchOpen = true;
-      draw();
-      callbacks.onSearchFocus(true);
-    });
+  const results = doc.createElement('div');
+  results.className = 'picker-list';
 
-    input.addEventListener('blur', () => {
-      searchOpen = false;
-      callbacks.onSearchFocus(false);
-      draw();
-    });
+  picker.appendChild(pickerHead);
+  picker.appendChild(results);
+  sheet.appendChild(picker);
 
-    input.addEventListener('input', () => {
-      results.replaceChildren();
-      const groups = search(catalogue, input.value);
+  /** Every family in the catalogue, biggest first. The unfiltered menu. */
+  function familyMenu(): { family: string; classes: string[] }[] {
+    const byFamily = new Map<string, string[]>();
+    for (const name of catalogue.classes) {
+      const label = familyLabel(catalogue.properties(name));
+      const bucket = byFamily.get(label);
+      if (bucket) bucket.push(name);
+      else byFamily.set(label, [name]);
+    }
+    return [...byFamily.entries()]
+      .map(([family, classes]) => ({ family, classes }))
+      .sort((a, b) => b.classes.length - a.classes.length)
+      .slice(0, FAMILY_MENU_CAP);
+  }
 
-      if (input.value.trim() && groups.length === 0) {
+  function classButton(name: string): HTMLButtonElement {
+    return button(name, () => {
+      callbacks.onAddClass(name);
+      closePicker();
+    }, 'picker-class');
+  }
+
+  function drawPicker(): void {
+    results.replaceChildren();
+    const query = filter.value.trim();
+
+    if (query) {
+      const groups = search(catalogue, query, { perFamily: 24, maxFamilies: 12 });
+      if (groups.length === 0) {
         const empty = doc.createElement('p');
         empty.className = 'search-empty';
-        // Not a bare "no results": the edge of the scale is the intended next
-        // step, so it says what to do instead (brief item 72).
         empty.textContent = COPY.searchEmpty;
         results.appendChild(empty);
         return;
       }
-
       for (const group of groups) {
         const heading = doc.createElement('p');
         heading.className = 'search-family';
-        // The true total, not the shown count — a capped group must not read
-        // as "that is all there is".
         heading.textContent = group.total > group.matches.length
           ? `${group.family} (${group.matches.length} of ${group.total})`
           : group.family;
         results.appendChild(heading);
-
         const list = row('search-group');
-        for (const name of group.matches) {
-          list.appendChild(button(name, () => {
-            callbacks.onAddClass(name);
-            input.value = '';
-            results.replaceChildren();
-          }));
-        }
+        for (const name of group.matches) list.appendChild(classButton(name));
         results.appendChild(list);
       }
-    });
+      return;
+    }
 
-    wrap.appendChild(input);
-    const holder = doc.createElement('div');
-    holder.appendChild(wrap);
-    holder.appendChild(results);
-    return holder;
+    // No filter: a menu of families. Tap one to see its classes.
+    for (const { family, classes } of familyMenu()) {
+      const heading = button(
+        `${expandedFamily === family ? '▾' : '▸'} ${family} (${classes.length})`,
+        () => {
+          expandedFamily = expandedFamily === family ? null : family;
+          drawPicker();
+        },
+        'picker-family'
+      );
+      results.appendChild(heading);
+
+      if (expandedFamily === family) {
+        const list = row('search-group');
+        for (const name of classes.slice(0, 48)) list.appendChild(classButton(name));
+        results.appendChild(list);
+      }
+    }
   }
 
-  /**
-   * Mounted ONCE and never detached.
-   *
-   * It used to live inside `container`, which draw() rebuilds with
-   * replaceChildren(). Detaching a focused element blurs it — so focusing the
-   * search box triggered a draw, the draw detached the box, the blur closed the
-   * search again, and the keyboard shut the instant it opened. Focus could not
-   * survive its own first render. Keeping it out of the rebuilt subtree is the
-   * whole fix (Jamie, 2026-08-25: "search doesn't work").
-   */
-  const searchBlock = renderSearch();
-  const searchBar = row('search-bar');
-  const closeSearch = button('Close', () => {
-    searchOpen = false;
-    input.blur();
+  filter.addEventListener('input', drawPicker);
+  filter.addEventListener('focus', () => callbacks.onSearchFocus(true));
+  filter.addEventListener('blur', () => callbacks.onSearchFocus(false));
+
+  function openPicker(): void {
+    pickerOpen = true;
+    expandedFamily = null;
+    filter.value = '';
+    drawPicker();
+    draw();
+    filter.focus();
+  }
+
+  function closePicker(): void {
+    pickerOpen = false;
+    filter.blur();
     callbacks.onSearchFocus(false);
     draw();
-  }, 'search-close');
-  searchBar.appendChild(closeSearch);
-  searchBar.hidden = true;
-  sheet.appendChild(searchBar);
-  sheet.appendChild(searchBlock);
+  }
+
+  // ── The panel itself ──────────────────────────────────────────────────────
 
   function draw(): void {
-    // Collapsed to search and results only, so the keyboard cannot cover the
-    // element being edited — by HIDING the rest, never by detaching it.
-    container.hidden = searchOpen;
-    searchBar.hidden = !searchOpen;
-    if (searchOpen) return;
+    // The picker covers the panel rather than replacing it, so nothing inside
+    // either is ever detached.
+    container.hidden = pickerOpen;
+    picker.hidden = !pickerOpen;
+    if (pickerOpen) return;
 
     container.replaceChildren();
 
     if (state.crumbs.length) {
-      // Links with > between them, not a row of boxes. Jamie, 2026-08-26:
-      // "better separated so it's clearer it's breadcrumbs, and can be links
-      // instead of boxes so it's more compact."
       const crumbs = row('breadcrumb');
       state.crumbs.forEach((name, index) => {
         if (index > 0) {
@@ -214,8 +239,6 @@ export function createControls(
       });
       container.appendChild(crumbs);
 
-      // Words rather than arrows — they fit, and an arrow alone never says
-      // which way through the tree it goes.
       const arrows = row('nav');
       const directions: [string, 'parent' | 'child' | 'prev' | 'next'][] = [
         ['↑ Parent', 'parent'], ['↓ Child', 'child'], ['◀ Sib', 'prev'], ['Sib ▶', 'next'],
@@ -227,8 +250,6 @@ export function createControls(
     }
 
     // One chip per class, with its stepper built in where it has a scale.
-    // Separate stepper rows doubled the height of the sheet for no extra
-    // information (Jamie, 2026-08-26).
     const chips = row('chips');
     const added = new Set(state.added ?? []);
     for (const name of state.classes) {
@@ -243,22 +264,19 @@ export function createControls(
       label.type = 'button';
       label.className = 'chip-name';
       label.textContent = name;
-      // Tapping the name removes the class (brief item 33). The × is gone: the
-      // whole chip was already the target, so the extra glyph only cost width.
       label.addEventListener('click', () => callbacks.onRemoveClass(name));
       chip.appendChild(label);
 
       if (isSteppable(catalogue, name)) {
         chip.appendChild(button('+', () => callbacks.onStep(name, 'up'), 'chip-step'));
       }
-
       chips.appendChild(chip);
     }
+    // The way in to the picker sits with the classes it adds to.
+    chips.appendChild(button('+ Add class', openPicker, 'add-class'));
     container.appendChild(chips);
 
     if (state.desktop) {
-      // Item 15: a free-CSS entry is not a class change, which is why the
-      // session file carries more than one kind of patch.
       const raw = doc.createElement('input');
       raw.type = 'text';
       raw.className = 'raw-classes';
@@ -273,10 +291,12 @@ export function createControls(
       container.appendChild(css);
     }
 
+    // Icons and Jamie's wording, 2026-08-26. No Close: tapping the pencil
+    // leaves edit mode, which is the same thing and one control fewer.
     const footer = row('footer');
-    footer.appendChild(button(COPY.undo, callbacks.onUndo));
-    footer.appendChild(button(COPY.resetElement, callbacks.onResetElement));
-    footer.appendChild(button(COPY.done, callbacks.onDone));
+    footer.appendChild(button(`↶ ${COPY.undo}`, callbacks.onUndo));
+    footer.appendChild(button(`⟳ ${COPY.resetElement}`, callbacks.onResetElement));
+    footer.appendChild(button(`✓ ${COPY.done}`, callbacks.onDone, 'save-btn'));
     container.appendChild(footer);
   }
 
@@ -285,7 +305,11 @@ export function createControls(
       state = next;
       draw();
     },
-    get searchOpen() { return searchOpen; },
-    destroy() { container.remove(); },
+    get pickerOpen() { return pickerOpen; },
+    closePicker,
+    destroy() {
+      container.remove();
+      picker.remove();
+    },
   };
 }
