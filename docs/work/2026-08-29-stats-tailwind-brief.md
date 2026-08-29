@@ -214,12 +214,12 @@ Settled: Jamie 2026-08-29 (accepted all recommendations) · Ack: n/a
     Carried into §11 as a deliverable so it is not quietly forgotten.
 
 ## 10. Analytics
-n/a proposed · Ack: n/a
+n/a — confirmed Jamie 2026-08-29 · Ack: n/a
 
 35. **No events added, and none removed.** Nothing about the panel's behaviour
     changes, so there is nothing new to count, and the events already fired
     around `/solved` are untouched. Adding an event here would only pollute a
-    baseline. (assumed — awaiting a word back)
+    baseline. (confirmed, Jamie 2026-08-29)
 ## 11. Done / test plan
 Settled: Jamie 2026-08-29 (item 41: one-off) · Ack: n/a
 
