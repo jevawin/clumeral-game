@@ -102,7 +102,7 @@ n/a — confirmed Jamie 2026-08-29 · Ack: n/a
     nothing to persist. (confirmed, Jamie 2026-08-29)
 
 ## 6. How it fits
-Settled: pending · Ack: n/a
+Settled: Jamie 2026-08-29 (item 24: data labels) · Ack: n/a
 
 20. **Two files carry the work.** The markup is built as template strings in
     `src/completion.ts`; the rules live in `src/tailwind.css`, roughly lines
@@ -129,8 +129,39 @@ Settled: pending · Ack: n/a
     `data-goes-row` already work this way (item 17), so it is the pattern the
     panel already uses, not a new idea.
 
+    **Answered, Jamie 2026-08-29:** "data labels". Option (a). Every element the
+    tests need gets a `data-` attribute and the four test files select on those.
+
 ## 7. How it looks
-Settled: pending · Ack: pending
+Settled: pending · Ack: n/a
+
+25. **Identical, apart from the small shifts item 18 already allows.** Off-scale
+    values round to the nearest step: `border-radius: 0.3125rem` becomes
+    `rounded-sm` (0.25rem), `padding-block: 0.1875rem` becomes `py-0.5`
+    (0.125rem). Each one is a fraction of a millimetre. (assumed)
+26. **Every one of those roundings is listed in the plan** before any code is
+    written, so nothing moves without being seen first. (assumed — item 18)
+27. **Three font sizes are FLUID, and that is a real decision.**
+    The two big figures use `clamp(1.375rem, 7vw, 1.75rem)` and
+    `clamp(1.25rem, 6.5vw, 1.75rem)`; the goes chart uses
+    `clamp(0.75rem, 16cqw, 1rem)`, which scales with its container rather than
+    the screen. These grow and shrink smoothly with the display, which is why a
+    big number fits a small phone and still looks big on a tablet. Tailwind has
+    no scale step for a clamp. Three ways:
+    (a) keep them as arbitrary values, `text-[clamp(1.375rem,7vw,1.75rem)]` —
+        looks exactly the same, but the class sits on no scale, so − and + do
+        nothing to it, which is the half-converted outcome item 18 rejected;
+    (b) fixed steps with responsive variants, e.g. `text-2xl sm:text-3xl` —
+        every class steps, it is the ordinary Tailwind mechanic, and the size
+        jumps at one breakpoint instead of gliding;
+    (c) add named type tokens to `@theme` (`--text-hero`), giving `text-hero` as
+        a real utility — a variable, like the colours, but a scale of one, so
+        − and + still have nowhere to go.
+    My rec: (b). Why: Jamie's own steer on item 13 was "use the same mechanic as
+    the rest of the site", and responsive steps are that mechanic. Everything
+    stays steppable in edit mode. The cost is that the hero number changes size
+    in one jump rather than gliding, and on a very narrow phone it may want a
+    smaller base step than the current floor.
 
 ## 8. Copy and wording
 Settled: pending · Ack: pending
