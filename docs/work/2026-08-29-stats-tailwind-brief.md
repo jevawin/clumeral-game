@@ -254,3 +254,111 @@ Settled: Jamie 2026-08-29 (item 41: one-off) · Ack: n/a
     or computed-style baseline. The comparison is run once and reported in the
     pull request.
 
+
+---
+
+## da-brief review — 2026-08-29
+
+Fresh-context review, verdict **not ready for planning**. Six High and seven
+Medium findings. The serious ones are that items 13 and 27 rest on claims about
+the code that are **wrong**, and Jamie settled §7 on that basis. Every claim
+below was re-checked by hand before being written down.
+
+### Confirmed true, and the brief was wrong
+
+42. **`sm:` variants do not exist in edit mode's catalogue.** The generated class
+    list has 23,183 entries and **not one contains a colon**. `text-xl` and
+    `text-3xl` are both there; `sm:text-3xl` is not. So item 27's whole reason
+    for choosing option (b) — "everything stays steppable" — is false: a
+    responsive variant is exactly as unsteppable as the arbitrary value it was
+    chosen over. Worse, `families.ts` treats an unknown class as fighting with
+    nothing, so on a wide screen stepping the base size would leave `sm:text-3xl`
+    winning and the tap would appear to do nothing.
+43. **The container query is not on the stats panel.** `container-type` and
+    `16cqw` appear once each, at `src/tailwind.css:734` and `:769`, and both
+    belong to **`.digit-box`** — the clue boxes on `/play` and the how-to-play
+    demo on `/welcome`. Items 13 and 27 said the goes chart used them. A planner
+    acting on that would have restyled two player-facing screens, breaking items
+    8 and 9. `.digit-box` is explicitly OUT OF SCOPE.
+44. **There are two fluid sizes on the panel, not three.**
+    `clamp(1.375rem, 7vw, 1.75rem)` and `clamp(1.25rem, 6.5vw, 1.75rem)`.
+45. **Item 33's sizes shrink the hero figure by about a quarter on every real
+    phone.** The `sm` breakpoint is Tailwind's default 640px and the page column
+    is capped at 480px, so `sm:` never fires on a phone. Today the hero is 7vw
+    capped at 28px — about 27px on a 390px iPhone. Item 33 would make it
+    `text-xl`, 20px. Item 8 promised the panel would look the same and item 25
+    called the shifts "a fraction of a millimetre". This one is not.
+46. **The panel already has its own breakpoint, and the brief never mentioned
+    it.** `@media (min-width: 22.5rem)` at `src/tailwind.css:622` stacks the
+    streak columns below 360px. Tailwind's `sm` is 640px, so using it there
+    would leave those columns stacked on every phone — a visible layout change.
+47. **Three test assertions read the stylesheet as text, so `data-` labels do
+    not save them.** `accent-rotation.spec.ts` matches the
+    `[data-stat-block]` accent rules and `.stat-col__label` by regex;
+    `completion-stats.spec.ts` does the same at lines 317 and 562, and line 318
+    uses a non-null assertion, so deleting `.stat-line` makes it **throw**
+    rather than fail. Item 37 also directly contradicts those tests, which
+    require some of the same rules to be present.
+48. **The panel's text colour is set once, on the container, to fix a shipped
+    dark-mode bug.** `[data-completion-panel] { color: var(--color-text) }` at
+    `src/tailwind.css:527`. The comment records that seven elements were once
+    coloured individually, the eighth was missed, and it vanished on the dark
+    background. Item 15's "dark mode needs no thought" is wrong: moving to
+    per-element utilities re-opens exactly that bug, invisibly in light mode.
+49. **Edit mode is not on `dev/stats-tweaks`.** `src/edit-mode/` exists only on
+    `dev/edit-mode-roundtrip` and on this branch. So item 39's acceptance test
+    cannot be run on the branch item 7 nominates, and this brief file is not on
+    that branch either.
+50. **`opacity-12` is not in the catalogue** (`opacity-10` and `opacity-15`
+    are), and the goes bar's radius is exactly half its height — a pill, so
+    `rounded-full` is exact and item 25's `rounded-sm` would square the ends.
+51. **`.stat-col`'s 1.5px border deliberately matches the play screen's undo and
+    reset controls** (`src/tailwind.css:626`). Rounding it to 1px or 2px breaks
+    a match the comment says is intentional, and the other users are out of
+    scope.
+52. **Item 1 overstated the case.** `goesChart()` already ships
+    `class="list-none p-0 m-0"`, and `src/tailwind.css`'s own header documents
+    component classes for "dense markup where utilities would balloon HTML" as
+    a deliberate exception. Converting is still a fair call — Jamie's call — but
+    it is re-taking a documented decision, not correcting an oversight.
+53. **The 22 class names are still not listed anywhere**, and the markup carries
+    24: `stat-block` and `stat-note` appear in `src/completion.ts` with no CSS
+    rule at all. Item 37's test would assert the absence of names that were
+    never in the stylesheet.
+54. **`docs/DESIGN-SYSTEM.md` documents these class names** and is already stale.
+    It needs updating; item 40 only covers `CLAUDE.md`.
+55. **The Dave override is recorded in the wrong form.** Every section reads
+    `Ack: n/a`; the gate wants `Override: Jamie 2026-08-29`. §4 is Dave's
+    section and was closed by Jamie alone. No maths is involved, so the
+    substance is fine, but the record should say what happened.
+
+### Reopened, and needing Jamie
+
+56. **§7 REOPENED — how do the two fluid figures get their size?** Item 27's
+    answer is void: finding 42 kills its reasoning and finding 45 prices it
+    honestly at 27px → 20px on a normal phone. Real options now:
+    (a) one fixed step, no variant — `text-3xl` (30px) everywhere. Steppable in
+        edit mode, within 2px of today on a phone, but bigger than today on a
+        320px screen, where overflow is the risk;
+    (b) keep the two `clamp()` values as arbitrary classes — pixel-identical,
+        not steppable, and item 27 already rejected arbitrary values;
+    (c) add a named type token to `@theme`, e.g. `--text-hero`, giving
+        `text-hero` — one word to change, in the catalogue, but a scale of one,
+        so − and + still have nowhere to go.
+    My rec: (a). Why: it is the only one edit mode can actually step, which is
+    the entire purpose of this work, and 30px against today's 27px is a change
+    Jamie will see and can then tune with the tool in minutes. On a 320px phone
+    it is 3px larger than today's floor, so the plan must check the longest
+    figure still fits.
+57. **§1 item 7 REOPENED — which branch?** Finding 49. Options: build on
+    `dev/edit-mode-on-stats` and cherry-pick the conversion into #311 without
+    edit mode; or land edit mode's own pull request first and rebase. Needs a
+    decision before planning.
+58. **§3 NEW QUESTION — where does the panel's text colour live?** Finding 48.
+    My rec: keep one colour class on the panel container and let it inherit,
+    exactly as the CSS does now, rather than colouring each element. It is one
+    utility on one element and it preserves the guard that stopped the bug.
+59. **Item 25's rounding list is reopened** and must be completed in the plan,
+    covering at least: the pill radius (finding 50), the 1.5px border (51),
+    `opacity-12` (50), the `1.25rem 1fr 2.25rem` grid, and the 22.5rem
+    breakpoint (46).
