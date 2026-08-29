@@ -65,12 +65,15 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.allTime).toBeVisible();
 
     // Three columns under Streak, two under Records (brief 65, 66).
-    await expect(completion.streak.locator(".stat-col")).toHaveCount(3);
-    await expect(completion.records.locator(".stat-col")).toHaveCount(2);
+    await expect(completion.streak.locator("[data-stat-col]")).toHaveCount(3);
+    await expect(completion.records.locator("[data-stat-col]")).toHaveCount(2);
     await expect(completion.average).toHaveCount(0);
-    // Icons on the two headings and on nothing else (brief 68).
-    await expect(completion.streak.locator(".stat-col svg")).toHaveCount(0);
-    await expect(completion.records.locator(".stat-col svg")).toHaveCount(0);
+    // One watermark svg per box, and nothing else inside one (polish brief 94).
+    // These two read 0 until 2026-08-29: the watermark landed in dce25fa and
+    // the spec was never updated, so they were asserting a state that had not
+    // been true for a fortnight.
+    await expect(completion.streak.locator("[data-stat-col] svg")).toHaveCount(3);
+    await expect(completion.records.locator("[data-stat-col] svg")).toHaveCount(2);
 
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is

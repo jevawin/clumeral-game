@@ -115,8 +115,8 @@ function block(id: string, heading: string, body: string, iconId: string): strin
   // colours the player did not pick, so all four are on screen at once
   // (polish brief 97).
   return `<section data-stat-block="${id}" class="stat-block" aria-labelledby="stat-head-${id}">
-    <h3 id="stat-head-${id}" class="stat-block__head">
-      <svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${heading}
+    <h3 id="stat-head-${id}" data-stat-head class="stat-block__head">
+      <svg data-stat-icon class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${heading}
     </h3>
     ${body}
   </section>`;
@@ -131,9 +131,9 @@ function block(id: string, heading: string, body: string, iconId: string): strin
  * the picture disagreeing, which is what a `dt`/`dd` pair would have forced.
  */
 function statLine(value: string, words: string): string {
-  return `<p class="stat-line">
-    <span class="stat-line__value">${value}</span>
-    <span class="stat-line__label">${words}</span>
+  return `<p data-stat-line class="stat-line">
+    <span data-stat-line-value class="stat-line__value">${value}</span>
+    <span data-stat-line-label class="stat-line__label">${words}</span>
   </p>`;
 }
 
@@ -157,10 +157,10 @@ function statColumn(shortLabel: string, fullLabel: string, value: string, iconId
   // The icon is a watermark: big, faint, rotated, and clipped by the box's own
   // corner (polish brief 94). Decorative in the strongest sense — it is a texture, not
   // a label, so it is aria-hidden and the words carry everything.
-  return `<div class="stat-col">
-    <dt><span class="stat-col__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
-    <dd class="stat-col__value">${value}</dd>
-    <svg class="stat-col__mark" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
+  return `<div data-stat-col class="stat-col">
+    <dt><span data-stat-label class="stat-col__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
+    <dd data-stat-value class="stat-col__value">${value}</dd>
+    <svg data-stat-mark class="stat-col__mark" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
   </div>`;
 }
 
@@ -173,13 +173,13 @@ function goesChart(distribution: PlayerStats['goesDistribution']): string {
       // so nothing in the chart is available only as a picture (brief 98).
       return `<li class="goes-row" data-goes-row>
         <span data-goes-label>${d.bucket}</span>
-        <span class="goes-row__track" aria-hidden="true"><span class="goes-row__fill" style="inline-size: ${pct}%"></span></span>
+        <span data-goes-track class="goes-row__track" aria-hidden="true"><span data-goes-fill class="goes-row__fill" style="inline-size: ${pct}%"></span></span>
         <span class="goes-row__count" data-goes-count>${d.count}</span>
       </li>`;
     })
     .join('');
-  return `<div class="goes-chart">
-    <h4 id="goes-chart-label" class="stat-note">${CHART_LABEL}</h4>
+  return `<div data-goes-chart class="goes-chart">
+    <h4 id="goes-chart-label" data-stat-note class="stat-note">${CHART_LABEL}</h4>
     <ul class="list-none p-0 m-0" aria-labelledby="goes-chart-label">${rows}</ul>
   </div>`;
 }
@@ -217,9 +217,9 @@ export function heroLine(tries: number | null, seconds: number | null, showTime:
  * exactly what an icon cannot do in speech (brief 47, 49).
  */
 function figure(iconId: string, spokenLabel: string, value: string): string {
-  return `<span class="stat-figure">
-    <svg class="stat-figure__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
-    <span class="sr-only">${spokenLabel}, </span><span class="stat-figure__value">${value}</span>
+  return `<span data-stat-figure class="stat-figure">
+    <svg data-stat-figure-icon class="stat-figure__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
+    <span class="sr-only">${spokenLabel}, </span><span data-stat-figure-value class="stat-figure__value">${value}</span>
   </span>`;
 }
 
@@ -235,12 +235,12 @@ export function todayFigures(tries: number | null, seconds: number | null, showT
   // reaches innerHTML and `tries` comes from dlng_history, which loadHistory
   // does not validate. Anything that is not a real count of goes is "played,
   // not recorded", which is already a state this handles.
-  if (tries === null || !Number.isInteger(tries) || tries < 1) return '<p class="stat-hero">Solved!</p>';
+  if (tries === null || !Number.isInteger(tries) || tries < 1) return '<p data-stat-hero class="stat-hero">Solved!</p>';
   const goes = figure('icon-calculator', 'Goes', `${tries} ${tries === 1 ? 'go' : 'goes'}`);
   const time = showTime && seconds !== null
     ? figure('icon-stopwatch', 'Time', formatDuration(seconds))
     : '';
-  return `<div class="stat-today">${goes}${time}</div>`;
+  return `<div data-stat-today class="stat-today">${goes}${time}</div>`;
 }
 
 /** Archive replays and markers carry no timing, on screen or in speech. */
@@ -362,10 +362,10 @@ export function renderCompletion(
     const showTime = showsTime(mode);
     const thisGame = [
       todayFigures(tries, seconds, showTime),
-      mode === 'random' ? `<p class="stat-note">${RANDOM_LINE}</p>` : '',
+      mode === 'random' ? `<p data-stat-note class="stat-note">${RANDOM_LINE}</p>` : '',
       // Not shown to a saving-off player: with saving off no third game ever
       // accumulates, so it would be a promise we are not going to keep.
-      mode === 'new' ? `<p class="stat-note">${NEW_PLAYER_LINE}</p>` : '',
+      mode === 'new' ? `<p data-stat-note class="stat-note">${NEW_PLAYER_LINE}</p>` : '',
     ].join('');
 
     // No Today block any more (brief 62) — no heading, no rule. The figures sit
@@ -381,15 +381,15 @@ export function renderCompletion(
       // reads as the section's own sentence rather than a footnote to the last
       // number in it.
       blocks.push(block('streak', 'Current streaks',
-        `<p class="stat-note">${STREAK_LINE}</p>
-        <dl class="stat-cols">
+        `<p data-stat-note class="stat-note">${STREAK_LINE}</p>
+        <dl data-stat-cols class="stat-cols">
           ${statColumn('Days', 'Current day streak', String(stats.playStreak), 'icon-gamepad')}
           ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak), 'icon-calculator')}
           ${statColumn('Avg. time', 'Average time', formatDuration(stats.avgTimeSeconds), 'icon-stopwatch')}
         </dl>`, 'icon-flame'));
 
       blocks.push(block('records', 'Records',
-        `<dl class="stat-cols stat-cols--two">
+        `<dl data-stat-cols class="stat-cols stat-cols--two">
           ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator')}
           ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), 'icon-stopwatch')}
         </dl>`, 'icon-trophy'));
@@ -399,7 +399,7 @@ export function renderCompletion(
         : `${stats.firstGoWins} (${stats.firstGoPercent}%)`;
 
       blocks.push(block('all-time', 'All time',
-        `<div class="stat-lines">
+        `<div data-stat-lines class="stat-lines">
           ${statLine(String(stats.plays), `${plural(stats.plays, 'Puzzle')} solved`)}
           ${statLine(firstGo, 'Solved in one')}
           ${statLine(formatDuration(stats.avgTimeSeconds), 'Average time')}

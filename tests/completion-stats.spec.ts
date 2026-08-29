@@ -38,7 +38,7 @@ function block(id: string): HTMLElement | null {
 
 /** Every All-time line, whitespace-collapsed: "17 puzzles solved". */
 function allTimeLines(): string[] {
-  return [...panel().querySelectorAll('.stat-line')]
+  return [...panel().querySelectorAll('[data-stat-line]')]
     .map((el) => el.textContent!.replace(/\s+/g, ' ').trim());
 }
 
@@ -53,12 +53,12 @@ function blockText(id: string): string {
 
 /** One column, found by the full words a screen reader hears (brief 67). */
 function col(fullLabel: string): { value: string; short: string } | null {
-  for (const el of panel().querySelectorAll('.stat-col')) {
+  for (const el of panel().querySelectorAll('[data-stat-col]')) {
     if (el.querySelector('.sr-only')?.textContent?.trim() !== fullLabel) continue;
-    const value = el.querySelector('.stat-col__value')!;
+    const value = el.querySelector('[data-stat-value]')!;
     return {
       value: value.textContent!.trim(),
-      short: el.querySelector('.stat-col__label')!.textContent!.trim(),
+      short: el.querySelector('[data-stat-label]')!.textContent!.trim(),
     };
   }
   return null;
@@ -66,12 +66,12 @@ function col(fullLabel: string): { value: string; short: string } | null {
 
 /** The visible column labels inside one block, in order. */
 function colLabels(id: string): string[] {
-  return [...block(id)!.querySelectorAll('.stat-col__label')].map((el) => el.textContent!.trim());
+  return [...block(id)!.querySelectorAll('[data-stat-label]')].map((el) => el.textContent!.trim());
 }
 
 /** The visible values of the Today block's figures, in order. */
 function figures(): string[] {
-  return [...panel().querySelectorAll('.stat-figure__value')].map((el) => el.textContent!.trim());
+  return [...panel().querySelectorAll('[data-stat-figure-value]')].map((el) => el.textContent!.trim());
 }
 
 function live(): string {
@@ -252,9 +252,9 @@ describe('the completion panel', () => {
 
   it('keeps the random line and the new-player line under the figures (brief 76)', async () => {
     await render(RETURNING, 2, true, { seconds: 221 });
-    const kids = [...block('this-game')!.children].map((el) => el.className);
+    const kids = [...block('this-game')!.children];
     // No heading now: the figures come first, then the note.
-    expect(kids[0]).toBe('stat-today');
+    expect(kids[0].hasAttribute('data-stat-today')).toBe(true);
     expect(blockText('this-game')).toContain("Random puzzles don't count towards your stats.");
   });
 
@@ -264,7 +264,7 @@ describe('the completion panel', () => {
     expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Current streaks');
     expect(block('records')!.querySelector('h3')!.textContent!.trim()).toBe('Records');
     for (const id of ['streak', 'records']) {
-      const icon = block(id)!.querySelector('h3 .stat-block__icon');
+      const icon = block(id)!.querySelector('h3 [data-stat-icon]');
       expect(icon, `${id} heading icon`).not.toBeNull();
       expect(icon!.getAttribute('aria-hidden')).toBe('true');
     }
@@ -285,7 +285,7 @@ describe('the completion panel', () => {
     // colour class left to get wrong, and the four theme colours cannot drift
     // apart from the section they belong to.
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(panel().querySelector('.stat-col__value--best')).toBeNull();
+    expect(panel().querySelector('[data-stat-value-best]')).toBeNull();
     for (const id of ['streak', 'records', 'all-time']) {
       expect(block(id)!.getAttribute('data-stat-block')).toBe(id);
     }
@@ -295,22 +295,22 @@ describe('the completion panel', () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     // All three sections have one now, All time included.
     for (const id of ['streak', 'records', 'all-time']) {
-      expect(block(id)!.querySelector('h3 .stat-block__icon'), id).not.toBeNull();
+      expect(block(id)!.querySelector('h3 [data-stat-icon]'), id).not.toBeNull();
     }
     // One watermark per box, decorative, and no other icon inside a box.
-    const marks = panel().querySelectorAll('.stat-col__mark');
+    const marks = panel().querySelectorAll('[data-stat-mark]');
     expect(marks.length).toBe(5);
     for (const mark of marks) expect(mark.getAttribute('aria-hidden')).toBe('true');
-    for (const c of panel().querySelectorAll('.stat-col')) {
+    for (const c of panel().querySelectorAll('[data-stat-col]')) {
       expect(c.querySelectorAll('svg').length).toBe(1);
     }
     // The two figures under the solved message keep theirs.
-    expect(panel().querySelectorAll('.stat-figure__icon').length).toBe(2);
+    expect(panel().querySelectorAll('[data-stat-figure-icon]').length).toBe(2);
   });
 
   it('drops the rule beside every heading (brief 73)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(panel().querySelector('.stat-block__rule')).toBeNull();
+    expect(panel().querySelector('[data-stat-rule]')).toBeNull();
   });
 
   it('draws no line between All-time entries (brief 81)', () => {
@@ -334,7 +334,7 @@ describe('the completion panel', () => {
     }
     // Label first in the DOM as well as on screen now (brief 67). The watermark
     // is a third child and comes last, so it never lands between the two.
-    for (const el of panel().querySelectorAll('.stat-col')) {
+    for (const el of panel().querySelectorAll('[data-stat-col]')) {
       expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD', 'svg']);
     }
   });
@@ -362,7 +362,7 @@ describe('the completion panel', () => {
 
   it('puts no explanatory line under the Records columns (brief 45)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(block('records')!.querySelector('.stat-note')).toBeNull();
+    expect(block('records')!.querySelector('[data-stat-note]')).toBeNull();
     expect(text()).not.toContain('Miss a day and the streak starts again.');
     expect(text()).not.toContain('Days in a row you have finished the puzzle.');
     expect(text()).not.toContain('Days in a row you got it on your first guess.');
@@ -383,7 +383,7 @@ describe('the completion panel', () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     // The old two-part row needed a note under it to say what the number meant.
     // "5 puzzles solved" says it in the line itself.
-    expect(panel().querySelector('.stat-note.stat-row')).toBeNull();
+    expect(panel().querySelector('[data-stat-note][data-stat-row]')).toBeNull();
     for (const gone of [
       'Daily puzzles you have finished.',
       'Puzzles you got on your first guess.',
@@ -539,7 +539,7 @@ describe('a forged history row cannot inject markup', () => {
     const mod = await import('../src/completion.ts');
     for (const bad of ['<img src=x onerror=alert(1)>', '2<script>x</script>', 0, -1, 2.5, NaN]) {
       expect(mod.todayFigures(bad as unknown as number, 30, true), String(bad))
-        .toBe('<p class="stat-hero">Solved!</p>');
+        .toBe('<p data-stat-hero class="stat-hero">Solved!</p>');
     }
   });
 
