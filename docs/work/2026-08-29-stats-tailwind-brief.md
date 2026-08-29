@@ -90,19 +90,44 @@ Settled: Jamie 2026-08-29 (item 18: nearest step) · Ack: n/a
     on a scale so edit mode can step it. The plan lists every value that moves.
 
 ## 4. Maths
-n/a — presentational only. No puzzle generation, no filtering, and
-`player-stats.ts` is not touched (item 12). Awaiting a word back.
+n/a — confirmed Jamie 2026-08-29. Presentational only. No puzzle generation, no
+filtering, and `player-stats.ts` is not touched (item 12).
 
 ## 5. State and persistence
-n/a proposed · Ack: n/a
+n/a — confirmed Jamie 2026-08-29 · Ack: n/a
 
 19. **Nothing new is stored, anywhere.** The panel still reads the player's
     history from `localStorage` through `player-stats.ts`, unchanged. No new
     preference, no URL parameter, no server call. A styling conversion has
-    nothing to persist. (assumed — awaiting a word back)
+    nothing to persist. (confirmed, Jamie 2026-08-29)
 
 ## 6. How it fits
-Settled: pending · Ack: pending
+Settled: pending · Ack: n/a
+
+20. **Two files carry the work.** The markup is built as template strings in
+    `src/completion.ts`; the rules live in `src/tailwind.css`, roughly lines
+    500-790, inside `@layer base`. Nothing else in `src/` references those
+    classes. (fact, checked 2026-08-29)
+21. **The rules are deleted, not left dangling.** Once the utilities are on the
+    markup the old rules have no user, and leaving dead CSS is how a stylesheet
+    grows to 5 MB. (assumed)
+22. **`player-stats.ts`, `screens.ts` and the router are untouched.** This is
+    presentation only. (assumed)
+23. **The colour tokens in `@theme` are untouched.** All four accents already
+    exist; item 13 only stops the `--section-accent` indirection. (assumed)
+24. **Four test files select on the class names that are about to disappear.**
+    `tests/completion-stats.spec.ts` (29 references), `tests/accent-rotation.spec.ts`,
+    `e2e/pages/completion.page.ts` and `e2e/specs/player-stats.spec.ts`.
+    So they must select on something else. Two ways:
+    (a) give every element the tests need a `data-` attribute, and select on
+        that;
+    (b) let the tests select on utility classes instead.
+    My rec: (a), `data-` attributes. Why: a test that looks for `text-3xl`
+    breaks the instant you step that size in edit mode — which is precisely the
+    thing this work exists to enable. A `data-` hook says "this is the fastest
+    time" and survives any amount of restyling. `data-stat-block` and
+    `data-goes-row` already work this way (item 17), so it is the pattern the
+    panel already uses, not a new idea.
 
 ## 7. How it looks
 Settled: pending · Ack: pending
