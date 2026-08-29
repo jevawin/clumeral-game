@@ -7,7 +7,7 @@ Full brief, all 11 sections. Not a small change: it restyles a whole screen.
 ---
 
 ## 1. What it is
-Settled: pending · Ack: pending
+Settled: Jamie 2026-08-29 (item 7: into #311) · Ack: pending (Dave)
 
 1. **The problem.** The stats panel on `/solved` is styled with hand-written CSS
    component classes — `stat-block`, `stat-line__value`, `goes-row__fill` and
@@ -35,6 +35,28 @@ Settled: pending · Ack: pending
 
 ## 2. Out of scope
 Settled: pending · Ack: pending
+
+8. **Not a redesign.** The panel looks the same when this is finished. Any
+   change to how it looks is a separate decision, made afterwards in edit mode.
+   (assumed — one change at a time, or nobody can tell what broke it)
+9. **Only the stats panel on `/solved`.** Those 22 classes are used in
+   `src/completion.ts` and nowhere else in `src/`, so nothing else moves.
+   (fact, checked 2026-08-29)
+10. **Not `/stats`.** That is the analytics dashboard, rendered by the worker
+    with its own inline stylesheet. Different thing, same word. (assumed)
+11. **Not edit mode's own panel CSS.** It is deliberately sealed off from the
+    app's stylesheet and stays that way. (assumed)
+12. **No change to the numbers** or how they are worked out. `player-stats.ts` is
+    not touched. (assumed)
+13. **Do the four section accent colours and the container query have to become
+    utilities too?**
+    The panel currently sets `--section-accent` per section off a
+    `data-stat-block` attribute, and the goes chart uses a container query.
+    My rec: yes, all of it, using Tailwind's arbitrary-property syntax on the
+    element — e.g. `[--section-accent:var(--color-accent-2)]` and `@container`.
+    Why: "all Tailwind" should mean no stylesheet rules left for this panel at
+    all, and anything left behind is invisible to edit mode, which is the whole
+    reason we are doing this. The cost is a few ugly-looking class names.
 
 ## 3. How it works
 Settled: pending · Ack: pending
