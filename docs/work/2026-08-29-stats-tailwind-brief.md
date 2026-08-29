@@ -63,7 +63,7 @@ Settled: Jamie 2026-08-29 (item 13 answered) · Ack: n/a
     reason we are doing this. The cost is a few ugly-looking class names.
 
 ## 3. How it works
-Settled: pending · Ack: n/a
+Settled: Jamie 2026-08-29 (item 18: nearest step) · Ack: n/a
 
 14. **Every state the panel has today survives.** The reveal gate before enough
     games, absent values, an outlier time shown on its own, dark mode, and the
@@ -86,11 +86,20 @@ Settled: pending · Ack: n/a
     shifts are small and you are about to redesign it in edit mode anyway. I
     would list every value that moves, in the plan, so nothing changes silently.
 
+    **Answered, Jamie 2026-08-29:** "Nearest". Option (b). Every class must sit
+    on a scale so edit mode can step it. The plan lists every value that moves.
+
 ## 4. Maths
-n/a — presentational only, no puzzle generation or filtering. Awaiting a word back.
+n/a — presentational only. No puzzle generation, no filtering, and
+`player-stats.ts` is not touched (item 12). Awaiting a word back.
 
 ## 5. State and persistence
-Settled: pending · Ack: pending
+n/a proposed · Ack: n/a
+
+19. **Nothing new is stored, anywhere.** The panel still reads the player's
+    history from `localStorage` through `player-stats.ts`, unchanged. No new
+    preference, no URL parameter, no server call. A styling conversion has
+    nothing to persist. (assumed — awaiting a word back)
 
 ## 6. How it fits
 Settled: pending · Ack: pending
