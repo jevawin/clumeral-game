@@ -314,9 +314,15 @@ describe('the completion panel', () => {
   });
 
   it('draws no line between All-time entries (brief 81)', () => {
-    const sheet = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
-    const rule = /\.stat-line\s*\{[^}]*\}/.exec(sheet)![0];
-    expect(rule).not.toContain('border');
+    // Asserted on the markup, not the stylesheet. The All-time lines carry
+    // their own classes now, so this is where the rule lives — and reading the
+    // stylesheet with a non-null assertion would THROW rather than fail once
+    // the .stat-line rule is deleted.
+    const source = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+    const tag = /<[a-z]+ data-stat-line[^>]*>/.exec(source);
+    expect(tag, 'no element carries data-stat-line').not.toBeNull();
+    const classes = (/class="([^"]*)"/.exec(tag![0])?.[1] ?? '').split(/\s+/).filter(Boolean);
+    expect(classes.filter((c) => /^-?border/.test(c))).toEqual([]);
   });
 
   it('says the short word on screen and the full one in speech', async () => {
