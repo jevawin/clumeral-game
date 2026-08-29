@@ -133,7 +133,7 @@ Settled: Jamie 2026-08-29 (item 24: data labels) · Ack: n/a
     tests need gets a `data-` attribute and the four test files select on those.
 
 ## 7. How it looks
-Settled: pending · Ack: n/a
+Settled: Jamie 2026-08-29 (item 27: option b) · Ack: n/a
 
 25. **Identical, apart from the small shifts item 18 already allows.** Off-scale
     values round to the nearest step: `border-radius: 0.3125rem` becomes
@@ -163,11 +163,46 @@ Settled: pending · Ack: n/a
     in one jump rather than gliding, and on a very narrow phone it may want a
     smaller base step than the current floor.
 
+    **Answered, Jamie 2026-08-29:** "use tailwind native don't pin exact".
+    Option (b). No arbitrary values anywhere on this panel. The three fluid
+    sizes become fixed steps with responsive variants, and the container query
+    goes with them if nothing else needs it.
+
 ## 8. Copy and wording
-Settled: pending · Ack: pending
+n/a proposed · Ack: n/a
+
+28. **Not one word changes.** Every heading, label, unit and screen-reader
+    phrase in `src/completion.ts` is left exactly as it is. This is a styling
+    conversion; the copy was settled in the stats briefs of 11 and 12 August.
+    (assumed — awaiting a word back)
 
 ## 9. Accessibility
-Settled: pending · Ack: pending
+Settled: pending · Ack: n/a · **Jamie's to sign, blocking**
+
+29. **The screen-reader wiring is untouched.** Seventeen `aria-` attributes and
+    two `sr-only` spans in `src/completion.ts` stay exactly as they are. Only
+    the presentation classes change. (assumed)
+30. **`sr-only` is already a Tailwind utility**, so it survives the conversion
+    unchanged. (fact)
+31. **Contrast is unaffected.** The four accents keep their existing tokens, all
+    at the same lightness, and `tests/palette-contrast.spec.ts` already covers
+    all four. Item 13 removes an indirection, not a colour. (assumed)
+32. **Text still respects the reader's own font size.** Everything is in `rem`
+    today and Tailwind's `text-*` steps are `rem` too, so a larger system font
+    still scales the panel. (fact)
+33. **The narrow-phone size of the big figures needs a decision.**
+    Today the hero figure never goes below 1.375rem (22px) and never above
+    1.75rem (28px), gliding between them with the screen width. On fixed steps
+    the nearest choices are `text-2xl` (1.5rem / 24px) and `text-xl`
+    (1.25rem / 20px).
+    My rec: `text-xl` on the smallest screens, stepping to `text-3xl`
+    (1.875rem / 30px) from the `sm` breakpoint up. Why: it is never smaller than
+    today's floor by enough to matter for reading, and going the other way —
+    starting at 24px — is WIDER than today's floor on a 320px phone, which is
+    where a long figure would overflow its box. Overflow is the accessibility
+    risk here, not size.
+    The alternative is `text-2xl` at the base, which is closer to today's look
+    on a mid-size phone but tighter on a small one.
 
 ## 10. Analytics
 Settled: pending · Ack: pending
