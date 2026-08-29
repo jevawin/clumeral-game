@@ -9,83 +9,93 @@ item number is named.
 
 ---
 
-## 0. Two things to confirm before building
+## 0. Two decisions, settled
 
-Both are "how", not "what", so they sit here rather than reopening a section.
-Both have a consequence Jamie can see, so neither is decided silently.
+Both are "how", not "what", so neither reopens a brief section. Both were put to
+Jamie with a recommendation, both were sent back with "alternatives that fit
+Tailwind?", and both now have an answer that is fully native and fully
+steppable. **Settled: Jamie 2026-08-29.**
 
-### 0.1 The 1.5px border on the stat boxes
+### 0.1 The 1.5px border on the stat boxes — a named utility
 
-`.stat-col` has `border: 1.5px`. Tailwind's border scale is 0, 1, 2, 4, 8 — there
-is no 1.5. Brief item 27's answer was recorded as "no arbitrary values anywhere
-on this panel", which would force `border` (1px) or `border-2` (2px), 33% either
-way, and would break the deliberate match to the play screen's undo and reset
-controls that finding 51 flagged.
+`.stat-col` has `border: 1.5px`. Tailwind's border scale is 0, 1, 2, 4, 8 —
+there is no 1.5, and there is no `--border-width-*` theme namespace to add one
+to (checked: `node_modules/tailwindcss/theme.css` declares none). Rounding to
+`border` or `border-2` is 33% either way and breaks the deliberate match to the
+play screen's undo and reset controls that finding 51 flagged. Writing
+`border-[1.5px]`, as the rest of `index.html` already does seven times, keeps
+the pixel but is invisible to edit mode: it is absent from
+`.edit-mode/families.json`, so edit mode thinks it collides with nothing, and it
+sorts after `border-2` in the compiled stylesheet, so tapping plus or minus adds
+a class that loses the cascade and the control looks dead.
 
-But the rest of the site already writes exactly this border as
-`border-[1.5px]` — seven times in `index.html` (lines 69, 74, 79, 89, 293, 294
-and 295), on the feedback buttons, the feedback textarea and the three digit
-boxes. So `border-[1.5px]` **is** "the same
-mechanic as the rest of the site", which was Jamie's own steer on item 13.
+**Settled: declare it once, as a real utility.**
 
-**Recommendation: `border-[1.5px]`.** Nothing moves, and the match to the play
-screen survives. Item 27's answer was about the two fluid font sizes, where
-steppability of the type scale was the whole argument; a border width is not on
-that scale at all.
+```css
+@utility border-hairline {
+  border-width: 1.5px;
+}
+```
 
-**The cost, in full.** `border-[1.5px]` is not in `.edit-mode/families.json`, so
-edit mode believes it collides with nothing and will not remove it when a border
-width is picked. It also sorts AFTER `border-2` in the compiled stylesheet
-(offset 5778 against 5695), so it wins. Tapping the border's minus or plus in
-edit mode would add `border-2`, lose the cascade, and look dead — the same trap
-§0.2 discloses for `min-[22.5rem]:`. That is one control on one element, against
-a 33% change to a border that is also on the play screen. But it is the trap,
-said plainly, and Jamie is confirming it knowing that.
+at the top level of `src/tailwind.css`, outside `@layer base`.
 
-**The same question, and the same answer, for the watermark.** `.stat-col__mark`
-has `opacity: 0.12`. `opacity-12` compiles perfectly — Tailwind takes any
-integer — but it is absent from `getClassList()`, so edit mode cannot step it
-either. The alternative is `opacity-10`, in the catalogue, making the watermark
-17% fainter. If §0.1 is accepted then `opacity-12` is accepted with it: it is
-the weaker version of the same trade, a native class with no arbitrary value,
-nothing moves, one control that will not step. §2 assumes `opacity-12`.
+Verified on this build: a design system compiled from `src/tailwind.css` plus
+that block returns `border-hairline` from `getClassList()`. So it lands in edit
+mode's catalogue and in the family map as a `border-width`, which means edit
+mode swaps it for `border-2` properly instead of stacking a losing class behind
+it. No arbitrary value, nothing moves, no dead tap.
 
-**If Jamie rejects §0.1**, the fallbacks are `border-2` on the boxes (2px, a
-visible thickening, and the play-screen match is broken) and `opacity-10` on the
-watermark. Nothing else in the plan changes.
+It is a scale of one, so minus and plus step *out* of it rather than *within*
+it — that is the honest limit, and it is the same limit any 1.5px border has.
+The seven `border-[1.5px]` uses in `index.html` are out of scope here, but they
+are the obvious follow-up: one name for the border everywhere.
 
-### 0.2 The 360px stack
+**And the watermark, for consistency.** `.stat-col__mark` has `opacity: 0.12`.
+`opacity-12` compiles, but like `border-[1.5px]` it is absent from
+`getClassList()`, so it has the same dead-tap problem — and unlike the border it
+is not worth a named utility for one decorative element. It becomes
+`opacity-10`: catalogued, steppable, and 17% fainter on a watermark that is
+already almost invisible. Jamie can step it back in edit mode in one tap.
+
+### 0.2 The 360px stack — the boxes wrap themselves
 
 `.stat-cols` stacks its boxes into one column below 22.5rem (360px) and goes to
-three across above it. Brief finding 46 flagged that the brief never mentioned
-this, and finding 42 established that **no** responsive variant is in edit mode's
-catalogue — `sm:`, `xs:` and `min-[22.5rem]:` are all equally unsteppable.
+three across above it (finding 46). Finding 42 established that **no**
+responsive variant is in edit mode's catalogue — `sm:`, `xs:` and
+`min-[22.5rem]:` are all equally unsteppable, and worse, a variant that wins on
+a wide screen makes tapping the base class look dead.
 
-Dropping the stack is not safe. Item 56 settled `text-3xl` (30px) on the box
-figures, and the existing CSS comment on `.stat-col__value` records that today's
-28px ceiling is pinned by three boxes fitting a 390px screen. On a 320px screen
-three boxes leave about 67px of text width per box, `.stat-col` has
-`overflow: hidden`, and "2m 38s" at 30px does not fit in that. Today a 320px
-screen shows one full-width box and the fluid size drops to 20px, so the problem
-does not exist. Keeping the stack is what makes item 56's settled answer safe.
+Dropping the narrow-screen behaviour outright is not safe. Item 56 settled
+`text-3xl` (30px) on the box figures, and three boxes on a 320px screen leave
+about 67px of text width each, inside a box with `overflow: hidden`. "2m 38s" at
+30px does not fit that.
 
-**Recommendation: `grid-cols-1 min-[22.5rem]:grid-cols-3`** (and
-`min-[22.5rem]:grid-cols-2` for the Records pair). Identical to today's
-behaviour, no `@theme` change, and it confines the exception to the panel. The
-cost is honest: those two classes cannot be stepped in edit mode, and worse, if
-Jamie taps the base `grid-cols-1` on a screen wider than 360px the variant still
-wins and the tap looks dead — the same trap finding 42 described.
+**Settled: no breakpoint. The boxes wrap themselves.**
 
-The alternative is adding `--breakpoint-xs: 22.5rem` to `@theme` and writing
-`xs:grid-cols-3`. It reads better and is reusable; it is not one bit more
-steppable, and it is a change to the shared theme for one element on one screen.
+- the row — `flex flex-wrap gap-2` (was `grid grid-cols-1 gap-2` plus a media
+  query)
+- each box — `grow basis-24` added to its existing classes
 
-**Both recommendations in §0 are the plan's decision unless Jamie says
-otherwise.** Everything below assumes them. If either is rejected, only the rows
-named at the end of §0.1 and the two `.stat-cols` rows in §2 change; nothing
-else in the plan moves.
+Every class is on the scale, including `basis-24`, which is the one that decides
+when the boxes wrap. So Jamie can move the wrap point himself in edit mode,
+which the breakpoint never allowed.
 
----
+What changes, exactly. `basis-24` is 6rem, so three boxes need
+`3 x 96 + 2 x 8 = 304px` of content, which is a **336px** viewport once the 32px
+gutter is off. Today's switch is at 360px.
+
+| Viewport | Streaks (3 boxes) today | Streaks with `basis-24` | Records (2 boxes) today | Records with `basis-24` |
+|---|---|---|---|---|
+| 320px | all three stacked | **two, then one** | both stacked | **two across** |
+| 360px | three across | three across | two across | two across |
+| 390px+ | three across | three across | two across | two across |
+
+So it differs from today only below 360px, and in the safe direction: at 320px
+the widest box gets 116px of text room rather than the 67px three-across would
+give, and rather than today's full 256px. `text-3xl` at 30px fits 116px.
+
+`basis-24` is in `rem`, so it also wraps at large browser text, which is what
+the `22.5rem` media query was for (its comment says so explicitly).
 
 ## 1. What changed from the brief, and why
 
@@ -200,11 +210,10 @@ The full conversion, element by element. "Exact" means pixel-identical.
 
 | Today | Becomes | Effect |
 |---|---|---|
-| `display:grid; grid-template-columns:1fr` | `grid grid-cols-1` | Exact |
+| `display:grid; grid-template-columns:1fr` + `@media (min-width:22.5rem) { repeat(3,1fr) }` | `flex flex-wrap` on the row, `grow basis-24` on each box | **Three across from 336px up instead of 360px. Below that, two boxes then one, where today all three stack. See §0.2's table** |
 | `gap: 0.5rem` | `gap-2` | Exact |
 | `margin: 0` | `m-0` | Exact |
-| `@media (min-width: 22.5rem) { repeat(3, 1fr) }` | `min-[22.5rem]:grid-cols-3` | Exact — see §0.2 |
-| `@media (min-width: 22.5rem) { repeat(2, 1fr) }` | `min-[22.5rem]:grid-cols-2` | Exact — see §0.2 |
+| `.stat-cols--two` `@media (min-width:22.5rem) { repeat(2,1fr) }` | no separate class — the same `flex flex-wrap` and `grow basis-24` | **Two across at every width, where today they stack below 360px. The `stat-cols--two` variant disappears entirely** |
 
 ### `.stat-col` → the box
 
@@ -212,7 +221,7 @@ The full conversion, element by element. "Exact" means pixel-identical.
 |---|---|---|
 | `position:relative; overflow:hidden` | `relative overflow-hidden` | Exact. `overflow-hidden` is load-bearing: it clips the watermark |
 | `background: var(--color-surface)` | `bg-surface` | Exact |
-| `border: 1.5px` | `border-[1.5px]` | Exact — see §0.1 |
+| `border: 1.5px` | `border-hairline` | Exact — a named utility declared once in `src/tailwind.css`, see §0.1 |
 | border colour `var(--section-accent)` | `border-accent-2` / `border-accent-3` | Exact |
 | `border-radius: var(--radius-sm)` | `rounded-sm` | Exact — both are 0.25rem |
 | `padding: 0.625rem 0.75rem` | `py-2.5 px-3` | Exact |
@@ -227,7 +236,7 @@ The full conversion, element by element. "Exact" means pixel-identical.
 | `inline-size/block-size: 4rem` | `size-16` | Exact |
 | `transform: rotate(45deg)` | `rotate-45` | Exact |
 | `color: var(--color-text)` | deleted | Inherits |
-| `opacity: 0.12` | `opacity-12` | Exact. Finding 50 was right that `opacity-12` is not in edit mode's catalogue, but it compiles perfectly — Tailwind takes any integer. Same trade as §0.1: nothing moves, one control that will not step. `opacity-10` is the fallback if §0.1 is rejected, and is 17% fainter |
+| **`opacity: 0.12`** | **`opacity-10`** | **0.12 → 0.10, a 17% fainter watermark. `opacity-12` compiles but is not in `getClassList()`, so it has §0.1's dead-tap problem and is not worth a named utility for one decorative element (§0.1)** |
 | `pointer-events: none` | `pointer-events-none` | Exact |
 
 ### `.stat-col__label` and `.stat-col__value`
@@ -284,19 +293,22 @@ The full conversion, element by element. "Exact" means pixel-identical.
 
 ### Summary of everything that moves
 
-Eight things, and only three of them are visible at arm's length:
+Ten things, and only four of them are visible at arm's length:
 
 1. Hero figures and box figures: fluid 20–28px → flat **30px** (settled, item 56).
 2. All-time figures: 22px → **20px**.
 3. Attempts chart: each row **2px shorter**, chart 12px shorter.
-4. Heading line-height 1.2 → 1.25.
-5. Box label line-height 1.2 → 1.25.
-6. All-time line line-height 1.3 → 1.25.
-7. Icon nudge 3.2px → 4px.
-8. `.stat-hero` fallback 28px → 30px.
+4. **Below 360px the boxes wrap instead of stacking** — see §0.2's table. This is
+   the only layout change on the panel, and it only affects a 320px phone and
+   large browser text.
+5. Watermark opacity 0.12 → 0.10.
+6. Heading line-height 1.2 → 1.25.
+7. Box label line-height 1.2 → 1.25.
+8. All-time line line-height 1.3 → 1.25.
+9. Icon nudge 3.2px → 4px.
+10. `.stat-hero` fallback 28px → 30px.
 
-If §0.1 is rejected there is a ninth — the watermark at 0.12 → 0.10 — and the
-box border thickens from 1.5px to 2px.
+The 1.5px border does **not** move: `border-hairline` is exactly 1.5px (§0.1).
 
 Nothing else changes by so much as a pixel.
 
@@ -434,8 +446,14 @@ classes still present.
 The conversion and the three test rewrites that depend on it are one commit,
 because neither half passes without the other.
 
-1. `index.html:356`: add `text-text` to the `data-completion-panel` div.
-2. `src/completion.ts`: give `block()` a fifth parameter and `statColumn()` a
+1. `src/tailwind.css`: add the `border-hairline` utility (§0.1) at the **top
+   level of the file, outside `@layer base`** — `@utility` inside a layer does
+   not compile. Put it beside the existing `@custom-variant dark` block, with a
+   comment saying it is 1.5px because that is the play screen's border width and
+   the panel deliberately matches it, and that it is a named utility rather than
+   `border-[1.5px]` so edit mode can see it is a border width.
+2. `index.html:356`: add `text-text` to the `data-completion-panel` div.
+3. `src/completion.ts`: give `block()` a fifth parameter and `statColumn()` a
    fifth parameter, each carrying **whole, literal class strings** — the streak
    call site passes `'text-accent-2'` and `'border-accent-2 text-accent-2'`, the
    records call site `'text-accent-3'` and `'border-accent-3 text-accent-3'`, the
@@ -446,10 +464,18 @@ because neither half passes without the other.
    **Never a stem, never interpolated** (§1.5). `class="text-${accent}"` compiles
    to nothing and ships a panel with no accent colours at all. Every accent class
    name must appear complete in the file, so Tailwind's scanner can see it.
-3. Replace every class on every element with the utilities in §2. The `style`
+4. Replace every class on every element with the utilities in §2. `statColumn()`
+   gains `grow basis-24`, and the two `<dl>` wrappers become `flex flex-wrap
+   gap-2 m-0` — the `stat-cols--two` variant has no counterpart and simply goes
+   (§0.2).
+
+   Note the `<dl>` keeps its `dt`/`dd` pairs. A flex `<dl>` puts each `dt` and
+   its `dd` in the flow separately, which is why every pair is already wrapped in
+   a `div` — `statColumn()` returns one, and that div is the flex item. Nothing
+   about the markup's reading order changes. The `style`
    attribute on the goes fill stays untouched (item 16). Every `aria-` attribute
    and both `sr-only` spans stay untouched (items 29, 30).
-4. Delete lines **509-728** of `src/tailwind.css` — the `[data-completion-panel]`
+5. Delete lines **509-728** of `src/tailwind.css` — the `[data-completion-panel]`
    colour rule, the three `[data-stat-block]` accent rules and all 22 component
    rules. Not 729 or 730: those two lines are the `.digit-box` section's own
    comments, and `.digit-box` is out of scope. Move the comments that still
@@ -457,11 +483,11 @@ because neither half passes without the other.
    explain: the dark-mode colour guard, the watermark's `overflow: hidden`
    dependency, the label-above-number reading order, and the 1.5px border's match
    to the play screen. A comment that only described a deleted rule goes with it.
-5. `.digit-box`, `.digit-box__*` and everything after line 728 are **not touched**
+6. `.digit-box`, `.digit-box__*` and everything after line 728 are **not touched**
    (finding 43). The container query and `16cqw` belong to `.digit-box`, which is
    the clue boxes on `/play` and the how-to-play demo on `/welcome`, and is
    explicitly out of scope (item 9).
-6. `tests/accent-rotation.spec.ts`, the test `gives each section its colour, and
+7. `tests/accent-rotation.spec.ts`, the test `gives each section its colour, and
    colours nothing but icons and numbers`:
    - the three `[data-stat-block="<id>"] { --section-accent: var(--color-accent-N) }`
      regexes become assertions on `src/completion.ts` — the `streak` block's
@@ -477,7 +503,7 @@ because neither half passes without the other.
      different hues`, `the @theme defaults are Lime's rotation`) read `@theme`
      and `html[data-theme=...]`, which this work does not touch. They stay
      exactly as they are.
-7. `tests/completion-stats.spec.ts:562-599`, the `the panel colours itself once,
+8. `tests/completion-stats.spec.ts:562-599`, the `the panel colours itself once,
    at the top` block:
    - `sets a text colour on the panel container` → assert `index.html`'s
      `data-completion-panel` div carries `text-text`.
@@ -513,6 +539,13 @@ that file do — and asserts none of these 22 names appears:
 
 Plus: no `--section-accent` anywhere in the file, and no
 `[data-stat-block="..."]` rule.
+
+**`border-hairline` is not a violation of this test and must not be caught by
+it.** It is an `@utility`, not a component class — Tailwind compiles it into the
+utilities layer, `getClassList()` returns it, and edit mode can apply and remove
+it like any other class. That is the whole difference from the 22 names above,
+which are plain rules the design system cannot see. The test asserts those 22
+names; `border-hairline` is not one of them.
 
 It asserts **absence from `src/tailwind.css`**, not from the built stylesheet,
 and it does **not** list `stat-block` or `stat-note` — those two never had rules,
@@ -677,7 +710,7 @@ Every numbered item in the brief, traced.
 | 19 | No code. |
 | 20, 21 | Task 3 steps 3 and 4. |
 | 22 | No code. `player-stats.ts`, `screens.ts` and the router are not in any task's file list. |
-| 23 | Task 3 — `@theme`'s colour tokens are untouched. §0.2 is the only proposal that would touch `@theme` at all, and the recommendation avoids it. |
+| 23 | Task 3 — `@theme` is untouched. `border-hairline` is an `@utility`, which is a separate mechanism, and §0.2's answer needs no breakpoint token. |
 | 24 | Tasks 1 and 3. |
 | 25, 26 | §2. |
 | 27 | Void — replaced by item 56. |
@@ -694,16 +727,16 @@ Every numbered item in the brief, traced.
 | 39 | Task 7. |
 | 40 | Task 6 step 2. |
 | 41 | Task 5. Split in two, because jsdom has no layout engine. |
-| 42 | §0.2 — no responsive variant is steppable, and the plan says so plainly. |
+| 42 | §0.2 — settled by using no responsive variant at all. |
 | 43 | Task 3 step 5. |
 | 44 | §2 — two fluid sizes, both listed. |
 | 45 | Void — item 33 is replaced by item 56. |
-| 46 | §0.2. |
+| 46 | §0.2 — settled with `flex flex-wrap` + `basis-24`, no breakpoint at all. |
 | 47 | Task 2 (the one that throws) and Task 3 steps 6-7. |
 | 48 | Task 3 steps 1 and 7. |
 | 49 | Task 7. |
-| 50 | §2 — `rounded-full` (exact) and `opacity-12` (exact, see §0.1). |
-| 51 | §0.1. |
+| 50 | §2 — `rounded-full` (exact) and `opacity-10` (0.12 → 0.10, see §0.1). |
+| 51 | §0.1 — the 1.5px is kept exactly, as the `border-hairline` utility. |
 | 52 | Background. No code. |
 | 53 | §3 and Task 4. |
 | 54 | Task 6 step 1. |
