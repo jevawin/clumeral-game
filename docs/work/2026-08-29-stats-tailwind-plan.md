@@ -3,6 +3,10 @@
 Date: 2026-08-29 · Branch: `dev/edit-mode-on-stats` · Brief:
 [`docs/work/2026-08-29-stats-tailwind-brief.md`](2026-08-29-stats-tailwind-brief.md)
 
+**Approved: Jamie 2026-08-29.** Plan approval is his as dev lead. Build may
+start. §0's two decisions were settled in the same conversation and are recorded
+there.
+
 Every claim in this plan was re-checked against the code on 2026-08-29. Where a
 brief item rested on a wrong fact, the correction is called out and the brief
 item number is named.
