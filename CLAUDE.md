@@ -78,6 +78,12 @@ deliberately avoided, because `HMAC_SECRET` is a per-Worker secret whose absence
 *silently*: `TextEncoder.encode(undefined)` yields `""`, making the signing key
 `SHA-256("")` and every random-puzzle token forgeable.
 
+**`dev.clumeral.com` is unrelated to this.** Edit mode's read-only view is served
+from the Pi over a `cloudflared` tunnel, and a named tunnel can create a
+`dev.clumeral.com` record on the production zone. That is a record pointing at a
+home machine, not a Worker hostname, so it neither contradicts nor reopens the
+decision below. See [docs/EDIT-MODE.md](docs/EDIT-MODE.md).
+
 Jamie's call, 2026-08-05: keep `workers.dev` for pre-prod. Isolation was the point and it is
 already delivered by `env.preprod`; the hostname was only ever cosmetic. Closed #260. The one
 real cost is that service-worker and PWA behaviour is exercised on a different origin shape
@@ -136,6 +142,7 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Pre-PR architecture review | [docs/DA-REVIEW.md](docs/DA-REVIEW.md) |
 | Pre-PR line-level review | [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md) |
 | Adding a roadmap item as a GitHub issue | [docs/ROADMAP-ISSUES.md](docs/ROADMAP-ISSUES.md) |
+| Edit mode — the dev-only design tool, the session file `/fold` reads, Dave's read-only link | [docs/EDIT-MODE.md](docs/EDIT-MODE.md) |
 | Feedback — storage (D1), reading it, triage process | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
 | Analytics — event storage (D1), `/stats`, the chart, the Analytics Engine migration | [docs/ANALYTICS.md](docs/ANALYTICS.md) |
 

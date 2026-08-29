@@ -27,6 +27,27 @@
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
 
+/* Edit mode's own class-name literals must never reach this stylesheet.
+ *
+ * Tailwind v4 detects classes by scanning every file git does not ignore, which
+ * includes markdown and test files (issue #312). Edit-mode source and its tests
+ * name utilities as data — a family-map test asserts `mt-4` against `mt-6` — and
+ * without these lines every one of them ships to production.
+ *
+ * `@source not` only ever REMOVES rules, so it cannot break the shipped app by
+ * adding something. The selectors it drops on this tree are used nowhere in
+ * src/ or index.html.
+ *
+ * WHEN #312 LANDS: keep the first line and delete the other two. Narrowing the
+ * scan to `../src` puts src/edit-mode/ back INSIDE the scanned set, so the
+ * exclusion is load-bearing under the narrowing rather than redundant with it.
+ * The other two directories sit outside ../src and the narrowing covers them.
+ * Verified by building both ways — plan section D6b.
+ */
+@source not "./edit-mode";
+@source not "../edit-mode";
+@source not "../tests";
+
 /* Wire dark: variant to existing .dark class on html (set by theme.ts) */
 @custom-variant dark (&:where(.dark, .dark *));
 
