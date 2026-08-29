@@ -23,15 +23,36 @@ way, and would break the deliberate match to the play screen's undo and reset
 controls that finding 51 flagged.
 
 But the rest of the site already writes exactly this border as
-`border-[1.5px]` — nine times in `index.html`, on the feedback buttons, the
-feedback textarea and the three digit boxes. So `border-[1.5px]` **is** "the same
+`border-[1.5px]` — seven times in `index.html` (lines 69, 74, 79, 89, 293, 294
+and 295), on the feedback buttons, the feedback textarea and the three digit
+boxes. So `border-[1.5px]` **is** "the same
 mechanic as the rest of the site", which was Jamie's own steer on item 13.
 
-**Recommendation: `border-[1.5px]`.** Nothing moves, the match to the play screen
-survives, and the one class edit mode cannot step is a class the rest of the site
-already cannot step. Item 27's answer was about the two fluid font sizes, where
+**Recommendation: `border-[1.5px]`.** Nothing moves, and the match to the play
+screen survives. Item 27's answer was about the two fluid font sizes, where
 steppability of the type scale was the whole argument; a border width is not on
 that scale at all.
+
+**The cost, in full.** `border-[1.5px]` is not in `.edit-mode/families.json`, so
+edit mode believes it collides with nothing and will not remove it when a border
+width is picked. It also sorts AFTER `border-2` in the compiled stylesheet
+(offset 5778 against 5695), so it wins. Tapping the border's minus or plus in
+edit mode would add `border-2`, lose the cascade, and look dead — the same trap
+§0.2 discloses for `min-[22.5rem]:`. That is one control on one element, against
+a 33% change to a border that is also on the play screen. But it is the trap,
+said plainly, and Jamie is confirming it knowing that.
+
+**The same question, and the same answer, for the watermark.** `.stat-col__mark`
+has `opacity: 0.12`. `opacity-12` compiles perfectly — Tailwind takes any
+integer — but it is absent from `getClassList()`, so edit mode cannot step it
+either. The alternative is `opacity-10`, in the catalogue, making the watermark
+17% fainter. If §0.1 is accepted then `opacity-12` is accepted with it: it is
+the weaker version of the same trade, a native class with no arbitrary value,
+nothing moves, one control that will not step. §2 assumes `opacity-12`.
+
+**If Jamie rejects §0.1**, the fallbacks are `border-2` on the boxes (2px, a
+visible thickening, and the play-screen match is broken) and `opacity-10` on the
+watermark. Nothing else in the plan changes.
 
 ### 0.2 The 360px stack
 
@@ -58,6 +79,11 @@ wins and the tap looks dead — the same trap finding 42 described.
 The alternative is adding `--breakpoint-xs: 22.5rem` to `@theme` and writing
 `xs:grid-cols-3`. It reads better and is reusable; it is not one bit more
 steppable, and it is a change to the shared theme for one element on one screen.
+
+**Both recommendations in §0 are the plan's decision unless Jamie says
+otherwise.** Everything below assumes them. If either is rejected, only the rows
+named at the end of §0.1 and the two `.stat-cols` rows in §2 change; nothing
+else in the plan moves.
 
 ---
 
@@ -88,7 +114,19 @@ made; they change what the code has to do to deliver it.
    `[data-completion-panel]` element is written at `index.html:356`; the panel's
    innerHTML is what `completion.ts` builds. Item 61's single colour class goes on
    that div.
-5. **The `.goes-row` grid becomes a flex row.** Its
+5. **Class names must be written as literals, never interpolated.** Tailwind v4
+   finds classes by scanning source text, so `class="text-${accent}"` produces no
+   rule at all. The panel's accent utilities are in no source file today — they
+   reach it through `--section-accent` — so the current production stylesheet
+   contains `.text-accent` but **not** `.text-accent-2`, `.border-accent-2` or
+   `.bg-accent-4`. Interpolating them would ship a panel whose icons, borders and
+   numbers all fall back to the foreground colour, silently, with the four-colour
+   rotation gone. It would not be caught: vitest renders into jsdom with no
+   stylesheet, and edit mode's dev build pulls in all 23,183 utilities through
+   `@source` in `src/tailwind-edit.css`, so item 39's phone check would show the
+   right colours while production shipped grey. Task 3 passes whole literal class
+   strings, and Task 4 guards the built stylesheet.
+6. **The `.goes-row` grid becomes a flex row.** Its
    `grid-template-columns: 1.25rem 1fr 2.25rem` has no scale utility and would
    need an arbitrary value. `flex items-center gap-2` with `w-5` on the label,
    `flex-1` on the track and `w-9` on the count gives the **same three widths
@@ -189,7 +227,7 @@ The full conversion, element by element. "Exact" means pixel-identical.
 | `inline-size/block-size: 4rem` | `size-16` | Exact |
 | `transform: rotate(45deg)` | `rotate-45` | Exact |
 | `color: var(--color-text)` | deleted | Inherits |
-| **`opacity: 0.12`** | **`opacity-10`** | **0.12 → 0.10. `opacity-12` is not in the catalogue (finding 50); `opacity-15` is 0.03 away, `opacity-10` is 0.02** |
+| `opacity: 0.12` | `opacity-12` | Exact. Finding 50 was right that `opacity-12` is not in edit mode's catalogue, but it compiles perfectly — Tailwind takes any integer. Same trade as §0.1: nothing moves, one control that will not step. `opacity-10` is the fallback if §0.1 is rejected, and is 17% fainter |
 | `pointer-events: none` | `pointer-events-none` | Exact |
 
 ### `.stat-col__label` and `.stat-col__value`
@@ -229,7 +267,7 @@ The full conversion, element by element. "Exact" means pixel-identical.
 | Today | Becomes | Effect |
 |---|---|---|
 | chart `margin-block-start: 1rem` | `mt-4` | Exact |
-| row `display:grid; grid-template-columns: 1.25rem 1fr 2.25rem; align-items:center` | row `flex items-center`, label `w-5`, track `flex-1`, count `w-9` | Exact — same three widths |
+| row `display:grid; grid-template-columns: 1.25rem 1fr 2.25rem; align-items:center` | row `flex items-center`, label `w-5 shrink-0`, track `flex-1`, count `w-9 shrink-0` | Exact — same three widths. `shrink-0` is load-bearing: a grid track is a hard width, a flex item is not, and without it a label or count would grow past 1.25rem / 2.25rem once its content exceeded that. The buckets are `1`–`5` and `6+` and the counts are small, so it would not bite today, but it is the first thing to give at 200% browser text |
 | row `gap: 0.5rem` | `gap-2` | Exact |
 | row `font-size: 1rem` | `text-base` | Exact. The 1.5 line-height it brings matches what the row already inherits from preflight's `html { line-height: 1.5 }` |
 | row `color: var(--color-text)` | deleted | Inherits |
@@ -246,17 +284,19 @@ The full conversion, element by element. "Exact" means pixel-identical.
 
 ### Summary of everything that moves
 
-Nine things, and only three of them are visible at arm's length:
+Eight things, and only three of them are visible at arm's length:
 
 1. Hero figures and box figures: fluid 20–28px → flat **30px** (settled, item 56).
 2. All-time figures: 22px → **20px**.
 3. Attempts chart: each row **2px shorter**, chart 12px shorter.
-4. Watermark opacity 0.12 → 0.10.
-5. Heading line-height 1.2 → 1.25.
-6. Box label line-height 1.2 → 1.25.
-7. All-time line line-height 1.3 → 1.25.
-8. Icon nudge 3.2px → 4px.
-9. `.stat-hero` fallback 28px → 30px.
+4. Heading line-height 1.2 → 1.25.
+5. Box label line-height 1.2 → 1.25.
+6. All-time line line-height 1.3 → 1.25.
+7. Icon nudge 3.2px → 4px.
+8. `.stat-hero` fallback 28px → 30px.
+
+If §0.1 is rejected there is a ninth — the watermark at 0.12 → 0.10 — and the
+box border thickens from 1.5px to 2px.
 
 Nothing else changes by so much as a pixel.
 
@@ -337,99 +377,125 @@ deleted.
    - line 386 `.stat-note.stat-row` → `[data-stat-note][data-stat-row]`
      (still null)
    - line 542 the exact-string assertion on
-     `'<p class="stat-hero">Solved!</p>'` → the new markup string
-3. `e2e/pages/completion.page.ts` lines 40 and 41: `.stat-col` →
-   `[data-stat-col]`, `.stat-line` → `[data-stat-line]`.
+     `'<p class="stat-hero">Solved!</p>'` → after Task 1 it reads
+     `'<p data-stat-hero class="stat-hero">Solved!</p>'`, and after Task 3
+     `'<p data-stat-hero class="text-3xl font-bold">Solved!</p>'`. The exact
+     string IS the assertion here — it is the guard on a value that reaches
+     `innerHTML` — so it is written out, not derived
+3. `e2e/pages/completion.page.ts` — **three** lines, not two. Lines 40 and 41
+   (`.stat-col` → `[data-stat-col]`, `.stat-line` → `[data-stat-line]`) and
+   **line 63**, inside the `stat(label)` helper, which every
+   `completion.stat(...)` assertion in `player-stats.spec.ts` goes through.
+   Missing line 63 breaks every stat lookup in the e2e suite, and Task 7 does
+   not run e2e locally, so it would only surface in CI on the pull request.
 4. `e2e/specs/player-stats.spec.ts` lines 68, 69, 72, 73: `.stat-col` →
    `[data-stat-col]`.
+5. **Fix two assertions on those lines that are already wrong.** Lines 72-73
+   assert `.stat-col svg` has count 0 in the streak and records blocks. The
+   watermark landed in `dce25fa` (2026-08-14) and puts an `svg` inside every
+   box; the spec was last touched the day after and never updated. The real
+   counts are 3 and 2. Correct them to `toHaveCount(3)` and `toHaveCount(2)`
+   and say so in the commit message, so a CI failure on the pull request is not
+   mistaken for something this conversion did.
 
 **Proves it:** `npx vitest run tests/completion-stats.spec.ts` green. The e2e
 files compile; they are not run here (QA level is set in Task 7).
 
-### Task 2 — the three stylesheet-source assertions become markup assertions
+### Task 2 — the one stylesheet assertion that can move on its own
 
-**Implements:** brief items 47, 62.
-**Files:** `tests/accent-rotation.spec.ts`, `tests/completion-stats.spec.ts`.
+**Implements:** part of brief items 47, 62.
+**File:** `tests/completion-stats.spec.ts`.
 
-These read `src/tailwind.css` as text and assert rules that are about to be
-deleted. `data-` labels do not save them; they have to be rewritten to assert
-the same intent about `src/completion.ts` instead. Done before the deletion so
-each one is seen to fail for the right reason and then pass.
+Three of the four rewrites the review calls for assert state that only Task 3
+creates — the accent literals in `completion.ts`, `text-text` in `index.html`,
+and the absence of the panel's CSS. Specifying them here would leave the suite
+red at the end of Task 2, which breaks the rule that every task commits green.
+They move into Task 3 instead. Only this one stands alone.
 
-Note `completion-stats.spec.ts:318` uses a non-null assertion on the regex
-result, so deleting `.stat-line` makes it **throw**, not fail — rewrite it, do
-not delete it.
+`tests/completion-stats.spec.ts:317-319`, `draws no line between All-time
+entries`: today it does `/\.stat-line\s*\{[^}]*\}/.exec(sheet)![0]` and checks
+the rule contains no `border`. The non-null assertion means that deleting
+`.stat-line` makes it **throw**, not fail (finding 47), so it has to be
+rewritten before Task 3 rather than left to break. It becomes an assertion on
+`src/completion.ts`: the element carrying `data-stat-line` has no `border`
+utility in its class list. Same guarantee, asserted where the rule now lives —
+and it passes both before and after Task 3.
 
-1. `tests/accent-rotation.spec.ts`, the test
-   `gives each section its colour, and colours nothing but icons and numbers`:
-   - the `[data-stat-block="<id>"] { --section-accent: var(--color-accent-N) }`
-     regexes become assertions on `src/completion.ts`: the `streak` block's
-     markup contains `text-accent-2` and `border-accent-2`, `records` contains
-     `text-accent-3` and `border-accent-3`, `all-time` contains `text-accent-4`
-     and `bg-accent-4`.
-   - the `.stat-col__label { color: var(--color-text) }` regex becomes: the
-     element carrying `data-stat-label` has no `text-accent` class on it. That
-     is the same guarantee — the label stays in the foreground colour — asserted
-     where the colour now lives.
-   - the three tests above it (`%s maps its three other slots`,
-     `%s shows four different hues`, `the @theme defaults are Lime's rotation`)
-     read `@theme` and `html[data-theme=...]`, which this work does not touch.
-     They stay exactly as they are.
-2. `tests/completion-stats.spec.ts:317-319`
-   (`draws no line between All-time entries`): becomes an assertion that the
-   `data-stat-line` element's class list in `src/completion.ts` contains no
-   `border` utility.
-3. `tests/completion-stats.spec.ts:562-599`, the
-   `the panel colours itself once, at the top` block:
-   - `sets a text colour on the panel container` → assert `index.html`'s
-     `data-completion-panel` div carries `text-text`.
-   - `reads in the body font, with no Inconsolata left on the panel` → assert
-     `src/completion.ts` contains no `font-mono` and no `Inconsolata`, and that
-     the panel section of `src/tailwind.css` no longer exists (covered by
-     Task 4).
-   - `leaves no box around the records` → the `.stat-box` half is about a class
-     that was already deleted and stays as is; the `src/completion.ts` half
-     stays as is.
-   - `uses the theme token, never a literal colour` → assert the
-     `data-completion-panel` div's class list in `index.html` contains no
-     `text-[#...]` or other hex literal.
-   - The comment block above these tests explains the dark-mode bug. Keep it,
-     and add a line saying the guard moved from the stylesheet to the markup
-     but guards the same thing (items 48, 61).
-
-**Proves it:** `npx vitest run tests/accent-rotation.spec.ts
-tests/completion-stats.spec.ts` green, with the classes still present.
+**Proves it:** `npx vitest run tests/completion-stats.spec.ts` green, with the
+classes still present.
 
 ### Task 3 — the conversion
 
-**Implements:** brief items 13, 18, 20, 21, 23, 25, 27, 56, 61, and §2 of this
-plan.
-**Files:** `src/completion.ts`, `index.html`, `src/tailwind.css`.
+**Implements:** brief items 13, 18, 20, 21, 23, 25, 27, 47, 48, 56, 61, 62, and
+§2 of this plan.
+**Files:** `src/completion.ts`, `index.html`, `src/tailwind.css`,
+`tests/accent-rotation.spec.ts`, `tests/completion-stats.spec.ts`.
+
+The conversion and the three test rewrites that depend on it are one commit,
+because neither half passes without the other.
 
 1. `index.html:356`: add `text-text` to the `data-completion-panel` div.
-2. `src/completion.ts`: give `block()` a fifth parameter, `accent`, carrying the
-   section's colour class stem (`accent-2`, `accent-3`, `accent-4`), and
-   `statColumn()` a fifth parameter for the same. The three `block()` call sites
-   pass their own. `statLine()` and `goesChart()` are only ever used by All time,
-   so they take `accent-4` directly rather than a parameter.
+2. `src/completion.ts`: give `block()` a fifth parameter and `statColumn()` a
+   fifth parameter, each carrying **whole, literal class strings** — the streak
+   call site passes `'text-accent-2'` and `'border-accent-2 text-accent-2'`, the
+   records call site `'text-accent-3'` and `'border-accent-3 text-accent-3'`, the
+   all-time call site `'text-accent-4'`. `statLine()` and `goesChart()` are only
+   ever used by All time, so they write `text-accent-4` and `bg-accent-4`
+   directly.
+
+   **Never a stem, never interpolated** (§1.5). `class="text-${accent}"` compiles
+   to nothing and ships a panel with no accent colours at all. Every accent class
+   name must appear complete in the file, so Tailwind's scanner can see it.
 3. Replace every class on every element with the utilities in §2. The `style`
    attribute on the goes fill stays untouched (item 16). Every `aria-` attribute
    and both `sr-only` spans stay untouched (items 29, 30).
-4. Delete lines 509-730 of `src/tailwind.css` — the `[data-completion-panel]`
+4. Delete lines **509-728** of `src/tailwind.css` — the `[data-completion-panel]`
    colour rule, the three `[data-stat-block]` accent rules and all 22 component
-   rules. Leave the section's explanatory comments that still describe live
-   decisions by moving them into `src/completion.ts` beside the markup they
+   rules. Not 729 or 730: those two lines are the `.digit-box` section's own
+   comments, and `.digit-box` is out of scope. Move the comments that still
+   describe live decisions into `src/completion.ts` beside the markup they
    explain: the dark-mode colour guard, the watermark's `overflow: hidden`
    dependency, the label-above-number reading order, and the 1.5px border's match
    to the play screen. A comment that only described a deleted rule goes with it.
-5. `.digit-box`, `.digit-box__*` and everything after line 730 are **not touched**
+5. `.digit-box`, `.digit-box__*` and everything after line 728 are **not touched**
    (finding 43). The container query and `16cqw` belong to `.digit-box`, which is
    the clue boxes on `/play` and the how-to-play demo on `/welcome`, and is
    explicitly out of scope (item 9).
+6. `tests/accent-rotation.spec.ts`, the test `gives each section its colour, and
+   colours nothing but icons and numbers`:
+   - the three `[data-stat-block="<id>"] { --section-accent: var(--color-accent-N) }`
+     regexes become assertions on `src/completion.ts` — the `streak` block's
+     markup contains the literals `text-accent-2` and `border-accent-2`,
+     `records` contains `text-accent-3` and `border-accent-3`, `all-time`
+     contains `text-accent-4` and `bg-accent-4`. Asserting the literal is a
+     second guard against §1.5's interpolation trap.
+   - the `.stat-col__label { color: var(--color-text) }` regex becomes: the
+     element carrying `data-stat-label` has no `text-accent` class. Same
+     guarantee — the label stays in the foreground colour, per brief 80 —
+     asserted where the colour now lives.
+   - the three tests above it (`%s maps its three other slots`, `%s shows four
+     different hues`, `the @theme defaults are Lime's rotation`) read `@theme`
+     and `html[data-theme=...]`, which this work does not touch. They stay
+     exactly as they are.
+7. `tests/completion-stats.spec.ts:562-599`, the `the panel colours itself once,
+   at the top` block:
+   - `sets a text colour on the panel container` → assert `index.html`'s
+     `data-completion-panel` div carries `text-text`.
+   - `reads in the body font, with no Inconsolata left on the panel` → assert
+     `src/completion.ts` contains no `font-mono` and no `Inconsolata`. The CSS
+     slice it used is gone; Task 4 covers the stylesheet side.
+   - `leaves no box around the records` → unchanged. The `.stat-box` half is
+     about a class deleted long ago and the `src/completion.ts` half still holds.
+   - `uses the theme token, never a literal colour` → assert the
+     `data-completion-panel` div's class list in `index.html` contains no hex
+     literal.
+   - Keep the comment block above these tests — it explains the dark-mode bug —
+     and add a line saying the guard moved from the stylesheet to the markup and
+     guards the same thing (items 48, 61).
 
-**Proves it:** the full vitest suite green
-(`npx vitest run`), including `tests/token-parity.spec.ts` and
-`tests/palette-contrast.spec.ts`, which the accents must not disturb.
+**Proves it:** the full vitest suite green (`npx vitest run`), including
+`tests/token-parity.spec.ts` and `tests/palette-contrast.spec.ts`, which the
+accents must not disturb.
 
 ### Task 4 — the dead-CSS guard
 
@@ -454,39 +520,80 @@ so asserting their absence would pass trivially and mean nothing (item 63,
 finding 53).
 
 Match on a word boundary rather than a bare substring, so `stat-col` does not
-also match `stat-cols` and give a false pass.
+also match `stat-cols` and give a false pass. (`-` is a non-word character and
+`s` and `_` are word characters, so `\bstat-col\b` correctly misses `stat-cols`
+and `stat-col__label`.)
 
-**Proves it:** the new test green after Task 3, and red if Task 3 is reverted.
+**And a second test, guarding the other direction** — that the accent utilities
+really are in the shipped stylesheet. This is §1.5's failure mode, and nothing
+else in the suite can see it: vitest renders into jsdom with no stylesheet at
+all, and the dev build pulls in every utility through `@source`, so both would
+pass on a panel that ships grey.
 
-### Task 5 — the one-off computed-style comparison
+The test runs `npm run build` output — `dist/client/assets/*.css` — and asserts
+it contains `.text-accent-2`, `.text-accent-3`, `.text-accent-4`,
+`.border-accent-2`, `.border-accent-3` and `.bg-accent-4`. Confirmed absent from
+today's build, so it fails before Task 3 and passes after, which is the proof
+that it is testing the right thing.
 
-**Implements:** brief items 38, 41.
-**Files:** `scripts/stats-style-diff.mjs` (throwaway, committed so the numbers in
-the pull request can be re-derived, deleted in the pull request that follows the
-redesign).
+If the suite must not shell out to a build, the same guard as a cheaper check:
+assert `src/completion.ts` contains each of those six names as a whole literal.
+That is what Tailwind's scanner reads, so it is the same question one step
+earlier, and it runs in milliseconds. Prefer this one; the build-output version
+is the belt-and-braces option if `npm run build` is already part of the job.
 
-Item 41 settled on a one-off comparison, not a permanent baseline.
+**Proves it:** both tests green after Task 3, and both red if Task 3 is reverted.
 
-1. A script that loads `/solved?demo=stats` in jsdom against the built
-   stylesheet, walks every element inside `[data-completion-panel]`, and records
-   `getComputedStyle` for the properties this work touches: `font-size`,
-   `line-height`, `font-weight`, `color`, `background-color`, `border-width`,
-   `border-color`, `border-radius`, `padding`, `margin`, `gap`,
-   `grid-template-columns`, `opacity`, `transform`, `inline-size`, `block-size`.
-2. Run it on the commit before Task 3 and on the commit after, at three widths —
-   **320px, 390px and 480px** — and diff the two.
-3. Every difference must appear in §2's list. Anything not in that list is a bug
-   in the conversion, not a rounding.
-4. **The 320px and 390px runs also check that no box figure overflows its box.**
-   This is the check item 56 asked for. Compare each `[data-stat-value]`'s
-   `scrollWidth` against its box's client width, and record the worst case in the
-   pull request. If the longest value overflows at 390px, that is a real finding
-   and goes back to Jamie with the number rather than being papered over.
+### Task 5 — the one-off comparison, and the 320px check
 
-jsdom does not do real font metrics, so step 4's widths are indicative. The
-authoritative check is item 39 — Jamie on the phone.
+**Implements:** brief items 38, 41, 56.
+**Files:** `scripts/stats-style-diff.mjs` and
+`e2e/specs/stats-overflow.spec.ts`, both throwaway.
 
-**Proves it:** the diff, pasted into the pull request, matching §2 exactly.
+Item 41 settled on a one-off comparison, not a permanent baseline. But the two
+halves need different tools, and the plan's first draft got this wrong: jsdom
+has no layout engine at all. Measured on this box, jsdom returns `scrollWidth`
+and `clientWidth` of **0** for every element, never applies a media query, and
+hands back `clamp(1.25rem, 6.5vw, 1.75rem)` verbatim rather than resolving it.
+So a jsdom overflow check is a guaranteed false pass on the one thing item 56
+made a condition of Jamie's sign-off, and a jsdom run at three widths produces
+three identical results.
+
+**5a — the style diff, in jsdom, for what jsdom can actually see.**
+`scripts/stats-style-diff.mjs` builds the panel's markup by calling
+`renderCompletion` with the demo history from `src/demo-history.ts` (no router,
+no navigation — the panel is built by a function, so call the function), loads
+the built stylesheet, and records `getComputedStyle` for every element inside
+`[data-completion-panel]`: `font-size`, `line-height`, `font-weight`, `color`,
+`background-color`, `border-width`, `border-color`, `border-radius`, `padding`,
+`margin`, `gap`, `grid-template-columns`, `opacity`, `transform`.
+
+Run it on the commit before Task 3 and the commit after, and diff. Every
+difference must appear in §2's list; anything else is a bug in the conversion.
+This catches colour, weight, spacing and radius — all the exact swaps — which is
+most of the risk. It **cannot** see the fluid font sizes resolve, and it cannot
+see the 360px breakpoint. Say that in the pull request rather than implying the
+diff is complete.
+
+**5b — the 320px check, in a browser, run by CI.** A throwaway spec,
+`e2e/specs/stats-overflow.spec.ts`, that loads `/solved?demo=stats` at **320,
+390 and 480** wide and asserts, for every `[data-stat-value]` and every
+`[data-stat-figure-value]`, that `scrollWidth <= clientWidth` of its box. It
+also records the resolved `font-size` at each width, so the pull request can
+state "27px → 30px on a 390px phone" as a measurement rather than arithmetic.
+
+CI runs the full Playwright matrix on every pull request, so this costs nothing
+extra and needs no local run. **Do not run Playwright locally for it** — that is
+Jamie's call to make in the moment, not a step in this plan. Once the numbers
+are in the pull request the spec is deleted in a follow-up commit, which is what
+item 41's "one-off" means.
+
+If 5b shows the longest figure overflowing at 390px, that is a real finding and
+goes back to Jamie with the number, because it is the risk item 56 named when he
+answered "30".
+
+**Proves it:** 5a's diff matching §2 exactly, and 5b green in CI, both pasted
+into the pull request.
 
 ### Task 6 — the docs
 
@@ -504,6 +611,13 @@ authoritative check is item 39 — Jamie on the phone.
    - line 264: the `--section-accent` paragraph is rewritten. Each section now
      takes its colour from `text-accent-N` / `border-accent-N` / `bg-accent-N`
      directly; there is no indirection left.
+   - **line 253**: "Labels 16px, numbers 20-28px … the number's `clamp` tops out
+     where three boxes still fit a 390px screen" is falsified by item 56 — the
+     numbers become a flat 30px and there is no `clamp` left. This is the line
+     the change most directly invalidates. Rewrite it to the new sizes.
+   - **line 275**: "the boxes borrow the play screen's digit-box styling — …
+     the `shadow-box` utility" is already stale; `shadow-box` was removed, which
+     `tests/completion-stats.spec.ts:593` asserts. Correct it while here.
    - line 282: the `.stat-box__pair` `column-reverse` note describes a layout
      that no longer exists. Delete it.
    - Add a short paragraph saying the completion panel is built from utilities
@@ -524,7 +638,7 @@ authoritative check is item 39 — Jamie on the phone.
 `npx vitest run` in full is the gate. The e2e suite is **not** run locally — CI
 runs the full six-project matrix on the pull request, and a local run is a
 `--project=chromium-desktop --workers=1` job that only happens if Jamie asks for
-it in the moment. Item 39's phone check is the acceptance test that matters.
+it in the moment. Task 5b rides on that CI run and adds nothing local. Item 39's phone check is the acceptance test that matters.
 
 **Branch discipline (item 60).** The work happens here on
 `dev/edit-mode-on-stats`, the only branch with both the stats panel and edit
@@ -533,8 +647,9 @@ commit so they can be cherry-picked onto `dev/stats-tweaks` for #311. In
 practice:
 
 - Tasks 1-6 touch only `src/completion.ts`, `index.html`, `src/tailwind.css`,
-  the four test files, `scripts/stats-style-diff.mjs`, `docs/DESIGN-SYSTEM.md`,
-  `CLAUDE.md` and the two `docs/work/` files. **No file under `src/edit-mode/`,
+  the four test files, `scripts/stats-style-diff.mjs`,
+  `e2e/specs/stats-overflow.spec.ts`, `docs/DESIGN-SYSTEM.md`, `CLAUDE.md` and
+  the two `docs/work/` files. **No file under `src/edit-mode/`,
   `edit-mode/` or `.edit-mode/` is touched by any of them.**
 - Each task is one commit. If anything in edit mode has to change to make the
   panel designable, that is a separate commit, outside the cherry-pick set, and
@@ -555,7 +670,7 @@ Every numbered item in the brief, traced.
 | 9, 10, 11, 12 | Out of scope. Task 3 step 5 protects `.digit-box`. |
 | 13 | Task 3. Delivered by direct colour utilities, not the arbitrary property item 13 suggested — see §1.2. |
 | 14 | Tasks 1-4; the existing suite covers every state. |
-| 15 | Corrected by finding 48. Delivered by item 61 — Task 3 step 1, Task 2 step 3. |
+| 15 | Corrected by finding 48. Delivered by item 61 — Task 3 steps 1 and 7. |
 | 16 | Task 3 step 3 — the inline width is untouched. |
 | 17 | Task 1 — `data-stat-block` stays, and becomes a hook only. |
 | 18 | §2, Task 3. |
@@ -563,7 +678,7 @@ Every numbered item in the brief, traced.
 | 20, 21 | Task 3 steps 3 and 4. |
 | 22 | No code. `player-stats.ts`, `screens.ts` and the router are not in any task's file list. |
 | 23 | Task 3 — `@theme`'s colour tokens are untouched. §0.2 is the only proposal that would touch `@theme` at all, and the recommendation avoids it. |
-| 24 | Tasks 1 and 2. |
+| 24 | Tasks 1 and 3. |
 | 25, 26 | §2. |
 | 27 | Void — replaced by item 56. |
 | 28 | No code. Task 3 changes classes only; no string in `completion.ts` moves. |
@@ -573,32 +688,32 @@ Every numbered item in the brief, traced.
 | 33 | Void — replaced by item 56. |
 | 34 | Task 6 step 2. |
 | 35 | No code. |
-| 36 | Tasks 1 and 2. |
+| 36 | Tasks 1, 2 and 3. |
 | 37 | Task 4, narrowed by item 63. |
 | 38 | §2 and Task 5. |
 | 39 | Task 7. |
 | 40 | Task 6 step 2. |
-| 41 | Task 5. |
+| 41 | Task 5. Split in two, because jsdom has no layout engine. |
 | 42 | §0.2 — no responsive variant is steppable, and the plan says so plainly. |
 | 43 | Task 3 step 5. |
 | 44 | §2 — two fluid sizes, both listed. |
 | 45 | Void — item 33 is replaced by item 56. |
 | 46 | §0.2. |
-| 47 | Task 2. |
-| 48 | Task 3 step 1, Task 2 step 3. |
+| 47 | Task 2 (the one that throws) and Task 3 steps 6-7. |
+| 48 | Task 3 steps 1 and 7. |
 | 49 | Task 7. |
-| 50 | §2 — `rounded-full` and `opacity-10`. |
+| 50 | §2 — `rounded-full` (exact) and `opacity-12` (exact, see §0.1). |
 | 51 | §0.1. |
 | 52 | Background. No code. |
 | 53 | §3 and Task 4. |
 | 54 | Task 6 step 1. |
 | 55 | Task 6 step 3. |
-| 56 | §2 and Task 5 step 4. |
+| 56 | §2 and Task 5b, measured in a real browser in CI. |
 | 57 | Superseded by item 60. |
 | 58 | Superseded by item 61. |
 | 59 | §2. |
 | 60 | Task 7. |
-| 61 | Task 3 step 1, Task 2 step 3. |
-| 62 | Task 2. |
+| 61 | Task 3 steps 1 and 7. |
+| 62 | Task 2 and Task 3 steps 6-7. |
 | 63 | Task 4. |
 | 64 | Task 6 step 1. |
