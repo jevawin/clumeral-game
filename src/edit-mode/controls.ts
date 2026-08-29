@@ -28,6 +28,14 @@ export interface ControlsState {
    * could not see what the element used to have.
    */
   off?: string[];
+  /**
+   * The order to draw the chips in, holding switched-off classes in place.
+   *
+   * Without it a chip jumps to the end of the row the moment it is switched
+   * off and back again when switched on, which is half of what Jamie meant by
+   * "really jumpy and janky" on 2026-08-29.
+   */
+  order?: string[];
   /** Desktop gets the raw field and the free-CSS box (brief item 34). */
   desktop: boolean;
 }
@@ -281,7 +289,12 @@ export function createControls(
     const chips = row('chips');
     const added = new Set(state.added ?? []);
     const off = new Set(state.off ?? []);
-    const listed = [...state.classes, ...(state.off ?? []).filter((c) => !state.classes.includes(c))];
+    const fallback = [...state.classes, ...(state.off ?? []).filter((c) => !state.classes.includes(c))];
+    // The caller's order first, then anything it did not know about.
+    const listed = state.order
+      ? [...state.order.filter((c) => fallback.includes(c)),
+         ...fallback.filter((c) => !state.order!.includes(c))]
+      : fallback;
 
     for (const name of listed) {
       const isOff = off.has(name);

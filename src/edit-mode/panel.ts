@@ -330,7 +330,11 @@ export interface PanelOptions {
 export function createPanel(doc: Document, options: PanelOptions = {}): Panel {
   const host = doc.createElement('div');
   host.dataset.clumeralEditMode = '';
-  const root = host.attachShadow({ mode: 'closed' });
+  // OPEN, not closed. Edit mode is a dev-only tool, so nothing here is hidden
+  // from a page it does not ship to — and a closed root is invisible to
+  // Playwright, which cannot click or read a single control in this panel.
+  // Jamie, 2026-08-29: open it so the class picker can actually be tested.
+  const root = host.attachShadow({ mode: 'open' });
 
   const style = doc.createElement('style');
   style.textContent = PANEL_CSS + HIGHLIGHT_CSS;

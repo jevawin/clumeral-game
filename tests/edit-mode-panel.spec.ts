@@ -12,16 +12,21 @@ afterEach(() => {
 });
 
 describe('the panel is sealed against the page (brief items 64, 65)', () => {
-  it('renders in a closed shadow root', () => {
+  it('renders in an open shadow root', () => {
     // Jamie can select <body> and add a text size or a colour, and by design
     // that inherits into everything. A bad edit could make the panel
     // unreadable, and the only way out of an unreadable panel is the panel.
+    // The protection against that is `all: initial` on the shadow content,
+    // asserted below - NOT the root being closed.
+    //
+    // Open since 2026-08-29. A closed root is invisible to Playwright, which
+    // could not click or read a single control in this panel. Edit mode is
+    // dev-only, so there is no untrusted page to seal against: the only script
+    // that could reach in is the game's own.
     panel = createPanel(document);
     const host = document.querySelector('[data-clumeral-edit-mode]') as HTMLElement;
     expect(host).toBeTruthy();
-    // Closed: the page cannot reach in, so nothing on the page can restyle or
-    // script the tool.
-    expect(host.shadowRoot).toBeNull();
+    expect(host.shadowRoot).toBe(panel.root);
   });
 
   it('carries its own stylesheet rather than the app-s', () => {

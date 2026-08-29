@@ -45,11 +45,25 @@ async function isReplayOrigin(): Promise<boolean> {
 }
 
 async function start(): Promise<void> {
-  const script = document.currentScript as HTMLScriptElement | null;
-  const branch = script?.dataset.branch ?? 'unknown';
+  // NOT document.currentScript: that is null in a module script, always, so the
+  // branch never arrived and every branch shared one saved patch set under
+  // `clumeral_edit_unknown` - exactly what keying it to the branch was for.
+  const script = document.querySelector<HTMLScriptElement>('script[data-branch]');
+  const branch = script?.dataset.branch || 'unknown';
 
   const replayOnly = await isReplayOrigin();
   const panel = createPanel(document, { replayOnly });
+
+  // The pencil is drawn the moment the panel mounts, but everything it needs
+  // arrives over two fetches - one of them the whole 23,000-class catalogue.
+  // Tapped in that gap it used to do nothing at all, silently (Jamie,
+  // 2026-08-27: "seems functionally flakey"). So take the tap now and hold it.
+  let toggleMode: (() => void) | null = null;
+  let toggleWaiting = false;
+  panel.onToggle(() => {
+    if (toggleMode) toggleMode();
+    else toggleWaiting = true;
+  });
 
   // Dave's page: apply the saved sessions and stop. No pencil, no panel, and
   // nothing that could write.
@@ -93,13 +107,30 @@ async function start(): Promise<void> {
    * than in the DOM, because the class is genuinely absent from the element
    * while it is off — that is the whole point of switching it off.
    */
-  const switchedOff = new Map<string, Set<string>>();
+  const switchedOff = new Map<string, Map<string, number>>();
 
-  function offFor(path: string | null): Set<string> {
-    if (!path) return new Set();
-    let set = switchedOff.get(path);
-    if (!set) { set = new Set(); switchedOff.set(path, set); }
-    return set;
+  /** Switched-off class -> the position it held, so it goes back where it was. */
+  function offFor(path: string | null): Map<string, number> {
+    if (!path) return new Map();
+    let held = switchedOff.get(path);
+    if (!held) { held = new Map(); switchedOff.set(path, held); }
+    return held;
+  }
+
+  /**
+   * The chip order: the element's classes, with the switched-off ones held in
+   * the slots they came from.
+   *
+   * Jamie, 2026-08-29: "tapping them on off or -+ing them often moves them
+   * around in the class list, it's really jumpy and janky".
+   */
+  function chipOrder(current: string[]): string[] {
+    const order = [...current];
+    const held = [...offFor(selectedPath)].sort((a, b) => a[1] - b[1]);
+    for (const [name, index] of held) {
+      if (!order.includes(name)) order.splice(Math.min(index, order.length), 0, name);
+    }
+    return order;
   }
   const interceptor = createInterceptor(document, {
     isOwnUi: (target) => isOverlay(target as Node | null),
@@ -169,7 +200,8 @@ async function start(): Promise<void> {
       crumbs: selected ? ancestry(selected).map(crumb) : [],
       classes: current,
       added: current.filter((name) => !original.includes(name)),
-      off: [...offFor(selectedPath)],
+      off: [...offFor(selectedPath).keys()],
+      order: chipOrder(current),
       // The raw field and free-CSS box are a desktop affordance (brief item 34).
       desktop: window.matchMedia('(min-width: 768px)').matches,
     });
@@ -236,13 +268,17 @@ async function start(): Promise<void> {
       const off = offFor(selectedPath);
       const property = (families[name] ?? [name]).join(', ');
 
+      const current = [...selected.classList];
       if (off.has(name)) {
-        // Back on, in its original position if we can manage it.
+        // Back on, in the slot it left - not appended to the end.
+        const index = Math.min(off.get(name) ?? current.length, current.length);
         off.delete(name);
-        change(applyClass([...selected.classList], name, families), property);
+        const back = [...current];
+        back.splice(index, 0, name);
+        change(back, property);
       } else {
-        off.add(name);
-        change(removeClass([...selected.classList], name), property);
+        off.set(name, current.indexOf(name));
+        change(removeClass(current, name), property);
       }
     },
     onAddClass: (name) => {
@@ -256,7 +292,10 @@ async function start(): Promise<void> {
       // No next step means the edge of the scale, which is information rather
       // than an error (brief item 10). Say nothing and let him tell us in words.
       if (!next) return;
-      const swapped = applyClass(removeClass([...selected.classList], name), next, families);
+      // NOT removeClass first: applyClass puts the replacement in the slot the
+      // old class held, and pre-removing it left nothing to collide with, so
+      // the stepped class jumped to the end on every tap.
+      const swapped = applyClass([...selected.classList], next, families);
       change(swapped, (families[name] ?? [name]).join(', '));
     },
     onUndo: () => backOneStep(),
@@ -358,7 +397,13 @@ async function start(): Promise<void> {
     }
   }
 
-  panel.onToggle(() => setMode(mode === 'edit' ? 'play' : 'edit'));
+  toggleMode = () => setMode(mode === 'edit' ? 'play' : 'edit');
+  // A tap that landed while the catalogue was still loading, honoured late
+  // rather than lost.
+  if (toggleWaiting) {
+    toggleWaiting = false;
+    toggleMode();
+  }
 
   // Edit mode owns back until its own entries are exhausted, even in play mode
   // (brief item 104): flipping to play to try a change is normal, and handing
