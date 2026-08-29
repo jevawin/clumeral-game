@@ -221,7 +221,7 @@ n/a proposed · Ack: n/a
     around `/solved` are untouched. Adding an event here would only pollute a
     baseline. (assumed — awaiting a word back)
 ## 11. Done / test plan
-Settled: pending · Ack: n/a
+Settled: Jamie 2026-08-29 (item 41: one-off) · Ack: n/a
 
 36. **The four test files move to `data-` labels** and keep passing:
     `tests/completion-stats.spec.ts`, `tests/accent-rotation.spec.ts`,
@@ -249,4 +249,8 @@ Settled: pending · Ack: n/a
     per browser and per platform, and this box is arm64 while CI is not.
     The cost: after the one-off run, nothing stops a later change drifting the
     styles again.
+
+    **Answered, Jamie 2026-08-29:** "One off". Option (a). No permanent visual
+    or computed-style baseline. The comparison is run once and reported in the
+    pull request.
 
