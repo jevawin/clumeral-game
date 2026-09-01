@@ -19,11 +19,17 @@ import {
   ancestry, crumb, isOverlay, elementAtPoint, nav, computedSnapshot, didNothing,
 } from './select.ts';
 import { captureEnvironment, type Patch } from './patches.ts';
+import { signature, exitDecision, stopOutcome } from './pending.ts';
 import { COPY, conflictWarning } from './copy.ts';
 
 const CATALOGUE_URL = '/__edit-mode/catalogue.json';
 const REPLAY_URL = '/__edit-mode/replay.json';
 const DONE_URL = '/__edit-mode/session';
+// Repeated rather than imported: edit-mode/ is the Node side and the browser
+// cannot reach it. This literal and SHUTDOWN_ROUTE must stay in step, and
+// tests/edit-mode-safety.spec.ts asserts this exact string is absent from every
+// build.
+const SHUTDOWN_URL = '/__edit-mode/shutdown';
 
 async function start(): Promise<void> {
   // NOT document.currentScript: that is null in a module script, always, so the
@@ -59,6 +65,12 @@ async function start(): Promise<void> {
 
   const store = createSessionStore(branch, sessionStorage);
   const saved = store.load();
+  let freeCss = saved.freeCss;
+  let savedSignature = saved.savedSignature;
+  // Set once the server has gone. Stops persist() writing the session back
+  // after store.clear(), and stops the pill being shown again for a dead
+  // server (brief item 42).
+  let stopped = false;
   const history = createHistory();
   history.restore(saved.entries);
 
@@ -162,7 +174,18 @@ async function start(): Promise<void> {
   }
 
   function persist(): void {
-    store.save({ entries: [...history.entries], mode, selected: selectedPath });
+    // Once the server has stopped there is nothing left to come back to, and
+    // writing here would undo store.clear() on the next setMode or select —
+    // handing the next /dev a session that has already been saved.
+    if (stopped) return;
+    store.save({
+      entries: [...history.entries], mode, selected: selectedPath,
+      savedSignature, freeCss,
+    });
+  }
+
+  function isPending(): boolean {
+    return signature(history.entries, freeCss) !== savedSignature;
   }
 
   function draw(): void {
@@ -285,13 +308,12 @@ async function start(): Promise<void> {
       const original = selectedPath ? history.originalOf(selectedPath) : undefined;
       if (original) change(original, 'reset');
     },
-    onDone: () => void save(),
     onRawClasses: (value) => {
       if (!selected) return;
       // The kind and the typed string ride on THIS change only.
       change(value.split(/\s+/).filter(Boolean), 'raw', 'raw', value);
     },
-    onFreeCss: (value) => { freeCss = value; },
+    onFreeCss: (value) => { freeCss = value; persist(); },
     onSearchFocus: (focused) => {
       // Brief item 33: scroll the element clear so the keyboard cannot cover
       // the very thing being edited.
@@ -299,7 +321,6 @@ async function start(): Promise<void> {
     },
   });
 
-  let freeCss = '';
 
   function setMode(next: 'play' | 'edit'): void {
     const leavingEdit = mode === 'edit' && next === 'play';
@@ -332,7 +353,8 @@ async function start(): Promise<void> {
     persist();
   }
 
-  async function save(): Promise<void> {
+  /** @returns true when the session was actually written. */
+  async function save(): Promise<boolean> {
     const patches: Patch[] = history.entries.map((entry) => {
       const el = findByBreadcrumb(document, entry.target);
       return {
@@ -369,14 +391,70 @@ async function start(): Promise<void> {
         }),
       });
       // Any non-2xx keeps the patch set, because the edit lives on the phone
-      // until Done actually succeeds (brief items 54, 74).
+      // until the save actually succeeds (brief items 54, 74).
+      if (res.ok) savedSignature = signature(history.entries, freeCss);
       panel.say(res.ok ? COPY.saved : COPY.saveFailed);
+      persist();
+      return res.ok;
     } catch {
       panel.say(COPY.saveFailed);
+      return false;
     }
   }
 
-  toggleMode = () => setMode(mode === 'edit' ? 'play' : 'edit');
+  /**
+   * The pencil. Entering edit mode is a plain flip; leaving it saves first
+   * (brief items 1, 10, 11, 12).
+   */
+  toggleMode = () => {
+    if (mode !== 'edit') return setMode('edit');
+    void (async () => {
+      const pending = isPending();
+      const ok = pending ? await save() : null;
+      // A failed save keeps him in the editor. Leaving would look like it
+      // worked, and the edits only exist in the phone until one succeeds.
+      if (exitDecision(pending, ok) === 'leave') setMode('play');
+    })();
+  };
+
+  panel.onStop(() => void stopServer());
+
+  /**
+   * Save & Stop: write the session, then ask the server to exit.
+   */
+  async function stopServer(): Promise<void> {
+    if (isPending() && !(await save())) {
+      // Stop nothing. The server has to stay up for the save to be retried
+      // against (brief item 14).
+      panel.notify(COPY.saveFailed);
+      return;
+    }
+
+    let result: 'ok' | 'network-error' | 'http-error';
+    try {
+      const res = await fetch(SHUTDOWN_URL, { method: 'POST' });
+      result = res.ok ? 'ok' : 'http-error';
+    } catch {
+      // A dead socket is what SUCCESS looks like here — the process we were
+      // talking to has exited (brief item 40).
+      result = 'network-error';
+    }
+
+    if (stopOutcome(result) === 'stopFailed') {
+      panel.notify(COPY.stopFailed);
+      return;
+    }
+
+    stopped = true;
+    history.restore([]);
+    store.clear();
+    panel.setStopVisible(false);
+    panel.notify(COPY.stopped);
+  }
+
+  // On screen in play mode for as long as the server is running — Jamie,
+  // 2026-08-31: "Always visible" (brief item 61).
+  panel.setStopVisible(mode !== 'edit');
   // A tap that landed while the catalogue was still loading, honoured late
   // rather than lost.
   if (toggleWaiting) {

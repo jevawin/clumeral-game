@@ -49,7 +49,6 @@ export interface ControlsCallbacks {
   onStep(name: string, direction: 'up' | 'down'): void;
   onUndo(): void;
   onResetElement(): void;
-  onDone(): void;
   onRawClasses(value: string): void;
   onFreeCss(value: string): void;
   /** So the selected element can be scrolled clear of the keyboard. */
@@ -342,13 +341,20 @@ export function createControls(
       container.appendChild(css);
     }
 
-    // Icons and Jamie's wording, 2026-08-26. No Close: tapping the pencil
-    // leaves edit mode, which is the same thing and one control fewer.
+    // Icons and Jamie's wording, 2026-08-26. No Close and no Save: tapping the
+    // pencil saves and leaves edit mode, which is both of them in one control
+    // (brief item 1).
     const footer = row('footer');
     footer.appendChild(button(COPY.undo, callbacks.onUndo, '', 'undo'));
     footer.appendChild(button(COPY.resetElement, callbacks.onResetElement, '', 'reset'));
-    footer.appendChild(button(COPY.done, callbacks.onDone, 'save-btn', 'save'));
     container.appendChild(footer);
+
+    // The pencil has no visible text, so its label is an aria-label Jamie will
+    // never see on a phone. This line is the only actual warning that a tap
+    // writes a file (brief item 46).
+    const hint = row('hint');
+    hint.textContent = COPY.pencilHint;
+    container.appendChild(hint);
   }
 
   return {

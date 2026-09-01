@@ -16,11 +16,10 @@ export const COPY = {
   enterEditMode: 'Edit mode',
   exitEditMode: 'Save and exit edit mode',
   undo: 'Undo',
-  // "Reset" and "Save", not "Reset element" and "Done" — Jamie, 2026-08-26.
-  // Shorter labels fit the footer on one row, and Save says what the button
-  // does rather than implying you are finished.
+  // "Reset", not "Reset element" — Jamie, 2026-08-26. The shorter label fits
+  // the footer on one row. The Save button that sat beside it is gone: the
+  // pencil saves and leaves (brief item 1).
   resetElement: 'Reset',
-  done: 'Save',
   searchPlaceholder: 'Search classes',
 
   /**

@@ -22,7 +22,7 @@ import type { Change } from './history.ts';
  * 600ms window: that mutates the previous entry's `after` in place and pushes
  * nothing, so the length never moves.
  */
-export function signature(entries: Change[], freeCss: string): string {
+export function signature(entries: readonly Change[], freeCss: string): string {
   return `${entries.map((e) => `${e.target}=${e.after.join(' ')}`).join('|')}||${freeCss}`;
 }
 

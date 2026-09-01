@@ -292,7 +292,6 @@ const PANEL_CSS = `
     border-color: #2b5fd9;
     color: #12306e;
   }
-  .save-btn { background: #1a1a1a; color: #ffffff; border-color: #1a1a1a; }
 
   /* The picker covers the panel: its own filter, its own list, nothing else. */
   .picker { display: flex; flex-direction: column; min-height: 0; }
@@ -317,6 +316,8 @@ const PANEL_CSS = `
   }
   .picker-class { min-height: 34px; min-width: 0; font-size: 13px; padding: 0 8px; }
   .footer button { min-height: 36px; font-size: 13px; }
+  /* What the pencil now does, said in words. */
+  .hint { display: block; margin-top: 8px; font-size: 12px; color: #555555; }
   .footer button:last-child { background: #1a1a1a; color: #ffffff; }
   .search-family { margin: 10px 0 4px; font-size: 12px; color: #555555; }
   .search-group button { background: #f6f6f6; }

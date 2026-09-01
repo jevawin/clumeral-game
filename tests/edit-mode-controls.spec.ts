@@ -23,7 +23,7 @@ let calls: Record<string, ReturnType<typeof vi.fn>>;
 function callbacks(): ControlsCallbacks {
   calls = {
     onCrumb: vi.fn(), onNav: vi.fn(), onToggleClass: vi.fn(), onAddClass: vi.fn(),
-    onStep: vi.fn(), onUndo: vi.fn(), onResetElement: vi.fn(), onDone: vi.fn(),
+    onStep: vi.fn(), onUndo: vi.fn(), onResetElement: vi.fn(),
     onRawClasses: vi.fn(), onFreeCss: vi.fn(), onSearchFocus: vi.fn(),
   };
   return calls as unknown as ControlsCallbacks;
@@ -223,9 +223,17 @@ describe('the desktop extras (brief items 15, 34)', () => {
 });
 
 describe('the footer (brief item 71, reworded by Jamie 2026-08-26)', () => {
-  it('reads Undo, Reset, Save', () => {
+  it('reads Undo and Reset — Save is gone', () => {
+    // The pencil saves and leaves edit mode now, so a Save button beside it
+    // would be two ways to do one thing (brief item 1).
     expect(findAll('.footer button').map((b) => b.textContent))
-      .toEqual(['Undo', 'Reset', 'Save']);
+      .toEqual(['Undo', 'Reset']);
+  });
+
+  it('says in words what the pencil now does', () => {
+    // An aria-label on a glyph is invisible on a phone, so this line is the
+    // only warning that tapping the pencil writes a file (brief item 46).
+    expect(findAll('.hint').map((el) => el.textContent)).toEqual([COPY.pencilHint]);
   });
 
   it('draws its icons as SVG, not text characters', () => {
@@ -243,10 +251,8 @@ describe('the footer (brief item 71, reworded by Jamie 2026-08-26)', () => {
   it('calls back for each', () => {
     byText('Undo').click();
     byText('Reset').click();
-    byText('Save').click();
     expect(calls.onUndo).toHaveBeenCalledOnce();
     expect(calls.onResetElement).toHaveBeenCalledOnce();
-    expect(calls.onDone).toHaveBeenCalledOnce();
   });
 });
 
@@ -254,6 +260,6 @@ describe('nothing selected yet', () => {
   it('shows no breadcrumb, but still shows the footer', () => {
     controls.render({ crumbs: [], classes: [], desktop: false });
     expect(findAll('.crumb')).toHaveLength(0);
-    expect(findAll('.footer button')).toHaveLength(3);
+    expect(findAll('.footer button')).toHaveLength(2);
   });
 });
