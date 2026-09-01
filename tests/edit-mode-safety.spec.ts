@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { COPY } from '../src/edit-mode/copy.ts';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
@@ -64,41 +65,86 @@ function selectors(css: string): Set<string> {
 
 const prodBuilt = existsSync(PROD) && walk(PROD).length > 0;
 
+/**
+ * Strings that must not appear in ANY deployed artefact.
+ *
+ * Pinned as STRING LITERALS, not module paths. Production JS is minified and
+ * bundled — paths and identifiers are gone, so asserting on them would pass even
+ * with the overlay bundled in. Copy survives minification.
+ *
+ * Deliberately the DISTINCTIVE phrases only. Deriving this list from COPY
+ * wholesale does not work and was measured rather than guessed: COPY.undo is
+ * "Undo" and COPY.resetElement is "Reset", and the game ships both — "Board
+ * reset. Undo reset available." is in the client bundle. Asserting every COPY
+ * value absent fails on the first run, in both environments (brief item 50).
+ */
+const OVERLAY_COPY = [
+  COPY.searchEmpty,
+  COPY.searchPlaceholder,
+  COPY.classNotInBuild,
+  COPY.saveFailed,
+  COPY.saved,
+  COPY.stopped,
+  COPY.stopFailed,
+  COPY.pencilHint,
+];
+
+/** Paths and routes that only exist because edit mode does. */
+const EDIT_MODE_MARKERS = [
+  'src/edit-mode/',
+  '.edit-sessions',
+  // The shutdown route. A shutdown endpoint reaching a deployed Worker is the
+  // worst thing this feature could do, so it is checked against built files
+  // rather than trusted to `apply: 'serve'` (brief item 32).
+  '/__edit-mode/shutdown',
+];
+
+/**
+ * Every absence assertion, run against ONE built directory.
+ *
+ * Shared between production and pre-prod on purpose. These used to diverge —
+ * `.edit-sessions` and the copy list were checked against dist/ only, while the
+ * preprod block checked just two strings — so the assertions that mattered most
+ * were skipped in exactly the environment nobody looks at (brief item 49).
+ */
+function assertEditModeAbsent(dir: string, label: string): void {
+  const files = readAll(dir);
+  expect(files.length, `${label}: no built files found`).toBeGreaterThan(0);
+
+  for (const f of files) {
+    expect(f.path, `${label}/${f.path} looks like an edit-mode stylesheet`)
+      .not.toContain('tailwind-edit');
+    for (const marker of EDIT_MODE_MARKERS) {
+      expect(f.text, `${label}/${f.path} references ${marker}`).not.toContain(marker);
+    }
+  }
+
+  for (const f of files.filter((x) => x.path.endsWith('.js'))) {
+    for (const phrase of OVERLAY_COPY) {
+      expect(f.text, `${label}/${f.path} contains overlay copy: ${phrase}`)
+        .not.toContain(phrase);
+    }
+  }
+}
+
 describe('edit mode is absent from the production artefact (brief item 7)', () => {
   if (!prodBuilt) {
     it.skip('dist/ not found — run `npm run build` before this suite', () => {});
     return;
   }
 
-  const files = readAll(PROD);
-
-  it('ships no edit-mode stylesheet', () => {
-    for (const f of files) {
-      expect(f.path, `${f.path} looks like an edit-mode stylesheet`).not.toContain('tailwind-edit');
-    }
+  it('ships no edit-mode stylesheet, module, route or copy', () => {
+    assertEditModeAbsent(PROD, 'dist');
   });
 
-  it('names no edit-mode module', () => {
-    for (const f of files) {
-      expect(f.text, `${f.path} references edit-mode source`).not.toContain('src/edit-mode/');
-      expect(f.text, `${f.path} references the session directory`).not.toContain('.edit-sessions');
-    }
-  });
-
-  it('contains none of the overlay strings a user would see', () => {
-    // Pinned as STRING LITERALS, not module paths. Production JS is minified and
-    // bundled — paths and identifiers are gone, so asserting on them would pass
-    // even with the overlay bundled in. Copy survives minification.
-    const OVERLAY_COPY = [
-      'Nothing on the scale matches.',
-      'Search classes',
-      'That class is not in this build.',
-      'Reset element',
-    ];
-    for (const f of files.filter((x) => x.path.endsWith('.js'))) {
-      for (const phrase of OVERLAY_COPY) {
-        expect(f.text, `${f.path} contains overlay copy: ${phrase}`).not.toContain(phrase);
-      }
+  it('pins only phrases that copy.ts still uses', () => {
+    // Without this the list rots silently. It pinned 'Reset element' long after
+    // copy.ts stopped saying it, so the spec was asserting the absence of a
+    // string that existed nowhere — passing, and proving nothing (brief 50).
+    const source = readFileSync(resolve(REPO_ROOT, 'src/edit-mode/copy.ts'), 'utf-8');
+    for (const phrase of OVERLAY_COPY) {
+      expect(source, `no longer in copy.ts, so this pin is dead: ${phrase}`)
+        .toContain(phrase);
     }
   });
 });
@@ -196,9 +242,9 @@ describe('preprod deploys the same artefact (plan D8)', () => {
   });
 
   it('keeps edit mode out of the preprod artefact too', () => {
-    for (const f of readAll(PREPROD)) {
-      expect(f.path).not.toContain('tailwind-edit');
-      expect(f.text, `${f.path}`).not.toContain('src/edit-mode/');
-    }
+    // The SAME assertions as production, not a thinner set. Pre-prod is the
+    // environment nobody looks at, which is exactly why it must not be the one
+    // with weaker checks (brief item 49).
+    assertEditModeAbsent(PREPROD, 'dist-preprod');
   });
 });
