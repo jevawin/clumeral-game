@@ -85,11 +85,12 @@ export function receiveSession(dir = SESSIONS_DIR): Connect.NextHandleFunction {
 /**
  * Hand every unconsumed session to any page load.
  *
- * This is Dave's route (brief item 21). He refreshes after Jamie taps Done and
- * the overlay re-applies the saved sessions, so he sees the edit one beat later
- * rather than live. Live mirroring — a socket broadcasting class changes — is a
- * whole extra mechanism whose only benefit is watching the edit happen rather
- * than seeing the result.
+ * This was Dave's route and is now Jamie's reload safety net (plan task 1). The
+ * read-only origin it was built for is gone — Dave previews on Cloudflare — but
+ * the route stays, because the overlay fetches it on every load and projects
+ * the result. It is how saved edits survive a refresh, a route change and a
+ * wake from background. Deleting it with the rest of Dave's machinery would
+ * have looked tidy and quietly broken that.
  */
 export function serveReplay(dir = SESSIONS_DIR): Connect.NextHandleFunction {
   return (req, res, next) => {

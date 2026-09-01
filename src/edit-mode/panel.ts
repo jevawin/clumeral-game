@@ -322,12 +322,7 @@ export interface Panel {
   destroy(): void;
 }
 
-export interface PanelOptions {
-  /** Replay mode serves Dave: no pencil, no panel, just the applied edits. */
-  replayOnly?: boolean;
-}
-
-export function createPanel(doc: Document, options: PanelOptions = {}): Panel {
+export function createPanel(doc: Document): Panel {
   const host = doc.createElement('div');
   host.dataset.clumeralEditMode = '';
   // OPEN, not closed. Edit mode is a dev-only tool, so nothing here is hidden
@@ -365,14 +360,8 @@ export function createPanel(doc: Document, options: PanelOptions = {}): Panel {
   status.className = 'status';
   sheet.appendChild(status);
 
-  // Dave's origin gets the replayed edits and nothing to press (brief item 103).
-  // Otherwise he edits, taps Done, and receives the one message written
-  // carefully because it loses work — telling him to check a dev server he
-  // cannot see and retry forever.
-  if (!options.replayOnly) {
-    root.appendChild(pencil);
-    root.appendChild(sheet);
-  }
+  root.appendChild(pencil);
+  root.appendChild(sheet);
 
   doc.body.appendChild(host);
 

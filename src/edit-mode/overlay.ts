@@ -25,25 +25,6 @@ const CATALOGUE_URL = '/__edit-mode/catalogue.json';
 const REPLAY_URL = '/__edit-mode/replay.json';
 const DONE_URL = '/__edit-mode/session';
 
-/**
- * Is this the read-only origin?
- *
- * Asked of the SERVER THAT SERVED THIS PAGE, by re-requesting it and reading
- * the header the proxy adds. The proxy is a separate listener with no write
- * handler, so the answer comes from which port the page came through — not from
- * anything the browser could be told to claim (brief items 25, 103).
- */
-async function isReplayOrigin(): Promise<boolean> {
-  try {
-    const res = await fetch(location.href, { method: 'HEAD' });
-    return res.headers.get('X-Clumeral-Edit-Mode') === 'replay';
-  } catch {
-    // Cannot tell — assume read-only. Showing Dave a pencil that cannot save is
-    // worse than Jamie briefly not seeing his (brief item 103).
-    return true;
-  }
-}
-
 async function start(): Promise<void> {
   // NOT document.currentScript: that is null in a module script, always, so the
   // branch never arrived and every branch shared one saved patch set under
@@ -51,8 +32,7 @@ async function start(): Promise<void> {
   const script = document.querySelector<HTMLScriptElement>('script[data-branch]');
   const branch = script?.dataset.branch || 'unknown';
 
-  const replayOnly = await isReplayOrigin();
-  const panel = createPanel(document, { replayOnly });
+  const panel = createPanel(document);
 
   // The pencil is drawn the moment the panel mounts, but everything it needs
   // arrives over two fetches - one of them the whole 23,000-class catalogue.
@@ -65,14 +45,13 @@ async function start(): Promise<void> {
     else toggleWaiting = true;
   });
 
-  // Dave's page: apply the saved sessions and stop. No pencil, no panel, and
-  // nothing that could write.
+  // Put back what earlier sessions changed, before anything else touches the
+  // page. This is Jamie's own reload safety net, not Dave's — the read-only
+  // origin it was shared with is gone.
   const replay = await fetch(REPLAY_URL).then((r) => r.json()).catch(() => null);
   if (replay?.projection) {
     project(document, new Map(Object.entries(replay.projection as Record<string, string[]>)));
   }
-  if (replayOnly) return;
-
   const { classes, families } = await fetch(CATALOGUE_URL)
     .then((r) => r.json())
     .catch(() => ({ classes: [], families: {} as FamilyMap }));

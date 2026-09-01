@@ -94,20 +94,14 @@ describe('what the panel says', () => {
   });
 });
 
-describe('replay mode serves Dave (brief item 103)', () => {
-  it('shows no pencil and no sheet', () => {
-    // Otherwise Dave edits, taps Done, and gets the message written carefully
-    // BECAUSE it loses work — telling him to check a dev server he cannot see
-    // and to retry forever. The one message that matters, shown to the one
-    // person it is wrong for.
-    panel = createPanel(document, { replayOnly: true });
-    expect(panel.root.querySelector('.pencil')).toBeNull();
-    expect(panel.root.querySelector('.sheet')).toBeNull();
-  });
-
-  it('still mounts, so replayed edits have somewhere to live', () => {
-    panel = createPanel(document, { replayOnly: true });
-    expect(document.querySelector('[data-clumeral-edit-mode]')).toBeTruthy();
+describe('the pencil and the sheet always mount (plan task 1)', () => {
+  it('puts both in the shadow root', () => {
+    // There is no read-only origin any more, so there is no case where the
+    // panel mounts without its controls. This is what replaces the replayOnly
+    // option: the tool either runs or it is not injected at all.
+    panel = createPanel(document);
+    expect(panel.root.querySelector('.pencil')).toBeTruthy();
+    expect(panel.root.querySelector('.sheet')).toBeTruthy();
   });
 });
 
