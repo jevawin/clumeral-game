@@ -76,6 +76,60 @@ const PANEL_CSS = `
   }
   .pencil[data-mode="edit"] { background: #1a1a1a; color: #ffffff; }
 
+  /* Save & Stop. Beside the pencil, outside the sheet, so it is reachable
+     without opening the editor (brief items 18, 39). Hidden in edit mode: the
+     pencil is the save control there, and two ways to do one thing on a phone
+     is one too many. */
+  .stop-btn {
+    position: fixed;
+    right: calc(16px + 56px + 8px);
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+    height: 56px;
+    padding: 0 16px;
+    border-radius: 28px;
+    border: 2px solid #1a1a1a;
+    background: #ffffff;
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  .stop-btn[hidden] { display: none !important; }
+
+  /* The one surface that survives leaving the editor.
+     say() writes into .status, which lives INSIDE .sheet — and setMode hides
+     the sheet and blanks the status on every exit from edit mode. Every message
+     this feature shows appears in play mode, so without this they could not be
+     seen at all (brief item 43).
+
+     Above the pencil rather than left of it: the game's own bottom-centre stack
+     is fixed bottom-6 left-1/2 in index.html, and this host is z-index
+     2147483000, so anything of ours in that band covers a live toast
+     (brief item 44).
+
+     Styled in full because :host resets everything, and this sits directly over
+     a game that has dark themes. No pointer-events, so it cannot eat a tap. */
+  .notice {
+    position: fixed;
+    right: 16px;
+    bottom: calc(16px + 56px + 8px + env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+    max-width: min(320px, calc(100vw - 32px));
+    margin: 0;
+    padding: 8px 10px;
+    border: 2px solid #1a1a1a;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1a1a1a;
+    font-size: 13px;
+    line-height: 1.35;
+    text-align: right;
+  }
+  .notice:empty { display: none; }
+
   .sheet {
     position: fixed;
     left: 0;
@@ -300,6 +354,8 @@ const HIGHLIGHT_CSS = `
   }
 `;
 
+import { COPY } from './copy.ts';
+
 export interface Panel {
   /** The host element in the page. Used to tell the tool's events from the game's. */
   readonly host: HTMLElement;
@@ -318,7 +374,23 @@ export interface Panel {
   highlight(el: Element | null, label?: string): void;
   /** Say something to Jamie. The copy lives in copy.ts. */
   say(message: string): void;
+  /**
+   * Say something that must OUTLIVE the editor closing.
+   *
+   * say() writes into the sheet, which setMode hides and blanks. Anything shown
+   * in play mode — everything Save & Stop reports — has to come through here.
+   */
+  notify(message: string): void;
+  /**
+   * Show or hide Save & Stop.
+   *
+   * The ONLY way it is ever shown. setMode may hide it in edit mode and must
+   * never show it, so a pill pointing at a server that has already stopped
+   * cannot be brought back by Escape or the back gesture.
+   */
+  setStopVisible(visible: boolean): void;
   onToggle(handler: () => void): void;
+  onStop(handler: () => void): void;
   destroy(): void;
 }
 
@@ -348,9 +420,19 @@ export function createPanel(doc: Document): Panel {
   pencil.type = 'button';
   pencil.dataset.mode = 'play';
   pencil.textContent = '✎';
-  // Brief item 71's wording. Also the string tests/edit-mode-safety.spec.ts
-  // looks for in the production bundle, so it had better be distinctive.
-  pencil.setAttribute('aria-label', 'Edit mode');
+  // From COPY, not a literal. These two were hardcoded here while
+  // tests/edit-mode-panel.spec.ts asserted them against COPY — they matched by
+  // coincidence, and editing copy.ts alone turned that spec red (brief item 45).
+  pencil.setAttribute('aria-label', COPY.enterEditMode);
+
+  const stopBtn = doc.createElement('button');
+  stopBtn.className = 'stop-btn';
+  stopBtn.type = 'button';
+  stopBtn.textContent = COPY.stopControl;
+  stopBtn.hidden = true;
+
+  const notice = doc.createElement('p');
+  notice.className = 'notice';
 
   const sheet = doc.createElement('div');
   sheet.className = 'sheet';
@@ -361,6 +443,8 @@ export function createPanel(doc: Document): Panel {
   sheet.appendChild(status);
 
   root.appendChild(pencil);
+  root.appendChild(stopBtn);
+  root.appendChild(notice);
   root.appendChild(sheet);
 
   doc.body.appendChild(host);
@@ -396,17 +480,30 @@ export function createPanel(doc: Document): Panel {
 
     setMode(mode) {
       pencil.dataset.mode = mode;
+      // HIDE ONLY. Showing is setStopVisible's job alone — see the interface.
+      if (mode === 'edit') stopBtn.hidden = true;
       // Nothing is selected in play mode, so nothing should be outlined.
       if (mode !== 'edit') highlight.hidden = true;
-      pencil.setAttribute('aria-label', mode === 'edit' ? 'Exit edit mode' : 'Edit mode');
+      pencil.setAttribute('aria-label', mode === 'edit' ? COPY.exitEditMode : COPY.enterEditMode);
       sheet.hidden = mode !== 'edit';
+      // .status is cleared; .notice deliberately is not — it is the surface
+      // that has to survive exactly this transition.
       if (mode !== 'edit') status.textContent = '';
     },
     say(message) {
       status.textContent = message;
     },
+    notify(message) {
+      notice.textContent = message;
+    },
+    setStopVisible(visible) {
+      stopBtn.hidden = !visible;
+    },
     onToggle(handler) {
       pencil.addEventListener('click', handler);
+    },
+    onStop(handler) {
+      stopBtn.addEventListener('click', handler);
     },
     destroy() {
       host.remove();

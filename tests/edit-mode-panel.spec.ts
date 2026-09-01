@@ -113,3 +113,50 @@ describe('teardown', () => {
     panel = undefined;
   });
 });
+
+// Plan task 5. Brief items 18, 39, 43, 44.
+describe('Save & Stop, and somewhere to speak in play mode', () => {
+  it('mounts the pill with the agreed label', () => {
+    panel = createPanel(document);
+    const stop = panel.root.querySelector('.stop-btn');
+    expect(stop?.textContent).toBe(COPY.stopControl);
+  });
+
+  it('hides the pill in edit mode, where the pencil is the save control', () => {
+    panel = createPanel(document);
+    panel.setStopVisible(true);
+    panel.setMode('edit');
+    expect(panel.root.querySelector<HTMLElement>('.stop-btn')?.hidden).toBe(true);
+  });
+
+  it('does NOT bring the pill back on its own when edit mode closes', () => {
+    // The pill has one owner. Otherwise Escape or the back gesture would
+    // re-show a Save & Stop pointing at a server that has already stopped.
+    panel = createPanel(document);
+    panel.setStopVisible(true);
+    panel.setMode('edit');
+    panel.setStopVisible(false);
+    panel.setMode('play');
+    expect(panel.root.querySelector<HTMLElement>('.stop-btn')?.hidden).toBe(true);
+  });
+
+  it('keeps a notice when the editor closes, but clears the in-sheet status', () => {
+    // The whole reason .notice exists: everything Save & Stop reports is shown
+    // in play mode, and setMode blanks the status on the way there.
+    panel = createPanel(document);
+    panel.setMode('edit');
+    panel.say('in the sheet');
+    panel.notify(COPY.stopped);
+    panel.setMode('play');
+    expect(panel.root.querySelector('.status')?.textContent).toBe('');
+    expect(panel.root.querySelector('.notice')?.textContent).toBe(COPY.stopped);
+  });
+
+  it('calls back when the pill is tapped', () => {
+    panel = createPanel(document);
+    const onStop = vi.fn();
+    panel.onStop(onStop);
+    panel.root.querySelector<HTMLButtonElement>('.stop-btn')?.click();
+    expect(onStop).toHaveBeenCalledOnce();
+  });
+});

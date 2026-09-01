@@ -14,7 +14,7 @@
 export const COPY = {
   /** Brief item 71. */
   enterEditMode: 'Edit mode',
-  exitEditMode: 'Exit edit mode',
+  exitEditMode: 'Save and exit edit mode',
   undo: 'Undo',
   // "Reset" and "Save", not "Reset element" and "Done" — Jamie, 2026-08-26.
   // Shorter labels fit the footer on one row, and Save says what the button
@@ -46,14 +46,40 @@ export const COPY = {
    * Brief item 74. THE one that loses work, so it is explicit that nothing is
    * lost yet — the edit lives on the phone until Done succeeds (item 54).
    */
-  saveFailed: 'Could not save. Your changes are still here — check the dev server is running and tap Done again.',
+  saveFailed: 'Could not save. Your changes are still here — check the dev server is running and tap the pencil again.',
 
   /**
-   * Brief item 75. Done is the seam between the two halves of this system, and
-   * the second half is a command in a different app that nothing on screen
-   * would otherwise mention.
+   * Brief item 75. Saving is the seam between the two halves of this system,
+   * and the second half happens in a different app that nothing on screen would
+   * otherwise mention.
+   *
+   * NOT "/fold" — that command does not exist yet (brief item 62). Naming it
+   * would leave Jamie tapping something that does nothing.
    */
-  saved: 'Saved. Tap /fold in Telegram to turn this into a pull request.',
+  saved: 'Saved. Ask the bot in Telegram to fold this into a pull request.',
+
+  /** The control that saves and then stops the dev server (brief item 26). */
+  stopControl: 'Save & Stop',
+
+  /**
+   * Brief item 27. THE LAST THING THIS PAGE WILL EVER SAY — the server it was
+   * served from has gone — so it carries both next steps rather than one.
+   */
+  stopped:
+    'Saved and the server has stopped. Ask the bot in Telegram to fold this into a pull request, or tap /dev to start again.',
+
+  /**
+   * Brief item 28. The work is safe and only the stop failed, so this must not
+   * read like a lost session.
+   */
+  stopFailed: 'Saved, but the server did not stop. Use /devstop in Telegram.',
+
+  /**
+   * Brief item 46. The pencil is a glyph with no visible text, so its label is
+   * an aria-label Jamie will never see on a phone. This line is the only actual
+   * warning that a tap writes a file.
+   */
+  pencilHint: 'The pencil saves your changes and leaves the editor.',
 } as const;
 
 /** Brief item 42: surfaced, not silently tidied. It is Jamie's markup. */
