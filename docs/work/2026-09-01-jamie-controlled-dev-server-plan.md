@@ -5,6 +5,20 @@
 da-brief run, every section settled by Jamie, Dave's acknowledgement waived by Jamie (item 60).
 **Branch:** `dev/jamie-controlled-dev-server`, off `dev/edit-mode-on-stats`.
 
+## Jamie's decisions, 2026-09-01
+
+Plan approved. Four things settled with it:
+
+1. **Stats and edit mode stay on the one branch.** Edit mode exists to finish stats, so
+   splitting them is paperwork.
+2. **A draft pull request into `staging`, opened now, marked ready when stats is done.**
+   `ci-smoke` triggers on `pull_request` with no draft filter, so a draft gets the full gate on
+   every push — and 92 files of change have had no CI at all so far. **Not merged to staging
+   until stats is finished**: edit mode never reaches production anyway, so landing early gains
+   nothing and risks unfinished stats riding the next staging→main release.
+3. **The shutdown route stays `apply: 'serve'` and goes into `edit-mode-safety.spec.ts`.**
+4. **Item 55 is answered**, not a gap — see task 9.
+
 ## Why this branch and not main
 
 Edit mode is not on `main`. It is 136 commits on `dev/edit-mode-roundtrip`, with the stats
@@ -449,12 +463,21 @@ with a control it never mentions:
 126–127 and 164. `README.md` does **not** mention it; brief item 53 was wrong about that, and
 this plan records the correction rather than sending a builder looking.
 
-**Brief item 55, unanswered.** The brief marked it "needs the pi bot's answer before build":
-nothing says whether `/run/ai-turns/dev-server.json` is cleaned up when the process exits on
-its own. It matters here, because `COPY.stopped` tells Jamie to tap `/dev` — and `/dev` is
-documented as idempotent, so a stale registration would hand him a URL for a dead process. If
-the answer has not arrived by the time task 9 is written, **record the residual in
-`docs/EDIT-MODE.md`** rather than leaving it undocumented, and say so in the pull request.
+**Brief item 55 — answered, and it must be documented.** Jamie, 2026-09-01: the Pi already
+handles a server that exits on its own, built and tested. `docs/EDIT-MODE.md` gains a short
+section saying so, because `COPY.stopped` tells Jamie to tap `/dev` and he needs to know what
+he will see if the server died some other way:
+
+- The daemon notices within 30 seconds, on its poll loop.
+- It sends one Telegram message: "⚠️ The dev server on branch `<name>` exited on its own — I
+  didn't stop it and neither did the 2-hour limit. /dev to start another."
+- The registry record is deleted, the reaper exemption is released, and the zombie is reaped.
+- It fires exactly once. Later ticks stay quiet.
+
+Worth recording alongside it: detecting this needed a liveness check that **excludes zombies**.
+`kill -0`, `killpg(pgid, 0)` and a bare `/proc` pgid comparison all report a dead server as
+alive. So there is no stale registration after a `Save & Stop`, and no dead URL from the next
+`/dev`.
 
 **Done means** (item 48, correcting item 38): `npm run build && npm run build:preprod &&
 vitest run`, all green. `npm run build` alone produces `dist/` only, and the preprod half of
