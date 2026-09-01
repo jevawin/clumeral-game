@@ -13,6 +13,7 @@ import { gitInfo } from './sessions.ts';
 import { gzipEditStylesheets } from './gzip.ts';
 import { serveCatalogue } from './catalogue-route.ts';
 import { receiveSession, serveReplay } from './session-routes.ts';
+import { receiveShutdown } from './shutdown-route.ts';
 
 export function editMode(): Plugin {
   return {
@@ -36,6 +37,20 @@ export function editMode(): Plugin {
       // middleware, which only cares about the stylesheet.
       server.middlewares.use(receiveSession());
       server.middlewares.use(serveReplay());
+      // Save & Stop. Awaited before the exit, because close() returns a promise
+      // and exiting straight after it would abandon the close. workerd is not
+      // orphaned by process.exit: miniflare registers an exit-hook whose
+      // callback calls runtime.dispose(), which SIGKILLs the runtime process
+      // synchronously, and exit-hook listens on process.once('exit'). That
+      // matters — an orphaned vite+workerd pair at 657 MB is the reason this
+      // feature exists.
+      server.middlewares.use(
+        receiveShutdown(async () => {
+          server.config.logger.info('  \u279c  edit mode: Save & Stop — shutting down');
+          await server.close().catch(() => {});
+          process.exit(0);
+        })
+      );
       server.middlewares.use(gzipEditStylesheets());
 
       // Generate the class lists and the family map once, at startup. The
