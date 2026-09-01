@@ -46,7 +46,7 @@ describe('an unfinished edit comes back after a reload (brief item 52)', () => {
 
   it('starts in play mode when there is nothing saved', () => {
     expect(createSessionStore(BRANCH, sessionStorage).load()).toEqual({
-      entries: [], mode: 'play', selected: null,
+      entries: [], mode: 'play', selected: null, savedSignature: '', freeCss: '',
     });
   });
 });
@@ -107,5 +107,37 @@ describe('when storage misbehaves', () => {
     const store = createSessionStore(BRANCH, refusing);
     expect(() => store.save({ entries: CHANGES, mode: 'edit', selected: null })).not.toThrow();
     expect(() => store.clear()).not.toThrow();
+  });
+});
+
+// Plan task 2 — the two fields that make "pending" survive a reload.
+describe('the saved-signature marker (brief items 13, 42)', () => {
+  it('round-trips the signature and the free-CSS box', () => {
+    const store = createSessionStore(BRANCH, sessionStorage);
+    store.save({
+      entries: [], mode: 'play', selected: null,
+      savedSignature: 'a=p-4||', freeCss: 'margin-top: 1rem;',
+    });
+    const back = createSessionStore(BRANCH, sessionStorage).load();
+    expect(back.savedSignature).toBe('a=p-4||');
+    expect(back.freeCss).toBe('margin-top: 1rem;');
+  });
+
+  it('falls back to empty when either field is the wrong type', () => {
+    // A corrupt value must not throw on boot: the game is underneath, and a
+    // white screen is worse than a lost marker.
+    sessionStorage.setItem(
+      storageKey(BRANCH),
+      JSON.stringify({ entries: [], mode: 'play', selected: null, savedSignature: 7, freeCss: [] })
+    );
+    const state = createSessionStore(BRANCH, sessionStorage).load();
+    expect(state.savedSignature).toBe('');
+    expect(state.freeCss).toBe('');
+  });
+
+  it('defaults both when the key has never been written', () => {
+    const state = createSessionStore('fresh-branch', sessionStorage).load();
+    expect(state.savedSignature).toBe('');
+    expect(state.freeCss).toBe('');
   });
 });

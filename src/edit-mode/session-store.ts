@@ -24,9 +24,25 @@ export interface StoredState {
   mode: 'play' | 'edit';
   /** What was selected, by breadcrumb, so the reload does not lose his place. */
   selected: string | null;
+  /**
+   * The signature recorded at the last successful save, so "is anything
+   * pending?" survives a reload (plan task 2).
+   */
+  savedSignature: string;
+  /**
+   * The free-CSS box.
+   *
+   * Stored because savedSignature includes it. Without this the box comes back
+   * empty after a reload, the signatures disagree, the tool says pending, and
+   * the pencil posts the whole patch set a second time — the duplicate session
+   * file brief item 13 forbids.
+   */
+  freeCss: string;
 }
 
-const EMPTY: StoredState = { entries: [], mode: 'play', selected: null };
+const EMPTY: StoredState = {
+  entries: [], mode: 'play', selected: null, savedSignature: '', freeCss: '',
+};
 
 /**
  * Keyed to the branch.
@@ -59,6 +75,9 @@ export function createSessionStore(branch: string, storage: Storage): SessionSto
           entries: Array.isArray(parsed.entries) ? parsed.entries : [],
           mode: parsed.mode === 'edit' ? 'edit' : 'play',
           selected: typeof parsed.selected === 'string' ? parsed.selected : null,
+          savedSignature:
+            typeof parsed.savedSignature === 'string' ? parsed.savedSignature : '',
+          freeCss: typeof parsed.freeCss === 'string' ? parsed.freeCss : '',
         };
       } catch {
         // Corrupt or unreadable — start clean rather than throwing on boot and
