@@ -51,6 +51,23 @@
 /* Wire dark: variant to existing .dark class on html (set by theme.ts) */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* A 1.5px border. Tailwind's scale is 0, 1, 2, 4, 8 and there is no
+   --border-width-* namespace to add a step to, so this is declared as a real
+   utility rather than written as border-[1.5px].
+
+   1.5px because that is the play screen's undo and reset border width, and the
+   completion panel's boxes deliberately borrow that shape. Rounding to 1px or
+   2px is 33% either way and breaks the match.
+
+   A named @utility rather than an arbitrary value so edit mode can see it:
+   getClassList() returns it, so it lands in the catalogue and in the family map
+   as a border-width, and tapping plus or minus swaps it for border-2 properly
+   instead of stacking a class that loses the cascade. It must stay at the top
+   level — @utility inside @layer does not compile. */
+@utility border-hairline {
+  border-width: 1.5px;
+}
+
 /* Light mode token defaults — Tailwind generates bg-bg, text-text, etc. */
 /* Per D-01: 6 semantic tokens. Per D-02: bg locked to #FAFAFA / #121213 */
 @theme {
@@ -140,8 +157,9 @@
 
      The gutter lives OUTSIDE the cap, so content is min(480, viewport - 32).
      Deliberately px and not rem: at large browser text the column stops growing
-     rather than outrunning the screen. Components inside it keep their rem
-     breakpoints so they still stack — see .stat-cols. */
+     rather than outrunning the screen. Components inside it size themselves in
+     rem so they still wrap when the text grows — the completion panel's stat
+     boxes use a rem flex-basis for exactly that. */
   --page-max: 480px;
   --page-gutter: 1rem;
 }
@@ -506,225 +524,6 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   #cw-ck:not(:checked) ~ label .ck-off { display: inline; }
   #cw-ck:checked ~ label .ck-on { display: inline; }
   #cw-ck:checked ~ label .ck-off { display: none; }
-
-  /* ─── Completion panel: This game · Streaks · All time ─────────────────────
-     No new colour tokens and no new type sizes (brief 83). Everything below is
-     built from --color-text, --color-accent, --color-border and --color-surface,
-     whose contrast is already measured in tests/palette-contrast.spec.ts. */
-
-  /* The panel reads in the body font, Quicksand — numbers included (brief 11,
-     21). Every rule below used to declare Inconsolata; they now declare no family
-     at all and inherit from html/body, which is what makes removal the right edit
-     rather than an override. The play screen keeps Inconsolata: its keypad relies
-     on every key being the same width, and that was never in scope.
-
-     The panel sets its text colour ONCE and everything inherits it.
-     The dark-mode bug this fixes: seven elements were coloured individually and
-     the eighth — the streak block's <dt>, "Play streak" and "First-go streak" —
-     was missed, so it fell through to the browser's default black and vanished
-     against the dark background. Colouring the container means the next element
-     anyone adds cannot repeat that. */
-  [data-completion-panel] {
-    color: var(--color-text);
-  }
-
-  /* Section heading (polish brief 91): large, normal case, no rule beside it, and a
-     decorative icon in the section's own colour — the player's accent, except
-     Records, which takes the second one. Same distinction the numbers carry. */
-  .stat-block__head {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-block-end: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--color-text);
-  }
-  .stat-block__icon {
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
-    flex: none;
-  }
-  /* One section per theme colour, in picker order from the player's own, so all
-     four are on screen together and rotate with the theme (polish brief 97). Colour is
-     carried by the icons and the numbers ONLY — never by a label, a heading or a
-     border of anything the player has to read (polish brief 98). */
-  [data-stat-block="streak"]   { --section-accent: var(--color-accent-2); }
-  [data-stat-block="records"]  { --section-accent: var(--color-accent-3); }
-  [data-stat-block="all-time"] { --section-accent: var(--color-accent-4); }
-  .stat-block__icon { color: var(--section-accent); }
-
-  /* This game — the hero. The only thing that changed in the last ten seconds,
-     so it is the largest type on the panel (brief 80). */
-  .stat-hero {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--color-text);
-    line-height: 1.2;
-  }
-
-  /* ─── The redesign: figures and boxes ──────────────────────────────────────
-     Three rungs of type size, used by every block (redesign brief 29):
-       1. the Today icons and figures      — the only thing that just happened
-       2. the box titles and their numbers
-       3. the small labels inside a box
-     Numbers are bold; box titles are the same size and NOT bold; labels are
-     regular in the ordinary foreground colour (brief 30). All-caps stays on the
-     block headings and never appears inside a box (brief 83 low-13). */
-
-  /* Today — the two figures side by side. Wraps rather than overflows: an
-     hour-long time makes the pair too wide for a 320px screen. */
-  /* Directly under the solved message now, with no block heading above them
-     (brief 62), so they centre rather than sitting hard left. */
-  /* Half the distance to the line above (polish brief 90). The panel is a flex child of
-     a 1.5rem stack, so pulling 0.75rem back off the top halves that one gap
-     without touching the rhythm of everything below. The empty subheading that
-     used to double it is hidden in completion.ts. */
-  .stat-today {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-block-start: -0.75rem;
-    margin-block-end: 0.5rem;
-  }
-  .stat-figure {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-  }
-  .stat-figure__icon {
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
-    flex: none;
-    /* Baseline-aligned text beside a baseline-less SVG sits high, so nudge it
-       down onto the same optical line as the number. */
-    transform: translateY(0.2em);
-  }
-  .stat-figure__value {
-    font-weight: 700;
-    font-size: clamp(1.375rem, 7vw, 1.75rem);
-    line-height: 1.2;
-    color: var(--color-accent);
-  }
-
-  /* Columns of figures, across, stacking below 360px. 22.5rem rather than 360px
-     so the stack also happens at large browser text on a wide screen — and note
-     the page column itself is in px, so these two answer different questions on
-     purpose. */
-  .stat-cols {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-    margin: 0;
-  }
-  @media (min-width: 22.5rem) {
-    .stat-cols { grid-template-columns: repeat(3, 1fr); }
-    .stat-cols--two { grid-template-columns: repeat(2, 1fr); }
-  }
-  /* The box (polish brief 93): the undo/reset controls' resting state — surface fill,
-     the same 1.5px border and the same radius — so the panel borrows a shape the
-     player already knows from the play screen rather than inventing one.
-     `overflow: hidden` is load-bearing: it is what clips the watermark. */
-  .stat-col {
-    position: relative;
-    overflow: hidden;
-    background: var(--color-surface);
-    border: 1.5px solid var(--section-accent);
-    border-radius: var(--radius-sm);
-    padding: 0.625rem 0.75rem;
-  }
-  /* The watermark (polish brief 94): the box's own icon, big, faint and rotated, run
-     off the bottom-right corner so the border crops it. Behind the text, and
-     `pointer-events: none` so it can never eat a tap. */
-  .stat-col__mark {
-    position: absolute;
-    inset-block-end: -0.875rem;
-    inset-inline-end: -0.875rem;
-    inline-size: 4rem;
-    block-size: 4rem;
-    transform: rotate(45deg);
-    color: var(--color-text);
-    opacity: 0.12;
-    pointer-events: none;
-  }
-  /* Label above number, in the DOM as well as on screen (brief 67). The
-     redesign needed column-reverse to put the number on top; this layout does
-     not, so the visual order and the reading order agree again. Do not add it
-     back without reading that brief item first.
-
-     16px label, 24px number — polish brief 95's floor and its "larger is larger". The
-     number's clamp tops out where three boxes still fit a 390px screen: 358px of
-     content, less two 8px gaps and six 12px paddings, is 42px of text per box at
-     the narrow end, which is what pins the lower bound rather than the upper. */
-  .stat-col__label {
-    display: block;
-    position: relative;
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.2;
-    color: var(--color-text);
-  }
-  .stat-col__value {
-    margin: 0;
-    margin-block-start: 0.125rem;
-    position: relative;
-    font-weight: 700;
-    font-size: clamp(1.25rem, 6.5vw, 1.75rem);
-    line-height: 1.2;
-    color: var(--section-accent);
-  }
-
-  /* All time — a two-column grid, the number with its label under it (polish brief 101).
-     No borders, no boxes and no dividing rules: the grid does the separating. */
-  .stat-lines {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.875rem 1rem;
-  }
-  .stat-line {
-    line-height: 1.3;
-    color: var(--color-text);
-  }
-  .stat-line__value {
-    display: block;
-    font-weight: 700;
-    font-size: 1.375rem;
-    color: var(--section-accent);
-  }
-  .stat-line__label {
-    display: block;
-    font-size: 1rem;
-    margin-block-start: 0.125rem;
-  }
-
-  /* Attempts distribution. The bar is decorative; the count beside it is the
-     accessible content (brief 98). The fill takes the section's colour, so it
-     matches the numbers above it rather than the player's own accent. */
-  .goes-chart { margin-block-start: 1rem; }
-  .goes-row {
-    display: grid;
-    grid-template-columns: 1.25rem 1fr 2.25rem;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    color: var(--color-text);
-    padding-block: 0.1875rem;
-  }
-  .goes-row__track {
-    block-size: 0.625rem;
-    border-radius: 0.3125rem;
-    background-color: var(--color-border);
-    overflow: hidden;
-  }
-  .goes-row__fill {
-    display: block;
-    block-size: 100%;
-    border-radius: 0.3125rem;
-    background-color: var(--section-accent);
-  }
-  .goes-row__count { text-align: end; font-weight: 700; }
 
   /* ─── HTP clue styles for welcome screen ─── */
   /* HTP digit box (reused from game digit-box styling) */

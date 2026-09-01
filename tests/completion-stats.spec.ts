@@ -545,7 +545,7 @@ describe('a forged history row cannot inject markup', () => {
     const mod = await import('../src/completion.ts');
     for (const bad of ['<img src=x onerror=alert(1)>', '2<script>x</script>', 0, -1, 2.5, NaN]) {
       expect(mod.todayFigures(bad as unknown as number, 30, true), String(bad))
-        .toBe('<p data-stat-hero class="stat-hero">Solved!</p>');
+        .toBe('<p data-stat-hero class="text-3xl font-bold">Solved!</p>');
     }
   });
 
@@ -566,22 +566,30 @@ describe('a forged history row cannot inject markup', () => {
 // makes the whole class of miss impossible rather than fixing the one instance.
 describe('the panel colours itself once, at the top', () => {
   const css = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+  const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+  const completionSrc = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+
+  /** The panel container's own class list, read out of index.html. */
+  function panelClasses(): string[] {
+    const tag = /<div data-completion-panel[^>]*>/.exec(html);
+    expect(tag, 'no data-completion-panel div in index.html').not.toBeNull();
+    return (/class="([^"]*)"/.exec(tag![0])?.[1] ?? '').split(/\s+/).filter(Boolean);
+  }
 
   it('sets a text colour on the panel container', () => {
-    expect(css).toMatch(/\[data-completion-panel\]\s*\{[^}]*color:\s*var\(--color-text\)/);
+    // The guard moved from the stylesheet to the markup when the panel became
+    // utilities only. It guards the same thing: one colour, on the container,
+    // inherited by everything inside.
+    expect(panelClasses()).toContain('text-text');
   });
 
   it('reads in the body font, with no Inconsolata left on the panel', () => {
-    // Deleted rather than overridden, so the rules inherit Quicksand from
-    // html/body. Swept across the whole panel section rather than listing the
-    // seven rules, so a rule added later is covered too. The play screen keeps
-    // Inconsolata — its keypad needs every key the same width (brief 21).
-    // The slice runs to .digit-box, which is the first rule AFTER the panel —
-    // ending it at .goes-row__fill would leave .goes-row__count unswept.
-    const start = css.indexOf('[data-completion-panel] {');
-    const panel = css.slice(start, css.indexOf('.digit-box {'));
-    expect(panel).toContain('.goes-row__count');
-    expect(panel).not.toContain('Inconsolata');
+    // The panel declares no font family anywhere, so it inherits Quicksand from
+    // html/body. The play screen keeps Inconsolata — its keypad needs every key
+    // the same width (brief 21). Asserted on the markup because that is where
+    // the panel's styling lives now; the stylesheet side is Task 4's guard.
+    expect(completionSrc).not.toContain('Inconsolata');
+    expect(completionSrc).not.toContain('font-mono');
   });
 
   it('leaves no box around the records, in either file (brief 13, 42)', () => {
@@ -601,7 +609,6 @@ describe('the panel colours itself once, at the top', () => {
 
   it('uses the theme token, never a literal colour', () => {
     // A hex here would be one mode's colour hardcoded into both.
-    const block = css.match(/\[data-completion-panel\]\s*\{[^}]*\}/)![0];
-    expect(block).not.toMatch(/#[0-9a-f]{3,8}/i);
+    for (const c of panelClasses()) expect(c).not.toMatch(/#[0-9a-f]{3,8}/i);
   });
 });

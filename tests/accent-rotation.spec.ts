@@ -20,6 +20,7 @@ import { PALETTE } from '../src/palette';
 const THEMES = Object.keys(PALETTE.hues) as (keyof typeof PALETTE.hues)[];
 
 const tailwind = readFileSync(resolve(__dirname, '..', 'src/tailwind.css'), 'utf-8');
+const completion = readFileSync(resolve(__dirname, '..', 'src/completion.ts'), 'utf-8');
 
 function declarations(css: string, scope: string): Record<string, string> {
   const block = new RegExp(`${scope}\\s*\\{([^}]*)\\}`).exec(css);
@@ -72,19 +73,28 @@ describe('the four theme colours rotate together', () => {
   });
 
   it('gives each section its colour, and colours nothing but icons and numbers', () => {
+    // Asserted on the markup now: --section-accent is gone and each element
+    // takes its colour class directly. Asserting the WHOLE literal name is also
+    // the guard against building one at runtime — Tailwind finds classes by
+    // scanning source text, so a name assembled from a stem and a number
+    // compiles to no rule at all and the panel would ship grey.
+    //
     // Brief 80: colour never lands on a label, a heading or a divider — the
     // things a player has to read stay in the foreground colour.
-    for (const [id, slot] of [['streak', 2], ['records', 3], ['all-time', 4]] as const) {
-      expect(tailwind).toContain(
-        `[data-stat-block="${id}"]`,
-      );
-      const rule = new RegExp(
-        `\\[data-stat-block="${id}"\\][^{]*\\{[^}]*--section-accent:\\s*var\\(--color-accent-${slot}\\)`,
-      );
-      expect(tailwind, `${id} should take accent ${slot}`).toMatch(rule);
+    const expected: Record<string, string[]> = {
+      streak: ['text-accent-2', 'border-accent-2'],
+      records: ['text-accent-3', 'border-accent-3'],
+      'all-time': ['text-accent-4', 'bg-accent-4'],
+    };
+    for (const [id, names] of Object.entries(expected)) {
+      for (const name of names) {
+        expect(completion, `${id} should carry ${name}`).toContain(name);
+      }
     }
     // The label stays in the foreground colour: only the icon, the number and
     // the box border take the section's.
-    expect(tailwind).toMatch(/\.stat-col__label\s*\{[^}]*color:\s*var\(--color-text\)/);
+    const label = /<[a-z]+ data-stat-label[^>]*>/.exec(completion);
+    expect(label, 'no element carries data-stat-label').not.toBeNull();
+    expect(label![0]).not.toContain('text-accent');
   });
 });

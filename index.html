@@ -353,7 +353,13 @@
                a hidden block can still reach the accessibility tree, and a screen
                reader landing on an empty "All time" heading is exactly the
                "looks broken" impression the reveal gate exists to avoid. -->
-          <div data-completion-panel class="w-full flex flex-col gap-6 text-left"></div>
+          <!-- The panel sets its text colour ONCE, here, and everything inside
+               inherits it. The dark-mode bug this prevents: seven elements were
+               coloured individually and the eighth — the streak block's <dt> —
+               was missed, so it fell through to the browser's default black and
+               vanished against the dark background. Colouring the container is
+               what makes the next element anyone adds safe by default. -->
+          <div data-completion-panel class="w-full flex flex-col gap-6 text-left text-text"></div>
 
 
           <!-- Countdown -->
