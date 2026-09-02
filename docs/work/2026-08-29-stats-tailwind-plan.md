@@ -754,3 +754,95 @@ Every numbered item in the brief, traced.
 | 62 | Task 2 and Task 3 steps 6-7. |
 | 63 | Task 4. |
 | 64 | Task 6 step 1. |
+
+---
+
+## 6. Build record
+
+### Task 5a — the style diff, and the correction it needed
+
+**The plan's mechanism does not work, and the replacement is in the script.**
+Task 5a specified `getComputedStyle` in jsdom. jsdom cannot parse Tailwind v4's
+output at all — it throws `Could not parse CSS stylesheet` on the built file and
+every element then reads back as a browser default, on both commits. That is a
+diff of nothing against nothing: a guaranteed false pass, which is the same trap
+the plan spotted for the overflow half and missed for this one.
+
+So `scripts/stats-style-diff.mjs` keeps jsdom for the DOM, which works fine, and
+resolves the declarations by walking the built stylesheet with postcss instead.
+It reports **declared** values, so it sees colour, weight, spacing, radius,
+border width and opacity — the exact swaps, which is most of the risk. It has no
+layout engine, so it cannot resolve a fluid font size or a media query; those are
+Task 5b's job, in a browser. Rules inside a media, container or supports query
+are counted and reported rather than silently skipped (42 after, 44 before).
+
+Two things it had to get right to be worth running:
+
+- **Custom properties resolve per element, down the tree.** A file-wide map hands
+  all four blocks whichever `--section-accent` was declared last, and quietly
+  reports three of them as the wrong colour. An early run did exactly that.
+- **Shorthands are watched as well as longhands.** Without `border` and
+  `background` in the list, the old `border: 1.5px solid var(--section-accent)`
+  was dropped and read back as "no border", making an exact swap look like a
+  change.
+
+**Result: 109 elements compared, 43 distinct differences, and every one of them
+is in §2.** Run as:
+
+```
+npx vite build && node scripts/stats-style-diff.mjs > /tmp/after.json
+# same two commands in a worktree at 91b3478, into /tmp/before.json
+node scripts/stats-style-diff.mjs --compare /tmp/before.json /tmp/after.json
+```
+
+The ten value changes §2 predicted, and nothing else:
+
+| Element | Before | After | §2 |
+|---|---|---|---|
+| `data-stat-figure-value` | `clamp(1.375rem, 7vw, 1.75rem)` | `1.875rem` | items 1, 10 |
+| `data-stat-value` | `clamp(1.25rem, 6.5vw, 1.75rem)` | `1.875rem` | item 1 |
+| `data-stat-line-value` | `1.375rem` | `1.25rem` | item 2 |
+| `data-goes-row` `padding-block` | `0.1875rem` | `0.125rem` | item 3 |
+| `data-stat-cols` | `grid`, `grid-template-columns: 1fr` | `flex`, `flex-wrap: wrap`, boxes `flex-grow: 1; flex-basis: 6rem` | item 4, §0.2 |
+| `data-stat-mark` `opacity` | `0.12` | `0.1` | item 5 |
+| `data-stat-head` `line-height` | `1.2` | `1.25` | item 6 |
+| `data-stat-label` `line-height` | `1.2` | `1.25` | item 7 |
+| `data-stat-line` `line-height` | `1.3` | `1.25` | item 8 |
+| `data-stat-figure-icon` | `transform: translateY(0.2em)` | `translate: … 0.25rem` | item 9 |
+
+The rest of the 43 rows are the same value written a different way, and are
+listed here so nobody has to re-derive them:
+
+- **Colour moved from seven elements to one.** `data-stat-head`,
+  `data-stat-label`, `data-stat-line`, `data-goes-row` and `data-stat-mark` all
+  go from an explicit `color` to none, inheriting `text-text` from the panel
+  container. That is item 61, and it is the whole point of the change.
+- **The accents did not move by a hair.** Every icon, border and figure resolves
+  to the same `oklch` it did before — `oklch(0.78 0.174 145)` on Streak,
+  `oklch(0.78 0.135 5)` on Records. The indirection went; the colour did not.
+- **The border is still 1.5px.** It reads as `border-width: 1.5px` plus a
+  separate `border-color` rather than one `border` shorthand. `border-hairline`
+  is exact (§0.1).
+- **`rounded-full` reports as `3.40282e38px`.** That is `calc(infinity * 1px)`
+  after minification. The old radius was half the height, so the shape was
+  already a pill (finding 50).
+- **The goes row keeps its three widths.** `grid-template-columns: 1.25rem 1fr
+  2.25rem` becomes `width: 1.25rem` + `flex: 1` + `width: 2.25rem`, with
+  `flex-shrink: 0` added (§1.6).
+- **`grid-cols-2` emits `repeat(2, minmax(0, 1fr))`** where the old rule said
+  `repeat(2, 1fr)`. Tailwind's standard, and the safer of the two: `minmax(0,
+  1fr)` stops a long figure forcing a track wider than its share.
+- **`transform` became `rotate` and `translate`.** Tailwind v4 uses the
+  standalone properties. Same 45 degrees, same nudge.
+
+### Task 5b — the 320px check
+
+`e2e/specs/stats-overflow.spec.ts` loads `/solved?demo=stats` at 320, 390 and
+480 wide and asserts every `[data-stat-value]` and `[data-stat-figure-value]`
+has `scrollWidth <= clientWidth`. It attaches the resolved font size and the
+text at each width to the CI report, so the pull request can quote a measurement
+rather than arithmetic. **Not run locally** — it rides the matrix CI already runs
+on every pull request, per Task 7.
+
+Both files are throwaway and are deleted once the numbers are in the pull
+request, which is what item 41's "one-off" means.
