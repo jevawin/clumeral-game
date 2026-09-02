@@ -384,3 +384,8 @@ Settled: Jamie 2026-08-31 (corrections accepted as recommended) · Ack: Override
 **Brief closed 2026-08-31.** Every section settled by Jamie; Dave's acknowledgement waived by
 Jamie as dev lead (item 60). da-brief run and all High and Medium findings answered above.
 Next stage: `planning`, working from this file.
+63. **New message, approved after the build.** Stopping the server with nothing unsaved had no
+    wording — item 39 created that path but §8 never gave it words, and the other two both
+    open with "Saved", which would have been a lie. Added as
+    `stoppedNothingSaved`: **"The server has stopped. Tap /dev to start another."**
+    Settled: Jamie 2026-09-02 ("yep happy") · Ack: Override: Jamie 2026-08-31.
