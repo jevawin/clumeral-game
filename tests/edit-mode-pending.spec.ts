@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { signature, exitDecision, stopOutcome } from '../src/edit-mode/pending.ts';
+import { signature, exitDecision, stopOutcome, stopPillState } from '../src/edit-mode/pending.ts';
 import { createHistory } from '../src/edit-mode/history.ts';
 import type { Change } from '../src/edit-mode/history.ts';
 
@@ -91,5 +91,37 @@ describe('what Save & Stop reports (brief items 34, 40)', () => {
 
   it('reports the failure only when a real error reply arrives', () => {
     expect(stopOutcome('http-error')).toBe('stopFailed');
+  });
+});
+
+describe('what Save & Stop looks like right now (brief items 39, 61)', () => {
+  it('is on screen in play mode while the server runs', () => {
+    expect(stopPillState('play', false, false)).toEqual({ visible: true, enabled: true });
+  });
+
+  it('is hidden in edit mode, where the pencil is the save control', () => {
+    expect(stopPillState('edit', false, false).visible).toBe(false);
+  });
+
+  it('COMES BACK when the editor closes', () => {
+    // The regression this exists for. The panel hides the pill on entering edit
+    // mode and never shows it again, so a single call at startup meant
+    // Save & Stop vanished for good the first time the editor was opened —
+    // leaving no way at all to stop the server from the page.
+    expect(stopPillState('edit', false, false).visible).toBe(false);
+    expect(stopPillState('play', false, false).visible).toBe(true);
+  });
+
+  it('stays gone once the server has stopped', () => {
+    // Escape and the back gesture both call setMode('play'), and neither may
+    // resurrect a pill pointing at a server that is no longer there.
+    expect(stopPillState('play', true, false).visible).toBe(false);
+  });
+
+  it('is visible but disabled while a save or stop is in flight', () => {
+    // Disabled rather than hidden. A pencil save can still be running when
+    // Escape drops us into play mode, and a pill that looks tappable but
+    // silently does nothing is this tool's oldest complaint.
+    expect(stopPillState('play', false, true)).toEqual({ visible: true, enabled: false });
   });
 });

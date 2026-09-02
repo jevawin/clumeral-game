@@ -19,7 +19,7 @@ import {
   ancestry, crumb, isOverlay, elementAtPoint, nav, computedSnapshot, didNothing,
 } from './select.ts';
 import { captureEnvironment, type Patch } from './patches.ts';
-import { signature, exitDecision, stopOutcome } from './pending.ts';
+import { signature, exitDecision, stopOutcome, stopPillState } from './pending.ts';
 import { COPY, conflictWarning } from './copy.ts';
 
 const CATALOGUE_URL = '/__edit-mode/catalogue.json';
@@ -77,8 +77,6 @@ async function start(): Promise<void> {
   // file. There is no in-flight feedback on a phone, which is exactly the
   // condition that produces the second tap.
   let busy = false;
-  /** Was anything actually written before the server went? */
-  let hadSaved = false;
   const history = createHistory();
   history.restore(saved.entries);
 
@@ -190,6 +188,19 @@ async function start(): Promise<void> {
       entries: [...history.entries], mode, selected: selectedPath,
       savedSignature, freeCss,
     });
+  }
+
+  /**
+   * Push the pill's state to the panel. The ONLY thing that does.
+   *
+   * panel.setMode only ever hides, by design, so if this is not called the pill
+   * is shown once at startup and never again — enter the editor once and
+   * Save & Stop is gone for the session, which is the opposite of item 61.
+   */
+  function syncStopPill(): void {
+    const state = stopPillState(mode, stopped, busy);
+    panel.setStopVisible(state.visible);
+    panel.setStopBusy(!state.enabled);
   }
 
   function isPending(): boolean {
@@ -336,12 +347,7 @@ async function start(): Promise<void> {
     panel.setMode(next);
     if (next === 'edit') interceptor.enable();
     else interceptor.disable();
-    // The overlay is the sole owner of the pill (panel.setMode only ever
-    // hides). Without this it is shown once at startup and never again — enter
-    // edit mode once and Save & Stop is gone for the session, which is the
-    // opposite of item 61's "always visible". The `stopped` guard is what stops
-    // Escape or the back gesture resurrecting a pill for a dead server.
-    panel.setStopVisible(!stopped && next === 'play');
+    syncStopPill();
 
     // Brief item 109: returning from play mode is the only moment the game has
     // actually rendered, so it is the only moment this check can fire.
@@ -425,21 +431,25 @@ async function start(): Promise<void> {
    * (brief items 1, 10, 11, 12).
    */
   toggleMode = () => {
+    // Once the server has gone, editing is a trap: changes would be recorded,
+    // persist() would no-op, and the next tap would drop them without a word.
+    // The pencil goes dead with the server, and the closing message stays on
+    // screen to say why.
+    if (stopped) return;
     if (mode !== 'edit') return setMode('edit');
-    // Once stopped there is nothing to save and nowhere to save it, so leaving
-    // the editor is just leaving the editor.
-    if (stopped) return setMode('play');
     if (busy) return;
     void (async () => {
       busy = true;
+      syncStopPill();
       try {
-      const pending = isPending();
-      const ok = pending ? await save() : null;
-      // A failed save keeps him in the editor. Leaving would look like it
-      // worked, and the edits only exist in the phone until one succeeds.
-      if (exitDecision(pending, ok) === 'leave') setMode('play');
+        const pending = isPending();
+        const ok = pending ? await save() : null;
+        // A failed save keeps him in the editor. Leaving would look like it
+        // worked, and the edits only exist in the phone until one succeeds.
+        if (exitDecision(pending, ok) === 'leave') setMode('play');
       } finally {
         busy = false;
+        syncStopPill();
       }
     })();
   };
@@ -452,12 +462,12 @@ async function start(): Promise<void> {
   async function stopServer(): Promise<void> {
     if (busy) return;
     busy = true;
-    panel.setStopBusy(true);
+    syncStopPill();
     try {
       await runStop();
     } finally {
       busy = false;
-      panel.setStopBusy(false);
+      syncStopPill();
     }
   }
 
@@ -486,7 +496,6 @@ async function start(): Promise<void> {
     }
 
     stopped = true;
-    hadSaved = hadSomethingToSave;
     history.restore([]);
     // Match the marker to the now-empty history. Left as it was, isPending()
     // would compare an empty history against the signature of what was just
@@ -494,16 +503,15 @@ async function start(): Promise<void> {
     // server that no longer exists.
     savedSignature = signature(history.entries, freeCss);
     store.clear();
-    panel.setStopVisible(false);
+    panel.setPencilEnabled(false);
+    syncStopPill();
     // Only claim a save when there was one. Both stopped messages open with
     // "Saved", and this is the last thing the page ever says — telling him to
     // fold a session that was never written would send him looking for it.
-    panel.notify(hadSaved ? COPY.stopped : COPY.stoppedNothingSaved);
+    panel.notify(hadSomethingToSave ? COPY.stopped : COPY.stoppedNothingSaved);
   }
 
-  // On screen in play mode for as long as the server is running — Jamie,
-  // 2026-08-31: "Always visible" (brief item 61).
-  panel.setStopVisible(mode !== 'edit');
+
   // A tap that landed while the catalogue was still loading, honoured late
   // rather than lost.
   if (toggleWaiting) {

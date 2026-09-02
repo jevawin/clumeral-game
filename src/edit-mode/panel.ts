@@ -99,6 +99,7 @@ const PANEL_CSS = `
   }
   .stop-btn[hidden] { display: none !important; }
   .stop-btn:disabled { opacity: 0.5; }
+  .pencil:disabled { opacity: 0.5; }
 
   /* The one surface that survives leaving the editor.
      say() writes into .status, which lives INSIDE .sheet — and setMode hides
@@ -392,6 +393,8 @@ export interface Panel {
   setStopVisible(visible: boolean): void;
   /** Grey the pill out while a save or a stop is in flight. */
   setStopBusy(busy: boolean): void;
+  /** Kill the pencil once the server has gone — there is nothing to edit into. */
+  setPencilEnabled(enabled: boolean): void;
   onToggle(handler: () => void): void;
   onStop(handler: () => void): void;
   destroy(): void;
@@ -504,6 +507,9 @@ export function createPanel(doc: Document): Panel {
     },
     setStopBusy(busy) {
       stopBtn.disabled = busy;
+    },
+    setPencilEnabled(enabled) {
+      pencil.disabled = !enabled;
     },
     onToggle(handler) {
       pencil.addEventListener('click', handler);

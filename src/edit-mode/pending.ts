@@ -56,3 +56,30 @@ export function stopOutcome(
 ): 'stopped' | 'stopFailed' {
   return result === 'http-error' ? 'stopFailed' : 'stopped';
 }
+
+/** What the Save & Stop pill should be doing right now. */
+export interface StopPillState {
+  visible: boolean;
+  enabled: boolean;
+}
+
+/**
+ * The pill's whole rule, in one place.
+ *
+ * Derived rather than set at each call site, because it was set at two and they
+ * disagreed: the panel hides the pill on entering edit mode and never shows it,
+ * so a single setStopVisible at startup meant Save & Stop disappeared for good
+ * the first time the editor was opened.
+ *
+ * `busy` disables rather than hides. A save started from the pencil can still
+ * be in flight when Escape or the back gesture drops us into play mode, and a
+ * pill that looks tappable but silently does nothing is this file's oldest
+ * complaint — "seems functionally flakey".
+ */
+export function stopPillState(
+  mode: 'play' | 'edit',
+  stopped: boolean,
+  busy: boolean
+): StopPillState {
+  return { visible: !stopped && mode === 'play', enabled: !busy };
+}
