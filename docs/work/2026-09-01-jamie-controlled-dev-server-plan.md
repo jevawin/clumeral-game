@@ -409,30 +409,10 @@ rejects anything containing a space, so every `COPY` value is invisible to it. T
 `'stop-btn'` literal in `panel.ts` **is** class-shaped and will enter that set — harmlessly,
 because Tailwind emits no `.stop-btn` selector, exactly as with the existing `save-btn`.
 
----
-
-### Task 8 — The safety test
-Brief items 32, 33, 49, 50.
-
-**`tests/edit-mode-safety.spec.ts`** — three changes.
-
-1. **Share the absence assertions between environments.** Today `.edit-sessions` and the whole
-   `OVERLAY_COPY` list are checked against `dist/` only, while the preprod block checks just
-   `tailwind-edit` and `src/edit-mode/`. Lift the checks into one function run against both
-   directories, so nothing is asserted in production and skipped in pre-prod (item 49).
-2. **Add the shutdown route.** `'/__edit-mode/shutdown'` joins the absent strings, asserted
-   against `dist/` **and** `dist-preprod/`. This is the assertion the whole feature is judged
-   on (item 32).
-3. **Derive the pinned copy from `COPY`.** Import it from `src/edit-mode/copy.ts` and assert
-   every value is absent from the production JS, instead of the hand-copied `OVERLAY_COPY`
-   list (item 50). That list still pins `'Reset element'`, a string `copy.ts` stopped using on
-   2026-08-26 — it has been asserting the absence of something that exists nowhere. Deriving it
-   makes a copy change unable to silently unpin itself.
-
-The leak-gate test in the same file scans test sources for class-shaped tokens; copy strings
-are prose and will not match its filter, so importing `COPY` here does not widen it.
-
----
+> **Superseded section removed, 2026-09-02.** An earlier draft of task 8 said to derive
+> the pinned copy list from `COPY` wholesale. That does not work — the game ships both
+> "Undo" and "Reset" — and the version above replaced it. The old text was left in the
+> file by mistake and is deleted here, so nobody follows the wrong one.
 
 ### Task 9 — Documentation, and the manual round trip
 Brief items 37, 38, 48, 53, 55, 59.
