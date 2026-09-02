@@ -152,6 +152,17 @@ describe('Save & Stop, and somewhere to speak in play mode', () => {
     expect(panel.root.querySelector('.notice')?.textContent).toBe(COPY.stopped);
   });
 
+  it('greys the pill out while a save or stop is in flight', () => {
+    // No in-flight feedback on a phone is what produces a second tap, and a
+    // second tap writes a second session file.
+    panel = createPanel(document);
+    panel.setStopVisible(true);
+    panel.setStopBusy(true);
+    expect(panel.root.querySelector<HTMLButtonElement>('.stop-btn')?.disabled).toBe(true);
+    panel.setStopBusy(false);
+    expect(panel.root.querySelector<HTMLButtonElement>('.stop-btn')?.disabled).toBe(false);
+  });
+
   it('calls back when the pill is tapped', () => {
     panel = createPanel(document);
     const onStop = vi.fn();

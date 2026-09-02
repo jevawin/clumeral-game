@@ -47,7 +47,16 @@ export function editMode(): Plugin {
       server.middlewares.use(
         receiveShutdown(async () => {
           server.config.logger.info('  \u279c  edit mode: Save & Stop — shutting down');
-          await server.close().catch(() => {});
+          // RACED, not just awaited. .catch() covers a rejection, not a hang —
+          // and close() waits on the plugin container, chokidar and the ws
+          // server. If one of those stalls we never reach the exit, and the
+          // vite + workerd pair survives: the 657 MB orphan this whole feature
+          // exists to prevent. The 200 has already gone out by now, so the
+          // browser has been told it stopped.
+          await Promise.race([
+            server.close().catch(() => {}),
+            new Promise((resolve) => setTimeout(resolve, 3000)),
+          ]);
           process.exit(0);
         })
       );

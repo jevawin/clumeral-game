@@ -71,6 +71,14 @@ async function start(): Promise<void> {
   // after store.clear(), and stops the pill being shown again for a dead
   // server (brief item 42).
   let stopped = false;
+  // A save or a stop is in flight. Without this a second tap while the first
+  // POST is outstanding re-enters — isPending() is still true, because the
+  // signature has not been recorded yet — and writes a second identical session
+  // file. There is no in-flight feedback on a phone, which is exactly the
+  // condition that produces the second tap.
+  let busy = false;
+  /** Was anything actually written before the server went? */
+  let hadSaved = false;
   const history = createHistory();
   history.restore(saved.entries);
 
@@ -328,6 +336,12 @@ async function start(): Promise<void> {
     panel.setMode(next);
     if (next === 'edit') interceptor.enable();
     else interceptor.disable();
+    // The overlay is the sole owner of the pill (panel.setMode only ever
+    // hides). Without this it is shown once at startup and never again — enter
+    // edit mode once and Save & Stop is gone for the session, which is the
+    // opposite of item 61's "always visible". The `stopped` guard is what stops
+    // Escape or the back gesture resurrecting a pill for a dead server.
+    panel.setStopVisible(!stopped && next === 'play');
 
     // Brief item 109: returning from play mode is the only moment the game has
     // actually rendered, so it is the only moment this check can fire.
@@ -355,6 +369,10 @@ async function start(): Promise<void> {
 
   /** @returns true when the session was actually written. */
   async function save(): Promise<boolean> {
+    // The server has gone; there is nothing to post to and nothing left to
+    // post. Reporting failure here would tell Jamie to "check the dev server is
+    // running" moments after telling him it had stopped.
+    if (stopped) return false;
     const patches: Patch[] = history.entries.map((entry) => {
       const el = findByBreadcrumb(document, entry.target);
       return {
@@ -408,12 +426,21 @@ async function start(): Promise<void> {
    */
   toggleMode = () => {
     if (mode !== 'edit') return setMode('edit');
+    // Once stopped there is nothing to save and nowhere to save it, so leaving
+    // the editor is just leaving the editor.
+    if (stopped) return setMode('play');
+    if (busy) return;
     void (async () => {
+      busy = true;
+      try {
       const pending = isPending();
       const ok = pending ? await save() : null;
       // A failed save keeps him in the editor. Leaving would look like it
       // worked, and the edits only exist in the phone until one succeeds.
       if (exitDecision(pending, ok) === 'leave') setMode('play');
+      } finally {
+        busy = false;
+      }
     })();
   };
 
@@ -423,7 +450,20 @@ async function start(): Promise<void> {
    * Save & Stop: write the session, then ask the server to exit.
    */
   async function stopServer(): Promise<void> {
-    if (isPending() && !(await save())) {
+    if (busy) return;
+    busy = true;
+    panel.setStopBusy(true);
+    try {
+      await runStop();
+    } finally {
+      busy = false;
+      panel.setStopBusy(false);
+    }
+  }
+
+  async function runStop(): Promise<void> {
+    const hadSomethingToSave = isPending();
+    if (hadSomethingToSave && !(await save())) {
       // Stop nothing. The server has to stay up for the save to be retried
       // against (brief item 14).
       panel.notify(COPY.saveFailed);
@@ -446,10 +486,19 @@ async function start(): Promise<void> {
     }
 
     stopped = true;
+    hadSaved = hadSomethingToSave;
     history.restore([]);
+    // Match the marker to the now-empty history. Left as it was, isPending()
+    // would compare an empty history against the signature of what was just
+    // saved, decide something was pending, and send the pencil posting to a
+    // server that no longer exists.
+    savedSignature = signature(history.entries, freeCss);
     store.clear();
     panel.setStopVisible(false);
-    panel.notify(COPY.stopped);
+    // Only claim a save when there was one. Both stopped messages open with
+    // "Saved", and this is the last thing the page ever says — telling him to
+    // fold a session that was never written would send him looking for it.
+    panel.notify(hadSaved ? COPY.stopped : COPY.stoppedNothingSaved);
   }
 
   // On screen in play mode for as long as the server is running — Jamie,

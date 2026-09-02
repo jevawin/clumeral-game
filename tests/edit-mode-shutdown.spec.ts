@@ -77,6 +77,33 @@ describe('only our own page may stop the server (brief item 41)', () => {
   });
 });
 
+describe('the Host has to be a name that could reach us', () => {
+  it('refuses a matching Origin and Host on a public-looking domain', () => {
+    // DNS rebinding. Origin matching Host only proves the request is
+    // self-consistent: a page on a public domain whose DNS points at the Pi
+    // sends a matching pair, and would otherwise stop the server — from the
+    // open internet, not just the tailnet.
+    const { stop, res } = call({ origin: 'http://attacker.example:5173', host: 'attacker.example:5173' });
+    expect(res.statusCode).toBe(403);
+    expect(stop).not.toHaveBeenCalled();
+  });
+
+  it('accepts a MagicDNS short name, which cannot be a public domain', () => {
+    const { stop, res } = call({ origin: 'http://pi:5173', host: 'pi:5173' });
+    expect(res.statusCode).toBe(200);
+    expect(stop).toHaveBeenCalledOnce();
+  });
+
+  it('accepts a Tailscale name and a bare IP', () => {
+    expect(call({ origin: 'http://pi.tailnet.ts.net:5173', host: 'pi.tailnet.ts.net:5173' }).res.statusCode).toBe(200);
+    expect(call({ origin: 'http://100.64.0.1:5173', host: '100.64.0.1:5173' }).res.statusCode).toBe(200);
+  });
+
+  it('accepts localhost', () => {
+    expect(call({ origin: 'http://localhost:5173', host: 'localhost:5173' }).res.statusCode).toBe(200);
+  });
+});
+
 describe('the two branches that do let it through', () => {
   it('accepts Sec-Fetch-Site: same-origin — the desktop-on-localhost case', () => {
     const { stop, res } = call(SAME_SITE);
@@ -97,6 +124,28 @@ describe('the two branches that do let it through', () => {
 });
 
 describe('the reply goes out before the server dies (brief item 40)', () => {
+  it('still stops if the socket closes without ever emitting finish', () => {
+    // An aborted connection emits close, not finish. Without a backstop the
+    // server would live on while the browser — correctly, per item 40 —
+    // reported that it had stopped.
+    const stop = vi.fn();
+    const res = new FakeResponse();
+    const req = { url: SHUTDOWN_ROUTE, method: 'POST', headers: PHONE } as unknown as Connect.IncomingMessage;
+    res.end = function (this: FakeResponse) { return this; } as FakeResponse['end'];
+    receiveShutdown(stop)(req, res as never, vi.fn());
+    res.emit('close');
+    expect(stop).toHaveBeenCalledOnce();
+  });
+
+  it('stops exactly once when both events fire', () => {
+    const stop = vi.fn();
+    const res = new FakeResponse();
+    const req = { url: SHUTDOWN_ROUTE, method: 'POST', headers: PHONE } as unknown as Connect.IncomingMessage;
+    receiveShutdown(stop)(req, res as never, vi.fn());
+    res.emit('close');
+    expect(stop).toHaveBeenCalledOnce();
+  });
+
   it('does not stop until the response has flushed', () => {
     const stop = vi.fn();
     const res = new FakeResponse();

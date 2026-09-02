@@ -98,6 +98,7 @@ const PANEL_CSS = `
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   .stop-btn[hidden] { display: none !important; }
+  .stop-btn:disabled { opacity: 0.5; }
 
   /* The one surface that survives leaving the editor.
      say() writes into .status, which lives INSIDE .sheet — and setMode hides
@@ -318,7 +319,6 @@ const PANEL_CSS = `
   .footer button { min-height: 36px; font-size: 13px; }
   /* What the pencil now does, said in words. */
   .hint { display: block; margin-top: 8px; font-size: 12px; color: #555555; }
-  .footer button:last-child { background: #1a1a1a; color: #ffffff; }
   .search-family { margin: 10px 0 4px; font-size: 12px; color: #555555; }
   .search-group button { background: #f6f6f6; }
 `;
@@ -390,6 +390,8 @@ export interface Panel {
    * cannot be brought back by Escape or the back gesture.
    */
   setStopVisible(visible: boolean): void;
+  /** Grey the pill out while a save or a stop is in flight. */
+  setStopBusy(busy: boolean): void;
   onToggle(handler: () => void): void;
   onStop(handler: () => void): void;
   destroy(): void;
@@ -499,6 +501,9 @@ export function createPanel(doc: Document): Panel {
     },
     setStopVisible(visible) {
       stopBtn.hidden = !visible;
+    },
+    setStopBusy(busy) {
+      stopBtn.disabled = busy;
     },
     onToggle(handler) {
       pencil.addEventListener('click', handler);

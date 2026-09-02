@@ -74,6 +74,13 @@ export const COPY = {
   stopFailed: 'Saved, but the server did not stop. Use /devstop in Telegram.',
 
   /**
+   * The same moment as `stopped`, but nothing was pending, so nothing was
+   * written. Both other messages open with "Saved" — claiming one here would
+   * send Jamie looking for a session that does not exist.
+   */
+  stoppedNothingSaved: 'The server has stopped. Tap /dev to start another.',
+
+  /**
    * Brief item 46. The pencil is a glyph with no visible text, so its label is
    * an aria-label Jamie will never see on a phone. This line is the only actual
    * warning that a tap writes a file.

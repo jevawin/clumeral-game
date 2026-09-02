@@ -87,6 +87,8 @@ const OVERLAY_COPY = [
   COPY.stopped,
   COPY.stopFailed,
   COPY.pencilHint,
+  COPY.stopControl,
+  COPY.stoppedNothingSaved,
 ];
 
 /** Paths and routes that only exist because edit mode does. */
