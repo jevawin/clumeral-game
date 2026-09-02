@@ -612,3 +612,67 @@ describe('the panel colours itself once, at the top', () => {
     for (const c of panelClasses()) expect(c).not.toMatch(/#[0-9a-f]{3,8}/i);
   });
 });
+
+// The conversion's other half: the hand-written rules really are gone, and the
+// utilities that replaced them really do reach the shipped stylesheet. Nothing
+// else in the suite can see either failure — jsdom renders with no stylesheet at
+// all, and the edit-mode dev build pulls in every utility through `@source`, so
+// a panel that shipped grey would pass every other test in this file.
+describe('the panel is utilities only, and the utilities are real', () => {
+  const css = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+  const completionSrc = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+
+  // The 22 component classes the panel used to be built from. `stat-block` and
+  // `stat-note` are deliberately absent from this list: they never had a rule,
+  // so asserting their absence would pass trivially and mean nothing.
+  const GONE = [
+    'goes-chart', 'goes-row', 'goes-row__count', 'goes-row__fill', 'goes-row__track',
+    'stat-block__head', 'stat-block__icon', 'stat-col', 'stat-col__label',
+    'stat-col__mark', 'stat-cols', 'stat-cols--two', 'stat-col__value', 'stat-figure',
+    'stat-figure__icon', 'stat-figure__value', 'stat-hero', 'stat-line',
+    'stat-line__label', 'stat-lines', 'stat-line__value', 'stat-today',
+  ];
+
+  it.each(GONE)('has no %s rule left in the stylesheet', (name) => {
+    // Word boundaries, not a bare substring: `-` is a non-word character and `s`
+    // and `_` are word characters, so `\bstat-col\b` correctly misses both
+    // `stat-cols` and `stat-col__label` instead of giving them a false pass.
+    expect(css).not.toMatch(new RegExp(`\\b${name}\\b`));
+  });
+
+  it('has no --section-accent indirection and no per-block accent rule', () => {
+    // Each element names its own accent class now, so neither the variable nor
+    // the three rules that set it have anything left to do.
+    expect(css).not.toContain('--section-accent');
+    expect(css).not.toMatch(/\[data-stat-block=/);
+  });
+
+  it('keeps border-hairline, which is a utility rather than a component class', () => {
+    // Not a violation of the test above and must never be caught by it. Tailwind
+    // compiles an @utility into the utilities layer, getClassList() returns it,
+    // and edit mode can add and remove it like any other class — which is the
+    // whole difference from the 22 names, and the reason it exists at all.
+    expect(css).toMatch(/@utility\s+border-hairline\s*\{/);
+  });
+
+  // Tailwind v4 finds classes by scanning source text, so `class="text-${a}"`
+  // compiles to no rule whatsoever. These six names reached the panel through
+  // --section-accent until this conversion, which means they were absent from
+  // the production stylesheet entirely — this test fails before the conversion
+  // and passes after, which is the proof it is asking the right question.
+  it.each(['text-accent-2', 'text-accent-3', 'text-accent-4', 'border-accent-2', 'border-accent-3', 'bg-accent-4'])(
+    'writes %s as a whole literal, so the scanner can see it',
+    (name) => {
+      expect(completionSrc).toMatch(new RegExp(`\\b${name}\\b`));
+    },
+  );
+
+  it('assembles no accent class name at runtime', () => {
+    // The failure this guards is silent: an interpolated stem ships a panel with
+    // no accent colours at all and the four-colour rotation gone.
+    // Comments are stripped first — the file explains this trap in prose, and
+    // the prose has to be allowed to name the thing it is warning about.
+    const code = completionSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toMatch(/\b(text|bg|border)-[\w-]*\$\{/);
+  });
+});

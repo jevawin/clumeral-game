@@ -92,7 +92,11 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.allTimeLines).toHaveCount(4);
     await expect(completion.allTimeLines.nth(0)).toHaveText("5 Puzzles solved");
     await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) Solved in one");
-    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\d+m \d\ds Average time$/);
+    // The number and its words are two block spans, so the raw text carries the
+    // newlines between them. Playwright normalises whitespace for a string but
+    // NOT for a regular expression, so this one has to allow for them; the three
+    // lines around it are plain strings and do not.
+    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\s*\d+m \d\ds\s+Average time\s*$/);
     // (1 + 3 + 2 + 4 + 1) / 5
     await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 Average attempts");
 
