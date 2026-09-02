@@ -177,9 +177,10 @@ The duplication goes away with #200, which migrates `/archive` to a SPA route.
   screen and only a desktop ever meets it. A Galaxy S24 Ultra reports 480 and a Pixel 8 Pro
   448, so 440 would not have held.
 - **Why px and not rem**: at large browser text the column stops growing rather than
-  outrunning the window. Components inside it keep their `rem` breakpoints — `.stat-boxes`
-  is `min-width: 22.5rem` deliberately, so the three records still stack at 200% text. Do
-  not "fix" one of the two to match the other; they answer different questions.
+  outrunning the window. Components inside it still answer the large-text question in
+  `rem` — the completion panel's boxes are `basis-24` (6rem), so they wrap rather than
+  squash at 200% text. Do not "fix" one of the two to match the other; they answer
+  different questions.
 - The Worker-rendered pages cannot import the token, so `/archive` and `/stats` repeat the
   numbers. `tests/page-width.spec.ts` asserts the width they *work out to*, not the strings.
   `/archive`'s `32rem` is already 480px of content behind its 1rem padding — leave it.
@@ -218,15 +219,17 @@ Component-specific CSS lives in `src/tailwind.css` using data-attribute selector
 - `.fb-cat` -- feedback category pill selected state
 - `.toast-msg` -- toast notification element
 - `.recurring` -- recurring decimal overdot
-- `.stat-block__*`, `.stat-hero`, `.stat-today`, `.stat-figure*`, `.stat-boxes`,
-  `.stat-box__*`, `.stat-flame`, `.stat-row`, `.stat-note` -- the completion panel's three
-  blocks. Note there is no `.stat-box` rule: the records have no box left, only a grid gap.
-- `.goes-*` -- the "How many goes you take" chart
 - `.save-note*` -- the untick warning and submit countdown on the play screen
 
 ## The completion panel
 
 Three blocks in reading order: **Today**, **Best**, **All time**.
+
+**The panel is built from utilities only and has no component classes.** Every rule that
+used to live in `src/tailwind.css` is now a class on the markup in `src/completion.ts`,
+which is what lets edit mode design the panel on a phone: it can only see and step classes
+the design system knows about. Do not add a `.stat-*` rule back. `tests/completion-stats.spec.ts`
+asserts all 22 of the old names stay gone.
 
 - **Today is the hero** -- two figures side by side, each an icon and a number, and the
   largest type on the panel. It is the only thing that changed in the last ten seconds.
@@ -246,12 +249,14 @@ Three blocks in reading order: **Today**, **Best**, **All time**.
 - **Figures sit in boxes borrowing the undo/reset controls' resting state**: surface fill,
   the same 1.5px border (in the section's colour) and the same radius. The box's own icon is
   repeated as a **watermark** -- 4rem, rotated 45deg, faint, run off the bottom-right corner
-  so the box clips it. `overflow: hidden` on `.stat-col` is what does the clipping.
+  so the box clips it. `overflow-hidden` on the `data-stat-col` element is what does the
+  clipping.
 - **The label is above the number, in the DOM as well as on screen.** The redesign needed
   `column-reverse` to put the number on top; this layout does not, so the visual order and
   the reading order agree again. Do not add it back.
-- **Labels 16px, numbers 20-28px, subtitles never below 14px.** The number's `clamp` tops
-  out where three boxes still fit a 390px screen.
+- **Labels 16px, box numbers a flat 30px, All-time numbers 20px.** The box numbers used to
+  be a `clamp` that shrank on a narrow screen; they are one fixed size now, and the boxes
+  wrap instead of the type shrinking.
 - **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
   at all and inherit from `html`/`body`, which is why removal was the right edit rather than
   an override. The play screen keeps Inconsolata: its keypad relies on every key being the
@@ -261,8 +266,12 @@ Three blocks in reading order: **Today**, **Best**, **All time**.
 - **All four theme colours are on screen at once**, in picker order from the player's own:
   their solve keeps `--color-accent`, then Streaks takes `--color-accent-2`, Records
   `--color-accent-3` and All time `--color-accent-4`. Change theme and all four rotate
-  together. Each section sets `--section-accent` once and every icon, number and box border
-  inside reads from it, so there is no per-figure colour class to get wrong.
+  together. Each element names its colour directly -- `text-accent-2`, `border-accent-3`,
+  `bg-accent-4` -- with no `--section-accent` indirection left. **Write the whole class
+  name as a literal, never assembled.** Tailwind finds classes by scanning source text, so
+  `text-${accent}` compiles to no rule at all and ships a panel with the rotation silently
+  gone. `tests/completion-stats.spec.ts` guards both halves: the literals are present, and
+  no accent name is built at runtime.
 - **Colour lands on icons, numbers and box borders only.** Never on a label, a heading or a
   divider: everything a player has to read stays in the foreground colour.
 - It is CSS, not JavaScript. Chroma differs per theme *and* per mode, and the panel renders
@@ -272,17 +281,16 @@ Three blocks in reading order: **Today**, **Best**, **All time**.
   out of gamut. The mapping is pinned in `tests/accent-rotation.spec.ts`, and mirrored into
   the Worker's inline style because `tests/token-parity.spec.ts` compares every `--accent-*`
   declaration between the two.
-- **The boxes borrow the play screen's digit-box styling** -- surface background, 1.5px
-  border, 0.25rem radius, the `shadow-box` utility -- so a theme change moves both screens
-  together.
-- **Boxes are three across from 22.5rem and one column below it.** `rem`, not pixels: it
-  is 360px at default text size and also stacks at large browser text on a wide screen,
-  which is what the 320px / 200% requirement is really about.
-- **The number sits above its label on screen while the DOM stays `dt` then `dd`.**
-  `.stat-box__pair` is `column-reverse`. A screen reader must hear "Best time, 1m 20s",
-  and `dd` before `dt` is not conforming HTML; the pairing is carried by the description
-  list, not by position (WCAG 1.3.2). Do not "fix" the markup to match the picture --
-  `tests/completion-stats.spec.ts` pins the DOM order.
+- **The boxes borrow the play screen's digit-box styling** -- surface background, the same
+  1.5px border and 0.25rem radius -- so a theme change moves both screens together. The
+  border is `border-hairline`, a named utility declared once in `src/tailwind.css`, because
+  Tailwind's border scale has no 1.5 and `border-[1.5px]` is invisible to edit mode.
+  (There is no offset shadow on either any more.)
+- **The boxes wrap themselves; there is no breakpoint.** The row is `flex flex-wrap` and
+  each box is `grow basis-24`, so three go across down to about a 336px viewport and then
+  wrap. `basis-24` is 6rem, so they also wrap at large browser text, which is what the
+  320px / 200% requirement is really about. No responsive variant is in edit mode's
+  catalogue, so a breakpoint here would be a class Jamie could not move.
 - **The visible label is short and the spoken one is full.** "Fastest", "Streak" and
   "Current" on screen; "Fastest time", "Longest 1-go streak", "Current play streak" in a
   visually hidden span. Two spans, not a prefix and a suffix -- neither is the start of the

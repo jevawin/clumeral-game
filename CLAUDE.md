@@ -153,6 +153,13 @@ Update the respective doc if it's incorrect or your work makes it outdated.
 Things owed that no test or CI job will remind anyone about. Surfaced when the topic comes
 up in conversation — **there is no scheduled reminder and Claude cannot send one unprompted.**
 
+- **2026-09-02 — the accessibility pass on the finished stats panel is still owed
+  (stats-Tailwind brief item 34).** The Tailwind conversion was signed off on the basis
+  that it changes nothing a screen reader hears: same DOM order, same `aria-` attributes,
+  same visually hidden spoken labels. The full pass — contrast at the new sizes, focus
+  order, the whole panel with a real screen reader — was deliberately deferred until the
+  redesign that follows the conversion lands. Jamie owns accessibility, so it is his call
+  when to run it.
 - **2026-08-08 — did the shorter puzzles make the game too hard? (#193).** Watch
   `incorrect_guess` divided by `puzzle_complete` on production for a fortnight after the merge.
   Baseline for the 30 days to 2026-08-08: 285 / 466 = **0.61**. If it holds at **0.85 or above

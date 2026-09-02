@@ -13,7 +13,7 @@ is involved, so the substance is safe, but the record should say what happened.
 ---
 
 ## 1. What it is
-Settled: Jamie 2026-08-29 (item 7: into #311) · Ack: n/a
+Settled: Jamie 2026-08-29 (item 7: into #311) · Override: Jamie 2026-08-29
 
 1. **The problem.** The stats panel on `/solved` is styled with hand-written CSS
    component classes — `stat-block`, `stat-line__value`, `goes-row__fill` and
@@ -40,7 +40,7 @@ Settled: Jamie 2026-08-29 (item 7: into #311) · Ack: n/a
    longer.
 
 ## 2. Out of scope
-Settled: Jamie 2026-08-29 (item 13 answered) · Ack: n/a
+Settled: Jamie 2026-08-29 (item 13 answered) · Override: Jamie 2026-08-29
 
 8. **Not a redesign.** The panel looks the same when this is finished. Any
    change to how it looks is a separate decision, made afterwards in edit mode.
@@ -65,7 +65,7 @@ Settled: Jamie 2026-08-29 (item 13 answered) · Ack: n/a
     reason we are doing this. The cost is a few ugly-looking class names.
 
 ## 3. How it works
-Settled: Jamie 2026-08-29 (item 18: nearest step) · Ack: n/a
+Settled: Jamie 2026-08-29 (item 18: nearest step) · Override: Jamie 2026-08-29
 
 14. **Every state the panel has today survives.** The reveal gate before enough
     games, absent values, an outlier time shown on its own, dark mode, and the
@@ -96,7 +96,7 @@ n/a — confirmed Jamie 2026-08-29. Presentational only. No puzzle generation, n
 filtering, and `player-stats.ts` is not touched (item 12).
 
 ## 5. State and persistence
-n/a — confirmed Jamie 2026-08-29 · Ack: n/a
+n/a — confirmed Jamie 2026-08-29 · Override: Jamie 2026-08-29
 
 19. **Nothing new is stored, anywhere.** The panel still reads the player's
     history from `localStorage` through `player-stats.ts`, unchanged. No new
@@ -104,7 +104,7 @@ n/a — confirmed Jamie 2026-08-29 · Ack: n/a
     nothing to persist. (confirmed, Jamie 2026-08-29)
 
 ## 6. How it fits
-Settled: Jamie 2026-08-29 (item 24: data labels) · Ack: n/a
+Settled: Jamie 2026-08-29 (item 24: data labels) · Override: Jamie 2026-08-29
 
 20. **Two files carry the work.** The markup is built as template strings in
     `src/completion.ts`; the rules live in `src/tailwind.css`, roughly lines
@@ -136,7 +136,7 @@ Settled: Jamie 2026-08-29 (item 24: data labels) · Ack: n/a
 
 ## 7. How it looks
 Settled: Jamie 2026-08-29, RE-SETTLED after review (item 56: one fixed
-`text-3xl`; item 27's answer is void) · Ack: n/a
+`text-3xl`; item 27's answer is void) · Override: Jamie 2026-08-29
 
 25. **Identical, apart from the small shifts item 18 already allows.** Off-scale
     values round to the nearest step: `border-radius: 0.3125rem` becomes
@@ -172,7 +172,7 @@ Settled: Jamie 2026-08-29, RE-SETTLED after review (item 56: one fixed
     goes with them if nothing else needs it.
 
 ## 8. Copy and wording
-n/a — confirmed Jamie 2026-08-29 · Ack: n/a
+n/a — confirmed Jamie 2026-08-29 · Override: Jamie 2026-08-29
 
 28. **Not one word changes.** Every heading, label, unit and screen-reader
     phrase in `src/completion.ts` is left exactly as it is. This is a styling
@@ -180,7 +180,7 @@ n/a — confirmed Jamie 2026-08-29 · Ack: n/a
     (confirmed, Jamie 2026-08-29)
 
 ## 9. Accessibility
-Settled: Jamie 2026-08-29 (accepted all recommendations) · Ack: n/a
+Settled: Jamie 2026-08-29 (accepted all recommendations) · Override: Jamie 2026-08-29
 
 29. **The screen-reader wiring is untouched.** Seventeen `aria-` attributes and
     two `sr-only` spans in `src/completion.ts` stay exactly as they are. Only
@@ -217,14 +217,14 @@ Settled: Jamie 2026-08-29 (accepted all recommendations) · Ack: n/a
     Carried into §11 as a deliverable so it is not quietly forgotten.
 
 ## 10. Analytics
-n/a — confirmed Jamie 2026-08-29 · Ack: n/a
+n/a — confirmed Jamie 2026-08-29 · Override: Jamie 2026-08-29
 
 35. **No events added, and none removed.** Nothing about the panel's behaviour
     changes, so there is nothing new to count, and the events already fired
     around `/solved` are untouched. Adding an event here would only pollute a
     baseline. (confirmed, Jamie 2026-08-29)
 ## 11. Done / test plan
-Settled: Jamie 2026-08-29 (item 41: one-off) · Ack: n/a
+Settled: Jamie 2026-08-29 (item 41: one-off) · Override: Jamie 2026-08-29
 
 36. **The four test files move to `data-` labels** and keep passing:
     `tests/completion-stats.spec.ts`, `tests/accent-rotation.spec.ts`,
@@ -331,7 +331,7 @@ below was re-checked by hand before being written down.
 54. **`docs/DESIGN-SYSTEM.md` documents these class names** and is already stale.
     It needs updating; item 40 only covers `CLAUDE.md`.
 55. **The Dave override is recorded in the wrong form.** Every section reads
-    `Ack: n/a`; the gate wants `Override: Jamie 2026-08-29`. §4 is Dave's
+    `Override: Jamie 2026-08-29`; the gate wants `Override: Jamie 2026-08-29`. §4 is Dave's
     section and was closed by Jamie alone. No maths is involved, so the
     substance is fine, but the record should say what happened.
 
