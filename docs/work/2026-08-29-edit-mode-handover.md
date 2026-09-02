@@ -31,7 +31,7 @@ production and preprod, asserted against built output by
 ## Running it
 
 ```
-npm run dev                       # dev server on 5173, read-only proxy on 5174
+/dev in Telegram                  # dev server on 5173 (the read-only proxy (deleted 2026-09-01) is gone, 2026-09-01)
 ```
 
 The dev server binds on all interfaces. Jamie reaches it over Tailscale at

@@ -1,7 +1,7 @@
 # Edit mode
 
 A design tool for Jamie: change classes in the browser on the real page, tap
-Done, and the bot turns it into a pull request.
+the pencil to save, and ask the bot to turn it into a pull request.
 
 **Dev server only.** It is absent from production and pre-prod, and
 `tests/edit-mode-safety.spec.ts` asserts that against the built artefacts rather
@@ -15,18 +15,29 @@ than a config flag.
 
 ## Running it
 
-```
-npm run dev
-```
+**Jamie starts and stops it, from Telegram.** `/dev` starts one on the current
+branch and replies with its Tailscale URL; `/devstop` stops it. `/dev` is
+idempotent — a second one hands back the same server and resets its two-hour
+clock, with a warning ten minutes before that runs out.
 
-Two ports come up. The dev server prints both:
+**The bot may not start one at all.** Orphaned dev servers stayed inside its
+cgroup and ate its whole memory budget: 179,689,160 throttle events against the
+pi bot's 663,152, and a live `vite dev` plus `workerd` measures 657 MB on a 4 GB
+box. `npm run dev` is still in `package.json` — the Pi runs it for Jamie behind
+`/dev`. He is simply not the one typing it any more, and the bot never does.
 
-| port | who | what it can do |
-|---|---|---|
-| 5173 (Vite's default) | Jamie, over Tailscale | everything, including saving |
-| 5174 (one above) | Dave, over a Cloudflare tunnel | **read only** — see below |
+The dev server binds on all interfaces so the Pi is reachable from a phone. One
+port, 5173.
 
-The dev server binds on all interfaces so the Pi is reachable from a phone.
+**If the server exits on its own** — not `/devstop`, not the two-hour limit — the
+daemon notices within 30 seconds and sends one message: "⚠️ The dev server on
+branch `<name>` exited on its own — I didn't stop it and neither did the 2-hour
+limit. /dev to start another." It deletes the registry record, releases the
+reaper exemption and reaps the zombie, and it fires exactly once. So there is no
+stale registration after a `Save & Stop`, and the next `/dev` never hands back a
+URL for a dead process. Worth knowing if you ever touch that code: the liveness
+check has to **exclude zombies**. `kill -0`, `killpg(pgid, 0)` and a bare `/proc`
+pgid comparison all report a dead server as alive.
 
 **Only one dev server at a time in this working directory.** Two share
 Miniflare's SQLite state and the second dies with "database is locked".
@@ -39,7 +50,15 @@ Miniflare's SQLite state and the second dies with "database is locked".
 3. Change classes — tap a chip to remove, `+` to search, `−`/`+` to walk a scale.
    Desktop also gets a raw class field and a free-CSS box.
 4. Tap the pencil again to play the game and try the change in use.
-5. **Done** writes the session. Then tap `/fold` in Telegram.
+5. **Tapping the pencil to leave the editor saves.** If the save fails you stay
+   in the editor with your changes — it is the one moment work could be lost, so
+   nothing pretends it worked.
+6. **`Save & Stop`** sits beside the pencil whenever you are out of the editor
+   and the server is running. It saves anything outstanding and then shuts the
+   dev server down. If the save fails it stops nothing, so you can try again.
+
+Then ask the bot to fold the session into a pull request. **`/fold` is not built
+yet** — this file describes it below as though it were, and that is future work.
 
 Back undoes one change at a time. Once every change is undone, back leaves edit
 mode; one more leaves the page.
@@ -63,25 +82,30 @@ screen or a discarded tab does not lose it. Nothing unfinished reaches the Pi.
   setting the same property before edit mode touched it. Not tidied away — it is
   your markup and the bot's to fold — but changes there will look unpredictable,
   because CSS order decides the winner.
+- **"Could not save…"** The session was not written. Your changes are still in
+  the phone and the editor stays open. Check the dev server is running.
+- **"Saved and the server has stopped…"** `Save & Stop` worked. This is the last
+  thing that page will ever say, because the server that served it has gone.
+- **"Saved, but the server did not stop."** The work is safe; only the shutdown
+  failed. `/devstop` in Telegram finishes the job.
+- **"The pencil saves your changes and leaves the editor."** Always on screen in
+  the editor. The pencil is a glyph, so its label is invisible on a phone, and
+  this is the only warning that a tap writes a file.
 
-## Dave's link
+## Dave's preview
 
-`cloudflared` pointed at **the port one above the dev server**.
+Dave previews on Cloudflare, at
+`https://<branch>-clumeral-game.jevawin.workers.dev` — the branch name with `/`
+replaced by `-`. Workers Builds deploys every push to a dev branch, so there is
+nothing to start and nothing to keep running.
 
-That port is a separate listener with **no write handler at all**. This is the
-whole guarantee, and it is structural rather than a check that could be argued
-with: a tunnel connects to the dev server as an ordinary local client, so a
-request that started on Dave's phone arrives from `127.0.0.1`. A guard reading
-"allow writes from localhost" would therefore **allow Dave, and nothing would
-look wrong from Jamie's side** — his own saves come in over Tailscale and succeed
-either way. Nothing reaching the read-only port can write, whatever it claims.
-
-Dave's page serves the overlay in replay-only mode: no pencil, no panel. He sees
-saved sessions applied on his own refresh, one beat after Done.
+There used to be a read-only port here, tunnelled to Dave with `cloudflared`.
+It is gone (2026-09-01). Jamie: "I'll edit, bot folds, deploys to Cloudflare,
+Dave previews there."
 
 ## The session file
 
-`.edit-sessions/<timestamp>.json`, gitignored, one file per tap of Done.
+`.edit-sessions/<timestamp>.json`, gitignored, one file per save.
 
 **This is a contract with `pi-dev-bot`.** The shapes are brief items 93-96 and
 `/fold` is written against them. Do not change a field without saying so in the
@@ -98,7 +122,9 @@ stepper walk compounds invisibly. Nothing here deletes a session it did not
 write.
 
 Every unconsumed session replays, oldest first — not just the newest. Jamie can
-tap Done several times before anything is folded.
+save several times before anything is folded, and every `Save & Stop` leaves
+another one behind. There is no way to list or discard unfolded sessions yet;
+that is known and deliberately out of scope.
 
 ---
 
@@ -119,11 +145,18 @@ plus the built-artefact assertions, and he is the tester.
    digit entry, submit. **This one fails silently**, and it is a defect in the
    shipped game rather than in the tool.
 
-3. **The public link cannot write.**
-   Open the tunnel URL, make a change, tap Done, and confirm it is refused.
-   **This cannot be found by normal use** — a broken write guard looks exactly
-   like a working one from Jamie's side, because his own saves come in over
-   Tailscale and succeed either way.
+3. **`Save & Stop` really stops it.**
+   `/dev`, change something, tap the pencil to save and leave, then
+   `Save & Stop`. Confirm **no `vite` and no `workerd` process is left** —
+   `pgrep -f workerd` finds nothing — and that exactly one session file was
+   written. An orphaned `vite`+`workerd` pair at 657 MB is the whole reason this
+   control exists, so a `vite` that exits leaving `workerd` behind is a failure,
+   not a partial success.
+
+4. **The controls clear the game's own.**
+   On a narrow screen, check the `Save & Stop` pill and the message above it do
+   not cover the game's bottom-centre buttons. The panel sits at the top of the
+   stacking order, so anything of ours in that band wins.
 
 **Recorded rather than argued:** with no browser regression test, these are
 verified once and thereafter only by whoever happens to notice. Number 3 in
@@ -140,7 +173,7 @@ edit-mode/                     Node. Imported only by vite.config.ts.
   catalogue-route.ts           GET /__edit-mode/catalogue.json
   session-routes.ts            POST the session, GET the replay
   sessions.ts                  reading and writing .edit-sessions/
-  readonly-proxy.ts            the read-only port
+  shutdown-route.ts            POST /__edit-mode/shutdown — Save & Stop
   gzip.ts, html.ts             compression, and the index.html rewrite
 
 src/edit-mode/                 Browser. Imported by NOTHING in the game.
@@ -150,6 +183,7 @@ src/edit-mode/                 Browser. Imported by NOTHING in the game.
   families.ts, catalogue.ts    which classes fight, and what search offers
   history.ts, project.ts       undo, back, and applying a patch set
   patches.ts, session-store.ts the contract, and surviving a reload
+  pending.ts                   is anything unsaved, and what to do about it
   runtime-classes.ts, copy.ts  the game-overwrote-it check, and every word
 ```
 
@@ -168,8 +202,9 @@ size when you centre text.
 
 **The patch set is the truth; the DOM is a projection of it.** Undo pops one
 entry and re-projects, so if the router rebuilt the screen underneath, the
-remaining edits go back on. That is also how Dave's replay works — one mechanism,
-two users.
+remaining edits go back on. It is also how saved edits survive a refresh, a route
+change and a wake from background — one mechanism, several jobs. That is why the
+replay route stayed when the rest of Dave's machinery went.
 
 ## Two things that will bite
 
