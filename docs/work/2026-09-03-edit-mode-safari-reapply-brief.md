@@ -237,3 +237,22 @@ undo and reset when selected an element and something to undo or reset."
     mislabelling here that costs a whole session. (question — Jamie, item 29)
 
 29. **Which did you mean?** (question — Jamie)
+
+30. **Item 28 settled the other way: "Save & Stop" is renamed to "Save".**
+    (Override: Jamie 2026-09-03 — my recommendation was a new Save button and the
+    pill keeping its full name; the concern was raised and Jamie reaffirmed.)
+
+31. **The consequence, recorded because the label no longer states it.** The
+    button still stops the dev server. Tapping "Save" ends the session — the page
+    goes read-only, the pencil goes dead, and starting again means `/dev` in
+    Telegram. The existing closing message (`COPY.stopped`) is now the only thing
+    that says so, which makes it load-bearing copy rather than a nicety. Section 8
+    should check it reads as an explanation rather than as an aside.
+    (assumed — follows from item 30)
+
+32. **Short form, revised.** Sections 1, 3 and 11 was proposed before the work
+    included four label and visibility changes. Hiding a control changes what a
+    screen reader finds, and renaming the one that stops the server is copy that
+    now carries a warning. **Revised proposal: sections 1, 3, 8, 9 and 11.**
+    Sections 2, 4, 5, 6, 7 and 10 stay n/a — no new state, no new module, no
+    layout change beyond the footer, nothing to measure. (question — Jamie)
