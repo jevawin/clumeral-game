@@ -369,3 +369,68 @@ Settled: pending — **Jamie's sign-off, blocking**
     My rec: accept it, and write it down as accepted rather than leave it
     unstated. Jamie owns accessibility, so it is his to accept.
     (question — Jamie, blocking)
+
+49. **Item 48 accepted, and the screen-reader items with it.** Jamie, 2026-09-03:
+    "Wcag doesn't matter it's only me no screen reader." Edit mode is dev-only,
+    never reaches production, and has exactly one user who has said he does not
+    use a screen reader. Items 46 and 47 — the announcements — are dropped on
+    that basis. **Item 45 (focus) stays**: it costs nothing and it bites him with
+    a keyboard on desktop, screen reader or not.
+    (Settled: Jamie 2026-09-03, as the owner of accessibility)
+
+50. **Correction to item 43: the controls are 38px, not 44px.** `TAP_TARGET` at
+    `panel.ts:25` is `'38px'`. The 44px I quoted is a different element. So the
+    floor is already below the WCAG minimum and has been since the tool was
+    built — consistent with item 49, and worth stating rather than leaving as a
+    wrong fact in the record. (corrected 2026-09-03)
+
+51. **Item 43 was also wrong in spirit.** Jamie: "Buttons should reduce in width
+    because less text — that was the whole point, they block the screen." Width
+    was the goal, and saying "same target, shorter words" missed it.
+    (corrected 2026-09-03)
+
+**Section 9 closed.** Items 43-51. Settled: Jamie 2026-09-03 (accessibility is
+his, and he has signed it) · Ack: n/a.
+
+---
+
+## 7. How it looks — REOPENED, was marked n/a
+Settled: pending · Ack: n/a
+
+Section 7 was n/a under item 32 because nothing was moving but the footer. Item
+52 changes that, so it reopens. Short form becomes **1, 3, 7, 8, 9, 11**.
+
+52. **Jamie's design, 2026-09-03.** "I'm even considering icons that become icon
+    with words on tap. Yeah let's do that, same size as pencil. Icon at first.
+    Expand to show confirm message on tap. Floppy for save. Trash for discard.
+    Maybe red/green bg (brand red/green) for extra obviousness?" (given)
+
+53. **So the confirm tap and the expansion are the same gesture.** At rest: a
+    38px icon, the pencil's size. Tapped: it grows sideways to show the icon plus
+    the confirm question from item 36. Tapped again: it acts. Untouched for four
+    seconds: it shrinks back (item 37). One mechanism doing two jobs, which is
+    why it is worth doing. (recommendation)
+
+54. **The icons: a floppy disk for Save, a bin for Discard.** Jamie's choice, and
+    both are already the obvious symbol for what they do. They need adding to the
+    sprite sheet if they are not there. (Settled: Jamie 2026-09-03)
+
+55. **Red and green: yes, but only once expanded.** The tokens exist —
+    `--color-success` (lime) and `--color-error` (cherry), `tailwind.css:136-137`
+    — so this costs nothing and stays on-theme in both light and dark.
+    My rec: **at rest the two icons are neutral, the same treatment as the
+    pencil. Colour arrives with the expansion.** Why: at rest these sit on top of
+    the design Jamie is trying to look at, and two saturated blobs compete with
+    it — the whole complaint was that the controls block the screen. Colour at
+    the moment of confirming is where it does the work, and it is also the moment
+    the words appear, so meaning never rests on colour alone.
+    (recommendation)
+
+56. **Where they live: beside the pencil, not in the sheet.** Save & Stop is
+    already a pill outside the sheet (`panel.ts:79`) for exactly this reason —
+    reachable without opening the panel. Discard joins it, and the three controls
+    stack. Undo and Reset stay in the sheet footer, because they are per-element
+    and you need the panel open to have selected anything.
+    (question — Jamie, item 57)
+
+57. **Or do you want all four together?** (question — Jamie)
