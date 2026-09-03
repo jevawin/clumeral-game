@@ -10,7 +10,7 @@ any fix under discussion. Awaiting Jamie's approval.
 ---
 
 ## 1. What it is
-Settled: pending · Ack: n/a (Jamie reported it; no joint content yet)
+Settled: Jamie 2026-09-03, EXCEPT item 9 which is reopened by finding H1 · Ack: n/a
 
 1. **The report, in Jamie's words.** Switching from Safari to another app and back
    "refreshes" — not a page refresh, it re-applies his changes. (given)
@@ -65,7 +65,7 @@ Settled: pending · Ack: n/a (Jamie reported it; no joint content yet)
    (given — a hard constraint, not a preference)
 
 ## 2. Out of scope
-Settled: pending
+Settled: Jamie 2026-09-03 · Ack: n/a
 
 8. **`/dev` and the dev server's lifetime.** They belong to the pi bot. Nothing
    here changes how the server is started or stopped. If a fix needs something
@@ -275,7 +275,7 @@ mode is a dev-only tool that only Jamie uses; Dave has never had access to it.
 ---
 
 ## 8. Copy and wording
-Settled: pending · Ack: n/a
+Settled: Jamie 2026-09-03 · Ack: n/a
 
 The whole point of item 34 is that the confirm label carries the meaning, so
 these are not decoration.
@@ -329,7 +329,7 @@ these are not decoration.
 ---
 
 ## 9. Accessibility
-Settled: pending — **Jamie's sign-off, blocking**
+Settled: Jamie 2026-09-03 — his own sign-off, as the owner · Ack: n/a
 
 43. **Tap targets do not shrink.** "Smaller" (item 25) is about the label, not the
     button: `panel.ts:170-171` already floors every control at 44px square and
@@ -395,7 +395,7 @@ his, and he has signed it) · Ack: n/a.
 ---
 
 ## 7. How it looks — REOPENED, was marked n/a
-Settled: pending · Ack: n/a
+Settled: Jamie 2026-09-03 · Ack: n/a
 
 Section 7 was n/a under item 32 because nothing was moving but the footer. Item
 52 changes that, so it reopens. Short form becomes **1, 3, 7, 8, 9, 11**.
@@ -456,7 +456,7 @@ Section 7 was n/a under item 32 because nothing was moving but the footer. Item
 ---
 
 ## 11. Done and the test plan
-Settled: pending
+Settled: Jamie 2026-09-03 · Ack: n/a
 
 61. **The logic goes in `pending.ts` as pure functions, because that is what can
     be tested.** `overlay.ts` ends in a bare call with no export and cannot be
@@ -555,3 +555,201 @@ same code:**
 **The one thing that is NOT reopened:** staying put on a genuinely failed save
 with real changes. That is brief items 11, 54 and 74 of the round-trip brief and
 it protects work. Only the empty case changes.
+
+---
+
+# da-brief review, 2026-09-03 — four highs, eight mediums, four lows
+
+Every finding is answered. Two need Jamie and are marked so; the rest are
+corrected here.
+
+## H1 — the app-switch diagnosis is withdrawn. Item 9 is REOPENED.
+
+70. **My mechanism for candidate (b) cannot produce the symptom.** `project()`
+    does `el.className = classes.join(' ')` (`project.ts:77`). That is one atomic
+    attribute write — there is no paint between the old value and the new — so
+    "a flash of the base styling before the edits land" is impossible when the
+    DOM has not diverged. Item 6(b) was wrong, and item 9 rested on it.
+    (correction — the finding is right and my reasoning was not)
+
+71. **A third cause, and the repo already names it.**
+    `session-store.ts:3` says "Safari discards backgrounded tabs". A discarded
+    tab reloads on return, edit mode restores from `sessionStorage`, and the
+    changes visibly re-apply — which is Jamie's report, word for word. It was
+    never in item 6's list of two.
+
+72. **And a fourth.** `src/app.ts:1183-1193` registers `/sw.js`, calls
+    `registration.update()` on **both** `focus` and `visibilitychange`, and
+    reloads the page on `SW_UPDATED`. `public/sw.js` means vite serves it in dev.
+    Conditional on the Tailscale URL being a secure context, so it needs ruling
+    out rather than assuming.
+
+73. **Item 6's test could not have told them apart**, and item 9 read a hedged
+    "I think no" as settling it. The test asks Jamie to spot a reload by eye on a
+    page with no edits — the one state where a reload looks like nothing.
+
+74. **Replace it with something objective.** A counter in `sessionStorage`,
+    incremented once per `start()` and shown in the panel. Come back to the tab:
+    if the number went up, the page reloaded, and the cause is (a), (c) or (d).
+    If it did not, nothing reloaded and the re-projection is the only suspect
+    left. One number, no guessing. (recommendation — needs Jamie to run it)
+
+75. **Item 63's fix does nothing under (c) or (d), and item 66's fourth
+    acceptance test is unfalsifiable under them.** After a real reload the DOM
+    genuinely has diverged, so "only project when it has diverged" projects — and
+    re-applying is then the *correct* behaviour. Both are held until item 74
+    answers. (correction)
+
+## H2 — item 61 names the wrong function
+
+76. **`exitDecision` is already right.** `pending.ts:41-44` returns 'leave' when
+    nothing is pending. The defect is `isPending()` at `overlay.ts:206`, which
+    compares `signature([], '')` = `'||'` against a `savedSignature` that
+    `session-store.ts:44` initialises to `''`. A test written against
+    `exitDecision` passes before and after the fix.
+    **The fix: the empty-session sentinel.** Item 62's test targets `isPending()`
+    — or whatever pure function replaces it — and must be red today.
+    (correction — supersedes item 61's first bullet and item 62's target)
+
+## H3 — hiding Save takes away the only way to stop the server (needs Jamie)
+
+77. **Item 60's premise is false.** `stopPillState('play', false, false)` returns
+    `visible: true`, and `docs/EDIT-MODE.md:56` says the pill sits beside the
+    pencil whenever you are out of the editor. Today's resting state is **pill and
+    pencil**, not the pencil alone. (correction)
+
+78. **So item 26 as written creates the orphan the feature exists to prevent.**
+    Start `/dev`, make no edit, change your mind — under item 26 there is nothing
+    on screen that stops the server. `edit-mode/plugin.ts:45` calls that "the
+    657 MB orphan this whole feature exists to prevent". Falling back to
+    `/devstop` in Telegram is exactly the friction `/dev` removed.
+
+79. **And the same empty-signature bug already wedges Save & Stop, unreported.**
+    `runStop()` at `overlay.ts:475-481` sets `hadSomethingToSave = isPending()` —
+    true on a fresh session — then `save()` 400s and it returns without stopping.
+    So today, on a fresh session, **Save & Stop does not stop the server either**.
+    `COPY.stoppedNothingSaved` is unreachable. Item 76's fix repairs this too,
+    which is worth saying: one sentinel, three symptoms.
+
+80. **Which way should Save behave?** (question — Jamie)
+    - **(i) Save is always visible while the server is running**, because it is
+      also the stop control, and only Discard follows the "something to discard"
+      rule. My rec. Why: the button has two jobs and the second one is always
+      available. It costs one icon on screen.
+    - **(ii) Item 26 as written**, and stopping with nothing to save is `/devstop`
+      in Telegram only.
+
+## H4 — section 5 is NOT n/a. REOPENED.
+
+81. **Discard's order of operations is load-bearing, and item 20's order is
+    wrong.** `setMode()` calls `persist()` (`overlay.ts:361`), which writes the
+    record straight back — so `store.clear()` then `setMode('play')` leaves the
+    session on disk. In-memory state has to be reset first. `runStop` only
+    escapes this through the `stopped` guard at `overlay.ts:186`. (correction)
+
+82. **The sentinel is `signature([], freeCss)`, never `''`.** Item 20 said "reset
+    `savedSignature` so nothing reads as pending"; `''` is the value that CAUSED
+    item 13's bug. `overlay.ts:504` already does it correctly.
+    (correction — this one would have shipped the bug back)
+
+83. **Item 20 was silent on three things Discard must also clear:** `freeCss`
+    (it is part of the signature and posts as a `css` patch — it IS a change),
+    `switchedOff` (`overlay.ts:107`), and `selected` / `selectedPath`.
+    My rec: all three reset, because "back to normal" means all of it.
+    (recommendation)
+
+84. **Item 21 is true but incomplete, and the gap is visible to Jamie.** Saved
+    sessions stay on disk — but `serveReplay` hands every unconsumed session to
+    every page load, and `overlay.ts:57-60` projects it before anything else. So
+    after a discard the page is clean *until the next refresh*, when the banked
+    sessions come back. That is not a bug, it is what the replay route is for,
+    but it must be stated or it reads as the discard failing. (correction)
+
+## Mediums
+
+85. **M1 — the pencil is 56px, not 38px.** `panel.ts:66-67`. `TAP_TARGET` is the
+    sheet-button floor, a different thing. So "same size as pencil" (item 52) is
+    56px. Item 69's arithmetic: 160 + 56 + 56 + 8 + 8 + 16 ≈ **304px** on a 320px
+    screen — it fits, with 16px to spare, which is tight enough to check on the
+    phone. (correction — supersedes items 50, 53 and 69's numbers)
+
+86. **M1, second half — the closing block's "no layout change beyond the footer"
+    is false.** `.stop-btn` is `position: fixed` with a hard-coded
+    `right: calc(16px + 56px + 8px)`. Item 67's reflowing row needs a
+    right-anchored flex container replacing both fixed positions.
+    (correction)
+
+87. **M2 — item 54 named the wrong file.** Edit-mode icons are inlined Lucide
+    paths in `src/edit-mode/icons.ts`, and `save` (floppy) is already there at
+    line 20. `public/sprites.svg` is the GAME's sheet and a production artefact —
+    putting edit-mode icons in it is precisely the leak
+    `tests/edit-mode-safety.spec.ts` exists to catch. **Only a bin icon is
+    needed.** (correction)
+
+88. **M3 — item 63's "has the DOM diverged?" function exists.**
+    `detectOverwrites(expected, readActual(doc, keys))` in `runtime-classes.ts`,
+    already called at `overlay.ts:355`. Reuse it. (correction)
+
+89. **M4 — Save & Stop is deliberately hidden in edit mode** (`panel.ts:80-82`,
+    "two ways to do one thing on a phone is one too many", 2026-08-26). Item 26
+    and item 67's sketch both assume the row shows whenever there are changes,
+    including in edit mode. My rec: **the sketch wins and the 2026-08-26 rule is
+    reversed** — with Discard added, the row is now the one place both session
+    actions live, and hiding half of it in edit mode is the confusing option.
+    (recommendation)
+
+90. **M5 — item 41's four-second timer must cancel on any later message.**
+    `panel.notify()` only sets `textContent`; nothing clears it. A blind timer
+    would wipe whatever is written next — including `COPY.stopped`, which the
+    brief itself calls the last thing the page ever says. (correction)
+
+91. **M6 — the red and green must NOT come from `--color-success` /
+    `--color-error`.** Two reasons. `panel.ts:8-10` says the sealed root cannot
+    use the project's tokens. And those two derive from `--accent-l` and
+    `--chroma-*`, which flip in dark mode — while the panel is hand-written and
+    permanently light. So they would take a dark-mode value on a white panel, and
+    the tool's own chrome would start tracking the theme Jamie is editing, which
+    is the exact thing sealing the root prevents.
+    My rec: **two fixed hex pairs in `panel.ts`, beside the panel's other
+    hand-written colours**, chosen to read on its permanently-light surface.
+    (correction — supersedes item 55's mechanism; item 55's *design* decision,
+    colour only once expanded, stands)
+
+92. **M7 — the six stale `Settled: pending` ledgers are corrected** in place,
+    above. (correction)
+
+93. **M8 — section 6 is NOT n/a either. REOPENED, and here it is.** Six modules:
+    `pending.ts` (the sentinel, the visibility rules, the confirm state machine),
+    `overlay.ts` (discard, `isPending`, wiring), `panel.ts` (the control row, the
+    notice timer, per-control visibility), `controls.ts` (the footer rules),
+    `copy.ts` (four strings), `icons.ts` (the bin). No file outside
+    `src/edit-mode/` is touched. (correction)
+
+94. **M8, second half — `docs/EDIT-MODE.md` is wrong after this and nothing said
+    so.** It names "Save & Stop" at lines 37, 56, 87, 125, 148-150, 157 and 176,
+    and describes the pencil's failed-save rule at line 53. Items 18, 19, 26 and
+    30 falsify all of it. It joins section 11's list. (correction)
+
+## Lows
+
+95. **L1 — `panel.sheet` needs `tabindex="-1"`** or item 45's `.focus()` does
+    nothing. It is the one accessibility item Jamie kept, so it should work.
+    (correction)
+
+96. **L2 — the three new strings go in `OVERLAY_COPY`**, which is what
+    `edit-mode-safety.spec.ts` actually guards — not icons, as item 64 said.
+    "Save and stop?", "Lose all changes?" and "Changes discarded." **And a
+    caution on item 30:** `COPY.stopControl` is already in that list and becomes
+    the bare word "Save", which is a weak marker. It passes today (capital "Save"
+    appears zero times in `dist/`), but the spec's own comment warns this is how
+    a one-word string quietly stops guarding anything. My rec: keep a longer
+    string in the list — the confirm label "Save and stop?" — rather than the
+    resting one. (correction)
+
+97. **L3 — `COPY.exitEditMode` is "Save and exit edit mode"**, the pencil's
+    aria-label. After item 18 the pencil sometimes just exits. My rec: "Leave
+    edit mode", which is true in both cases. (recommendation)
+
+98. **L4 — structure.** The closing summary's 1/2/3 sit at column 0, where a
+    number means "brief item", and section 11's items print before section 7's.
+    Both are tidied when this review is folded in. (correction)
