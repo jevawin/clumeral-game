@@ -196,3 +196,44 @@ thought this is what the reset button does but I think it's per element?"
     whole session's work, it sits next to Save & Stop where a mis-tap is easy,
     and it is on a phone. The cost is one extra tap on a thing done rarely.
     (question — Jamie)
+
+---
+
+## 3. How it works (continued)
+
+Jamie, 2026-09-03: "Yes confirm. Just 'discard'. And save just 'save'. So they're
+smaller. Also only show when there's something to discard and save and only show
+undo and reset when selected an element and something to undo or reset."
+
+24. **Item 23 settled: the confirmation tap stays.** (Settled: Jamie 2026-09-03)
+
+25. **Short labels: "Discard" and "Save".** One word each, so both fit small.
+    Section 8 carries the final wording; this records the decision.
+    (Settled: Jamie 2026-09-03)
+
+26. **Every control earns its place before it appears.** Four rules, one per
+    control, all of them "hide, not disable" — this supersedes item 22's
+    "disabled":
+    - **Discard** — only when there is something to discard.
+    - **Save** — only when there is something to save. Same test as Discard, so
+      in practice the pair appear and disappear together.
+    - **Undo** — only when an element is selected AND there is a step to undo.
+    - **Reset** — only when an element is selected AND that element has been
+      changed from its original.
+    (Settled: Jamie 2026-09-03)
+
+27. **Hidden rather than greyed out, and the footer must not jump.** Hiding is
+    what Jamie asked for and it keeps the sheet small, which is the point. The
+    risk is a footer that changes height as controls come and go, moving the
+    thing under his thumb. My rec: the footer keeps a fixed height and the
+    buttons centre within it. (recommendation)
+
+28. **"Save" is a NEW button, and "Save & Stop" keeps its full name.**
+    There is no Save button today — it was removed on 2026-08-26 when the pencil
+    took over saving (`copy.ts:19`). So "save just 'save'" reads as: bring back a
+    plain Save that writes the session and leaves you in the editor, beside
+    Discard. **Save & Stop is deliberately not renamed**: it also kills the dev
+    server, and a button labelled "Save" that stops the server is the one
+    mislabelling here that costs a whole session. (question — Jamie, item 29)
+
+29. **Which did you mean?** (question — Jamie)
