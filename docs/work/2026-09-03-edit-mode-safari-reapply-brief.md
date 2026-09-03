@@ -434,3 +434,66 @@ Section 7 was n/a under item 32 because nothing was moving but the footer. Item
     (question — Jamie, item 57)
 
 57. **Or do you want all four together?** (question — Jamie)
+
+58. **Settled: beside the pencil, in the order Discard, Save, Edit.** The pencil
+    stays rightmost, where it has always been and where his thumb already goes.
+    (Settled: Jamie 2026-09-03)
+
+59. **So an expanding button grows LEFTWARDS.** The row is anchored on the right,
+    and the pencil must not move when Discard or Save expands — a control that
+    shifts under a thumb mid-tap is how a mis-tap becomes a lost session. The
+    same applies to the two of them: when Discard expands, Save must not slide.
+    My rec: anchor the row right, and let an expanding button overlay what is to
+    its left rather than push it. (recommendation)
+
+60. **Normally only the pencil is on screen.** Discard and Save appear only when
+    there is something to save (item 26), so the resting state of a fresh session
+    is the single pencil it is today. The row grows to three only once he has
+    made a change. (assumed — follows from items 26 and 58)
+
+**Section 7 closed.** Items 52-60. Settled: Jamie 2026-09-03 · Ack: n/a.
+
+---
+
+## 11. Done and the test plan
+Settled: pending
+
+61. **The logic goes in `pending.ts` as pure functions, because that is what can
+    be tested.** `overlay.ts` ends in a bare call with no export and cannot be
+    imported by a test — a known gap, stated on PR #314. Every decision in this
+    work is a function of state, so every one of them can live where it is
+    testable:
+    - `exitDecision` — extended so "nothing pending" leaves, which is item 13's
+      bug.
+    - a function for item 26's four visibility rules.
+    - a function for the confirm state machine: at rest, armed, acted, and the
+      four-second revert.
+    (recommendation)
+
+62. **The bug that started this gets a test that fails before the fix.** A fresh
+    session, no edits, tap the pencil: it must leave. Today that returns 'stay'
+    and Jamie is stuck. (recommendation)
+
+63. **The re-projection fix (item 9) needs a test of its own.** The rule is that
+    coming back to the tab must not re-apply anything when the page was never
+    torn down. My rec: a function that answers "has the DOM diverged from the
+    patch set?", tested directly, with the listeners calling it before they
+    project. (recommendation)
+
+64. **`edit-mode-safety.spec.ts` gets the new controls.** It already asserts edit
+    mode is absent from both deployed artefacts. Two new icons and a new route-
+    free control are exactly the kind of thing that leaks. (recommendation)
+
+65. **QA level: light, and no local Playwright.** All of the above is unit-
+    testable. CI runs the full browser matrix on the pull request. A local
+    Playwright run is Jamie's call in the moment and is not a step in this plan.
+    (recommendation)
+
+66. **The acceptance test is Jamie, on his phone.** Four things, and they are the
+    four this thread produced:
+    1. Make no edits, tap the pencil. It leaves.
+    2. Make edits, undo them all, tap the pencil. It leaves.
+    3. Make edits, tap Discard, confirm. Page back to normal, out of edit mode,
+       "Changes discarded." for four seconds.
+    4. Make edits, switch to another app, come back. Nothing visibly re-applies.
+    (recommendation)
