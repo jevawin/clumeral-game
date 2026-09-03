@@ -71,3 +71,39 @@ Settled: pending
    here changes how the server is started or stopped. If a fix needs something
    from that side — a vite config change is the obvious candidate — it is asked
    for, not done. (given — Jamie's instruction, 2026-09-02)
+
+---
+
+## 1. What it is (continued)
+
+9. **Item 6's test came back "I think no".** With no pending edits, backgrounding
+   Safari and coming back does not visibly jump. So candidate (a) is out: vite is
+   not reloading the page. **It is (b) — edit mode re-projects when nothing was
+   lost.** The three listeners at `overlay.ts:591-595` fire on every return to the
+   tab and call `scheduleReproject()` unconditionally, and `project()` rewrites
+   class attributes across the panel whether or not the DOM has diverged from the
+   patch set. (settled by Jamie's test, 2026-09-03 — "I think", so worth one
+   re-check before the fix is built)
+
+10. **A second defect, reported in the same message: the pencil stops closing.**
+    "Stuck in edit mode on the same screen. Pencil not closing." Read against
+    `overlay.ts:432-454`, there are exactly three ways the pencil refuses to
+    leave, and two of them are deliberate:
+    - **the save failed** — `exitDecision()` returns 'stay' by design (brief items
+      11, 54, 74), because the edits only exist in the phone until a save
+      succeeds. `panel.say(COPY.saveFailed)` should be on screen: "Could not save.
+      Your changes are still here — check the dev server is running and tap the
+      pencil again."
+    - **the server has gone** — `stopped` is true, the pencil is dead on purpose,
+      and the closing message stays up to say why.
+    - **`busy` never cleared** — a `fetch` that neither resolves nor rejects. This
+      one is a real bug, not a design, and it is the only one of the three with no
+      message on screen.
+    Which of the three it is, is decided by what is written on the panel.
+    (recommendation — needs Jamie to say what the panel says)
+
+11. **Are 9 and 10 one bug or two?** Treat them as two until shown otherwise. The
+    re-projection is a repaint; the pencil refusing to close is a save or a hung
+    request. Nothing yet connects them. (assumed — revisit if item 10 turns out to
+    be the hung-`busy` case, because a re-projection storm could plausibly be
+    involved)
