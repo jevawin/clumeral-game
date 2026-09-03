@@ -313,3 +313,59 @@ these are not decoration.
 40. **`COPY.stopControl` is renamed, not replaced.** Its comment says "the
     control that saves and then stops the dev server", which stays true and is
     now the only place in the source that says so. (assumed)
+
+41. **The "Changes discarded." line clears itself after four seconds too**, the
+    same as the confirm labels. (Settled: Jamie 2026-09-03)
+
+42. **It cannot use `say()`, or it will never be seen.** `say()` writes into
+    `.status`, which lives inside the sheet, and `setMode` blanks it on every exit
+    from edit mode (`panel.ts:497`). Discard drops to play mode (item 20), so the
+    message would be wiped in the same tick it was written. It has to use the
+    `.notice` surface instead — the one built to outlive the editor, which Save &
+    Stop already uses. (assumed — checked against `panel.ts:495-500`)
+
+**Section 8 closed.** Items 35-42. Settled: Jamie 2026-09-03 · Ack: n/a.
+
+---
+
+## 9. Accessibility
+Settled: pending — **Jamie's sign-off, blocking**
+
+43. **Tap targets do not shrink.** "Smaller" (item 25) is about the label, not the
+    button: `panel.ts:170-171` already floors every control at 44px square and
+    that stays. Shorter words, same target. (assumed — checked in the code)
+
+44. **Hiding beats disabling, and that is the accessible choice as well as the
+    tidy one.** A disabled control is still announced and still lands in the tab
+    order, offering something that cannot be done. Removing it says the same
+    thing by saying nothing. (assumed)
+
+45. **Focus must not fall off the page when a control hides itself.** Undo
+    disappears the moment there is nothing to undo — and that can happen on the
+    tap that used it. If focus is on it when it goes, focus resets to `<body>`
+    and a keyboard user is thrown to the top.
+    My rec: when the focused control is about to be hidden, move focus to the
+    sheet itself first. (recommendation)
+
+46. **The confirm state must be announced, not just drawn.** The button's name
+    changes from "Save" to "Save and stop?", and a screen reader user who has
+    already tapped needs to hear what the second tap will do — that is the entire
+    safety mechanism (item 34).
+    My rec: give the two session controls `aria-live="polite"` on the button
+    itself, so the name change is spoken when it happens.
+    (recommendation)
+
+47. **"Changes discarded." must be announced.** The `.notice` surface it lands on
+    (item 42) needs `role="status"` if it does not have one.
+    (recommendation — to be checked during the build)
+
+48. **The four-second timers are a knowing WCAG 2.2.1 exception.** Both the
+    confirm revert (item 37) and the discard message (item 41) disappear on a
+    timer with no way to extend them. WCAG 2.1 AA's Timing Adjustable says timed
+    content should be adjustable; this is not. The defence is that edit mode is a
+    dev-only tool that never reaches production, used by one person on his own
+    phone, and both timers make things *safer* — an armed confirm and a stale
+    message are the risks they remove.
+    My rec: accept it, and write it down as accepted rather than leave it
+    unstated. Jamie owns accessibility, so it is his to accept.
+    (question — Jamie, blocking)
