@@ -530,3 +530,28 @@ Settled: pending
     pencil's 38px and the gaps — about 250px, which fits a 320px screen. Worth
     stating so the build checks it rather than discovers it.
     (assumed — arithmetic, to be confirmed on the phone by item 66)
+
+**Section 11 closed.** Items 61-66. Settled: Jamie 2026-09-03 · Ack: n/a.
+
+---
+
+## Brief closed — 2026-09-03
+
+**Short form: sections 1, 3, 7, 8, 9 and 11 — approved by Jamie 2026-09-03.**
+Sections 2 (beyond item 8), 4, 5, 6 and 10 are n/a: no maths, no new storage, no
+new module, nothing new to measure.
+
+All five sections settled by Jamie. `Ack: n/a` throughout, with a reason rather
+than as a shrug: edit mode is a dev-only tool that never reaches production and
+Dave has never had access to it, so there is no joint content to ack.
+
+**Two defects and one feature, in one brief because item 14 showed they are the
+same code:**
+
+1. Coming back to Safari re-applies the edits when nothing was lost (items 9, 63).
+2. The pencil wedges when there is nothing to save (items 13, 62).
+3. Discard, and a control row that earns its place (items 19-30, 52-60, 67-69).
+
+**The one thing that is NOT reopened:** staying put on a genuinely failed save
+with real changes. That is brief items 11, 54 and 74 of the round-trip brief and
+it protects work. Only the empty case changes.
