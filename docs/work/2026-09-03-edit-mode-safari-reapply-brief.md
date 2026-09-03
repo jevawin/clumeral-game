@@ -256,3 +256,60 @@ undo and reset when selected an element and something to undo or reset."
     now carries a warning. **Revised proposal: sections 1, 3, 8, 9 and 11.**
     Sections 2, 4, 5, 6, 7 and 10 stay n/a — no new state, no new module, no
     layout change beyond the footer, nothing to measure. (question — Jamie)
+
+33. **Short form approved: sections 1, 3, 8, 9 and 11.** Sections 2, 4, 5, 6, 7
+    and 10 are n/a — no maths, no new state, no new module, no layout change
+    beyond the footer, nothing new to measure.
+    (Short form: sections 1, 3, 8, 9, 11 — approved by Jamie 2026-09-03)
+
+34. **Save gets a confirmation tap too.** Jamie, 2026-09-03: "add a confirm tap
+    to save. That solves your mislabel problem and is consistent with discard."
+    So the second tap is where the consequence is stated, and item 31's worry is
+    answered by copy rather than by the label. Both session controls now behave
+    identically: tap, read what it is about to do, tap again.
+    (Settled: Jamie 2026-09-03)
+
+**Section 3 closed.** Items 17-34. Settled: Jamie 2026-09-03 · Ack: n/a — edit
+mode is a dev-only tool that only Jamie uses; Dave has never had access to it.
+
+---
+
+## 8. Copy and wording
+Settled: pending · Ack: n/a
+
+The whole point of item 34 is that the confirm label carries the meaning, so
+these are not decoration.
+
+35. **Resting labels: "Save" and "Discard".** One word each (items 25, 30).
+    (Settled: Jamie 2026-09-03)
+
+36. **Confirm labels name the consequence, because the resting label no longer
+    does.**
+    - Save → **"Save and stop?"**
+    - Discard → **"Lose all changes?"**
+    My rec: these two. Why: "Save and stop?" is the sentence Jamie's rename
+    removed from the button, put back at the only moment it matters. "Lose all
+    changes?" says *all*, which is the difference from Reset — Jamie's own
+    confusion in this thread was thinking Reset already did this.
+    (recommendation)
+
+37. **The confirm state reverts on its own after a few seconds.** Otherwise a
+    button left mid-confirm in a pocket is armed when the phone comes back out.
+    My rec: four seconds. (recommendation)
+
+38. **`COPY.stopped` is unchanged and stays load-bearing.** "Saved and the server
+    has stopped. Ask the bot in Telegram to fold this into a pull request, or tap
+    /dev to start again." It already reads as an explanation with both next
+    steps, which is what item 31 asked for. No edit needed.
+    (assumed — checked against `copy.ts:67`)
+
+39. **A discard needs its own closing line, and there is none today.** After
+    discarding, the page is back to normal and edit mode is off, so silence would
+    look like a crash.
+    My rec: **"Changes discarded."** Nothing more — there is no next step to
+    offer, the tool is still running, and the pencil is right there.
+    (recommendation)
+
+40. **`COPY.stopControl` is renamed, not replaced.** Its comment says "the
+    control that saves and then stops the dev server", which stays true and is
+    now the only place in the source that says so. (assumed)
