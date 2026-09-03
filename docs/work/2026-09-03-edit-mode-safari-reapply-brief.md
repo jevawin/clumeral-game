@@ -146,3 +146,53 @@ Settled: pending
 16. **Not yet reproduced on a phone, and it does not need to be.** Items 13's
     facts come from running the code. A phone check is still worth having once
     the fix exists, but the diagnosis does not wait on it. (assumed)
+
+---
+
+## 3. How it works
+Settled: pending · Ack: n/a (Jamie's tool; Dave never uses edit mode)
+
+Jamie, 2026-09-03: "Lose the changes. Drop out of edit mode should happen when I
+click the pencil. I think an abandon changes button with the save and close. I
+thought this is what the reset button does but I think it's per element?"
+
+17. **He is right about Reset: it is per element, and only the selected one.**
+    `COPY.resetElement` is the label, `onResetElement` at `overlay.ts:323` returns
+    early with no selection, and it restores that one element's original classes
+    from the history. There is nothing today that clears the whole session.
+    (checked in the code, 2026-09-03)
+
+18. **The pencil always leaves when there is nothing to save.** This is item 13's
+    bug, and it is fixed by making "no changes" mean "nothing to save" rather than
+    "the save failed". The pencil keeps its existing behaviour in every other
+    case, including staying put on a genuinely failed save with real changes,
+    which is brief items 11, 54 and 74 and is not being reopened.
+    (recommendation — this is a defect fix, not a design choice)
+
+19. **A third control, beside Save & Stop: "Discard changes".** Jamie asked for it
+    there and that is where it belongs — the two session-wide actions sit
+    together, and Reset stays where it is as the per-element one.
+    (recommendation)
+
+20. **What it does, in order: put the page back, forget the session, drop to play
+    mode.** All three, because "give up" means the screen is clean and the tool is
+    out of the way. Concretely: project the original classes back over every
+    edited element, clear the undo stack, clear `sessionStorage`, reset
+    `savedSignature` so nothing reads as pending, and `setMode('play')`.
+    (recommendation)
+
+21. **It does NOT delete session files already written to disk.** Those are
+    already banked, and a saved session is a thing Jamie asked the bot to fold —
+    reaching back and deleting it is a different, more dangerous action. Discard
+    is about what is still in the phone. (recommendation)
+
+22. **It is disabled when there is nothing to discard**, on the same rule the
+    pencil now uses, so it never asks a question about an empty session.
+    (recommendation)
+
+23. **Does it need a confirmation tap?**
+    My rec: **yes** — the button becomes "Really discard?" for a few seconds and
+    only the second tap does it. Why: it is irreversible and it throws away a
+    whole session's work, it sits next to Save & Stop where a mis-tap is easy,
+    and it is on a phone. The cost is one extra tap on a thing done rarely.
+    (question — Jamie)
