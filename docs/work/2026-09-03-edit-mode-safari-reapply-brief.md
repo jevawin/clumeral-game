@@ -497,3 +497,36 @@ Settled: pending
        "Changes discarded." for four seconds.
     4. Make edits, switch to another app, come back. Nothing visibly re-applies.
     (recommendation)
+
+---
+
+## 7. How it looks — item 59 re-settled
+
+67. **Item 59's overlay is rejected. They push, they do not overlap.** Jamie,
+    2026-09-03: "They can expand left and push the button over, don't overlap
+    that's gross." His sketch:
+
+    ```
+    [bin] [floppy  Save and stop] [pencil]
+    ```
+
+    **The rule: a button's RIGHT edge is anchored. It grows leftwards from there,
+    and pushes its left-hand neighbours further left.** So the pressed button
+    still covers the spot it was tapped on, and everything to its right — the
+    pencil above all — never moves at all.
+
+    It falls out nicely: Discard is leftmost, so expanding it moves nothing.
+    Expanding Save moves only Discard. The pencil is fixed in both cases. No
+    control ever moves out from under a thumb, which is what item 59 was trying
+    to protect, without the overlap.
+    (Settled: Jamie 2026-09-03 — supersedes item 59)
+
+68. **The pill's icon sits at its left**, per the sketch, so the icon travels
+    leftwards as the button grows while the right edge stays put.
+    (assumed — reading the sketch)
+
+69. **A wide expanded pill must not run off the left of a narrow screen.** "Save
+    and stop?" beside an icon is roughly 160px, plus Discard's 38px and the
+    pencil's 38px and the gaps — about 250px, which fits a 320px screen. Worth
+    stating so the build checks it rather than discovers it.
+    (assumed — arithmetic, to be confirmed on the phone by item 66)
