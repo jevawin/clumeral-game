@@ -107,3 +107,42 @@ Settled: pending
     request. Nothing yet connects them. (assumed — revisit if item 10 turns out to
     be the hung-`busy` case, because a re-projection storm could plausibly be
     involved)
+
+---
+
+## 1. What it is (continued) — the stuck pencil is found
+
+12. **Jamie sees the "Could not save" line, so it is the failed-save branch.**
+    Not the dead server, and not the hung `busy` flag. (given, 2026-09-03)
+
+13. **Cause: an empty patch set is treated as a failed save, and "nothing to
+    save" is exactly what giving up looks like.** Confirmed by running the real
+    code, not by reading it:
+    - `session-store.ts:44` defaults `savedSignature` to `''` when nothing has
+      been saved yet.
+    - `signature([], '')` returns `'||'`, never `''`.
+    - So `isPending()` at `overlay.ts:206` is **true on a session with no
+      edits** — a fresh one, or one where every edit has been undone.
+    - The pencil then calls `save()`, which posts an empty `patches` array.
+    - `edit-mode/session-routes.ts:60` answers **400 "no patches"**, correctly:
+      it must not claim to have written a file it did not write.
+    - `exitDecision(true, false)` returns `'stay'`, and the panel says "Could not
+      save. Your changes are still here".
+
+    There are no changes, the server is running fine, and the only way out is to
+    make an edit so there is something to save. (verified 2026-09-03 by importing
+    `pending.ts` and printing the values)
+
+14. **This is the same bug as Jamie's feature request.** "Sometimes I mess about
+    and want to give up" is undoing everything and tapping the pencil — which is
+    precisely the path that wedges. So item 15 is not a nice-to-have bolted onto
+    a bug fix; it is the missing half of it. (recommendation)
+
+15. **Wanted: a way to abandon edits.** Jamie's words: "I need a way to abandon
+    edits, sometimes I mess about and want to give up." Needs section 3 to say
+    what it does to the screen, to the session file and to the undo stack.
+    (question — see section 3)
+
+16. **Not yet reproduced on a phone, and it does not need to be.** Items 13's
+    facts come from running the code. A phone check is still worth having once
+    the fix exists, but the diagnosis does not wait on it. (assumed)
