@@ -40,6 +40,24 @@ async function start(): Promise<void> {
 
   const panel = createPanel(document);
 
+  // TEMPORARY DIAGNOSTIC — brief item 74, delete once the app-switch cause is
+  // settled. Counts how many times this script has run in this tab. Switch away
+  // from Safari and back: if the number goes UP the page reloaded, so the cause
+  // is a reload (vite, a discarded tab, or the service worker). If it stays PUT
+  // nothing reloaded and the re-projection is the only suspect left.
+  //
+  // sessionStorage rather than a variable, deliberately: it is what survives a
+  // reload and a Safari tab discard, which is the whole question being asked.
+  // navigation.type says WHICH kind of load this was, so one glance answers both
+  // "did it reload" and "how".
+  const LOAD_COUNT_KEY = 'dlng_edit_loads';
+  const loads = Number(sessionStorage.getItem(LOAD_COUNT_KEY) ?? '0') + 1;
+  sessionStorage.setItem(LOAD_COUNT_KEY, String(loads));
+  const navType =
+    (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type
+    ?? 'unknown';
+  panel.notify(`loads: ${loads} (${navType})`);
+
   // The pencil is drawn the moment the panel mounts, but everything it needs
   // arrives over two fetches - one of them the whole 23,000-class catalogue.
   // Tapped in that gap it used to do nothing at all, silently (Jamie,
