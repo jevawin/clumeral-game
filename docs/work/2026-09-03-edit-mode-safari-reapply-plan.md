@@ -612,3 +612,77 @@ section 8 is Jamie's. The proposed line is:
 > bot in Telegram to fold them, or tap /dev to start another."
 
 **Settled: Jamie 2026-09-03.** Everything else in this revision is a "how" and is mine.
+
+---
+
+# 7. Build record — 2026-09-04
+
+Tasks 1-8 built, one commit each, in the plan's order. `npx vitest run` green in
+full after every commit: **1199 passed, 1 skipped** at the end, up from 1157 at
+the start. `npm run build` succeeds and `tests/edit-mode-safety.spec.ts` passes
+against the real `dist/`, which is the gate that matters most here — three new
+strings and an icon were added to a tool that must not ship.
+
+| Task | Commit | Note |
+|---|---|---|
+| 1 — copy | `b3de604` | Additions only. Both renames deferred per R15. |
+| 2 — restore on first paint | `1658eb3` | State + observer moved above the fetches; `mergeProjections`. |
+| 3 — empty patch set | `5fef421` | `countPatches` / `hasSomethingToSave`; the two deferred renames land here and in task 5. |
+| 4 — the control row | `1017e6d` | `controlRowState`, `footerControls`, panel `setRow`/`onSave`/`onDiscard`. |
+| 5 — the confirm gesture | `be2b87f` | `armOnTap`, `controlLabel`, `hasSomethingToDiscard`. `stopControl` → 'Save'. |
+| 6 — icons and the row | `6c92685` | Bin icon, 56px circles, colour on expansion, `padding-right: 196px`. |
+| 7 — Discard | `3273d73` | `discardAll()`, `discardClosingLine`, R11's stopFailed recovery. |
+| 8 — the docs | `125c530` | Nine "Save & Stop" references rewritten. |
+| 9 — the load counter | **not built** | Blocked on item 114. Still in `overlay.ts`. |
+
+## Deviations from section 6, and why
+
+**D1. R7's `countPatches` is called from `save()` through
+`includesCssPatch`, not directly.** R7 asked for one function called from both
+places; `save()` needs a boolean ("does the css patch go in this post?"), not a
+count. So the shared condition is `includesCssPatch(freeCss, hasSelection)`,
+which `countPatches` is defined in terms of and `save()` calls directly. The
+invariant R7 wanted is enforced — one condition, one place, both call sites
+reach it — rather than asserted.
+
+**D2. R12's durable "were sessions banked?" is a variable seeded from the store,
+not a re-read of `savedSignature`.** R12 said use `saved.savedSignature !== ''`.
+Read at the moment of use that is wrong: Discard sets `savedSignature` to
+`signature([], '')`, which is not empty, so a second Discard after a failed
+shutdown would claim a session nobody wrote. `sessionsBanked` is seeded from
+`saved.savedSignature !== ''` — R12's durable signal, read once at boot, so a
+tab discard cannot reset it — and set again whenever a save returns 2xx.
+
+**D3. `mergeProjections`'s tests live in `tests/edit-mode-history.spec.ts`**, not
+`edit-mode-controls.spec.ts`. That is the spec that already imports `project.ts`.
+R1 corrected the file list for `pending.ts`; this is the same correction for
+`project.ts`.
+
+**D4. The observer's early-exit now also asks about the replay.** It returned
+when `history.entries.length === 0`, which with a held replay map would drop
+every replay-only breadcrumb at the first re-render. R16 named the merge; this is
+the same sentence one line further down.
+
+**D5. Task 6's row container was built in task 4.** Task 4 could not rename the
+panel's methods to `setRow`/`onSave`/`onDiscard` without two buttons to put in
+it, and two buttons need somewhere to sit. Task 6 kept the icons, the 56px
+sizing, the colours and the sheet's padding — the parts Jamie decided.
+
+## Not reachable from a test, restated after building
+
+R9's list held. `mergeProjections` is covered; the MOVE that makes it matter is
+not. `discardAll()`'s ordering is not — the closing-line chooser is, the sequence
+is not. Task 6 is not. The focus handling is covered at the panel level only.
+These rest on Jamie's acceptance test, item 158.
+
+**Four pre-existing `tsc` errors in `overlay.ts` are unchanged** (`replay.json`
+and `catalogue.json` come back as `{}` / `unknown`). They are on lines this work
+moved but not on code it wrote, and the count is the same before and after.
+Types are Jamie's call; flagged, not touched.
+
+## The ask that goes with task 9
+
+If item 114's word turns out to be `reload`, a `server.hmr` setting in
+`vite.config.ts` would stop the reload happening at all — a better fix on top of
+this one. `vite.config.ts` belongs to the pi bot, so that is an **ask**, not an
+edit (items 8, 130, 150).
