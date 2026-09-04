@@ -753,3 +753,97 @@ corrected here.
 98. **L4 — structure.** The closing summary's 1/2/3 sit at column 0, where a
     number means "brief item", and section 11's items print before section 7's.
     Both are tidied when this review is folded in. (correction)
+
+---
+
+# The app-switch cause, settled by measurement — 2026-09-03
+
+99. **The counter went up, but only after MINUTES away. Seconds never triggered
+    it.** Jamie, 2026-09-03. (given — the measurement item 74 asked for)
+
+100. **That is Safari discarding the tab. Candidate (c), and nothing else fits.**
+     - **(a) vite HMR reconnect** — the websocket drops the moment the tab
+       backgrounds and reconnects the moment it returns. It would fire on a
+       seconds-long switch. It does not. **Ruled out.**
+     - **(b) an unnecessary re-projection** — the counter would not move at all,
+       because nothing reloads. It moves. **Ruled out**, which also closes item
+       70: the mechanism was unsound AND the cause was wrong.
+     - **(d) the service worker** — `update()` runs on every `focus` and
+       `visibilitychange`, so it too would fire on a seconds-long switch. **Ruled
+       out.**
+     - **(c) Safari discarding a backgrounded tab** — evicted under memory
+       pressure after minutes, not seconds; the page reloads on return. This is
+       the only candidate whose timing matches, and `session-store.ts:3` already
+       warned about it. **This is it.**
+     (settled by measurement, 2026-09-03)
+
+101. **So nothing here is broken, and the fix is not to stop the reload.** We
+     cannot stop Safari evicting a tab and should not try. Edit mode restoring
+     the patch set afterwards is the safety net working exactly as designed —
+     the edits are not lost, and that is the whole point of `sessionStorage`.
+     **What Jamie sees is the restore arriving late.** (correction — this
+     replaces items 9 and 63 entirely)
+
+102. **Why it is visible: `start()` awaits two fetches before it projects.**
+     `overlay.ts:56-62` awaits the replay route and then the 23,000-class
+     catalogue. The game renders inside that window, un-edited. Only when both
+     land does anything project — and that is the snap Jamie is describing.
+     (checked in the code)
+
+103. **The fix: project from `sessionStorage` synchronously, before any await.**
+     The patch set is already in the phone and `sessionStorage` is a synchronous
+     read, so the edits can go on at the same moment the game first renders
+     rather than two fetches later. The observer that catches the game's render
+     moves up with it. The fetches keep doing their jobs; they just stop being on
+     the critical path for something that does not need them.
+     My rec: this. Why: it removes the visible gap without fighting Safari, and
+     it makes the restore behave the same on a discard as on an ordinary reload.
+     (recommendation — supersedes item 63)
+
+104. **Item 66's fourth acceptance test is rewritten.** "Nothing visibly
+     re-applies" was unfalsifiable once we knew a real reload happens. It
+     becomes: *make edits, leave Safari for five minutes, come back — the page
+     comes back already edited, with no un-edited flash.* The counter proves the
+     reload happened; the eye proves the restore was invisible.
+     (correction — supersedes item 66.4)
+
+105. **The counter stays until the fix is verified, then goes.** Item 74 said
+     delete once the cause is settled. It is settled, but it is also the only
+     thing that proves a reload happened at all, so it earns its keep for one
+     more round. Deleting it is a task in the plan, not a loose end.
+     (correction — supersedes item 74's disposal)
+
+## H3 settled: Discard stops the server too
+
+106. **Jamie, 2026-09-03: "discard stops the server as well".** So Discard is
+     always on screen and does three things: throw the edits away, put the page
+     back, and stop the dev server. (Settled: Jamie 2026-09-03 — the trap in item
+     107 was put to him explicitly and he confirmed)
+
+107. **The cost, recorded because it is real.** There is now no way to throw away
+     a mess and carry on designing in the same session. Give up means give up:
+     `/dev` again to come back. My recommendation was to leave stopping to Save;
+     Jamie chose otherwise and that is his call as the only user of the tool.
+     (recorded — not reopened)
+
+108. **So both session controls stop the server, and item 36's confirm labels
+     must both say so.**
+     - Save → **"Save and stop?"** (unchanged)
+     - Discard → **"Lose all and stop?"** (was "Lose all changes?")
+     My rec: this wording. Why: after item 106 a Discard that only says "lose all
+     changes" understates it by the entire dev server, which is the same
+     mislabelling item 28 warned about for Save. (recommendation — supersedes
+     item 36's Discard label)
+
+109. **And item 39's closing line changes with it.** "Changes discarded." is no
+     longer the whole truth, and it is now the last thing the page will ever say,
+     which puts it in `COPY.stopped`'s class rather than as a passing note.
+     My rec: **"Changes discarded and the server has stopped. Tap /dev in
+     Telegram to start again."** Why: it mirrors `COPY.stopped`, and item 41's
+     four-second timer is dropped for it — a terminal message must not vanish.
+     (recommendation — supersedes items 39 and 41)
+
+110. **Item 26's visibility rules, final.** Discard: **always visible** (item
+     106). Save: only when there is something to save. Undo and Reset: only with
+     an element selected and something to do. (correction — supersedes item 26's
+     first two bullets)
