@@ -89,6 +89,18 @@ const OVERLAY_COPY = [
   COPY.pencilHint,
   COPY.stopControl,
   COPY.stoppedNothingSaved,
+  // The two-tap gesture's armed labels, and Discard's three closing lines.
+  //
+  // THE ARMED LABELS, NOT THE BARE WORDS. 'Save' and 'Discard' are one-word
+  // strings that a production bundle could contain for a hundred innocent
+  // reasons, so pinning them would stop this spec guarding anything at all
+  // (brief item 147). The armed labels are questions and are distinctive.
+  COPY.saveArmed,
+  COPY.discardArmed,
+  COPY.discardArmedNothing,
+  COPY.discarded,
+  COPY.discardedWithSaved,
+  COPY.discardStopFailed,
 ];
 
 /** Paths and routes that only exist because edit mode does. */

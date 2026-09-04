@@ -61,6 +61,30 @@ export const COPY = {
   stopControl: 'Save & Stop',
 
   /**
+   * The control that throws the session away and then stops the dev server
+   * (brief item 30). ALWAYS on screen while the server runs, so it is the stop
+   * button as well as the discard button — Jamie, 2026-09-01: "if I start then
+   * change my mind I can stop the server from the server".
+   */
+  discardControl: 'Discard',
+
+  /**
+   * The second half of each control's two-tap gesture (brief item 24).
+   *
+   * A tap arms; the label expands to a question; a second tap acts. Both of
+   * these end the session, and there is no undo for either, so neither may fire
+   * on a single stray tap on a phone.
+   */
+  saveArmed: 'Save and stop?',
+  discardArmed: 'Lose all and stop?',
+  /**
+   * The same gesture with nothing to lose (brief item 143). "Lose all" would be
+   * a lie in a fresh session, and the button is the only way to stop the server
+   * there — so it says what it will actually do.
+   */
+  discardArmedNothing: 'Stop the server?',
+
+  /**
    * Brief item 27. THE LAST THING THIS PAGE WILL EVER SAY — the server it was
    * served from has gone — so it carries both next steps rather than one.
    */
@@ -77,8 +101,41 @@ export const COPY = {
    * The same moment as `stopped`, but nothing was pending, so nothing was
    * written. Both other messages open with "Saved" — claiming one here would
    * send Jamie looking for a session that does not exist.
+   *
+   * It still names the fold, because this line IS reachable with a session on
+   * disk (brief item 122): save with the pencil, then tap the control. Nothing
+   * was pending at that second tap, but a session file was written moments
+   * earlier and nothing else will ever mention it. Wording settled by Jamie,
+   * 2026-09-03.
    */
-  stoppedNothingSaved: 'The server has stopped. Tap /dev to start another.',
+  stoppedNothingSaved: 'The server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /dev to start another.',
+
+  /**
+   * Discard's closing line, when nothing had been banked (brief item 144).
+   *
+   * THE LAST THING THIS PAGE WILL EVER SAY, like `stopped`, so it carries the
+   * way back as well as the outcome. It does NOT time out: item 41 asked for a
+   * four-second revert and item 144 withdrew it, because a terminal message
+   * that vanishes leaves a dead page saying nothing at all.
+   */
+  discarded: 'Changes discarded and the server has stopped. Tap /dev in Telegram to start again.',
+
+  /**
+   * The same, when earlier saves DID bank sessions (brief items 123, 144).
+   *
+   * Discard throws away what is in the phone. It cannot reach a session file
+   * already written to the Pi, and saying "discarded" alone would leave Jamie
+   * believing those were gone too.
+   */
+  discardedWithSaved: 'Changes discarded and the server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /dev to start again.',
+
+  /**
+   * Discard, when the shutdown itself failed (brief item 140).
+   *
+   * `stopFailed` opens with "Saved", which is wrong on both counts here:
+   * nothing was saved, and the changes are gone on purpose.
+   */
+  discardStopFailed: 'Changes discarded, but the server did not stop. Use /devstop in Telegram.',
 
   /**
    * Brief item 46. The pencil is a glyph with no visible text, so its label is
