@@ -46,7 +46,7 @@ export function editMode(): Plugin {
       // feature exists.
       server.middlewares.use(
         receiveShutdown(async () => {
-          server.config.logger.info('  \u279c  edit mode: shutting down at the browser-s request');
+          server.config.logger.info('  \u279c  edit mode: shutting down at the browser\u2019s request');
           // RACED, not just awaited. .catch() covers a rejection, not a hang —
           // and close() waits on the plugin container, chokidar and the ws
           // server. If one of those stalls we never reach the exit, and the

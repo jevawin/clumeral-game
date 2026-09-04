@@ -73,6 +73,32 @@ async function start(): Promise<void> {
     else toggleWaiting = true;
   });
 
+  /**
+   * The same for the two session controls, and for the same reason.
+   *
+   * The row is drawn before the fetches now, so Discard is on screen within a
+   * frame of the page loading — and it cannot be wired up yet: discardAll()
+   * reaches setMode(), which reaches the interceptor and the controls, neither
+   * of which exists until the catalogue lands (brief item 116). A visible stop
+   * button whose second tap does nothing is worse than no button, and it is
+   * this tool's oldest complaint (Jamie, 2026-08-27: "seems functionally
+   * flakey").
+   *
+   * These fire on the SECOND tap only — the panel owns the confirm gesture — so
+   * anything held here is an action Jamie confirmed, honoured late rather than
+   * dropped.
+   */
+  let sessionAction: ((which: 'save' | 'discard') => void) | null = null;
+  let sessionWaiting: 'save' | 'discard' | null = null;
+  panel.onSave(() => {
+    if (sessionAction) sessionAction('save');
+    else sessionWaiting = 'save';
+  });
+  panel.onDiscard(() => {
+    if (sessionAction) sessionAction('discard');
+    else sessionWaiting = 'discard';
+  });
+
   const store = createSessionStore(branch, sessionStorage);
   const saved = store.load();
   let freeCss = saved.freeCss;
@@ -247,7 +273,8 @@ async function start(): Promise<void> {
   // And a way to STOP the server, in the same window. Everything the row needs
   // is above this line now, and the catalogue fetch is the 23,000-class file
   // this task exists to stop waiting for — leaving Discard, which is also the
-  // stop button, absent for the whole of it.
+  // stop button, absent for the whole of it. A confirmed tap that lands before
+  // the wiring exists is held above, not dropped.
   syncControlRow();
 
   // Everything above this line runs before the two fetches, and that is the
@@ -639,8 +666,10 @@ async function start(): Promise<void> {
     })();
   };
 
-  panel.onSave(() => void stopServer());
-  panel.onDiscard(() => void discardAll());
+  sessionAction = (which) => {
+    if (which === 'save') void stopServer();
+    else void discardAll();
+  };
 
   /**
    * Save: write the session, then ask the server to exit.
@@ -798,6 +827,11 @@ async function start(): Promise<void> {
   if (toggleWaiting) {
     toggleWaiting = false;
     toggleMode();
+  }
+  if (sessionWaiting) {
+    const which = sessionWaiting;
+    sessionWaiting = null;
+    sessionAction(which);
   }
 
   // Edit mode owns back until its own entries are exhausted, even in play mode

@@ -759,3 +759,54 @@ buried.
   `innerHTML` as well as the sheet's children. Pre-existing shape, marginally
   worse, no correctness impact — the click listeners are on the buttons, not
   their children.
+
+---
+
+# 9. da-build re-review, and the one thing it found
+
+Re-reviewed the fix commit fresh. It confirmed **M1 and M2 are genuinely closed**
+— it walked the closing-line table across all six reachable combinations and the
+sheet's padding across both the keyboard-open and keyboard-closed cases — and
+found **one new Medium, introduced by one of the Low fixes.**
+
+## M3 — the early control row was visible and dead
+
+Drawing the row before the fetches (a Low fix) put Discard on screen within a
+frame. Its HANDLER is registered after both fetches, because `discardAll()`
+reaches `setMode()`, which reaches the interceptor and the controls — neither of
+which exists yet (brief item 116). So for the whole catalogue fetch there was a
+red "Stop the server?" that did nothing when confirmed.
+
+That is the tool's oldest complaint, in a new place: `overlay.ts` already carries
+two comments about it, and Jamie's own words are "seems functionally flakey". No
+button at all was at least honest.
+
+**Fixed with the pattern already in the file 180 lines above** — the one that
+holds a pencil tap landing during the same window. The tap is held and honoured
+when the wiring exists. Because the panel owns the confirm gesture, anything held
+is an action Jamie already confirmed, so it is honoured late rather than dropped.
+
+Hoisting the handlers instead would have been worse: an early tap would throw a
+`ReferenceError` inside a `void`-ed async call — item 116's failure in a third
+variable, silent, on a phone.
+
+## Lows fixed in the same commit
+
+- **`--row-clearance` drops to 8px while the keyboard is up.** The row is fixed
+  to the LAYOUT viewport, so the keyboard is in front of it, while the sheet has
+  been lifted clear. Clearing a row that is not there cost about a third of the
+  sheet's height — exactly while the class search is in use.
+- **`text-overflow: ellipsis`** on an armed label, so a truncated question looks
+  truncated rather than merely short.
+- **The `stoppedNothingSaved` docblock moved back onto its own string.** The new
+  line had been inserted between them, so a comment saying "it still names the
+  fold" sat above the one string whose point is that it does not. That adjacency
+  is what produced M1 in the first place.
+- The apostrophe in the plugin's log line.
+
+## Both deferrals re-checked and upheld
+
+`sessionsBanked`'s seeding is marginally HARDER to hit than section 8 said —
+`persist()` is not called on the `stopFailed` branch itself, so it needs a
+subsequent tap, selection or free-CSS edit before the reload. `draw()` on scroll
+now costs two SVG parses in play mode as well as edit mode; still Low.

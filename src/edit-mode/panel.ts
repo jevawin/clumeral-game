@@ -139,6 +139,7 @@ const PANEL_CSS = `
        rather than pushing the row past its left bound. */
     min-width: 0;
     overflow: hidden;
+    text-overflow: ellipsis;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
@@ -229,8 +230,12 @@ const PANEL_CSS = `
        R18 said it would be: the row sits above the sheet and the sheet scrolls
        under it.
 
-       Must come AFTER the shorthand. */
-    padding: 8px 10px calc(80px + env(safe-area-inset-bottom, 0px));
+       --row-clearance drops to 8px while the keyboard is up, because the row is
+       fixed to the LAYOUT viewport and is therefore behind the keyboard, while
+       the sheet has been lifted clear of it. Clearing a row that is not there
+       costs about a third of the sheet's height, exactly while the class search
+       is in use. */
+    padding: 8px 10px calc(var(--row-clearance, 80px) + env(safe-area-inset-bottom, 0px));
     background: #ffffff;
     color: #1a1a1a;
     border-top: 2px solid #1a1a1a;
@@ -646,6 +651,9 @@ export function createPanel(doc: Document): Panel {
     sheet,
     setViewport(inset, visibleHeight) {
       host.style.setProperty('--keyboard-inset', `${Math.max(0, Math.round(inset))}px`);
+      // With the keyboard up the control row is behind it, so the sheet has
+      // nothing to clear at its bottom edge.
+      host.style.setProperty('--row-clearance', inset > 0 ? '8px' : '80px');
       // Never taller than the space left above the keyboard, or the top of the
       // sheet — the search field — is pushed off screen.
       host.style.setProperty('--sheet-max', `${Math.round(visibleHeight * 0.6)}px`);

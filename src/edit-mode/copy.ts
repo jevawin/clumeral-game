@@ -107,6 +107,8 @@ export const COPY = {
    */
   stopFailed: 'Saved, but the server did not stop. Use /devstop in Telegram.',
 
+  stoppedNothing: 'The server has stopped. Tap /dev to start another.',
+
   /**
    * The same moment as `stopped`, but nothing was pending, so nothing was
    * written. Both other messages open with "Saved" — claiming one here would
@@ -129,8 +131,6 @@ export const COPY = {
    * The wording is the one `stoppedNothingSaved` carried before item 122, which
    * Jamie had already approved: no new copy is being invented here.
    */
-  stoppedNothing: 'The server has stopped. Tap /dev to start another.',
-
   stoppedNothingSaved: 'The server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /dev to start another.',
 
   /**
