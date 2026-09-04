@@ -20,7 +20,7 @@ import {
 } from './select.ts';
 import { captureEnvironment, type Patch } from './patches.ts';
 import {
-  signature, exitDecision, stopOutcome, stopPillState,
+  signature, exitDecision, stopOutcome, controlRowState,
   countPatches, includesCssPatch, hasSomethingToSave,
 } from './pending.ts';
 import { COPY, conflictWarning } from './copy.ts';
@@ -313,16 +313,15 @@ async function start(): Promise<void> {
   }
 
   /**
-   * Push the pill's state to the panel. The ONLY thing that does.
+   * Push the control row's state to the panel. The ONLY thing that does.
    *
-   * panel.setMode only ever hides, by design, so if this is not called the pill
-   * is shown once at startup and never again — enter the editor once and
-   * Save & Stop is gone for the session, which is the opposite of item 61.
+   * panel.setMode does not touch these controls, so if this is not called they
+   * are shown once at startup and never again. It has to run after anything
+   * that changes whether there is something to save, which is why draw() ends
+   * with it.
    */
-  function syncStopPill(): void {
-    const state = stopPillState(mode, stopped, busy);
-    panel.setStopVisible(state.visible);
-    panel.setStopBusy(!state.enabled);
+  function syncControlRow(): void {
+    panel.setRow(controlRowState(stopped, isPending(), busy));
   }
 
   /** Is anything selected? The free-CSS patch needs somewhere to hang. */
@@ -369,7 +368,16 @@ async function start(): Promise<void> {
       order: chipOrder(current),
       // The raw field and free-CSS box are a desktop affordance (brief item 34).
       desktop: window.matchMedia('(min-width: 768px)').matches,
+      // Undo and Reset only appear when they would do something (item 134).
+      // Reset asks whether THIS element has an original recorded, because that
+      // is exactly what onResetElement needs to find.
+      hasSelection: selected !== null,
+      canUndo: history.entries.length > 0,
+      elementChanged: selectedPath !== null && history.originalOf(selectedPath) !== undefined,
     });
+    // Save appears and disappears with there being something to save, so the
+    // row has to be pushed on every redraw, not only on a mode change.
+    syncControlRow();
     // After the sheet has been laid out, so the measurement is the real one.
     requestAnimationFrame(fitPageToSheet);
   }
@@ -476,7 +484,8 @@ async function start(): Promise<void> {
       // The kind and the typed string ride on THIS change only.
       change(value.split(/\s+/).filter(Boolean), 'raw', 'raw', value);
     },
-    onFreeCss: (value) => { freeCss = value; persist(); },
+    // The box is a patch, so typing in it can make Save appear.
+    onFreeCss: (value) => { freeCss = value; persist(); syncControlRow(); },
     onSearchFocus: (focused) => {
       // Brief item 33: scroll the element clear so the keyboard cannot cover
       // the very thing being edited.
@@ -494,7 +503,7 @@ async function start(): Promise<void> {
     panel.setMode(next);
     if (next === 'edit') interceptor.enable();
     else interceptor.disable();
-    syncStopPill();
+    syncControlRow();
 
     // Brief item 109: returning from play mode is the only moment the game has
     // actually rendered, so it is the only moment this check can fire.
@@ -589,7 +598,7 @@ async function start(): Promise<void> {
     if (busy) return;
     void (async () => {
       busy = true;
-      syncStopPill();
+      syncControlRow();
       try {
         const pending = isPending();
         const ok = pending ? await save() : null;
@@ -598,12 +607,12 @@ async function start(): Promise<void> {
         if (exitDecision(pending, ok) === 'leave') setMode('play');
       } finally {
         busy = false;
-        syncStopPill();
+        syncControlRow();
       }
     })();
   };
 
-  panel.onStop(() => void stopServer());
+  panel.onSave(() => void stopServer());
 
   /**
    * Save & Stop: write the session, then ask the server to exit.
@@ -611,12 +620,12 @@ async function start(): Promise<void> {
   async function stopServer(): Promise<void> {
     if (busy) return;
     busy = true;
-    syncStopPill();
+    syncControlRow();
     try {
       await runStop();
     } finally {
       busy = false;
-      syncStopPill();
+      syncControlRow();
     }
   }
 
@@ -653,7 +662,7 @@ async function start(): Promise<void> {
     savedSignature = signature(history.entries, freeCss);
     store.clear();
     panel.setPencilEnabled(false);
-    syncStopPill();
+    syncControlRow();
     // Only claim a save when there was one. Both stopped messages open with
     // "Saved", and this is the last thing the page ever says — telling him to
     // fold a session that was never written would send him looking for it.

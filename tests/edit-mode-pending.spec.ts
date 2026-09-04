@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  signature, exitDecision, stopOutcome, stopPillState,
+  signature, exitDecision, stopOutcome, controlRowState, footerControls,
   countPatches, includesCssPatch, hasSomethingToSave,
 } from '../src/edit-mode/pending.ts';
 import { createHistory } from '../src/edit-mode/history.ts';
@@ -97,35 +97,71 @@ describe('what Save & Stop reports (brief items 34, 40)', () => {
   });
 });
 
-describe('what Save & Stop looks like right now (brief items 39, 61)', () => {
-  it('is on screen in play mode while the server runs', () => {
-    expect(stopPillState('play', false, false)).toEqual({ visible: true, enabled: true });
+describe('which session controls are on screen (brief items 134, 135)', () => {
+  const row = (stopped: boolean, somethingToSave: boolean, busy: boolean) =>
+    controlRowState(stopped, somethingToSave, busy);
+
+  it('shows Discard alone when there is nothing to save', () => {
+    expect(row(false, false, false)).toEqual({
+      discard: { visible: true, enabled: true },
+      save: { visible: false, enabled: true },
+    });
   });
 
-  it('is hidden in edit mode, where the pencil is the save control', () => {
-    expect(stopPillState('edit', false, false).visible).toBe(false);
+  it('brings Save in as soon as there is something to save', () => {
+    expect(row(false, true, false).save.visible).toBe(true);
   });
 
-  it('COMES BACK when the editor closes', () => {
-    // The regression this exists for. The panel hides the pill on entering edit
-    // mode and never shows it again, so a single call at startup meant
-    // Save & Stop vanished for good the first time the editor was opened —
-    // leaving no way at all to stop the server from the page.
-    expect(stopPillState('edit', false, false).visible).toBe(false);
-    expect(stopPillState('play', false, false).visible).toBe(true);
+  it('SHOWS THE ROW IN EDIT MODE TOO, reversing the 2026-08-26 rule', () => {
+    // The old rule hid the pill in edit mode because the pencil was the save
+    // control there. Discard is not a save control - it is the permanent stop
+    // button (Jamie, 2026-09-01: "if I start then change my mind I can stop the
+    // server from the server rather than always devstop"). There is no mode
+    // parameter left to hide it with (brief item 135).
+    expect(controlRowState.length, 'no mode parameter').toBe(3);
+    expect(row(false, false, false).discard.visible).toBe(true);
   });
 
-  it('stays gone once the server has stopped', () => {
-    // Escape and the back gesture both call setMode('play'), and neither may
-    // resurrect a pill pointing at a server that is no longer there.
-    expect(stopPillState('play', true, false).visible).toBe(false);
+  it('hides BOTH once the server has stopped, whatever else is true', () => {
+    // Escape and the back gesture both reach setMode('play'), and neither may
+    // resurrect a control pointing at a server that is no longer there. This
+    // is the invariant that used to be carried by the mode parameter.
+    const stopped = row(true, true, false);
+    expect(stopped.discard.visible).toBe(false);
+    expect(stopped.save.visible).toBe(false);
   });
 
-  it('is visible but disabled while a save or stop is in flight', () => {
-    // Disabled rather than hidden. A pencil save can still be running when
-    // Escape drops us into play mode, and a pill that looks tappable but
-    // silently does nothing is this tool's oldest complaint.
-    expect(stopPillState('play', false, true)).toEqual({ visible: true, enabled: false });
+  it('DISABLES rather than hides while a save or stop is in flight', () => {
+    // A pencil save can still be running when Escape drops us into play mode.
+    // A control that looks tappable but silently does nothing is this tool's
+    // oldest complaint.
+    const busy = row(false, true, true);
+    expect(busy.discard).toEqual({ visible: true, enabled: false });
+    expect(busy.save).toEqual({ visible: true, enabled: false });
+  });
+});
+
+describe('which footer buttons are worth showing (brief item 134)', () => {
+  it('shows neither with nothing selected', () => {
+    // Both act on the selected element, so both are dead without one - even
+    // with a full undo stack behind them.
+    expect(footerControls(false, true, true)).toEqual({ undo: false, reset: false });
+  });
+
+  it('shows Undo only when there is a step to undo', () => {
+    expect(footerControls(true, false, false).undo).toBe(false);
+    expect(footerControls(true, true, false).undo).toBe(true);
+  });
+
+  it('shows Reset only when THIS element has been changed', () => {
+    // Not "the history has something in it": resetting an untouched element is
+    // a no-op that looks like a broken button.
+    expect(footerControls(true, true, false).reset).toBe(false);
+    expect(footerControls(true, true, true).reset).toBe(true);
+  });
+
+  it('shows both when both apply', () => {
+    expect(footerControls(true, true, true)).toEqual({ undo: true, reset: true });
   });
 });
 

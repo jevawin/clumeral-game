@@ -95,29 +95,65 @@ export function stopOutcome(
   return result === 'http-error' ? 'stopFailed' : 'stopped';
 }
 
-/** What the Save & Stop pill should be doing right now. */
-export interface StopPillState {
-  visible: boolean;
-  enabled: boolean;
+/** What the two session controls should be doing right now. */
+export interface ControlRowState {
+  discard: { visible: boolean; enabled: boolean };
+  save: { visible: boolean; enabled: boolean };
 }
 
 /**
- * The pill's whole rule, in one place.
+ * The whole rule for the control row, in one place.
  *
- * Derived rather than set at each call site, because it was set at two and they
- * disagreed: the panel hides the pill on entering edit mode and never shows it,
- * so a single setStopVisible at startup meant Save & Stop disappeared for good
- * the first time the editor was opened.
+ * DISCARD IS ALWAYS THERE while the server runs, in play mode and in edit mode
+ * alike. Jamie, 2026-09-01: "always show discard so it's a permanent stop
+ * button as well as a discard all edits button. If I start then change my mind
+ * I can stop the server from the server rather than always devstop."
  *
- * `busy` disables rather than hides. A save started from the pencil can still
- * be in flight when Escape or the back gesture drops us into play mode, and a
- * pill that looks tappable but silently does nothing is this file's oldest
- * complaint — "seems functionally flakey".
+ * That REVERSES the 2026-08-26 rule that hid the pill in edit mode on the
+ * grounds that the pencil was the save control there (brief item 135). It was a
+ * good rule for Save and never applied to a stop button, which is what Discard
+ * also is.
+ *
+ * SAVE COMES AND GOES with there being something to save, so the row is two
+ * buttons when there is work and one when there is not.
+ *
+ * `stopped` beats both. Escape and the back gesture both reach setMode('play'),
+ * and neither may resurrect a control pointing at a server that has gone.
+ *
+ * `busy` DISABLES rather than hides. A save started from the pencil can still
+ * be in flight when Escape drops us into play mode, and a control that looks
+ * tappable but silently does nothing is this tool's oldest complaint.
  */
-export function stopPillState(
-  mode: 'play' | 'edit',
+export function controlRowState(
   stopped: boolean,
+  somethingToSave: boolean,
   busy: boolean
-): StopPillState {
-  return { visible: !stopped && mode === 'play', enabled: !busy };
+): ControlRowState {
+  return {
+    discard: { visible: !stopped, enabled: !busy },
+    save: { visible: !stopped && somethingToSave, enabled: !busy },
+  };
+}
+
+/**
+ * Which footer buttons are worth showing.
+ *
+ * Jamie, 2026-09-01: "only show undo and reset when selected an element and
+ * something to undo or reset". Both act on the selected element, and a button
+ * that cannot do anything is one more thing between him and the screen — on a
+ * panel that already covers the bottom of his phone.
+ *
+ * Reset asks whether THIS element has an original recorded, not whether the
+ * history has anything in it: resetting an untouched element is a no-op that
+ * looks like a broken button.
+ */
+export function footerControls(
+  hasSelection: boolean,
+  canUndo: boolean,
+  elementChanged: boolean
+): { undo: boolean; reset: boolean } {
+  return {
+    undo: hasSelection && canUndo,
+    reset: hasSelection && elementChanged,
+  };
 }

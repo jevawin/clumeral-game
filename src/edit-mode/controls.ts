@@ -11,6 +11,7 @@ import { search, familyLabel } from './catalogue.ts';
 import { isSteppable } from './scale.ts';
 import { COPY } from './copy.ts';
 import { icon } from './icons.ts';
+import { footerControls } from './pending.ts';
 
 export interface ControlsState {
   /** Breadcrumb crumbs, outermost first. Empty when nothing is selected. */
@@ -38,6 +39,18 @@ export interface ControlsState {
   order?: string[];
   /** Desktop gets the raw field and the free-CSS box (brief item 34). */
   desktop: boolean;
+  /**
+   * Is an element selected, is there a step to undo, and has THIS element been
+   * changed?
+   *
+   * Undo and Reset are drawn from these rather than always (brief item 134).
+   * Jamie, 2026-09-01: "only show undo and reset when selected an element and
+   * something to undo or reset". They default to false, so a caller that says
+   * nothing gets no footer buttons rather than two dead ones.
+   */
+  hasSelection?: boolean;
+  canUndo?: boolean;
+  elementChanged?: boolean;
 }
 
 export interface ControlsCallbacks {
@@ -251,6 +264,11 @@ export function createControls(
     picker.hidden = !pickerOpen;
     if (pickerOpen) return;
 
+    // Captured BEFORE the wipe: replaceChildren blurs whatever was focused, so
+    // afterwards there is nothing left to ask.
+    const active = (sheet.getRootNode() as ShadowRoot).activeElement;
+    const hadFooterFocus = active instanceof HTMLElement && active.closest('.footer') !== null;
+
     container.replaceChildren();
 
     if (state.crumbs.length) {
@@ -344,10 +362,25 @@ export function createControls(
     // Icons and Jamie's wording, 2026-08-26. No Close and no Save: tapping the
     // pencil saves and leaves edit mode, which is both of them in one control
     // (brief item 1).
+    //
+    // The row is ALWAYS appended, empty or not, and keeps a fixed height in
+    // CSS. Letting it collapse would move everything above it every time a
+    // button came or went, on a sheet Jamie is aiming at with a thumb.
+    const wanted = footerControls(
+      state.hasSelection ?? false,
+      state.canUndo ?? false,
+      state.elementChanged ?? false,
+    );
     const footer = row('footer');
-    footer.appendChild(button(COPY.undo, callbacks.onUndo, '', 'undo'));
-    footer.appendChild(button(COPY.resetElement, callbacks.onResetElement, '', 'reset'));
+    if (wanted.undo) footer.appendChild(button(COPY.undo, callbacks.onUndo, '', 'undo'));
+    if (wanted.reset) {
+      footer.appendChild(button(COPY.resetElement, callbacks.onResetElement, '', 'reset'));
+    }
     container.appendChild(footer);
+    // A button that has just been rendered away must not take focus down to
+    // the page with it (brief item 95). The sheet is the target here, and it is
+    // visible whenever the footer is.
+    if (hadFooterFocus) sheet.focus();
 
     // The pencil has no visible text, so its label is an aria-label Jamie will
     // never see on a phone. This line is the only actual warning that a tap

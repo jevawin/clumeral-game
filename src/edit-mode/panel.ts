@@ -54,7 +54,14 @@ const PANEL_CSS = `
      "Close" under the footer in Jamie's screenshot, 2026-08-26. */
   [hidden] { display: none !important; }
 
-  .pencil {
+  /* ONE ROW, right-anchored, holding all three session controls: Discard,
+     Save, pencil, in that order (Jamie, 2026-08-31). They used to be two
+     position: fixed rules with hand-computed offsets, so a control that grew
+     overlapped its neighbour instead of pushing it.
+
+     The container itself takes no taps — only its buttons do — or it would eat
+     the whole bottom-right corner of the game. */
+  .controls {
     position: fixed;
     right: 16px;
     /* Clear of the bottom-centre stack, and above the home indicator. */
@@ -62,6 +69,18 @@ const PANEL_CSS = `
     /* ABOVE the sheet. Jamie, 2026-08-24: "no way to close edit mode" — the
        sheet is fixed to the bottom and was covering the only way out. */
     z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .controls > button { pointer-events: auto; }
+  /* It is a focus TARGET, not a focus stop: a control that disappears hands
+     focus here so it does not fall to the page underneath (brief item 45). */
+  .controls:focus { outline: none; }
+
+  .pencil {
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -76,15 +95,12 @@ const PANEL_CSS = `
   }
   .pencil[data-mode="edit"] { background: #1a1a1a; color: #ffffff; }
 
-  /* Save & Stop. Beside the pencil, outside the sheet, so it is reachable
-     without opening the editor (brief items 18, 39). Hidden in edit mode: the
-     pencil is the save control there, and two ways to do one thing on a phone
-     is one too many. */
-  .stop-btn {
-    position: fixed;
-    right: calc(16px + 56px + 8px);
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    z-index: 2;
+  /* The two session controls, in the row beside the pencil, outside the sheet
+     so they are reachable without opening the editor (brief items 18, 39).
+     Both are in the row in EDIT mode too: Discard is a stop button as well as a
+     discard button, and stopping the server is not something the pencil does
+     (brief item 135). */
+  .save-btn, .discard-btn {
     height: 56px;
     padding: 0 16px;
     border-radius: 28px;
@@ -94,11 +110,9 @@ const PANEL_CSS = `
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    pointer-events: auto;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
-  .stop-btn[hidden] { display: none !important; }
-  .stop-btn:disabled { opacity: 0.5; }
+  .save-btn:disabled, .discard-btn:disabled { opacity: 0.5; }
   .pencil:disabled { opacity: 0.5; }
 
   /* The one surface that survives leaving the editor.
@@ -317,6 +331,10 @@ const PANEL_CSS = `
     background: #f3f3f3;
   }
   .picker-class { min-height: 34px; min-width: 0; font-size: 13px; padding: 0 8px; }
+  /* A FIXED HEIGHT, empty or not. Undo and Reset come and go with the
+     selection now, and a collapsing row would shift everything above it while
+     Jamie is aiming at it (brief item 27). */
+  .footer { min-height: 36px; }
   .footer button { min-height: 36px; font-size: 13px; }
   /* What the pencil now does, said in words. */
   .hint { display: block; margin-top: 8px; font-size: 12px; color: #555555; }
@@ -357,6 +375,7 @@ const HIGHLIGHT_CSS = `
 `;
 
 import { COPY } from './copy.ts';
+import type { ControlRowState } from './pending.ts';
 
 export interface Panel {
   /** The host element in the page. Used to tell the tool's events from the game's. */
@@ -384,19 +403,19 @@ export interface Panel {
    */
   notify(message: string): void;
   /**
-   * Show or hide Save & Stop.
+   * Show, hide and grey the two session controls.
    *
-   * The ONLY way it is ever shown. setMode may hide it in edit mode and must
-   * never show it, so a pill pointing at a server that has already stopped
-   * cannot be brought back by Escape or the back gesture.
+   * The ONLY way either is ever shown. setMode does not touch them, so a
+   * control pointing at a server that has already stopped cannot be brought
+   * back by Escape or the back gesture — that invariant is carried by
+   * `stopped` inside controlRowState, not by the panel.
    */
-  setStopVisible(visible: boolean): void;
-  /** Grey the pill out while a save or a stop is in flight. */
-  setStopBusy(busy: boolean): void;
+  setRow(state: ControlRowState): void;
   /** Kill the pencil once the server has gone — there is nothing to edit into. */
   setPencilEnabled(enabled: boolean): void;
   onToggle(handler: () => void): void;
-  onStop(handler: () => void): void;
+  onSave(handler: () => void): void;
+  onDiscard(handler: () => void): void;
   destroy(): void;
 }
 
@@ -431,11 +450,26 @@ export function createPanel(doc: Document): Panel {
   // coincidence, and editing copy.ts alone turned that spec red (brief item 45).
   pencil.setAttribute('aria-label', COPY.enterEditMode);
 
-  const stopBtn = doc.createElement('button');
-  stopBtn.className = 'stop-btn';
-  stopBtn.type = 'button';
-  stopBtn.textContent = COPY.stopControl;
-  stopBtn.hidden = true;
+  const discardBtn = doc.createElement('button');
+  discardBtn.className = 'discard-btn';
+  discardBtn.type = 'button';
+  discardBtn.textContent = COPY.discardControl;
+  discardBtn.hidden = true;
+
+  const saveBtn = doc.createElement('button');
+  saveBtn.className = 'save-btn';
+  saveBtn.type = 'button';
+  saveBtn.textContent = COPY.stopControl;
+  saveBtn.hidden = true;
+
+  // Discard, Save, pencil — left to right, pencil on the right where his thumb
+  // already expects it (Jamie, 2026-08-31).
+  const controls = doc.createElement('div');
+  controls.className = 'controls';
+  controls.tabIndex = -1;
+  controls.appendChild(discardBtn);
+  controls.appendChild(saveBtn);
+  controls.appendChild(pencil);
 
   const notice = doc.createElement('p');
   notice.className = 'notice';
@@ -443,17 +477,33 @@ export function createPanel(doc: Document): Panel {
   const sheet = doc.createElement('div');
   sheet.className = 'sheet';
   sheet.hidden = true;
+  // Without this .focus() on the sheet does nothing at all, and it is where a
+  // footer button hands focus when it disappears (brief item 95).
+  sheet.tabIndex = -1;
 
   const status = doc.createElement('p');
   status.className = 'status';
   sheet.appendChild(status);
 
-  root.appendChild(pencil);
-  root.appendChild(stopBtn);
+  root.appendChild(controls);
   root.appendChild(notice);
   root.appendChild(sheet);
 
   doc.body.appendChild(host);
+
+  /**
+   * Show, hide or grey one control — and never leave focus on a hidden button.
+   *
+   * The row's container is the fallback, NOT the sheet. Save's commonest
+   * disappearance is in play mode the moment a save succeeds, and the sheet is
+   * hidden in play mode: .focus() on a hidden element does nothing, so focus
+   * would fall to the page underneath (brief item 45, rev 2 R14).
+   */
+  function applyControl(btn: HTMLButtonElement, next: { visible: boolean; enabled: boolean }): void {
+    if (!next.visible && root.activeElement === btn) controls.focus();
+    btn.hidden = !next.visible;
+    btn.disabled = !next.enabled;
+  }
 
   return {
     host,
@@ -486,8 +536,9 @@ export function createPanel(doc: Document): Panel {
 
     setMode(mode) {
       pencil.dataset.mode = mode;
-      // HIDE ONLY. Showing is setStopVisible's job alone — see the interface.
-      if (mode === 'edit') stopBtn.hidden = true;
+      // The session controls are NOT touched here. The line that hid the pill
+      // in edit mode was undone by the very next syncStopPill() anyway, so it
+      // was dead code pretending to be an invariant (rev 2, R10).
       // Nothing is selected in play mode, so nothing should be outlined.
       if (mode !== 'edit') highlight.hidden = true;
       pencil.setAttribute('aria-label', mode === 'edit' ? COPY.exitEditMode : COPY.enterEditMode);
@@ -502,11 +553,9 @@ export function createPanel(doc: Document): Panel {
     notify(message) {
       notice.textContent = message;
     },
-    setStopVisible(visible) {
-      stopBtn.hidden = !visible;
-    },
-    setStopBusy(busy) {
-      stopBtn.disabled = busy;
+    setRow(next) {
+      applyControl(discardBtn, next.discard);
+      applyControl(saveBtn, next.save);
     },
     setPencilEnabled(enabled) {
       pencil.disabled = !enabled;
@@ -514,8 +563,11 @@ export function createPanel(doc: Document): Panel {
     onToggle(handler) {
       pencil.addEventListener('click', handler);
     },
-    onStop(handler) {
-      stopBtn.addEventListener('click', handler);
+    onSave(handler) {
+      saveBtn.addEventListener('click', handler);
+    },
+    onDiscard(handler) {
+      discardBtn.addEventListener('click', handler);
     },
     destroy() {
       host.remove();

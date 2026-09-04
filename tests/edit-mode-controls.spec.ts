@@ -33,7 +33,13 @@ beforeEach(() => {
   document.body.innerHTML = '<div id="sheet"></div>';
   sheet = document.getElementById('sheet')!;
   controls = createControls(document, sheet, catalogue, callbacks());
-  controls.render({ crumbs: ['main', 'div.card', 'button'], classes: ['mt-4', 'flex'], desktop: false });
+  // hasSelection/canUndo/elementChanged are explicit now: the footer is drawn
+  // from footerControls, so a render that says nothing gets no footer buttons
+  // rather than two dead ones (rev 2, R3).
+  controls.render({
+    crumbs: ['main', 'div.card', 'button'], classes: ['mt-4', 'flex'], desktop: false,
+    hasSelection: true, canUndo: true, elementChanged: true,
+  });
 });
 
 const find = (selector: string) => sheet.querySelector(selector) as HTMLElement;
@@ -230,6 +236,33 @@ describe('the footer (brief item 71, reworded by Jamie 2026-08-26)', () => {
       .toEqual(['Undo', 'Reset']);
   });
 
+  it('drops Undo when there is no step behind it', () => {
+    // Jamie, 2026-09-01: "only show undo and reset when selected an element and
+    // something to undo or reset". The sheet already covers the bottom of his
+    // phone without dead buttons on it.
+    controls.render({
+      crumbs: ['main'], classes: ['mt-4'], desktop: false,
+      hasSelection: true, canUndo: false, elementChanged: true,
+    });
+    expect(findAll('.footer button').map((b) => b.textContent)).toEqual(['Reset']);
+  });
+
+  it('drops Reset when THIS element has not been changed', () => {
+    controls.render({
+      crumbs: ['main'], classes: ['mt-4'], desktop: false,
+      hasSelection: true, canUndo: true, elementChanged: false,
+    });
+    expect(findAll('.footer button').map((b) => b.textContent)).toEqual(['Undo']);
+  });
+
+  it('keeps the row itself, so nothing above it jumps', () => {
+    // Brief item 27. The buttons come and go; the row does not, and its height
+    // is pinned in CSS.
+    controls.render({ crumbs: [], classes: [], desktop: false });
+    expect(findAll('.footer')).toHaveLength(1);
+    expect(findAll('.footer button')).toHaveLength(0);
+  });
+
   it('says in words what the pencil now does', () => {
     // An aria-label on a glyph is invisible on a phone, so this line is the
     // only warning that tapping the pencil writes a file (brief item 46).
@@ -257,9 +290,11 @@ describe('the footer (brief item 71, reworded by Jamie 2026-08-26)', () => {
 });
 
 describe('nothing selected yet', () => {
-  it('shows no breadcrumb, but still shows the footer', () => {
-    controls.render({ crumbs: [], classes: [], desktop: false });
+  it('shows no breadcrumb, and no footer buttons either', () => {
+    // Both footer buttons act on the selected element, so with nothing
+    // selected they would do nothing at all (brief item 134).
+    controls.render({ crumbs: [], classes: [], desktop: false, canUndo: true, elementChanged: true });
     expect(findAll('.crumb')).toHaveLength(0);
-    expect(findAll('.footer button')).toHaveLength(2);
+    expect(findAll('.footer button')).toHaveLength(0);
   });
 });

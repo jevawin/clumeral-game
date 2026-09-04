@@ -114,35 +114,55 @@ describe('teardown', () => {
   });
 });
 
-// Plan task 5. Brief items 18, 39, 43, 44.
-describe('Save & Stop, and somewhere to speak in play mode', () => {
-  it('mounts the pill with the agreed label', () => {
+// Plan task 5, rebuilt for the control row. Brief items 18, 39, 43, 44, 134, 135.
+const ROW_BOTH = {
+  discard: { visible: true, enabled: true },
+  save: { visible: true, enabled: true },
+};
+
+describe('the session controls, and somewhere to speak in play mode', () => {
+  it('mounts Discard, Save and the pencil in one row, in that order', () => {
+    // Jamie, 2026-08-31: "Discard Save Edit. That order." The pencil sits on
+    // the right where his thumb already expects it.
     panel = createPanel(document);
-    const stop = panel.root.querySelector('.stop-btn');
-    expect(stop?.textContent).toBe(COPY.stopControl);
+    const row = panel.root.querySelector('.controls')!;
+    expect([...row.children].map((el) => el.className))
+      .toEqual(['discard-btn', 'save-btn', 'pencil']);
   });
 
-  it('hides the pill in edit mode, where the pencil is the save control', () => {
+  it('SHOWS THE ROW IN EDIT MODE TOO', () => {
+    // Replaces "hides the pill in edit mode, where the pencil is the save
+    // control". That was the 2026-08-26 rule and brief item 135 reverses it:
+    // Discard is the permanent stop button, and stopping the server is not
+    // something the pencil does. The panel no longer touches these controls on
+    // a mode change at all.
     panel = createPanel(document);
-    panel.setStopVisible(true);
+    panel.setRow(ROW_BOTH);
     panel.setMode('edit');
-    expect(panel.root.querySelector<HTMLElement>('.stop-btn')?.hidden).toBe(true);
+    expect(panel.root.querySelector<HTMLElement>('.discard-btn')?.hidden).toBe(false);
+    expect(panel.root.querySelector<HTMLElement>('.save-btn')?.hidden).toBe(false);
   });
 
-  it('does NOT bring the pill back on its own when edit mode closes', () => {
-    // The pill has one owner. Otherwise Escape or the back gesture would
-    // re-show a Save & Stop pointing at a server that has already stopped.
+  it('shows neither control once the server has stopped', () => {
+    // Replaces "does NOT bring the pill back on its own when edit mode closes".
+    // The invariant is the same one and it now lives on `stopped`: Escape and
+    // the back gesture reach setMode('play'), and the row is whatever the last
+    // setRow said - which for a stopped server is nothing at all.
     panel = createPanel(document);
-    panel.setStopVisible(true);
+    panel.setRow(ROW_BOTH);
+    panel.setRow({
+      discard: { visible: false, enabled: true },
+      save: { visible: false, enabled: true },
+    });
     panel.setMode('edit');
-    panel.setStopVisible(false);
     panel.setMode('play');
-    expect(panel.root.querySelector<HTMLElement>('.stop-btn')?.hidden).toBe(true);
+    expect(panel.root.querySelector<HTMLElement>('.discard-btn')?.hidden).toBe(true);
+    expect(panel.root.querySelector<HTMLElement>('.save-btn')?.hidden).toBe(true);
   });
 
   it('keeps a notice when the editor closes, but clears the in-sheet status', () => {
-    // The whole reason .notice exists: everything Save & Stop reports is shown
-    // in play mode, and setMode blanks the status on the way there.
+    // The whole reason .notice exists: everything the session controls report
+    // is shown in play mode, and setMode blanks the status on the way there.
     panel = createPanel(document);
     panel.setMode('edit');
     panel.say('in the sheet');
@@ -152,22 +172,49 @@ describe('Save & Stop, and somewhere to speak in play mode', () => {
     expect(panel.root.querySelector('.notice')?.textContent).toBe(COPY.stopped);
   });
 
-  it('greys the pill out while a save or stop is in flight', () => {
+  it('greys both out while a save or stop is in flight', () => {
     // No in-flight feedback on a phone is what produces a second tap, and a
     // second tap writes a second session file.
     panel = createPanel(document);
-    panel.setStopVisible(true);
-    panel.setStopBusy(true);
-    expect(panel.root.querySelector<HTMLButtonElement>('.stop-btn')?.disabled).toBe(true);
-    panel.setStopBusy(false);
-    expect(panel.root.querySelector<HTMLButtonElement>('.stop-btn')?.disabled).toBe(false);
+    panel.setRow({
+      discard: { visible: true, enabled: false },
+      save: { visible: true, enabled: false },
+    });
+    expect(panel.root.querySelector<HTMLButtonElement>('.discard-btn')?.disabled).toBe(true);
+    expect(panel.root.querySelector<HTMLButtonElement>('.save-btn')?.disabled).toBe(true);
+    panel.setRow(ROW_BOTH);
+    expect(panel.root.querySelector<HTMLButtonElement>('.save-btn')?.disabled).toBe(false);
   });
 
-  it('calls back when the pill is tapped', () => {
+  it('calls back when each is tapped', () => {
     panel = createPanel(document);
-    const onStop = vi.fn();
-    panel.onStop(onStop);
-    panel.root.querySelector<HTMLButtonElement>('.stop-btn')?.click();
-    expect(onStop).toHaveBeenCalledOnce();
+    const onSave = vi.fn();
+    const onDiscard = vi.fn();
+    panel.onSave(onSave);
+    panel.onDiscard(onDiscard);
+    panel.setRow(ROW_BOTH);
+    panel.root.querySelector<HTMLButtonElement>('.save-btn')?.click();
+    panel.root.querySelector<HTMLButtonElement>('.discard-btn')?.click();
+    expect(onSave).toHaveBeenCalledOnce();
+    expect(onDiscard).toHaveBeenCalledOnce();
+  });
+
+  it('does not leave focus on a control it has just hidden', () => {
+    // Brief item 45. Save disappears the moment a save succeeds, usually in
+    // play mode - where the sheet is hidden, so focusing the sheet would do
+    // nothing at all and focus would fall to the game underneath.
+    panel = createPanel(document);
+    panel.setRow(ROW_BOTH);
+    const save = panel.root.querySelector<HTMLButtonElement>('.save-btn')!;
+    save.focus();
+    expect(panel.root.activeElement).toBe(save);
+    panel.setRow({ discard: { visible: true, enabled: true }, save: { visible: false, enabled: true } });
+    expect(panel.root.activeElement).toBe(panel.root.querySelector('.controls'));
+  });
+
+  it('gives the sheet a focus target for the footer buttons', () => {
+    // Without tabindex="-1" a .focus() call on the sheet does nothing (item 95).
+    panel = createPanel(document);
+    expect(panel.sheet.tabIndex).toBe(-1);
   });
 });
