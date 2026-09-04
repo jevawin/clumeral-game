@@ -7,7 +7,8 @@ Date: 2026-09-03 · Branch: `dev/jamie-controlled-dev-server` · Brief:
 and are superseded by section 12 wherever they differ. Two `da-brief` rounds ran;
 the second withdrew the original diagnosis, and the brief carries both.
 
-**Not yet approved.** Jamie approves plans as dev lead.
+**Approved: Jamie 2026-09-03.** Plan approval is his as dev lead. Build may start.
+R22's wording was approved in the same message, so section 6 has no open items.
 
 ---
 
@@ -610,4 +611,4 @@ section 8 is Jamie's. The proposed line is:
 > "The server has stopped. Sessions you saved earlier are still there — ask the
 > bot in Telegram to fold them, or tap /dev to start another."
 
-**Needs his word.** Everything else in this revision is a "how" and is mine.
+**Settled: Jamie 2026-09-03.** Everything else in this revision is a "how" and is mine.
