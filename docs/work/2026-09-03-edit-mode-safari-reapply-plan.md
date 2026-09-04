@@ -413,3 +413,201 @@ an icon.
 | 150 | Task 9 — an ask, not an edit |
 | 151-153 | Tasks 2, 3, 4, 5 — the pure functions |
 | 158 | Section 4 |
+
+---
+
+# 6. da-plan review — rev 2
+
+Two highs, nine mediums, eleven lows. All answered. **Where this section
+disagrees with sections 2-5, this wins.**
+
+## H1 — the tests were aimed at the wrong files, and three tasks left the suite red
+
+The plan sent every new test to `tests/edit-mode-controls.spec.ts` on the claim
+that it "already imports the pure modules". It does not — it imports
+`controls.ts`, `catalogue.ts` and `copy.ts` only. `pending.ts` lives in
+**`tests/edit-mode-pending.spec.ts`**, which the plan never named, and which
+imports `stopPillState` and asserts on it five times. Task 4 deletes that
+function, so that file stops compiling. **`tests/edit-mode-panel.spec.ts`** was
+missed too. Brief item 149 is where the wrong file list came from; the plan
+should have checked rather than inherited it.
+
+**R1. The real file list.** Tasks 4, 5 and 6 also touch
+`tests/edit-mode-pending.spec.ts` and `tests/edit-mode-panel.spec.ts`.
+
+**R2. Three existing tests are DELIBERATE reversals, not breakages, and each gets
+a replacement that says so:**
+- `edit-mode-panel.spec.ts:124` "hides the pill in edit mode, where the pencil is
+  the save control" → becomes "shows the row in edit mode too", citing brief item
+  135. This is the 2026-08-26 decision being reversed.
+- `edit-mode-panel.spec.ts:131` "does NOT bring the pill back on its own when edit
+  mode closes" → the invariant it guards moves onto `stopped`; the replacement
+  asserts a stopped server never shows either control.
+- `edit-mode-panel.spec.ts:122` asserts the pill's text is `COPY.stopControl` →
+  becomes the two-control row.
+
+**R3. `edit-mode-controls.spec.ts:259`** asserts two footer buttons with no
+selection, which `footerControls(false, …)` makes impossible. It and the four
+assertions depending on the `beforeEach` render are rewritten to pass the new
+state explicitly.
+
+**R4. Every task's "Proves it" line names the files it must leave green**, and
+`npx vitest run` in full is the gate at each commit — not one spec.
+
+## H2 — Task 5's label used the wrong predicate
+
+`controlLabel(control, armed, somethingToSave)` re-creates item 124's mislabel in
+the other direction. Make three edits, tap Save, the save succeeds:
+`somethingToSave` is now false, but the entries are still there and Discard is
+about to throw away a screenful of visible work — and the button would read
+**"Stop the server?"**.
+
+**R5.** The predicate is **something to DISCARD**, which is a different value:
+
+```ts
+export function hasSomethingToDiscard(patchCount: number): boolean {
+  return patchCount > 0;
+}
+export function controlLabel(
+  control: 'save' | 'discard',
+  armed: boolean,
+  somethingToDiscard: boolean,
+): string
+```
+
+They coincide only before the first save. **A test pins the divergence:** edits
+saved, then Discard armed → "Lose all and stop?", never "Stop the server?".
+
+## Mediums
+
+**R6 (M1) — Task 2's move is wider than four lines.** The block that moves above
+the fetches is `overlay.ts:84-133` (`store`, `saved`, `freeCss`,
+`savedSignature`, `stopped`, `busy`, `history`, `mode`, `selected`,
+`selectedPath`, `switchedOff`, `offFor`, `chipOrder`) **and** `563-607`
+(`projecting`, `reproject`, `pending`, `scheduleReproject`, `observer`,
+`observer.observe`). `projecting` and `pending` are `let`, so an observer
+callback firing during the awaits hits the same temporal-dead-zone error item 116
+warned about — in a different variable. The `controlsReady` guard is confirmed
+correct for `controls` itself; it is the scope of the move that was wrong.
+
+**R7 (M3, M4) — `countPatches` is exported from `pending.ts` and called from BOTH
+places.** The plan's safety argument was "the same condition `save()` uses, so
+they cannot disagree" — but that was two hand-copied conditions in a file no test
+can import.
+
+```ts
+export function countPatches(entryCount: number, freeCss: string, hasSelection: boolean): number {
+  return entryCount + (freeCss !== '' && hasSelection ? 1 : 0);
+}
+```
+
+Called by `isPending()` and by `save()` (`overlay.ts:414`). The invariant is now
+enforced rather than asserted, and the whole decision is reachable from a test.
+
+**R8 (M4) — item 152's "red today" test is honestly limited, and the limit is
+stated rather than hidden.** The shipped bug is in `isPending()`, which cannot be
+imported (`grep -c "^export" src/edit-mode/overlay.ts` → 0). With R7 a test can
+drive real `history` entries through `countPatches` and `hasSomethingToSave` and
+cover the whole decision — but the *wiring* of that decision into `overlay.ts` is
+still only covered by Jamie's acceptance tests 1 and 2. **Said plainly, not
+claimed away.**
+
+**R9 (M2, M3) — section 4's "everything is unit-testable" is withdrawn.** What is
+NOT reachable from a test, stated: Task 2's wiring and the observer move — which
+item 118 calls the load-bearing half; Task 6 entirely; `discardAll()`'s sequence;
+and the focus handling. `mergeProjections` tests the merge, not the move. These
+rest on Jamie's acceptance test, and that is the honest position.
+
+**R10 (M5) — the panel's API and its dead code.** `panel.ts:490`
+`if (mode === 'edit') stopBtn.hidden = true` is silently undone by the
+`syncStopPill()` that follows it; it goes. The docstring at `panel.ts:386-392`
+becomes false and is rewritten. `setStopVisible` / `setStopBusy` / `onStop` are
+single-control methods and are replaced by:
+
+```ts
+setRow(state: ControlRowState): void;
+onDiscard(handler: () => void): void;
+```
+
+`onStop` becomes `onSave`. Confirmed: dropping `mode` does **not** break the
+"cannot be brought back by Escape" invariant — that half is carried by `stopped`,
+and `controlRowState(true, …)` still hides both.
+
+**R11 (M6) — `stopped` is set back to `false` when the shutdown fails.** Task 7
+set it before the POST and never unset it, so on `'stopFailed'` the server is
+alive while both controls are hidden and the pencil is dead — no control on the
+page can stop it. That is item 78's orphan, reached through the one path item 120
+asked to be specified. On the `stopFailed` branch: `stopped = false`, refresh the
+row, and a second Discard tap retries the shutdown.
+
+**R12 (M7) — "were sessions banked?" must survive the reload.** An in-memory
+boolean is false after exactly the tab discard this whole brief is about. The
+durable signal already exists and is already persisted: `savedSignature` in
+`StoredState`, written on `res.ok`. **Use `saved.savedSignature !== ''`.**
+
+**R13 (M8) — the closing line has two axes, not one.** Task 5 gets a fresh-session
+label; Task 7 then ended that same session claiming it discarded changes that
+never existed — the last thing the page ever says. The chooser is a pure function
+of (stop outcome, anything discarded, anything banked):
+- nothing discarded, nothing banked → `stoppedNothingSaved`
+- discarded, nothing banked → `discarded`
+- discarded, banked → `discardedWithSaved`
+- nothing discarded, banked → `stoppedNothingSaved` (it already names the fold)
+- stop failed → `discardStopFailed`
+
+**R14 (M9) — focus cannot go to the sheet for the session controls.**
+`panel.sheet` is `hidden` outside edit mode, and `.focus()` on a hidden element
+does nothing. Save's commonest disappearance is in play mode the moment a save
+succeeds — item 45's exact case. **The row's container is the fallback target**
+for Save and Discard; the sheet stays the target for Undo and Reset, where it is
+visible. `tabindex="-1"` on the sheet (item 95) is right and unaffected.
+
+## Lows
+
+**R15 (L10) — the ordering had a live hazard.** Task 1 landed
+`stopControl: 'Save'` several commits before Task 5's confirm gesture, so for the
+duration a **one-tap button labelled "Save" would kill the dev server** on a
+branch Jamie is using on his phone. `exitEditMode: 'Leave edit mode'` is likewise
+untrue until Task 3. **Both renames move out of Task 1 and land with the task
+that makes them true** — `stopControl` with Task 5, `exitEditMode` with Task 3.
+Task 1 keeps only the additions, which are inert until wired.
+
+**R16 (L9) — hold the replay map and merge inside `reproject()`.** As written the
+merge applies once, and `reproject()` then projects `history.projection()` alone,
+dropping replay-only breadcrumbs at the first re-render. Pre-existing, but one
+line makes item 153's sentence true across re-renders instead of for one instant.
+
+**R17 (L4) — `discardArmedNothing`, `discardedWithSaved` and `discardStopFailed`
+go in `OVERLAY_COPY` too.** Long distinctive strings are exactly what that spec
+guards.
+
+**R18 (L6, L7) — no placeholders.** `.sheet` clearance becomes
+`padding-right: 196px` (three 56px controls, two 8px gaps, 16px gutter). The
+expanded pill is handled by the row sitting **above** the sheet and the sheet
+scrolling under it, not by padding — padding cannot solve a 300px overlay.
+Colours, fixed hex in `panel.ts` beside its other hand-written values, chosen to
+read on its permanently-light surface: **discard `#c62828` on `#fff`, save
+`#2e7d32` on `#fff`**, white text on both.
+
+**R19 (L5) — `COPY.pencilHint`** ("The pencil saves your changes and leaves the
+editor") goes stale for the same reason as `exitEditMode`. It becomes "The pencil
+saves your changes, if there are any, and leaves the editor." Lands with Task 3.
+
+**R20 (L11, L2, L8) — housekeeping.** Item 42's surface is named in Task 7 step 6:
+`panel.notify()`, never `say()`, because `setMode` blanks the sheet. Task 3's
+omission of `session-store.ts` from item 148's list is a **deliberate deviation**
+— one rule in one place — not an oversight. `syncStopPill()` is renamed
+`syncControlRow()` and that name is used throughout.
+
+**R21 (L1) — item 111 is a ledger entry with no code.** Added to section 5.
+
+## L3 — the one thing that needs Jamie
+
+**R22.** Task 1 step 6 invented replacement wording for `COPY.stoppedNothingSaved`.
+Brief item 133 says "fix that copy too" and settles nothing about the words, and
+section 8 is Jamie's. The proposed line is:
+
+> "The server has stopped. Sessions you saved earlier are still there — ask the
+> bot in Telegram to fold them, or tap /dev to start another."
+
+**Needs his word.** Everything else in this revision is a "how" and is mine.
