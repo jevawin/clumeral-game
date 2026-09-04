@@ -112,17 +112,42 @@ const PANEL_CSS = `
      discard button, and stopping the server is not something the pencil does
      (brief item 135). */
   .save-btn, .discard-btn {
+    /* THE PENCIL'S SIZE, and round like it, so the row reads as three of the
+       same thing (items 85, 137). Jamie, 2026-08-31: "same size as pencil.
+       Icon at first. Expand to show confirm message on tap." The old pill was
+       a word wide at all times and blocked the screen. */
+    width: 56px;
     height: 56px;
-    padding: 0 16px;
+    padding: 0;
+    gap: 8px;
     border-radius: 28px;
     border: 2px solid #1a1a1a;
     background: #ffffff;
     color: #1a1a1a;
     font-size: 14px;
     font-weight: 700;
+    white-space: nowrap;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
+  /* Armed: the label appears, the button grows LEFTWARDS because the row is
+     anchored right, and its neighbours are pushed rather than covered
+     (item 67). Jamie, 2026-08-31: "they can expand left and push the button
+     over, don't overlap that's gross".
+
+     The colour arrives with the expansion, not at rest (item 55).
+
+     FIXED HEX, not --color-success / --color-error: those derive from the
+     theme and flip in dark mode, while this panel is permanently light. A
+     token here would take a dark-mode value on a white surface, and the tool's
+     own chrome would start tracking the theme being edited (item 91). */
+  .save-btn.is-armed, .discard-btn.is-armed {
+    width: auto;
+    padding: 0 16px;
+    color: #ffffff;
+  }
+  .discard-btn.is-armed { background: #c62828; border-color: #c62828; }
+  .save-btn.is-armed { background: #2e7d32; border-color: #2e7d32; }
   .save-btn:disabled, .discard-btn:disabled { opacity: 0.5; }
   .pencil:disabled { opacity: 0.5; }
 
@@ -176,10 +201,18 @@ const PANEL_CSS = `
        sheet is at its end (Jamie, 2026-08-24, item 2). */
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    /* Right padding keeps the sheet clear of the pencil, so it never covers
-       the only way out. Must come AFTER the shorthand. */
+    /* Right padding keeps the sheet clear of the CONTROL ROW, so it never
+       covers the only way out. Three 56px controls, two 8px gaps and the 16px
+       gutter: 196px. It follows the row rather than the pencil alone, which is
+       what 76px assumed (item 136).
+
+       An EXPANDED control is not handled by padding and cannot be: an armed
+       label is 300px wide on a phone. The row sits above the sheet and the
+       sheet scrolls under it (rev 2, R18).
+
+       Must come AFTER the shorthand. */
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-    padding-right: 76px;
+    padding-right: 196px;
     background: #ffffff;
     color: #1a1a1a;
     border-top: 2px solid #1a1a1a;
@@ -386,6 +419,7 @@ const HIGHLIGHT_CSS = `
 `;
 
 import { COPY } from './copy.ts';
+import { icon } from './icons.ts';
 import { armOnTap, controlLabel, type ArmedControl, type ControlRowState } from './pending.ts';
 
 export interface Panel {
@@ -538,12 +572,32 @@ export function createPanel(doc: Document): Panel {
     armTimer = undefined;
   }
 
-  function drawLabels(): void {
-    discardBtn.textContent = controlLabel('discard', armed === 'discard', discardable);
-    saveBtn.textContent = controlLabel('save', armed === 'save', discardable);
+  /**
+   * One control: its icon always, its words only when armed.
+   *
+   * The icon carries the meaning at rest and the label is what makes the
+   * confirm unambiguous, so the aria-label is the LABEL in both states — the
+   * icon alone would announce as nothing at all.
+   */
+  function drawControl(btn: HTMLButtonElement, control: 'save' | 'discard', iconName: string): void {
+    const isArmed = armed === control;
+    const label = controlLabel(control, isArmed, discardable);
+    // 22px to match the pencil's glyph. The default is sized in em, which on a
+    // 14px button is a 16px icon lost in a 56px circle.
+    btn.innerHTML = icon(iconName, '22px');
+    if (isArmed) {
+      const text = doc.createElement('span');
+      text.textContent = label;
+      btn.appendChild(text);
+    }
+    btn.setAttribute('aria-label', label);
     // The colour arrives with the expansion, not at rest (brief item 55).
-    discardBtn.classList.toggle('is-armed', armed === 'discard');
-    saveBtn.classList.toggle('is-armed', armed === 'save');
+    btn.classList.toggle('is-armed', isArmed);
+  }
+
+  function drawLabels(): void {
+    drawControl(discardBtn, 'discard', 'trash');
+    drawControl(saveBtn, 'save', 'save');
   }
 
   function tap(control: 'save' | 'discard'): void {

@@ -231,6 +231,39 @@ describe('the confirm tap (brief items 24, 146)', () => {
     save: { visible: true, enabled: true },
   };
 
+  /**
+   * What a control says, whether or not it is showing words.
+   *
+   * At rest it is an icon and nothing else - 56px, the pencil's size - so the
+   * aria-label is the only place the word lives. Armed, it is both.
+   */
+  const labelOf = (selector: string) =>
+    panel!.root.querySelector(selector)!.getAttribute('aria-label');
+
+  it('is an icon and nothing else at rest, and grows words when armed', () => {
+    // Jamie, 2026-08-31: "same size as pencil. Icon at first. Expand to show
+    // confirm message on tap." The old pill was a word wide at all times and
+    // blocked the screen.
+    panel = createPanel(document);
+    panel.setRow(bothVisible, true);
+    const discard = panel.root.querySelector<HTMLButtonElement>('.discard-btn')!;
+    expect(discard.querySelector('svg.icon')).toBeTruthy();
+    expect(discard.textContent).toBe('');
+    expect(discard.getAttribute('aria-label')).toBe(COPY.discardControl);
+    discard.click();
+    expect(discard.querySelector('svg.icon'), 'the icon stays').toBeTruthy();
+    expect(discard.textContent).toBe(COPY.discardArmed);
+  });
+
+  it('takes its colour from the expansion, not from rest (brief item 55)', () => {
+    panel = createPanel(document);
+    panel.setRow(bothVisible, true);
+    const save = panel.root.querySelector<HTMLButtonElement>('.save-btn')!;
+    expect(save.classList.contains('is-armed')).toBe(false);
+    save.click();
+    expect(save.classList.contains('is-armed')).toBe(true);
+  });
+
   it('does not act on the first tap', () => {
     panel = createPanel(document);
     const onDiscard = vi.fn();
@@ -238,7 +271,7 @@ describe('the confirm tap (brief items 24, 146)', () => {
     panel.setRow(bothVisible, true);
     panel.root.querySelector<HTMLButtonElement>('.discard-btn')!.click();
     expect(onDiscard).not.toHaveBeenCalled();
-    expect(panel.root.querySelector('.discard-btn')?.textContent).toBe(COPY.discardArmed);
+    expect(labelOf('.discard-btn')).toBe(COPY.discardArmed);
   });
 
   it('acts on the second, and goes back to the plain word', () => {
@@ -248,10 +281,10 @@ describe('the confirm tap (brief items 24, 146)', () => {
     panel.setRow(bothVisible, true);
     const save = panel.root.querySelector<HTMLButtonElement>('.save-btn')!;
     save.click();
-    expect(save.textContent).toBe(COPY.saveArmed);
+    expect(labelOf('.save-btn')).toBe(COPY.saveArmed);
     save.click();
     expect(onSave).toHaveBeenCalledOnce();
-    expect(save.textContent).toBe(COPY.stopControl);
+    expect(labelOf('.save-btn')).toBe(COPY.stopControl);
   });
 
   it('disarms the other control when one is armed', () => {
@@ -259,15 +292,15 @@ describe('the confirm tap (brief items 24, 146)', () => {
     panel.setRow(bothVisible, true);
     panel.root.querySelector<HTMLButtonElement>('.save-btn')!.click();
     panel.root.querySelector<HTMLButtonElement>('.discard-btn')!.click();
-    expect(panel.root.querySelector('.save-btn')?.textContent).toBe(COPY.stopControl);
-    expect(panel.root.querySelector('.discard-btn')?.textContent).toBe(COPY.discardArmed);
+    expect(labelOf('.save-btn')).toBe(COPY.stopControl);
+    expect(labelOf('.discard-btn')).toBe(COPY.discardArmed);
   });
 
   it('asks a different question when there is nothing to lose', () => {
     panel = createPanel(document);
     panel.setRow(bothVisible, false);
     panel.root.querySelector<HTMLButtonElement>('.discard-btn')!.click();
-    expect(panel.root.querySelector('.discard-btn')?.textContent).toBe(COPY.discardArmedNothing);
+    expect(labelOf('.discard-btn')).toBe(COPY.discardArmedNothing);
   });
 
   it('goes back to the plain word after four seconds', () => {
@@ -283,9 +316,9 @@ describe('the confirm tap (brief items 24, 146)', () => {
       const discard = panel.root.querySelector<HTMLButtonElement>('.discard-btn')!;
       discard.click();
       vi.advanceTimersByTime(3999);
-      expect(discard.textContent).toBe(COPY.discardArmed);
+      expect(labelOf('.discard-btn')).toBe(COPY.discardArmed);
       vi.advanceTimersByTime(1);
-      expect(discard.textContent).toBe(COPY.discardControl);
+      expect(labelOf('.discard-btn')).toBe(COPY.discardControl);
       // And the tap that follows arms again rather than acting.
       discard.click();
       expect(onDiscard).not.toHaveBeenCalled();
@@ -307,9 +340,9 @@ describe('the confirm tap (brief items 24, 146)', () => {
       // The save timer, if it were still running, would fire here and blank a
       // label that has since moved on.
       vi.advanceTimersByTime(1500);
-      expect(discard.textContent).toBe(COPY.discardArmed);
+      expect(labelOf('.discard-btn')).toBe(COPY.discardArmed);
       vi.advanceTimersByTime(2500);
-      expect(discard.textContent).toBe(COPY.discardControl);
+      expect(labelOf('.discard-btn')).toBe(COPY.discardControl);
     } finally {
       vi.useRealTimers();
     }
@@ -324,6 +357,6 @@ describe('the confirm tap (brief items 24, 146)', () => {
     save.click();
     panel.setRow({ ...bothVisible, save: { visible: false, enabled: true } }, true);
     panel.setRow(bothVisible, true);
-    expect(save.textContent).toBe(COPY.stopControl);
+    expect(labelOf('.save-btn')).toBe(COPY.stopControl);
   });
 });

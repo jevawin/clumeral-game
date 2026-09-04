@@ -18,6 +18,10 @@ const ICONS: Record<string, string> = {
   reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
   // lucide: save
   save: '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+  // lucide: trash-2. The floppy above is Jamie's Save (2026-09-01: "Floppy for
+  // save. Trash for discard."). public/sprites.svg is the GAME's sheet and a
+  // production artefact, so neither icon goes anywhere near it.
+  trash: '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   // lucide: plus
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
   // lucide: minus
