@@ -875,3 +875,121 @@ minutes not seconds, and that is Safari discarding the tab. The fix moved from
 - Discard, and a control row that earns its place (19-30, 52-60, 67-69, 106-110).
 
 **Not reopened:** staying put on a genuinely failed save with real changes.
+
+---
+
+# Second da-brief review, 2026-09-03 — item 100 is withdrawn
+
+## H-1 — vite IS ruled back in, and it fits "minutes, not seconds" exactly
+
+112. **Item 100 crossed vite off for having the wrong timing. That was wrong, and
+     vite's own client source says so.** Verified here, not taken on trust —
+     `node_modules/vite/dist/client/client.mjs`:
+     - **:967-975** on `vite:ws:disconnect` — "server connection lost. Polling
+       for restart..." then `await waitForSuccessfulPing(url)` then
+       **`location.reload()`**.
+     - **:1148-1150** the poll only runs while the tab is visible:
+       `while (true) if (currentState === 'visible') { ping } else await
+       waitForWindowShow(...)`.
+
+     So: a seconds-long switch does not kill the socket, and nothing happens. A
+     minutes-long switch lets iOS suspend the page, the socket dies, the client
+     **parks** until the tab is shown again, and then reloads. That is precisely
+     "the counter only moved after minutes" — produced by the candidate item 100
+     dismissed for not matching that timing.
+     (correction — item 100's ruling-out of candidate (a) is withdrawn)
+
+113. **And (d) was ruled out for the wrong reason.** The service worker only
+     reloads if `sw.js` actually changed, so it would not fire on a short switch
+     either. The real reason it is out is item 72's own unchecked caveat: the
+     Tailscale URL is plain http, so `navigator.serviceWorker` is undefined and
+     `app.ts:1173` never runs. Right answer, wrong argument.
+     (correction)
+
+114. **The measurement that settles it is ALREADY ON SCREEN and was not read
+     back.** The counter prints `loads: N (navType)`. `location.reload()` reports
+     `navigation.type === 'reload'`; a Safari tab discard and restore reports
+     `navigate`. Item 99 recorded the number and not the word.
+     **One word from Jamie settles the whole diagnosis.** (question — Jamie)
+
+115. **Why it changes the fix, not just the write-up.** If it is vite, item 101's
+     "we cannot stop the reload and should not try" is false — a `server.hmr`
+     setting stops it, and item 8 already names the route for asking the pi bot.
+     Item 103's synchronous restore would then be treating a symptom we could
+     remove outright. Items 100-105 are held until item 114 is answered.
+     (correction)
+
+## H-2 — item 103's fix is broken in three ways
+
+116. **Moving the observer up throws.** `reproject()` calls `draw()`, which calls
+     `controls.render(...)`, and `controls` is created after both awaits because
+     it needs the catalogue. The game's DOM insertions would fire the observer
+     during the awaits and hit a temporal dead zone — a silent `ReferenceError`
+     inside a rAF callback, on a phone. The early path must be a bare `project()`
+     with no `draw()`, and the observer needs a guard until `controls` exists.
+
+117. **It inverts replay and live edits, and nothing puts them back.** Today the
+     replay projection lands first and the live patch set second. Item 103 makes
+     the live set go first, and the replay `project()` then **overwrites**
+     `className` for every breadcrumb in both — and a className write does not
+     retrigger the observer, which watches `childList` only. The same element is
+     routinely in both sets (`docs/EDIT-MODE.md:125`, "save several times before
+     anything is folded"). **The fix needs a precedence rule: live wins, and
+     re-project once the replay lands.**
+
+118. **A synchronous projection before the game renders is a no-op** —
+     `overlay.ts:583-589` already documents exactly that. The load-bearing half of
+     item 103 was the observer move, which the wording buried.
+
+## Findings held for the next pass, so a context clear does not lose them
+
+119. **H-3 — item 89 is an unsettled recommendation that reverses a decision
+     Jamie made on 2026-08-26** (the control row is hidden in edit mode, "two ways
+     to do one thing on a phone is one too many"). Items 106 and 110 both assume
+     it was reversed. If it was not, a genuinely failed save leaves him stuck in
+     edit mode with no Discard, no Save and no way to stop the server. Needs
+     Jamie. Also unrecorded: `.sheet { padding-right: 76px }` clears one pencil,
+     not a three-control row.
+
+120. **H-4 — section 5 was never rewritten after item 106 made Discard a stop.**
+     Item 20's order of operations omits `stopped = true`, `setPencilEnabled(false)`,
+     `syncStopPill()`, the shutdown POST itself, a `busy` guard, and what happens
+     when the discard succeeds and the stop then fails — where `COPY.stopFailed`
+     ("Saved, but the server did not stop") is wrong on both counts.
+
+121. **M-1 — item 76 names a value, not a rule.** Initialising the sentinel does
+     not fix item 66.2: save three edits, undo all three, and the signature
+     differs from the saved one again. The rule is **"an empty patch set is
+     nothing to save"**. Item 93's module list also omits `session-store.ts`.
+
+122. **M-2 — item 79's "`COPY.stoppedNothingSaved` is unreachable" is false.**
+     Save with the pencil, then tap the pill: `isPending()` is false, the save is
+     skipped, and that message shows. It is also wrong copy on that path — a
+     session file was just written and it tells him nothing about folding it.
+     A live bug the brief asserted out of existence.
+
+123. **M-3 — item 109's closing line can be materially incomplete.** A Discard
+     can end a run in which sessions were already banked, and the line never
+     mentions folding them, while `COPY.stopped` does.
+
+124. **M-4 — "Lose all and stop?" lies on a fresh session**, where Discard is
+     visible (item 110) with nothing to lose.
+
+125. **M-5 — item 92 was false: two ledgers still read as open** (§3 line 153,
+     §1 line 13), and the closing block claims otherwise. Item 98's tidy-up was
+     not done either.
+
+126. **M-6 — item 93 contradicts items 94 and 96 in the same block.** "No file
+     outside `src/edit-mode/`" is false: the docs, the safety spec and the unit
+     specs all change. And §11 must be restated as ONE list — six later items
+     have retargeted it.
+
+127. **M-7 — item 60 still reads live** and is wrong twice over (item 77 killed
+     its premise, item 110 killed its conclusion). Item 61's "four visibility
+     rules" is stale too — three rules plus one always-on control.
+
+128. **Lows: item 88 is orphaned** by item 103 and must be marked dead; item 90 is
+     mooted by item 109; the line numbers in items 76-88 and 102-103 are stale
+     after commit 52c0b38 (the two fetches are at `overlay.ts:75-82`, not 56-62);
+     item 96's evidence is wrong though its conclusion holds; item 85 does not
+     supersede item 50, which is true of a different element.
