@@ -307,12 +307,17 @@ describe('the last thing the page ever says after Discard', () => {
     expect(discardClosingLine('stopped', true, true)).toBe('discardedWithSaved');
   });
 
-  it('does not claim to have discarded a fresh session', () => {
+  it('does not claim to have discarded a fresh session, OR to have saved one', () => {
     // The whole reason this is two axes and not one. Discard is also the stop
     // button, so it is routinely tapped with nothing to throw away, and
     // "changes discarded" would be the last thing the page said about changes
     // that never existed.
-    expect(discardClosingLine('stopped', false, false)).toBe('stoppedNothingSaved');
+    //
+    // And NOT stoppedNothingSaved either, which rev 2's R13 sent this case to:
+    // brief item 122 had since rewritten that line to always name the fold, so
+    // it would end a fresh session telling Jamie to go and fold sessions that
+    // were never written. That is his acceptance test 3, verbatim.
+    expect(discardClosingLine('stopped', false, false)).toBe('stoppedNothing');
   });
 
   it('still names the fold when nothing was discarded but something was banked', () => {

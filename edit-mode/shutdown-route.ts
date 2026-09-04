@@ -1,6 +1,6 @@
 // Clumeral edit mode — the route that stops the dev server.
 //
-// Jamie starts and stops his own dev server now (design 2026-08-31). Save & Stop
+// Jamie starts and stops his own dev server now (design 2026-08-31). Save and Discard
 // writes the session and then asks the server to exit, so he never has to
 // remember a second command in a second app.
 //

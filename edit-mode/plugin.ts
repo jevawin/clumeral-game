@@ -37,7 +37,7 @@ export function editMode(): Plugin {
       // middleware, which only cares about the stylesheet.
       server.middlewares.use(receiveSession());
       server.middlewares.use(serveReplay());
-      // Save & Stop. Awaited before the exit, because close() returns a promise
+      // The shutdown route. Awaited before the exit, because close() returns a promise
       // and exiting straight after it would abandon the close. workerd is not
       // orphaned by process.exit: miniflare registers an exit-hook whose
       // callback calls runtime.dispose(), which SIGKILLs the runtime process
@@ -46,7 +46,7 @@ export function editMode(): Plugin {
       // feature exists.
       server.middlewares.use(
         receiveShutdown(async () => {
-          server.config.logger.info('  \u279c  edit mode: Save & Stop — shutting down');
+          server.config.logger.info('  \u279c  edit mode: shutting down at the browser-s request');
           // RACED, not just awaited. .catch() covers a rejection, not a hang —
           // and close() waits on the plugin container, chokidar and the ws
           // server. If one of those stalls we never reach the exit, and the

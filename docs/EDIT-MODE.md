@@ -35,8 +35,7 @@ branch `<name>` exited on its own — I didn't stop it and neither did the 2-hou
 limit. /dev to start another." It deletes the registry record, releases the
 reaper exemption and reaps the zombie, and it fires exactly once. So there is no
 stale registration after a `Save` or a `Discard`, and the next `/dev` never hands
-back a
-URL for a dead process. Worth knowing if you ever touch that code: the liveness
+back a URL for a dead process. Worth knowing if you ever touch that code: the liveness
 check has to **exclude zombies**. `kill -0`, `killpg(pgid, 0)` and a bare `/proc`
 pgid comparison all report a dead server as alive.
 

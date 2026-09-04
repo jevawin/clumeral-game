@@ -82,7 +82,7 @@ export function exitDecision(pending: boolean, saveOk: boolean | null): 'leave' 
 }
 
 /**
- * What Save & Stop reports.
+ * What Save and Discard report after asking the server to exit.
  *
  * A NETWORK ERROR COUNTS AS SUCCESS (brief item 40). A dropped connection is
  * exactly what a successful shutdown looks like from the browser — the process
@@ -218,7 +218,8 @@ export function controlLabel(
 
 /** Which of the four closing lines the page ends on. */
 export type ClosingLine =
-  | 'discarded' | 'discardedWithSaved' | 'stoppedNothingSaved' | 'discardStopFailed';
+  | 'discarded' | 'discardedWithSaved'
+  | 'stoppedNothing' | 'stoppedNothingSaved' | 'discardStopFailed';
 
 /**
  * The last thing the page will ever say, chosen on TWO axes (rev 2, R13).
@@ -230,7 +231,11 @@ export type ClosingLine =
  * that Discard cannot reach and nothing else will ever mention.
  *
  * Nothing discarded but something banked reuses stoppedNothingSaved, which
- * already names the fold - that IS the same sentence.
+ * already names the fold - that IS the same sentence. Nothing discarded and
+ * nothing banked gets its own line, and R13's table was wrong to collapse the
+ * two: item 122 had since rewritten stoppedNothingSaved to ALWAYS name the
+ * fold, so on a fresh session it would end the page telling Jamie to go and
+ * fold sessions that were never written - his acceptance test 3, verbatim.
  */
 export function discardClosingLine(
   outcome: 'stopped' | 'stopFailed',
@@ -238,6 +243,6 @@ export function discardClosingLine(
   anythingBanked: boolean
 ): ClosingLine {
   if (outcome === 'stopFailed') return 'discardStopFailed';
-  if (!anythingDiscarded) return 'stoppedNothingSaved';
+  if (!anythingDiscarded) return anythingBanked ? 'stoppedNothingSaved' : 'stoppedNothing';
   return anythingBanked ? 'discardedWithSaved' : 'discarded';
 }

@@ -244,6 +244,11 @@ async function start(): Promise<void> {
   // no-op and that is fine (brief item 118) — the observer above is what
   // catches the render, and it is watching from here on.
   reproject();
+  // And a way to STOP the server, in the same window. Everything the row needs
+  // is above this line now, and the catalogue fetch is the 23,000-class file
+  // this task exists to stop waiting for — leaving Discard, which is also the
+  // stop button, absent for the whole of it.
+  syncControlRow();
 
   // Everything above this line runs before the two fetches, and that is the
   // whole of brief item 129's fix: the edits used to be restored only AFTER the
@@ -638,7 +643,7 @@ async function start(): Promise<void> {
   panel.onDiscard(() => void discardAll());
 
   /**
-   * Save & Stop: write the session, then ask the server to exit.
+   * Save: write the session, then ask the server to exit.
    */
   async function stopServer(): Promise<void> {
     if (busy) return;
@@ -686,10 +691,15 @@ async function start(): Promise<void> {
     store.clear();
     panel.setPencilEnabled(false);
     syncControlRow();
-    // Only claim a save when there was one. Both stopped messages open with
-    // "Saved", and this is the last thing the page ever says — telling him to
-    // fold a session that was never written would send him looking for it.
-    panel.notify(hadSomethingToSave ? COPY.stopped : COPY.stoppedNothingSaved);
+    // Only claim a save when there was one. This is the last thing the page
+    // ever says — telling him to fold a session that was never written would
+    // send him looking for it. The no-save branch has the same two axes
+    // Discard's does, so it asks the same question.
+    panel.notify(
+      hadSomethingToSave
+        ? COPY.stopped
+        : COPY[discardClosingLine('stopped', false, sessionsBanked)]
+    );
   }
 
 

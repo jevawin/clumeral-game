@@ -74,6 +74,11 @@ const PANEL_CSS = `
      the whole bottom-right corner of the game. */
   .controls {
     position: fixed;
+    /* BOTH edges. Right anchors it; left bounds it. Without a left bound an
+       armed "Lose all and stop?" beside Save and the pencil is about 341px on
+       a 320px screen, and the overflow is clipped off the LEFT — taking the
+       start of the question and part of the tap target with it (item 137). */
+    left: 16px;
     right: 16px;
     /* Clear of the bottom-centre stack, and above the home indicator. */
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -92,6 +97,7 @@ const PANEL_CSS = `
   .controls:focus { outline: none; }
 
   .pencil {
+    flex: 0 0 56px;
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -118,6 +124,8 @@ const PANEL_CSS = `
        a word wide at all times and blocked the screen. */
     width: 56px;
     height: 56px;
+    /* Never squeezed below the tap target by a neighbour that is expanding. */
+    flex: 0 0 56px;
     padding: 0;
     gap: 8px;
     border-radius: 28px;
@@ -127,6 +135,10 @@ const PANEL_CSS = `
     font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
+    /* So a label too long for the screen is truncated inside its own button
+       rather than pushing the row past its left bound. */
+    min-width: 0;
+    overflow: hidden;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
@@ -143,6 +155,7 @@ const PANEL_CSS = `
      own chrome would start tracking the theme being edited (item 91). */
   .save-btn.is-armed, .discard-btn.is-armed {
     width: auto;
+    flex: 0 1 auto;
     padding: 0 16px;
     color: #ffffff;
   }
@@ -201,18 +214,23 @@ const PANEL_CSS = `
        sheet is at its end (Jamie, 2026-08-24, item 2). */
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    /* Right padding keeps the sheet clear of the CONTROL ROW, so it never
-       covers the only way out. Three 56px controls, two 8px gaps and the 16px
-       gutter: 196px. It follows the row rather than the pencil alone, which is
-       what 76px assumed (item 136).
+    /* Clearance for the control row, on the axis the row actually covers.
 
-       An EXPANDED control is not handled by padding and cannot be: an armed
-       label is 300px wide on a phone. The row sits above the sheet and the
-       sheet scrolls under it (rev 2, R18).
+       The row is 56px tall and sits 16px off the bottom, so it overlaps the
+       sheet's bottom 72px and nothing else — while the sheet itself is up to
+       60vh tall. A right-hand gutter wide enough for the row (196px: three
+       56px controls, two gaps, the margin) would take that width off EVERY
+       row of the sheet, and on a 390px phone that leaves 194px for the search
+       field, the breadcrumb, the chips and the picker.
+
+       So the clearance is at the BOTTOM. Nothing renders in the row's band,
+       the full width is available everywhere else, and an EXPANDED control —
+       which no padding could clear at ~300px wide — is handled the way rev 2's
+       R18 said it would be: the row sits above the sheet and the sheet scrolls
+       under it.
 
        Must come AFTER the shorthand. */
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
-    padding-right: 196px;
+    padding: 8px 10px calc(80px + env(safe-area-inset-bottom, 0px));
     background: #ffffff;
     color: #1a1a1a;
     border-top: 2px solid #1a1a1a;
@@ -444,7 +462,8 @@ export interface Panel {
    * Say something that must OUTLIVE the editor closing.
    *
    * say() writes into the sheet, which setMode hides and blanks. Anything shown
-   * in play mode — everything Save & Stop reports — has to come through here.
+   * in play mode — everything Save and Discard report — has to come through
+   * here.
    */
   notify(message: string): void;
   /**

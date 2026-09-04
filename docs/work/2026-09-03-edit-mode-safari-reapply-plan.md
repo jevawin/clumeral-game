@@ -686,3 +686,76 @@ If item 114's word turns out to be `reload`, a `server.hmr` setting in
 `vite.config.ts` would stop the reload happening at all — a better fix on top of
 this one. `vite.config.ts` belongs to the pi bot, so that is an **ask**, not an
 edit (items 8, 130, 150).
+
+---
+
+# 8. da-build review, and what it changed
+
+Ran fresh-context after the eight commits. Verdict: **FIX FIRST, 2 Medium.** Both
+fixed; the Lows are triaged below. It found the temporal-dead-zone hunt, the
+Discard ordering, the timer handling, the orphan check, the `syncControlRow`
+coverage and the safety gate all clean, and accepted D1-D5.
+
+## M1 — the fresh-session Discard ended on a sentence that was false
+
+R13's table sent (stopped, nothing discarded, nothing banked) to
+`stoppedNothingSaved`. That was right when R13 was written and stopped being
+right one item later: **brief item 122 rewrote `stoppedNothingSaved` to ALWAYS
+name the fold.** So `/dev`, tap Discard, tap again — and the last thing the page
+ever says tells Jamie to go and fold sessions that were never written. That is
+his acceptance test 3, verbatim, and it is the exact failure `copy.ts` says that
+string exists to avoid.
+
+**Fixed** with a fourth closing line, `stoppedNothing`. Its wording is the one
+`stoppedNothingSaved` carried before item 122, which Jamie had already approved:
+no new copy is invented. `runStop`'s own no-save branch asks the same question
+now, because it has the same two axes.
+
+## M2 — `padding-right: 196px` cost the sheet 120px on every row
+
+R18's arithmetic was right for the row's WIDTH and wrong for what the row
+covers. The row is 56px tall at 16px off the bottom, so it overlaps the sheet's
+bottom 72px — while the sheet is up to 60vh. A gutter that clears it takes that
+width off every row: on a 390px phone the usable column falls from 314px to
+194px, and the search field, breadcrumb, chips and picker all live in it.
+
+**Fixed** by moving the clearance to the axis the row is actually on:
+`padding-bottom: calc(80px + safe-area)`, right gutter back to the normal 10px.
+Nothing renders in the row's band, the full width is free everywhere else, and an
+EXPANDED control is handled exactly as R18 said it would be — the row sits above
+the sheet and the sheet scrolls under it.
+
+**This is a deviation from R18 (D6)** and it is a "how", so it is mine, but it
+reverses a number that review wrote deliberately. Flagged here rather than
+buried.
+
+## Lows fixed
+
+- **The armed row had no left bound.** `.controls` was anchored right with no
+  `left`, so an armed "Lose all and stop?" beside Save and the pencil is about
+  341px on a 320px screen and the overflow is clipped off the LEFT — taking the
+  start of the question and part of the tap target. Now bounded both sides, with
+  the buttons truncating inside themselves and the 56px controls pinned by
+  `flex: 0 0 56px`.
+- **No session control existed until both fetches resolved.** The first
+  `setRow` was the first `setMode`, at the very end of `start()`. Everything the
+  row needs now lives above the fetches, so `syncControlRow()` runs beside the
+  first-paint `reproject()`. Discard is the stop button, and it was absent for
+  exactly the window this work exists to shorten.
+- **"Save & Stop" survived in `edit-mode/plugin.ts`'s terminal log, in
+  `shutdown-route.ts` and in three docstrings.** Outside task 8's file list, and
+  untrue.
+
+## Lows deferred, with the reason
+
+- **`sessionsBanked` can be seeded true without a save.** Needs a failed
+  shutdown AND a reload: `runDiscard` sets `savedSignature` to `'||'`, the
+  `stopFailed` branch sets `stopped` back to false, and the next `persist()`
+  writes it. Closing it properly means a `banked` field in `StoredState`, and
+  the plan's D-note deliberately keeps `session-store.ts` out of this work — one
+  rule in one place. The cost when it bites is one sentence naming sessions that
+  are not there, on a path that already failed once.
+- **`draw()` fires on every scroll event** and now rewrites the two controls'
+  `innerHTML` as well as the sheet's children. Pre-existing shape, marginally
+  worse, no correctness impact — the click listeners are on the buttons, not
+  their children.

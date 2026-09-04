@@ -118,6 +118,19 @@ export const COPY = {
    * earlier and nothing else will ever mention it. Wording settled by Jamie,
    * 2026-09-03.
    */
+  /**
+   * The server has stopped, nothing was discarded, and nothing was EVER saved.
+   *
+   * Its own line, because item 122 rewrote `stoppedNothingSaved` to always name
+   * the fold - which is right on the path that reaches it, and a lie here.
+   * Discard is also the stop button, so it is routinely tapped in a session
+   * that never saved anything, and this is the last thing that page will say.
+   *
+   * The wording is the one `stoppedNothingSaved` carried before item 122, which
+   * Jamie had already approved: no new copy is being invented here.
+   */
+  stoppedNothing: 'The server has stopped. Tap /dev to start another.',
+
   stoppedNothingSaved: 'The server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /dev to start another.',
 
   /**
