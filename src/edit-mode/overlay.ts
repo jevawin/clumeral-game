@@ -822,16 +822,28 @@ async function start(): Promise<void> {
     panel.notify(COPY[discardClosingLine(outcome, anythingDiscarded, anythingBanked)]);
   }
 
-  // A tap that landed while the catalogue was still loading, honoured late
+  // Taps that landed while the catalogue was still loading, honoured late
   // rather than lost.
-  if (toggleWaiting) {
-    toggleWaiting = false;
-    toggleMode();
-  }
+  //
+  // THE SESSION ACTION GOES FIRST, and it ends the pencil's turn. Both session
+  // actions are terminal, and both open with `if (busy) return` — so draining a
+  // held pencil tap first would set `busy` for an in-flight save and swallow
+  // the Discard Jamie confirmed, silently, leaving the edits saved to the Pi
+  // and the server he asked to stop still running.
+  //
+  // In this order a held pencil tap is moot rather than dropped: Discard sets
+  // `stopped` synchronously, and toggleMode's own first line refuses to enter
+  // the editor of a stopped server. Save subsumes what the pencil would have
+  // done anyway.
   if (sessionWaiting) {
     const which = sessionWaiting;
     sessionWaiting = null;
+    toggleWaiting = false;
     sessionAction(which);
+  }
+  if (toggleWaiting) {
+    toggleWaiting = false;
+    toggleMode();
   }
 
   // Edit mode owns back until its own entries are exhausted, even in play mode

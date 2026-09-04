@@ -810,3 +810,52 @@ variable, silent, on a phone.
 `persist()` is not called on the `stopFailed` branch itself, so it needs a
 subsequent tap, selection or free-CSS edit before the reload. `draw()` on scroll
 now costs two SVG parses in play mode as well as edit mode; still Low.
+
+---
+
+# 10. da-build third pass — the held tap, ordered
+
+## M4 — a held session action was swallowed by the held pencil tap
+
+The two drains ran back to back, pencil first. `toggleMode()` sets `busy = true`
+and holds it across an `await save()`; both session actions open with
+`if (busy) return`. So with a pencil tap AND a confirmed Discard both held, the
+Discard vanished — no message, no notice, and the button had already collapsed
+back to its icon, so on screen it looked like it acted.
+
+The outcome is the one this whole feature exists to prevent: the edits Jamie
+confirmed throwing away get **written to the Pi** by the pencil's save, and the
+server he confirmed stopping **stays up**. Section 9's sentence — "anything held
+is an action Jamie already confirmed, so it is honoured late rather than
+dropped" — was true only when nothing else was held.
+
+**Fixed by draining the session action FIRST and ending the pencil's turn with
+it.** Both session actions are terminal, so a held pencil tap is moot rather than
+dropped: Discard sets `stopped` synchronously before its first await, and
+`toggleMode`'s own first line refuses to enter the editor of a stopped server;
+Save subsumes what the pencil would have done.
+
+## Lows fixed with it
+
+- **`text-overflow: ellipsis` was a no-op on the button**, which is a flex
+  container — and worse, `justify-content: center` plus a flex item's default
+  `min-width: auto` clipped an over-long armed label at BOTH ends, losing the
+  start of "Lose all and stop?". The truncation moves onto the label span, which
+  is now the only thing in the row allowed to shrink.
+- **`--row-clearance` switched at `inset > 0`, which is the wrong threshold.**
+  The row is 56px tall at 16px off the bottom and is not lifted by the keyboard
+  inset, so it is only fully covered at 72px. An iPad accessory bar, a docked
+  floating keyboard and every frame of the iOS open animation sit below that.
+  Now `inset >= 72`.
+- **The docblock move in section 9 was half done** — the new string had been
+  hoisted above BOTH blocks, so `stoppedNothingSaved` was documented by the
+  comment written for `stoppedNothing`, which says the opposite. Each block is
+  back on its own string.
+
+## Stated plainly, not claimed away
+
+**The held-tap path has no test and cannot have one as written.** `overlay.ts`
+exports nothing and ends in a bare `void start()`. R9 already withdrew the
+"everything is unit-testable" claim for exactly this wiring. Both M3 and M4 rest
+entirely on Jamie's acceptance test, item 158 — nothing in sections 9 or 10
+should be read as coverage.

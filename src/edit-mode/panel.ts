@@ -136,10 +136,11 @@ const PANEL_CSS = `
     font-weight: 700;
     white-space: nowrap;
     /* So a label too long for the screen is truncated inside its own button
-       rather than pushing the row past its left bound. */
+       rather than pushing the row past its left bound. The truncation itself
+       happens on the label, below — text-overflow does nothing on a flex
+       container, and the span inside is a flex item. */
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
@@ -159,6 +160,16 @@ const PANEL_CSS = `
     flex: 0 1 auto;
     padding: 0 16px;
     color: #ffffff;
+  }
+  /* The label, and the only thing in the row that may shrink. Without
+     min-width: 0 a flex item refuses to go below its content width, so an
+     over-long question was clipped at BOTH ends by the centring above — losing
+     the start of "Lose all and stop?", which is the half that carries the
+     meaning. */
+  .control-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .discard-btn.is-armed { background: #c62828; border-color: #c62828; }
   .save-btn.is-armed { background: #2e7d32; border-color: #2e7d32; }
@@ -611,6 +622,7 @@ export function createPanel(doc: Document): Panel {
     btn.innerHTML = icon(iconName, '22px');
     if (isArmed) {
       const text = doc.createElement('span');
+      text.className = 'control-label';
       text.textContent = label;
       btn.appendChild(text);
     }
@@ -653,7 +665,12 @@ export function createPanel(doc: Document): Panel {
       host.style.setProperty('--keyboard-inset', `${Math.max(0, Math.round(inset))}px`);
       // With the keyboard up the control row is behind it, so the sheet has
       // nothing to clear at its bottom edge.
-      host.style.setProperty('--row-clearance', inset > 0 ? '8px' : '80px');
+      //
+      // 72px, not 0: the row is 56px tall at 16px off the bottom and is NOT
+      // lifted by --keyboard-inset, so a partial inset — an iPad accessory bar,
+      // a docked floating keyboard, every frame of the iOS open animation —
+      // leaves part of it still over the sheet.
+      host.style.setProperty('--row-clearance', inset >= 72 ? '8px' : '80px');
       // Never taller than the space left above the keyboard, or the top of the
       // sheet — the search field — is pushed off screen.
       host.style.setProperty('--sheet-max', `${Math.round(visibleHeight * 0.6)}px`);
