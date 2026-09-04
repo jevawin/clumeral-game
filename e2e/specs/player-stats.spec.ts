@@ -60,37 +60,60 @@ test.describe("player stats — the panel after a solve", () => {
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
-    await expect(completion.streaks).toBeVisible();
+    await expect(completion.streak).toBeVisible();
+    await expect(completion.records).toBeVisible();
     await expect(completion.allTime).toBeVisible();
+
+    // Three columns under Streak, two under Records (brief 65, 66).
+    await expect(completion.streak.locator("[data-stat-col]")).toHaveCount(3);
+    await expect(completion.records.locator("[data-stat-col]")).toHaveCount(2);
+    await expect(completion.average).toHaveCount(0);
+    // One watermark svg per box, and nothing else inside one (polish brief 94).
+    // These two read 0 until 2026-08-29: the watermark landed in dce25fa and
+    // the spec was never updated, so they were asserting a state that had not
+    // been true for a fortnight.
+    await expect(completion.streak.locator("[data-stat-col] svg")).toHaveCount(3);
+    await expect(completion.records.locator("[data-stat-col] svg")).toHaveCount(2);
 
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is
-    // where the first-go streak breaks.
-    await expect(completion.stat("Play streak")).toHaveText("5");
-    await expect(completion.stat("First-go streak")).toHaveText("2");
-    await expect(completion.stat("Plays")).toHaveText("5");
-    await expect(completion.stat("First-go wins")).toHaveText("2 (40%)");
-    // (1 + 3 + 2 + 4 + 1) / 5
-    await expect(completion.stat("Average goes")).toHaveText("2.2");
+    // where the first-go streak breaks. Labels are the spoken ones — the visible
+    // word is just "Plays" or "1-go streak".
+    await expect(completion.stat("Current day streak")).toHaveText("5");
+    await expect(completion.stat("Longest 1-go streak")).toHaveText("2");
+    await expect(completion.stat("Current 1-go streak")).toHaveText("2");
     // How long today's solve took is real wall time, so these assert the SHAPE.
     // The arithmetic behind them is pinned exactly in tests/player-stats.spec.ts;
     // what this proves is that real numbers reach the real panel at all.
     await expect(completion.stat("Average time")).toHaveText(/^\d+m \d\ds$/);
-    await expect(completion.stat("Fastest first-go win")).toHaveText(/^\d+m \d\ds$/);
+    await expect(completion.stat("Fastest time")).toHaveText(/^\d+m \d\ds$/);
 
-    // The explanatory lines are the whole point of the build.
-    await expect(completion.panel).toContainText("Days in a row you have finished the puzzle.");
-    await expect(completion.panel).toContainText("Days in a row you got it on your first guess.");
-    await expect(completion.panel).toContainText("Miss a day and the streak starts again.");
-    await expect(completion.panel).toContainText("Your quickest win on a first guess.");
+    // All time reads as four sentences, number first (brief 82).
+    await expect(completion.allTimeLines).toHaveCount(4);
+    await expect(completion.allTimeLines.nth(0)).toHaveText("5 Puzzles solved");
+    await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) Solved in one");
+    // The number and its words are two block spans, so the raw text carries the
+    // newlines between them. Playwright normalises whitespace for a string but
+    // NOT for a regular expression, so this one has to allow for them; the three
+    // lines around it are plain strings and do not.
+    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\s*\d+m \d\ds\s+Average time\s*$/);
+    // (1 + 3 + 2 + 4 + 1) / 5
+    await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 Average attempts");
 
     // Six chart rows, counts as text beside the bars.
     await expect(completion.goesRows).toHaveCount(6);
-    await expect(completion.panel).toContainText("How many goes you take");
+    await expect(completion.panel).toContainText("Attempts distribution");
 
-    // The hero, and the one announcement — goes, time, play streak, nothing else,
-    // with the time spelled out for speech rather than read as "colon".
-    await expect(completion.thisGame).toContainText(/Solved in 1 go, \d+m \d\ds/);
+    // Two figures rather than a sentence, and the one announcement — goes, time,
+    // play streak, nothing else, with the time spelled out for speech rather
+    // than read as "colon". The announcement is unchanged by the redesign
+    // (brief 48), and this is the proof.
+    await expect(completion.thisGame).toContainText("1 go");
+    await expect(completion.thisGame).toContainText(/\d+m \d\ds/);
+    await expect(completion.thisGame).not.toContainText("Solved in");
+    // The heading leads into them (brief 63).
+    await expect(completion.heading).toHaveText(/^Puzzle #\d+ solved! You took:$/);
+    await expect(completion.panel).toContainText("Come back tomorrow to maintain your streak!");
     await expect(completion.live).toHaveText(/^Solved in 1\. .*seconds?\. Play streak 5\.$/);
   });
 
@@ -108,8 +131,12 @@ test.describe("player stats — the panel after a solve", () => {
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
-    await expect(completion.streaks).toHaveCount(0);
+    await expect(completion.streak).toHaveCount(0);
+    await expect(completion.records).toHaveCount(0);
+    await expect(completion.average).toHaveCount(0);
     await expect(completion.allTime).toHaveCount(0);
+    // No figure columns at all on a first game — absent, not empty.
+    await expect(completion.cols).toHaveCount(0);
     await expect(completion.panel).toContainText(
       "Your streaks and all-time stats start from your third game.",
     );
@@ -124,7 +151,9 @@ test.describe("player stats — score saving switched off", () => {
 
     const completion = new CompletionPage(page);
     await expect(completion.thisGame).toBeVisible();
-    await expect(completion.streaks).toHaveCount(0);
+    await expect(completion.streak).toHaveCount(0);
+    await expect(completion.records).toHaveCount(0);
+    await expect(completion.average).toHaveCount(0);
     await expect(completion.allTime).toHaveCount(0);
     // P-01: the panel says nothing at all about score saving, in any mode. The
     // setting lives on the play screen, where the consent happens.

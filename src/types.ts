@@ -31,8 +31,8 @@ export interface HistoryEntry {
   archived?: boolean;
   /** Counted play seconds, 0–86400. Absent = unknown: pre-launch rows, opted-out
    *  players, and rows whose stored value failed validation. Never read as 0.
-   *  A valid value above OUTLIER_SECONDS still shows on its own panel but is
-   *  excluded from the average and from fastest (brief 31, 134). */
+   *  Every valid value counts towards every figure — the thirty-minute exclusion
+   *  was dropped in the stats redesign (brief 22). */
   seconds?: number;
   /** Day-only marker (brief 71): the player finished this day with saving off.
    *  tries is 0 and means nothing. Filtered out of every figure before counting. */

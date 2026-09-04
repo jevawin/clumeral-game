@@ -27,8 +27,46 @@
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
 
+/* Edit mode's own class-name literals must never reach this stylesheet.
+ *
+ * Tailwind v4 detects classes by scanning every file git does not ignore, which
+ * includes markdown and test files (issue #312). Edit-mode source and its tests
+ * name utilities as data — a family-map test asserts `mt-4` against `mt-6` — and
+ * without these lines every one of them ships to production.
+ *
+ * `@source not` only ever REMOVES rules, so it cannot break the shipped app by
+ * adding something. The selectors it drops on this tree are used nowhere in
+ * src/ or index.html.
+ *
+ * WHEN #312 LANDS: keep the first line and delete the other two. Narrowing the
+ * scan to `../src` puts src/edit-mode/ back INSIDE the scanned set, so the
+ * exclusion is load-bearing under the narrowing rather than redundant with it.
+ * The other two directories sit outside ../src and the narrowing covers them.
+ * Verified by building both ways — plan section D6b.
+ */
+@source not "./edit-mode";
+@source not "../edit-mode";
+@source not "../tests";
+
 /* Wire dark: variant to existing .dark class on html (set by theme.ts) */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* A 1.5px border. Tailwind's scale is 0, 1, 2, 4, 8 and there is no
+   --border-width-* namespace to add a step to, so this is declared as a real
+   utility rather than written as border-[1.5px].
+
+   1.5px because that is the play screen's undo and reset border width, and the
+   completion panel's boxes deliberately borrow that shape. Rounding to 1px or
+   2px is 33% either way and breaks the match.
+
+   A named @utility rather than an arbitrary value so edit mode can see it:
+   getClassList() returns it, so it lands in the catalogue and in the family map
+   as a border-width, and tapping plus or minus swaps it for border-2 properly
+   instead of stacking a class that loses the cascade. It must stay at the top
+   level — @utility inside @layer does not compile. */
+@utility border-hairline {
+  border-width: 1.5px;
+}
 
 /* Light mode token defaults — Tailwind generates bg-bg, text-text, etc. */
 /* Per D-01: 6 semantic tokens. Per D-02: bg locked to #FAFAFA / #121213 */
@@ -63,10 +101,28 @@
   --accent-h: 145;
   --accent-c: var(--chroma-lime);
 
+  /* The other three themes, in picker order from the player's own (polish brief 97).
+     Streaks takes 2, Records takes 3 and All time takes 4, so every one of the
+     four theme colours is on the completion screen at once and they rotate
+     together when the player changes theme.
+
+     Each names the OTHER hue's own --chroma-* variable rather than reusing the
+     current one, so every colour follows dark mode and stays inside sRGB —
+     borrowing Lime's chroma for Cherry would put Cherry out of gamut. Contrast
+     is unaffected: all four sit at --accent-l, which is what the AA guarantee
+     rests on, and tests/palette-contrast.spec.ts already covers all four.
+     Defaults are Lime's rotation. */
+  --accent-2-h: 5;   --accent-2-c: var(--chroma-cherry);
+  --accent-3-h: 262; --accent-3-c: var(--chroma-blueberry);
+  --accent-4-h: 305; --accent-4-c: var(--chroma-grape);
+
   --color-bg:      #FAFAFA;
   --color-surface: #FFFFFF;
   --color-text:    #262624;
   --color-accent:  oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --color-accent-2: oklch(var(--accent-l) var(--accent-2-c) var(--accent-2-h));
+  --color-accent-3: oklch(var(--accent-l) var(--accent-3-c) var(--accent-3-h));
+  --color-accent-4: oklch(var(--accent-l) var(--accent-4-c) var(--accent-4-h));
   --color-border:  color-mix(in srgb, var(--color-text) 12%, transparent);
 
   /* Success and error are the Lime and Cherry themes reused, not colours of their
@@ -90,6 +146,22 @@
 
   --font-sans: "Quicksand", system-ui, sans-serif;
   --font-mono: "Inconsolata", ui-monospace, monospace;
+
+  /* The page column. One width for every screen (brief 56), so the content area
+     never changes width as you move from one screen to the next — which is the
+     jumping around this is here to stop.
+
+     480px is above the widest phone in portrait: a Galaxy S24 Ultra reports 480
+     and a Pixel 8 Pro 448. That is what makes the rule hold — a phone always
+     fills its screen and only a desktop ever meets the cap.
+
+     The gutter lives OUTSIDE the cap, so content is min(480, viewport - 32).
+     Deliberately px and not rem: at large browser text the column stops growing
+     rather than outrunning the screen. Components inside it size themselves in
+     rem so they still wrap when the text grows — the completion panel's stat
+     boxes use a rem flex-basis for exactly that. */
+  --page-max: 480px;
+  --page-gutter: 1rem;
 }
 
 /* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
@@ -103,10 +175,10 @@
    its 0.135523 limit and out of gamut, which clips and shifts lightness — the
    one thing the AA guarantee rests on. tests/palette-contrast.spec.ts checks
    the gamut, not just the ratio. */
-html[data-theme="Lime"]   { --accent-h: 145; --accent-c: var(--chroma-lime); }
-html[data-theme="Cherry"]  { --accent-h: 5;   --accent-c: var(--chroma-cherry); }
-html[data-theme="Blueberry"]   { --accent-h: 262; --accent-c: var(--chroma-blueberry); }
-html[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); }
+html[data-theme="Lime"] { --accent-h: 145; --accent-c: var(--chroma-lime); --accent-2-h: 5; --accent-2-c: var(--chroma-cherry); --accent-3-h: 262; --accent-3-c: var(--chroma-blueberry); --accent-4-h: 305; --accent-4-c: var(--chroma-grape); }
+html[data-theme="Cherry"] { --accent-h: 5; --accent-c: var(--chroma-cherry); --accent-2-h: 262; --accent-2-c: var(--chroma-blueberry); --accent-3-h: 305; --accent-3-c: var(--chroma-grape); --accent-4-h: 145; --accent-4-c: var(--chroma-lime); }
+html[data-theme="Blueberry"] { --accent-h: 262; --accent-c: var(--chroma-blueberry); --accent-2-h: 305; --accent-2-c: var(--chroma-grape); --accent-3-h: 145; --accent-3-c: var(--chroma-lime); --accent-4-h: 5; --accent-4-c: var(--chroma-cherry); }
+html[data-theme="Grape"] { --accent-h: 305; --accent-c: var(--chroma-grape); --accent-2-h: 145; --accent-2-c: var(--chroma-lime); --accent-3-h: 5; --accent-3-c: var(--chroma-cherry); --accent-4-h: 262; --accent-4-c: var(--chroma-blueberry); }
 
 /* Default body font — Quicksand 300 to match the clue lead style. Buttons / headings / tag pills override via font-bold etc. */
 html, body { font-family: var(--font-sans); font-weight: 400; }
@@ -125,6 +197,9 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     --chroma-blueberry:   0.111;
     --chroma-grape: 0.140;
     --accent-c: var(--chroma-lime);
+    --accent-2-c: var(--chroma-cherry);
+    --accent-3-c: var(--chroma-blueberry);
+    --accent-4-c: var(--chroma-grape);
 
     --color-bg:      #121213;
     --color-surface: #2A2A2B;
@@ -450,130 +525,6 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   #cw-ck:checked ~ label .ck-on { display: inline; }
   #cw-ck:checked ~ label .ck-off { display: none; }
 
-  /* ─── Completion panel: This game · Streaks · All time ─────────────────────
-     No new colour tokens and no new type sizes (brief 83). Everything below is
-     built from --color-text, --color-accent, --color-border and --color-surface,
-     whose contrast is already measured in tests/palette-contrast.spec.ts. */
-
-  /* Section heading with a rule running out to the right, as sketched at brief
-     23. The rule is a border on a decorative span, so it is never announced. */
-  .stat-block__head {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    margin-block-end: 0.75rem;
-  }
-  .stat-block__head h3 {
-    font-family: "Inconsolata", monospace;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--color-text);
-    white-space: nowrap;
-  }
-  .stat-block__rule {
-    flex: 1;
-    border-block-start: 1px solid var(--color-border);
-  }
-
-  /* This game — the hero. The only thing that changed in the last ten seconds,
-     so it is the largest type on the panel (brief 80). */
-  .stat-hero {
-    font-family: "Inconsolata", monospace;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--color-text);
-    line-height: 1.2;
-  }
-
-  /* Streaks — two columns that stack rather than squeeze. 22rem rather than a
-     pixel width so the stack also happens at 200% text on a wide screen, which
-     is the case brief 85 and 104 are really about. */
-  .stat-streaks {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  @media (max-width: 22rem) {
-    .stat-streaks { grid-template-columns: 1fr; }
-  }
-  .stat-streak__value {
-    font-family: "Inconsolata", monospace;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-accent);
-    line-height: 1.2;
-  }
-  .stat-streak__best {
-    font-size: 0.8125rem;
-    color: var(--color-text);
-    opacity: 0.75;
-  }
-
-  /* All time — open, but quiet: plain rows, smaller type, no boxes (brief 81). */
-  .stat-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.25rem 1rem;
-    padding-block: 0.375rem;
-    border-block-end: 1px solid var(--color-border);
-  }
-  .stat-row:last-of-type { border-block-end: 0; }
-  .stat-row dt { font-size: 0.9375rem; color: var(--color-text); }
-  /* :not(.stat-note) rather than restating the family and weight on .stat-note —
-     .stat-note is (0,1,0) and this selector is (0,1,1), so it could never win on
-     specificity no matter what it declares or what order the rules are in. The
-     note simply stops matching this rule instead. */
-  .stat-row dd:not(.stat-note) {
-    margin: 0;
-    font-family: "Inconsolata", monospace;
-    font-weight: 700;
-    color: var(--color-text);
-  }
-  /* The line that says what the number means — the whole point of this build,
-     so it is text under the stat, never a tooltip (brief 95). */
-  .stat-note {
-    flex-basis: 100%;
-    margin: 0;
-    /* The weight is for the chart's <h4>, which would otherwise take the user
-       agent's bold. The family comes from the page. */
-    font-weight: 400;
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    color: var(--color-text);
-    opacity: 0.75;
-  }
-
-  /* How many goes you take. The bar is decorative; the count beside it is the
-     accessible content (brief 98). */
-  .goes-chart { margin-block-start: 1rem; }
-  .goes-row {
-    display: grid;
-    grid-template-columns: 1.25rem 1fr 2.25rem;
-    align-items: center;
-    gap: 0.5rem;
-    font-family: "Inconsolata", monospace;
-    font-size: 0.875rem;
-    color: var(--color-text);
-    padding-block: 0.1875rem;
-  }
-  .goes-row__track {
-    block-size: 0.625rem;
-    border-radius: 0.3125rem;
-    background-color: var(--color-border);
-    overflow: hidden;
-  }
-  .goes-row__fill {
-    display: block;
-    block-size: 100%;
-    border-radius: 0.3125rem;
-    background-color: var(--color-accent);
-  }
-  .goes-row__count { text-align: end; font-weight: 700; }
-
   /* ─── HTP clue styles for welcome screen ─── */
   /* HTP digit box (reused from game digit-box styling) */
   .digit-box {
@@ -634,6 +585,17 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 }
 
 @layer utilities {
+  /* The page column, in two halves: .page-col caps and centres the content,
+     .page-pad puts the gutter on the element OUTSIDE it. Splitting them is the
+     point — padding inside a capped box eats the content width, which is how
+     /welcome and /solved ended up 32px narrower than /play on a large phone.
+
+     In utilities rather than base so they outrank Tailwind's own max-w-* on
+     layer order: a stray max-w-[390px] left on an element would otherwise
+     silently win. */
+  .page-col { inline-size: 100%; max-inline-size: var(--page-max); margin-inline: auto; }
+  .page-pad { padding-inline: var(--page-gutter); }
+
   /* Counter warn colour — toggled by modals.ts counterEl.classList.add("warn") */
   .warn { color: var(--color-accent); }
 

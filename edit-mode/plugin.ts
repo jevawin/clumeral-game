@@ -1,0 +1,88 @@
+// Clumeral edit mode — the Vite plugin.
+//
+// `apply: 'serve'` is the load-bearing line: this plugin object is dropped
+// entirely from every `vite build`, whatever mode or environment it runs in.
+// Combined with nothing under src/ importing src/edit-mode/, that means the
+// overlay, the middleware and the edit stylesheets cannot reach a deployed
+// artefact — asserted against built output in task A4, not trusted here.
+
+import type { Plugin } from 'vite';
+import { writeArtefacts } from './classlist.ts';
+import { rewriteIndexHtml } from './html.ts';
+import { gitInfo } from './sessions.ts';
+import { gzipEditStylesheets } from './gzip.ts';
+import { serveCatalogue } from './catalogue-route.ts';
+import { receiveSession, serveReplay } from './session-routes.ts';
+import { receiveShutdown } from './shutdown-route.ts';
+
+export function editMode(): Plugin {
+  return {
+    name: 'clumeral-edit-mode',
+    apply: 'serve',
+
+    config() {
+      return {
+        server: {
+          // Bind on all interfaces so the Pi is reachable from Jamie's phone
+          // over Tailscale. Without this Vite binds to localhost and edit mode
+          // has no user — `npm run preview` already does the same thing.
+          host: true,
+        },
+      };
+    },
+
+    async configureServer(server) {
+      server.middlewares.use(serveCatalogue());
+      // Done writes here; Dave's page reads the replay. Both before the gzip
+      // middleware, which only cares about the stylesheet.
+      server.middlewares.use(receiveSession());
+      server.middlewares.use(serveReplay());
+      // The shutdown route. Awaited before the exit, because close() returns a promise
+      // and exiting straight after it would abandon the close. workerd is not
+      // orphaned by process.exit: miniflare registers an exit-hook whose
+      // callback calls runtime.dispose(), which SIGKILLs the runtime process
+      // synchronously, and exit-hook listens on process.once('exit'). That
+      // matters — an orphaned vite+workerd pair at 657 MB is the reason this
+      // feature exists.
+      server.middlewares.use(
+        receiveShutdown(async () => {
+          server.config.logger.info('  \u279c  edit mode: shutting down at the browser\u2019s request');
+          // RACED, not just awaited. .catch() covers a rejection, not a hang —
+          // and close() waits on the plugin container, chokidar and the ws
+          // server. If one of those stalls we never reach the exit, and the
+          // vite + workerd pair survives: the 657 MB orphan this whole feature
+          // exists to prevent. The 200 has already gone out by now, so the
+          // browser has been told it stopped.
+          await Promise.race([
+            server.close().catch(() => {}),
+            new Promise((resolve) => setTimeout(resolve, 3000)),
+          ]);
+          process.exit(0);
+        })
+      );
+      server.middlewares.use(gzipEditStylesheets());
+
+      // Generate the class lists and the family map once, at startup. The
+      // stylesheets @source these files, so they must exist before the first
+      // request for CSS arrives.
+      try {
+        const { classes } = await writeArtefacts();
+        server.config.logger.info(
+          `  ➜  edit mode: ${classes.toLocaleString()} classes available`
+        );
+      } catch (err) {
+        // Do not take the dev server down with us — the game still works
+        // without edit mode, and a silent failure here would look like a
+        // stylesheet bug rather than a generator bug.
+        server.config.logger.error(
+          `  ➜  edit mode: could not generate the class list — ${(err as Error).message}`
+        );
+      }
+    },
+
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html) => rewriteIndexHtml(html, { branch: gitInfo().branch }),
+    },
+  };
+}

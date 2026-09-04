@@ -46,24 +46,14 @@ const dom = {
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
 //
-// The explanatory lines are the whole point of this build (brief 135): "streak"
-// currently explains nothing on screen. They are text under the stat, never a
-// tooltip.
+// No explanatory lines anywhere on the panel now. Every All-time figure carries
+// its own label — "17" over "Puzzles solved" — so it explains itself, and the
+// boxes above never had one (brief 45, polish brief 100, 104).
 
-const NOTES = {
-  playStreak: 'Days in a row you have finished the puzzle.',
-  firstGoStreak: 'Days in a row you got it on your first guess.',
-  streakPair: 'Miss a day and the streak starts again.',
-  plays: 'Daily puzzles you have finished.',
-  firstGoWins: 'Puzzles you got on your first guess.',
-  avgGoes: 'Your average number of guesses.',
-  avgTime: 'How long you usually take.',
-  fastest: 'Your quickest win on a first guess.',
-} as const;
-
+const STREAK_LINE = 'Come back tomorrow to maintain your streak!';
 const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
 const RANDOM_LINE = "Random puzzles don't count towards your stats.";
-const CHART_LABEL = 'How many goes you take';
+const CHART_LABEL = 'Attempts distribution';
 
 
 // ─── Which blocks exist ──────────────────────────────────────────────────────
@@ -118,33 +108,87 @@ function formatCountdown(isRandom: boolean): string | null {
 
 // A block is a <section> with its own heading, so a screen reader can jump
 // between them. The rule beside the heading is decorative.
-function block(id: string, heading: string, body: string): string {
-  return `<section data-stat-block="${id}" class="stat-block" aria-labelledby="stat-head-${id}">
-    <div class="stat-block__head">
-      <h3 id="stat-head-${id}">${heading}</h3>
-      <span class="stat-block__rule" aria-hidden="true"></span>
-    </div>
+//
+// `iconClass` is the section's own colour, passed in as a WHOLE literal class
+// name — 'text-accent-2', never `text-${n}`. Tailwind finds classes by scanning
+// source text, so a stem built at runtime compiles to no rule at all and the
+// panel would ship with every accent silently missing.
+function block(id: string, heading: string, body: string, iconId: string, iconClass: string): string {
+  // Every section has a heading with a decorative icon and no rule beside it
+  // (polish brief 91). Streaks, Records and All time take the three theme
+  // colours the player did not pick, so all four are on screen at once
+  // (polish brief 97).
+  return `<section data-stat-block="${id}" aria-labelledby="stat-head-${id}">
+    <h3 id="stat-head-${id}" data-stat-head class="flex items-center gap-2 mb-2 text-2xl font-bold leading-tight">
+      <svg data-stat-icon class="size-6 flex-none ${iconClass}" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${heading}
+    </h3>
     ${body}
   </section>`;
 }
 
-// Every number is a <dl> pair, so it is read with its label attached rather than
-// as a loose figure (brief 97). The explanatory line is a second <dd> under the
-// number — valid against a single <dt>, and it reads in the right order.
-function statRow(label: string, value: string, note: string): string {
-  return `<div class="stat-row">
-    <dt>${label}</dt>
-    <dd>${value}</dd>
-    <dd class="stat-note">${note}</dd>
-  </div>`;
+/**
+ * One All-time figure: the number, with what it means under it (polish brief 101).
+ *
+ * Still a paragraph rather than a description list, and that is the point — the
+ * two spans read as "17 puzzles solved" in one breath, in the order they are
+ * written. So the number can sit above its label on screen without the DOM and
+ * the picture disagreeing, which is what a `dt`/`dd` pair would have forced.
+ */
+function statLine(value: string, words: string): string {
+  // All time is the only caller, so its colour is written here directly. No
+  // border on any of it — the two-column grid does the separating (brief 81).
+  return `<p data-stat-line class="leading-tight">
+    <span data-stat-line-value class="block font-bold text-xl leading-tight text-accent-4">${value}</span>
+    <span data-stat-line-label class="block text-base leading-tight mt-0.5">${words}</span>
+  </p>`;
 }
 
-function streakColumn(label: string, value: number, best: number, note: string): string {
-  return `<div class="stat-streak">
-    <dt>${label}</dt>
-    <dd class="stat-streak__value">${value}</dd>
-    <dd class="stat-streak__best">best ${best}</dd>
-    <dd class="stat-note">${note}</dd>
+function plural(n: number, word: string): string {
+  return n === 1 ? word : `${word}s`;
+}
+
+/**
+ * One column: a label with the number under it (brief 65, 66, 67).
+ *
+ * The label is above the number on screen AND first in the DOM, so the visual
+ * order and the reading order finally agree — the redesign's `column-reverse`
+ * is gone with the layout that needed it.
+ *
+ * The label still carries two spans: the short word that is shown and the full
+ * one that is spoken. "Plays" on its own means the play streak here and the
+ * all-time total two blocks down, and a screen reader has no column heading to
+ * disambiguate them.
+ *
+ * `borderClass` and `valueClass` are the section's colour, as WHOLE literal
+ * class names — see block() above for why a stem cannot be built at runtime.
+ * They are two parameters rather than one because they land on two different
+ * elements: putting the text colour on the box would tint the label and the
+ * watermark too, and brief 80 keeps the label in the foreground colour.
+ */
+function statColumn(
+  shortLabel: string,
+  fullLabel: string,
+  value: string,
+  iconId: string,
+  borderClass: string,
+  valueClass: string,
+): string {
+  // The box borrows the play screen's undo/reset resting state — surface fill,
+  // the same 1.5px border (border-hairline) and the same radius — so the panel
+  // reuses a shape the player already knows rather than inventing one.
+  //
+  // `overflow-hidden` is load-bearing: it is what clips the watermark.
+  // `grow basis-24` is what makes the boxes wrap themselves instead of needing
+  // a breakpoint — 6rem each, so three fit from a 336px viewport up, and the
+  // wrap also happens at large browser text because the basis is in rem.
+  //
+  // The icon is a watermark: big, faint, rotated, and clipped by the box's own
+  // corner (polish brief 94). Decorative in the strongest sense — it is a texture, not
+  // a label, so it is aria-hidden and the words carry everything.
+  return `<div data-stat-col class="relative overflow-hidden grow basis-24 bg-surface border-hairline ${borderClass} rounded-sm py-2.5 px-3">
+    <dt><span data-stat-label class="block relative text-base font-normal leading-tight" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
+    <dd data-stat-value class="m-0 mt-0.5 relative font-bold text-3xl ${valueClass}">${value}</dd>
+    <svg data-stat-mark class="absolute -inset-be-3.5 -inset-e-3.5 size-16 rotate-45 opacity-10 pointer-events-none" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
   </div>`;
 }
 
@@ -155,21 +199,31 @@ function goesChart(distribution: PlayerStats['goesDistribution']): string {
       const pct = Math.round((d.count / max) * 100);
       // The bar is aria-hidden; the count beside it is the accessible content,
       // so nothing in the chart is available only as a picture (brief 98).
-      return `<li class="goes-row" data-goes-row>
-        <span data-goes-label>${d.bucket}</span>
-        <span class="goes-row__track" aria-hidden="true"><span class="goes-row__fill" style="inline-size: ${pct}%"></span></span>
-        <span class="goes-row__count" data-goes-count>${d.count}</span>
+      // A flex row, not a grid: w-5 / flex-1 / w-9 gives the same three widths
+      // the grid template did. `shrink-0` is load-bearing — a grid track is a
+      // hard width and a flex item is not, so without it a label or a count
+      // would grow past its width at 200% browser text.
+      return `<li data-goes-row class="flex items-center gap-2 text-base py-0.5">
+        <span data-goes-label class="w-5 shrink-0">${d.bucket}</span>
+        <span data-goes-track class="flex-1 h-2.5 rounded-full bg-border overflow-hidden" aria-hidden="true"><span data-goes-fill class="block h-full rounded-full bg-accent-4" style="inline-size: ${pct}%"></span></span>
+        <span data-goes-count class="w-9 shrink-0 text-end font-bold">${d.count}</span>
       </li>`;
     })
     .join('');
-  return `<div class="goes-chart">
-    <h4 id="goes-chart-label" class="stat-note">${CHART_LABEL}</h4>
+  return `<div data-goes-chart class="mt-4">
+    <h4 id="goes-chart-label" data-stat-note>${CHART_LABEL}</h4>
     <ul class="list-none p-0 m-0" aria-labelledby="goes-chart-label">${rows}</ul>
   </div>`;
 }
 
 /**
- * The hero: `Solved in 1 go, 0m 30s`.
+ * The `/play` screen's result sentence: `Solved in 1 go, 0m 30s`.
+ *
+ * NOT the completion panel's — the panel shows two icon figures now and has no
+ * sentence at all (redesign brief 38). This function looks like panel code and
+ * is not: src/app.ts imports it and writes it into the play screen's feedback
+ * line, which redesign brief 39 deliberately protects. The two screens diverged
+ * on purpose. Leave it alone when tidying this file.
  *
  * `null` goes means played but not recorded — never "Solved in 0". An unknown
  * time drops the whole clause rather than showing a dash: a dash is right in a
@@ -185,6 +239,46 @@ export function heroLine(tries: number | null, seconds: number | null, showTime:
   const goes = `Solved in ${tries} ${tries === 1 ? 'go' : 'goes'}`;
   if (!showTime || seconds === null) return goes;
   return `${goes}, ${formatDuration(seconds)}`;
+}
+
+/**
+ * One figure: an icon, a word only a screen reader hears, and the number.
+ *
+ * The word is not optional decoration. Without it the panel reads as a bare
+ * "1 go" beside a bare "2m 38s" and the icon carries the meaning, which is
+ * exactly what an icon cannot do in speech (brief 47, 49).
+ */
+function figure(iconId: string, spokenLabel: string, value: string): string {
+  // translate-y-1 nudges the icon down: baseline-aligned text beside a
+  // baseline-less SVG sits high, and the nudge puts it on the same optical line
+  // as the number.
+  return `<span data-stat-figure class="flex items-baseline gap-2">
+    <svg data-stat-figure-icon class="size-6 flex-none translate-y-1" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
+    <span class="sr-only">${spokenLabel}, </span><span data-stat-figure-value class="font-bold text-3xl text-accent">${value}</span>
+  </span>`;
+}
+
+/**
+ * The Today block's body: the goes and the time, side by side (brief 38, 65).
+ *
+ * An unknown time drops the stopwatch figure entirely rather than showing an
+ * empty one (brief 36). Unknowable goes — a reload after a saving-off solve —
+ * is the plain word `Solved!` and no figures at all (brief 76).
+ */
+export function todayFigures(tries: number | null, seconds: number | null, showTime: boolean): string {
+  // The same guard heroLine applies, and for the same reason: this string
+  // reaches innerHTML and `tries` comes from dlng_history, which loadHistory
+  // does not validate. Anything that is not a real count of goes is "played,
+  // not recorded", which is already a state this handles.
+  if (tries === null || !Number.isInteger(tries) || tries < 1) return '<p data-stat-hero class="text-3xl font-bold">Solved!</p>';
+  const goes = figure('icon-calculator', 'Goes', `${tries} ${tries === 1 ? 'go' : 'goes'}`);
+  const time = showTime && seconds !== null
+    ? figure('icon-stopwatch', 'Time', formatDuration(seconds))
+    : '';
+  // Centred, wrapping rather than overflowing — an hour-long time makes the
+  // pair too wide for a 320px screen. -mt-3 halves the gap to the solved
+  // message above without touching the rhythm of everything below.
+  return `<div data-stat-today class="flex flex-wrap justify-center gap-6 -mt-3 mb-2">${goes}${time}</div>`;
 }
 
 /** Archive replays and markers carry no timing, on screen or in speech. */
@@ -266,12 +360,17 @@ export function renderCompletion(
     dom.octo.innerHTML = COMPLETION_OCTO_SVG;
   }
 
-  // Heading. The old subheading is now the hero line inside the This game block,
-  // so it is cleared rather than left saying the same thing twice.
-  if (dom.heading) {
-    dom.heading.textContent = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
+  // Heading. The old subheading is now the figures inside the Today block, so it
+  // is cleared rather than left saying the same thing twice.
+  // Recomputed below the panel branch would be too late, so the mode is worked
+  // out first and the heading reads from it.
+  // Cleared AND hidden. It is a flex child of a `gap-6` stack, so an empty one
+  // still contributes 24px — which is half of why the figures sat so far below
+  // the heading (polish brief 90).
+  if (dom.subheading) {
+    dom.subheading.textContent = '';
+    dom.subheading.classList.add('hidden');
   }
-  if (dom.subheading) dom.subheading.textContent = '';
 
   const isArchivedOtherDate =
     !isRandom &&
@@ -286,41 +385,70 @@ export function renderCompletion(
   const mode = panelMode(isRandom, isArchivedOtherDate, tries, stats);
   const seconds = validSeconds(opts.seconds);
 
+  // "You took:" leads into the two figures, so it is only correct when there
+  // are figures to follow it (brief 63). A reload after a saving-off solve has
+  // neither the goes nor the time, and the sentence would dangle over nothing.
+  const hasFigures = tries !== null && Number.isInteger(tries) && tries >= 1;
+  if (dom.heading) {
+    const solved = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
+    dom.heading.textContent = hasFigures ? `${solved} You took:` : solved;
+  }
+
   if (dom.panel) {
     // Archive replays keep the minimal panel they have today: no streaks, no
     // totals and no timing (brief 54).
     const showTime = showsTime(mode);
     const thisGame = [
-      `<p class="stat-hero">${heroLine(tries, seconds, showTime)}</p>`,
-      mode === 'random' ? `<p class="stat-note">${RANDOM_LINE}</p>` : '',
+      todayFigures(tries, seconds, showTime),
+      mode === 'random' ? `<p data-stat-note>${RANDOM_LINE}</p>` : '',
       // Not shown to a saving-off player: with saving off no third game ever
       // accumulates, so it would be a promise we are not going to keep.
-      mode === 'new' ? `<p class="stat-note">${NEW_PLAYER_LINE}</p>` : '',
+      mode === 'new' ? `<p data-stat-note>${NEW_PLAYER_LINE}</p>` : '',
     ].join('');
 
-    const blocks = [block('this-game', 'This game', thisGame)];
+    // No Today block any more (brief 62) — no heading, no rule. The figures sit
+    // directly under the solved message, centred, and the two notes that used to
+    // live in that block sit under them.
+    const blocks = [`<div data-stat-block="this-game">${thisGame}</div>`];
 
     if (mode === 'full') {
-      blocks.push(block('streaks', 'Streaks',
-        `<dl class="stat-streaks">
-          ${streakColumn('Play streak', stats.playStreak, stats.bestPlayStreak, NOTES.playStreak)}
-          ${streakColumn('First-go streak', stats.firstGoStreak, stats.bestFirstGoStreak, NOTES.firstGoStreak)}
-        </dl>
-        <p class="stat-note">${NOTES.streakPair}</p>`));
+      // Two sections where there used to be one (brief 64): where you are now,
+      // then what you have ever done. The colours carry that distinction —
+      // Streak in the player's own accent, Records in the second one.
+      // The line sits under the heading and above the boxes (polish brief 92), so it
+      // reads as the section's own sentence rather than a footnote to the last
+      // number in it.
+      // Every accent class below is written out in full. Tailwind scans this
+      // file as text, so a name assembled at runtime produces no rule and the
+      // panel ships grey — silently, and invisibly to both jsdom and the dev
+      // build. The <dl> is the flex row; each statColumn() returns the div that
+      // wraps its own dt/dd pair, so the pairs stay together in the flow.
+      blocks.push(block('streak', 'Current streaks',
+        `<p data-stat-note>${STREAK_LINE}</p>
+        <dl data-stat-cols class="flex flex-wrap gap-2 m-0">
+          ${statColumn('Days', 'Current day streak', String(stats.playStreak), 'icon-gamepad', 'border-accent-2', 'text-accent-2')}
+          ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak), 'icon-calculator', 'border-accent-2', 'text-accent-2')}
+          ${statColumn('Avg. time', 'Average time', formatDuration(stats.avgTimeSeconds), 'icon-stopwatch', 'border-accent-2', 'text-accent-2')}
+        </dl>`, 'icon-flame', 'text-accent-2'));
+
+      blocks.push(block('records', 'Records',
+        `<dl data-stat-cols class="flex flex-wrap gap-2 m-0">
+          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator', 'border-accent-3', 'text-accent-3')}
+          ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), 'icon-stopwatch', 'border-accent-3', 'text-accent-3')}
+        </dl>`, 'icon-trophy', 'text-accent-3'));
 
       const firstGo = stats.firstGoPercent === null
         ? String(stats.firstGoWins)
         : `${stats.firstGoWins} (${stats.firstGoPercent}%)`;
 
       blocks.push(block('all-time', 'All time',
-        `<dl class="m-0">
-          ${statRow('Plays', String(stats.plays), NOTES.plays)}
-          ${statRow('First-go wins', firstGo, NOTES.firstGoWins)}
-          ${statRow('Average goes', stats.avgGoes ?? '—', NOTES.avgGoes)}
-          ${statRow('Average time', formatDuration(stats.avgTimeSeconds), NOTES.avgTime)}
-          ${statRow('Fastest first-go win', formatDuration(stats.fastestFirstGoSeconds), NOTES.fastest)}
-        </dl>
-        ${goesChart(stats.goesDistribution)}`));
+        `<div data-stat-lines class="grid grid-cols-2 gap-y-3.5 gap-x-4">
+          ${statLine(String(stats.plays), `${plural(stats.plays, 'Puzzle')} solved`)}
+          ${statLine(firstGo, 'Solved in one')}
+          ${statLine(formatDuration(stats.avgTimeSeconds), 'Average time')}
+          ${statLine(stats.avgGoes ?? '—', 'Average attempts')}
+        </div>
+        ${goesChart(stats.goesDistribution)}`, 'icon-calendar', 'text-accent-4'));
     }
 
     dom.panel.innerHTML = blocks.join('');

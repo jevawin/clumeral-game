@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
+import { editMode } from "./edit-mode/plugin.ts";
 
 const buildHash = Date.now().toString(36);
 
@@ -10,6 +11,8 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     cloudflare(),
+    // Dev server only (apply: "serve") — dropped from every build. See A4.
+    editMode(),
     {
       name: "sw-cache-bust",
       writeBundle(options) {

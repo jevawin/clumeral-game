@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { HistoryEntry } from '../src/types.ts';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // The four stat boxes are gone, so this file is rewritten rather than patched.
 // It renders the real panel and reads it the way a player meets it — by heading
@@ -34,18 +36,42 @@ function block(id: string): HTMLElement | null {
   return panel().querySelector(`[data-stat-block="${id}"]`);
 }
 
-/** The value shown for a labelled stat, anywhere on the panel. */
-function stat(label: string): string | null {
-  for (const row of panel().querySelectorAll('dt')) {
-    if (row.textContent?.trim() === label) {
-      return (row.parentElement?.querySelector('dd')?.textContent ?? '').trim();
-    }
-  }
-  return null;
+/** Every All-time line, whitespace-collapsed: "17 puzzles solved". */
+function allTimeLines(): string[] {
+  return [...panel().querySelectorAll('[data-stat-line]')]
+    .map((el) => el.textContent!.replace(/\s+/g, ' ').trim());
 }
 
 function text(): string {
   return panel().textContent!.replace(/\s+/g, ' ').trim();
+}
+
+/** The text of one block, whitespace-collapsed the way `text()` does it. */
+function blockText(id: string): string {
+  return (block(id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/** One column, found by the full words a screen reader hears (brief 67). */
+function col(fullLabel: string): { value: string; short: string } | null {
+  for (const el of panel().querySelectorAll('[data-stat-col]')) {
+    if (el.querySelector('.sr-only')?.textContent?.trim() !== fullLabel) continue;
+    const value = el.querySelector('[data-stat-value]')!;
+    return {
+      value: value.textContent!.trim(),
+      short: el.querySelector('[data-stat-label]')!.textContent!.trim(),
+    };
+  }
+  return null;
+}
+
+/** The visible column labels inside one block, in order. */
+function colLabels(id: string): string[] {
+  return [...block(id)!.querySelectorAll('[data-stat-label]')].map((el) => el.textContent!.trim());
+}
+
+/** The visible values of the Today block's figures, in order. */
+function figures(): string[] {
+  return [...panel().querySelectorAll('[data-stat-figure-value]')].map((el) => el.textContent!.trim());
 }
 
 function live(): string {
@@ -91,24 +117,30 @@ describe('the completion panel', () => {
     await render(RETURNING, 2, false, { seconds: 221 });
 
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).not.toBeNull();
+    expect(block('streak')).not.toBeNull();
+    expect(block('records')).not.toBeNull();
     expect(block('all-time')).not.toBeNull();
+    expect(block('average')).toBeNull();
 
-    expect(block('this-game')!.textContent).toContain('Solved in 2 goes, 3m 41s');
+    expect(figures()).toEqual(['2 goes', '3m 41s']);
 
-    expect(stat('Play streak')).toBe('5');
-    expect(stat('First-go streak')).toBe('0');
-    expect(stat('Plays')).toBe('5');
-    expect(stat('First-go wins')).toBe('1 (20%)');
-    expect(stat('Average goes')).toBe('2.4');
-    expect(stat('Average time')).toBe('4m 06s'); // (221+48+300+260+400)/5 = 245.8s
-    expect(stat('Fastest first-go win')).toBe('0m 48s');
+    expect(col('Current day streak')!.value).toBe('5');
+    expect(col('Current 1-go streak')!.value).toBe('0');
+    expect(col('Fastest time')!.value).toBe('0m 48s');
+
+    // The number first, then what it means (brief 82).
+    expect(allTimeLines()).toEqual([
+      '5 Puzzles solved',
+      '1 (20%) Solved in one',
+      '4m 06s Average time', // (221+48+300+260+400)/5 = 245.8s
+      '2.4 Average attempts',
+    ]);
   });
 
   it('shows only This game for a brand-new player, with the third-game line', async () => {
     await render([{ date: day(0), tries: 2, seconds: 100 }], 2, false, { seconds: 100 });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('streak')).toBeNull();
     expect(block('all-time')).toBeNull();
     expect(text()).toContain('Your streaks and all-time stats start from your third game.');
   });
@@ -118,7 +150,7 @@ describe('the completion panel', () => {
       { date: day(0), tries: 2 },
       { date: day(1), tries: 3 },
     ], 2);
-    expect(block('streaks')).toBeNull();
+    expect(block('streak')).toBeNull();
     expect(block('all-time')).toBeNull();
   });
 
@@ -128,7 +160,8 @@ describe('the completion panel', () => {
       { date: day(1), tries: 3 },
       { date: day(2), tries: 3 },
     ], 2);
-    expect(block('streaks')).not.toBeNull();
+    expect(block('streak')).not.toBeNull();
+    expect(block('records')).not.toBeNull();
     expect(block('all-time')).not.toBeNull();
   });
 
@@ -140,9 +173,9 @@ describe('the completion panel', () => {
   it('shows only This game when score saving is off', async () => {
     await render(RETURNING, 2, false, { seconds: 221 }, { saveScore: false });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('streak')).toBeNull();
     expect(block('all-time')).toBeNull();
-    expect(text()).toContain('Solved in 2');
+    expect(figures()).toEqual(['2 goes', '3m 41s']);
   });
 
   it('says nothing at all about score saving, in any mode (P-01)', async () => {
@@ -158,7 +191,7 @@ describe('the completion panel', () => {
   it('shows This game and the random line after a random puzzle', async () => {
     await render(RETURNING, 2, true, { seconds: 221 });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('streak')).toBeNull();
     expect(block('all-time')).toBeNull();
     expect(text()).toContain("Random puzzles don't count towards your stats.");
   });
@@ -170,10 +203,175 @@ describe('the completion panel', () => {
       seconds: 200,
     });
     expect(block('this-game')).not.toBeNull();
-    expect(block('streaks')).toBeNull();
+    expect(block('streak')).toBeNull();
     expect(block('all-time')).toBeNull();
-    expect(text()).toContain('Solved in 3 goes');
-    expect(text()).not.toContain('3:20'); // no timing on an archive replay (brief 54)
+    // No stopwatch figure at all, not an empty one — an archive replay carries
+    // no timing (brief 54, and brief 36 for the shape).
+    expect(figures()).toEqual(['3 goes']);
+    expect(blockText('this-game')).not.toContain('3m 20s');
+  });
+
+  it('gives the figures no block heading at all (brief 62)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(block('this-game')!.querySelector('h3')).toBeNull();
+    expect(text()).not.toContain('This game');
+    expect(text()).not.toContain('Today');
+  });
+
+  it('leads into the figures from the heading, and only when there are any (brief 63)', async () => {
+    const heading = () => document.querySelector('[data-completion-heading]')!.textContent;
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(heading()).toBe('Puzzle #157 solved! You took:');
+    // A reload after a saving-off solve has neither figure, so the sentence
+    // would lead into nothing.
+    await render([{ date: day(0), tries: 0, marker: true }], null, false, {}, { saveScore: false });
+    expect(heading()).toBe('Puzzle #157 solved!');
+  });
+
+  it('has no "Solved in" sentence anywhere on the panel (brief 38)', async () => {
+    // The sentence lives on the /play screen now and only there. The two screens
+    // diverged on purpose (brief 39). Scoped to the figures — All time carries a
+    // "Solved in one" label, which is a different phrase that happens to start
+    // with the same two words.
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(blockText('this-game')).not.toContain('Solved in');
+  });
+
+  it('gives each figure a word only a screen reader hears (brief 47)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(blockText('this-game')).toContain('Goes, 2 goes');
+    expect(blockText('this-game')).toContain('Time, 3m 41s');
+  });
+
+  it('hides both Today icons from the accessibility tree (brief 49)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    const icons = block('this-game')!.querySelectorAll('svg');
+    expect(icons.length).toBe(2);
+    for (const icon of icons) expect(icon.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps the random line and the new-player line under the figures (brief 76)', async () => {
+    await render(RETURNING, 2, true, { seconds: 221 });
+    const kids = [...block('this-game')!.children];
+    // No heading now: the figures come first, then the note.
+    expect(kids[0].hasAttribute('data-stat-today')).toBe(true);
+    expect(blockText('this-game')).toContain("Random puzzles don't count towards your stats.");
+  });
+
+  it('splits into Streak and Records, each with an icon (brief 64, 65, 66)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+
+    expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Current streaks');
+    expect(block('records')!.querySelector('h3')!.textContent!.trim()).toBe('Records');
+    for (const id of ['streak', 'records']) {
+      const icon = block(id)!.querySelector('h3 [data-stat-icon]');
+      expect(icon, `${id} heading icon`).not.toBeNull();
+      expect(icon!.getAttribute('aria-hidden')).toBe('true');
+    }
+
+    expect(colLabels('streak')).toEqual(['Days', '1-go solve', 'Avg. time']);
+    expect(col('Current day streak')!.value).toBe('5');
+    expect(col('Current 1-go streak')!.value).toBe('0');
+    expect(col('Average time')!.value).toBe('4m 06s');
+
+    expect(colLabels('records')).toEqual(['1-go streak', 'Fastest']);
+    expect(col('Longest 1-go streak')!.value).toBe('1');
+    expect(col('Fastest time')!.value).toBe('0m 48s');
+  });
+
+  it('takes its colour from the section, not from the figure (brief 79)', async () => {
+    // Streaks, Records and All time each set --section-accent once; every icon,
+    // number and box border inside reads from it. So there is no per-figure
+    // colour class left to get wrong, and the four theme colours cannot drift
+    // apart from the section they belong to.
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(panel().querySelector('[data-stat-value-best]')).toBeNull();
+    for (const id of ['streak', 'records', 'all-time']) {
+      expect(block(id)!.getAttribute('data-stat-block')).toBe(id);
+    }
+  });
+
+  it('gives every section a heading icon, and every box a watermark (brief 73, 76)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    // All three sections have one now, All time included.
+    for (const id of ['streak', 'records', 'all-time']) {
+      expect(block(id)!.querySelector('h3 [data-stat-icon]'), id).not.toBeNull();
+    }
+    // One watermark per box, decorative, and no other icon inside a box.
+    const marks = panel().querySelectorAll('[data-stat-mark]');
+    expect(marks.length).toBe(5);
+    for (const mark of marks) expect(mark.getAttribute('aria-hidden')).toBe('true');
+    for (const c of panel().querySelectorAll('[data-stat-col]')) {
+      expect(c.querySelectorAll('svg').length).toBe(1);
+    }
+    // The two figures under the solved message keep theirs.
+    expect(panel().querySelectorAll('[data-stat-figure-icon]').length).toBe(2);
+  });
+
+  it('drops the rule beside every heading (brief 73)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(panel().querySelector('[data-stat-rule]')).toBeNull();
+  });
+
+  it('draws no line between All-time entries (brief 81)', () => {
+    // Asserted on the markup, not the stylesheet. The All-time lines carry
+    // their own classes now, so this is where the rule lives — and reading the
+    // stylesheet with a non-null assertion would THROW rather than fail once
+    // the .stat-line rule is deleted.
+    const source = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+    const tag = /<[a-z]+ data-stat-line[^>]*>/.exec(source);
+    expect(tag, 'no element carries data-stat-line').not.toBeNull();
+    const classes = (/class="([^"]*)"/.exec(tag![0])?.[1] ?? '').split(/\s+/).filter(Boolean);
+    expect(classes.filter((c) => /^-?border/.test(c))).toEqual([]);
+  });
+
+  it('says the short word on screen and the full one in speech', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    // "Days" on its own does not say days of what, and a screen reader has no
+    // column heading to lean on.
+    expect(col('Current day streak')!.short).toBe('Days');
+    expect(col('Longest 1-go streak')!.short).toBe('1-go streak');
+  });
+
+  it('keeps every dt inside a dl, with dd after it', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    for (const dt of panel().querySelectorAll('dt')) {
+      expect(dt.closest('dl'), dt.textContent!).not.toBeNull();
+    }
+    // Label first in the DOM as well as on screen now (brief 67). The watermark
+    // is a third child and comes last, so it never lands between the two.
+    for (const el of panel().querySelectorAll('[data-stat-col]')) {
+      expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD', 'svg']);
+    }
+  });
+
+  it('asks the player back tomorrow, under the streak columns (brief 69)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    // Under the heading and above the boxes, so it reads as the section's own
+    // sentence rather than a footnote to the last number (brief 74).
+    const kids = [...block('streak')!.children].map((el) => el.tagName);
+    expect(kids).toEqual(['H3', 'P', 'DL']);
+    expect(blockText('streak')).toContain('Come back tomorrow to maintain your streak!');
+    expect(blockText('records')).not.toContain('Come back tomorrow');
+  });
+
+  it('shows a dash for a record nobody has yet', async () => {
+    await render([
+      { date: day(0), tries: 2 },
+      { date: day(1), tries: 3 },
+      { date: day(2), tries: 3 },
+    ], 2);
+    expect(col('Fastest time')!.value).toBe('—');
+    expect(col('Average time')!.value).toBe('—');
+    expect(allTimeLines()).toContain('— Average time');
+  });
+
+  it('puts no explanatory line under the Records columns (brief 45)', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(block('records')!.querySelector('[data-stat-note]')).toBeNull();
+    expect(text()).not.toContain('Miss a day and the streak starts again.');
+    expect(text()).not.toContain('Days in a row you have finished the puzzle.');
+    expect(text()).not.toContain('Days in a row you got it on your first guess.');
   });
 
   it('reads "Solved!" and never "Solved in 0" when the goes are unknowable', async () => {
@@ -183,22 +381,22 @@ describe('the completion panel', () => {
     expect(text()).toContain('Solved!');
     expect(text()).not.toContain('Solved in');
     expect(text()).not.toContain('0:00');
+    // The plain word and nothing else — no figures, empty or otherwise (brief 76).
+    expect(figures()).toEqual([]);
   });
 
-  it('puts an explanatory line under every stat (brief 135)', async () => {
+  it('needs no explanatory lines — the figures read as sentences (brief 82)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    const t = text();
-    for (const line of [
-      'Days in a row you have finished the puzzle.',
-      'Days in a row you got it on your first guess.',
-      'Miss a day and the streak starts again.',
+    // The old two-part row needed a note under it to say what the number meant.
+    // "5 puzzles solved" says it in the line itself.
+    expect(panel().querySelector('[data-stat-note][data-stat-row]')).toBeNull();
+    for (const gone of [
       'Daily puzzles you have finished.',
       'Puzzles you got on your first guess.',
       'Your average number of guesses.',
       'How long you usually take.',
-      'Your quickest win on a first guess.',
     ]) {
-      expect(t, line).toContain(line);
+      expect(text(), gone).not.toContain(gone);
     }
   });
 
@@ -210,44 +408,44 @@ describe('the completion panel', () => {
       .toEqual(['1', '2', '3', '4', '5', '6+']);
     expect([...rows].map((r) => r.querySelector('[data-goes-count]')!.textContent))
       .toEqual(['1', '2', '1', '1', '0', '0']);
-    expect(text()).toContain('How many goes you take');
+    expect(text()).toContain('Attempts distribution');
   });
 
-  it('drops the time clause entirely when this game has no valid time', async () => {
-    // A dash is right in a column of figures and wrong in the middle of a
-    // sentence, so the hero says the goes and stops.
+  it('drops the stopwatch figure entirely when this game has no valid time', async () => {
+    // An empty figure with a dash in it is worse than no figure: it reads as a
+    // stat you have failed at rather than one that was never taken (brief 36).
     await render(RETURNING, 2, false, {});
-    expect(block('this-game')!.textContent).toContain('Solved in 2 goes');
-    expect(block('this-game')!.textContent).not.toContain('—');
-    expect(block('this-game')!.textContent).not.toContain('0m 00s');
+    expect(figures()).toEqual(['2 goes']);
+    expect(blockText('this-game')).not.toContain('—');
+    expect(blockText('this-game')).not.toContain('0m 00s');
   });
 
   it('says "1 go", not "1 goes"', async () => {
     await render(RETURNING, 1, false, { seconds: 30 });
-    expect(block('this-game')!.textContent).toContain('Solved in 1 go, 0m 30s');
+    expect(figures()).toEqual(['1 go', '0m 30s']);
   });
 
-  it('shows a long game its own time while leaving it out of the averages', async () => {
+  it('shows a long game its own time and counts it in the averages', async () => {
     const history: HistoryEntry[] = [
       { date: day(0), tries: 1, seconds: 3900 },
       { date: day(1), tries: 1, seconds: 60 },
       { date: day(2), tries: 1, seconds: 120 },
     ];
     await render(history, 1, false, { seconds: 3900 });
-    expect(block('this-game')!.textContent).toContain('1h 05m');
-    expect(stat('Average time')).toBe('1m 30s');
-    expect(stat('Fastest first-go win')).toBe('1m 00s');
+    expect(figures()).toEqual(['1 go', '1h 05m']);
+    expect(allTimeLines()).toContain('22m 40s Average time');
+    expect(col('Fastest time')!.value).toBe('1m 00s');
   });
 
-  it('shows a dash for an average nobody has data for', async () => {
+  it('shows a dash for a figure nobody has data for', async () => {
     await render([
       { date: day(0), tries: 2 },
       { date: day(1), tries: 3 },
       { date: day(2), tries: 3 },
     ], 2);
-    // A dash is right HERE — a column of figures needs a placeholder.
-    expect(stat('Average time')).toBe('—');
-    expect(stat('Fastest first-go win')).toBe('—');
+    // A dash is right HERE — a box needs a placeholder rather than a gap.
+    expect(allTimeLines()).toContain('— Average time');
+    expect(col('Fastest time')!.value).toBe('—');
   });
 });
 
@@ -313,8 +511,13 @@ describe('the announcement (brief 139)', () => {
   });
 });
 
-// heroLine reaches innerHTML, and `tries` comes from dlng_history, which
+// Both builders reach innerHTML, and `tries` comes from dlng_history, which
 // loadHistory does not validate — unlike loadActive and loadUndo next door.
+//
+// heroLine is the /play screen's sentence now, not the panel's (brief 39). Its
+// assertions below are no longer about the completion screen at all: they are
+// the guard that the play screen's result line did not move when the panel's
+// hero was replaced by figures.
 describe('a forged history row cannot inject markup', () => {
   beforeEach(() => {
     setupDOM();
@@ -338,6 +541,14 @@ describe('a forged history row cannot inject markup', () => {
     expect(mod.heroLine(4, null, true)).toBe('Solved in 4 goes');
   });
 
+  it('renders "Solved!" from the panel builder too, with no figures', async () => {
+    const mod = await import('../src/completion.ts');
+    for (const bad of ['<img src=x onerror=alert(1)>', '2<script>x</script>', 0, -1, 2.5, NaN]) {
+      expect(mod.todayFigures(bad as unknown as number, 30, true), String(bad))
+        .toBe('<p data-stat-hero class="text-3xl font-bold">Solved!</p>');
+    }
+  });
+
   it('puts no markup in the panel when the stored row is forged', async () => {
     await render(
       [{ date: day(0), tries: '<img src=x onerror=alert(1)>' as unknown as number }],
@@ -345,5 +556,123 @@ describe('a forged history row cannot inject markup', () => {
     );
     expect(panel().querySelector('img')).toBeNull();
     expect(text()).toContain('Solved!');
+  });
+});
+
+// The dark-mode bug this guards: seven elements on the panel were coloured
+// individually and the eighth — the streak block's <dt> — was missed, so it fell
+// through to the browser's default black and vanished on the dark background.
+// The fix is to colour the CONTAINER once so everything inherits, which is what
+// makes the whole class of miss impossible rather than fixing the one instance.
+describe('the panel colours itself once, at the top', () => {
+  const css = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+  const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+  const completionSrc = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+
+  /** The panel container's own class list, read out of index.html. */
+  function panelClasses(): string[] {
+    const tag = /<div data-completion-panel[^>]*>/.exec(html);
+    expect(tag, 'no data-completion-panel div in index.html').not.toBeNull();
+    return (/class="([^"]*)"/.exec(tag![0])?.[1] ?? '').split(/\s+/).filter(Boolean);
+  }
+
+  it('sets a text colour on the panel container', () => {
+    // The guard moved from the stylesheet to the markup when the panel became
+    // utilities only. It guards the same thing: one colour, on the container,
+    // inherited by everything inside.
+    expect(panelClasses()).toContain('text-text');
+  });
+
+  it('reads in the body font, with no Inconsolata left on the panel', () => {
+    // The panel declares no font family anywhere, so it inherits Quicksand from
+    // html/body. The play screen keeps Inconsolata — its keypad needs every key
+    // the same width (brief 21). Asserted on the markup because that is where
+    // the panel's styling lives now; the stylesheet side is Task 4's guard.
+    expect(completionSrc).not.toContain('Inconsolata');
+    expect(completionSrc).not.toContain('font-mono');
+  });
+
+  it('leaves no box around the records, in either file (brief 13, 42)', () => {
+    // Both halves matter. The rule is deleted outright, so an "declares no
+    // background" check inside its body would pass trivially — hence asserting
+    // the exact selector is absent. And the offset shadow was never in this
+    // file at all: it was the shadow-box utility in the markup, which a
+    // stylesheet-only guard would miss entirely.
+    expect(css).not.toMatch(/(^|[};])\s*\.stat-box\s*\{/m);
+    for (const rule of css.matchAll(/\.stat-box[\w-]*\s*\{([^}]*)\}/g)) {
+      // Shorthands too — background: and border-width: would otherwise slip past.
+      expect(rule[1]).not.toMatch(/background|border|box-shadow/);
+    }
+    const completion = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+    expect(completion).not.toMatch(/class="stat-box[^"]*shadow-box/);
+  });
+
+  it('uses the theme token, never a literal colour', () => {
+    // A hex here would be one mode's colour hardcoded into both.
+    for (const c of panelClasses()) expect(c).not.toMatch(/#[0-9a-f]{3,8}/i);
+  });
+});
+
+// The conversion's other half: the hand-written rules really are gone, and the
+// utilities that replaced them really do reach the shipped stylesheet. Nothing
+// else in the suite can see either failure — jsdom renders with no stylesheet at
+// all, and the edit-mode dev build pulls in every utility through `@source`, so
+// a panel that shipped grey would pass every other test in this file.
+describe('the panel is utilities only, and the utilities are real', () => {
+  const css = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+  const completionSrc = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+
+  // The 22 component classes the panel used to be built from. `stat-block` and
+  // `stat-note` are deliberately absent from this list: they never had a rule,
+  // so asserting their absence would pass trivially and mean nothing.
+  const GONE = [
+    'goes-chart', 'goes-row', 'goes-row__count', 'goes-row__fill', 'goes-row__track',
+    'stat-block__head', 'stat-block__icon', 'stat-col', 'stat-col__label',
+    'stat-col__mark', 'stat-cols', 'stat-cols--two', 'stat-col__value', 'stat-figure',
+    'stat-figure__icon', 'stat-figure__value', 'stat-hero', 'stat-line',
+    'stat-line__label', 'stat-lines', 'stat-line__value', 'stat-today',
+  ];
+
+  it.each(GONE)('has no %s rule left in the stylesheet', (name) => {
+    // Word boundaries, not a bare substring: `-` is a non-word character and `s`
+    // and `_` are word characters, so `\bstat-col\b` correctly misses both
+    // `stat-cols` and `stat-col__label` instead of giving them a false pass.
+    expect(css).not.toMatch(new RegExp(`\\b${name}\\b`));
+  });
+
+  it('has no --section-accent indirection and no per-block accent rule', () => {
+    // Each element names its own accent class now, so neither the variable nor
+    // the three rules that set it have anything left to do.
+    expect(css).not.toContain('--section-accent');
+    expect(css).not.toMatch(/\[data-stat-block=/);
+  });
+
+  it('keeps border-hairline, which is a utility rather than a component class', () => {
+    // Not a violation of the test above and must never be caught by it. Tailwind
+    // compiles an @utility into the utilities layer, getClassList() returns it,
+    // and edit mode can add and remove it like any other class — which is the
+    // whole difference from the 22 names, and the reason it exists at all.
+    expect(css).toMatch(/@utility\s+border-hairline\s*\{/);
+  });
+
+  // Tailwind v4 finds classes by scanning source text, so `class="text-${a}"`
+  // compiles to no rule whatsoever. These six names reached the panel through
+  // --section-accent until this conversion, which means they were absent from
+  // the production stylesheet entirely — this test fails before the conversion
+  // and passes after, which is the proof it is asking the right question.
+  it.each(['text-accent-2', 'text-accent-3', 'text-accent-4', 'border-accent-2', 'border-accent-3', 'bg-accent-4'])(
+    'writes %s as a whole literal, so the scanner can see it',
+    (name) => {
+      expect(completionSrc).toMatch(new RegExp(`\\b${name}\\b`));
+    },
+  );
+
+  it('assembles no accent class name at runtime', () => {
+    // The failure this guards is silent: an interpolated stem ships a panel with
+    // no accent colours at all and the four-colour rotation gone.
+    // Comments are stripped first — the file explains this trap in prose, and
+    // the prose has to be allowed to name the thing it is warning about.
+    const code = completionSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toMatch(/\b(text|bg|border)-[\w-]*\$\{/);
   });
 });

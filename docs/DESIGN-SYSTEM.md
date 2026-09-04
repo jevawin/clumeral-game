@@ -159,11 +159,46 @@ The duplication goes away with #200, which migrates `/archive` to a SPA route.
 ## Typography
 
 - Body / headings: **Quicksand** 400/600/700 (Google Fonts), fallback `system-ui` — `--font-sans`
-- Mono (labels/digits): Inconsolata 400/700 (Google Fonts)
+- Mono (digit boxes, keypad, clue tags): Inconsolata 400/700 (Google Fonts). **Not the
+  completion panel** — that reads in Quicksand, numbers included.
 
 ## Layout
 
-- Fluid. `max-w-sm` (~24rem). No fixed breakpoints.
+### The page column
+
+**One content width for every page: 480px, behind a 16px gutter.** Declared once, as
+`--page-max` and `--page-gutter` in `src/tailwind.css`, and applied through two utilities:
+`.page-col` caps and centres, `.page-pad` puts the gutter on the element **outside** it.
+
+- The split matters. Padding *inside* a capped box eats the content width, which is how
+  `/welcome` and `/solved` ended up 32px narrower than `/play` on a large phone without
+  anybody noticing. Content is `min(480, viewport − 32)` everywhere.
+- **Why 480**: the cap must never be narrower than a phone, so a phone always fills its
+  screen and only a desktop ever meets it. A Galaxy S24 Ultra reports 480 and a Pixel 8 Pro
+  448, so 440 would not have held.
+- **Why px and not rem**: at large browser text the column stops growing rather than
+  outrunning the window. Components inside it still answer the large-text question in
+  `rem` — the completion panel's boxes are `basis-24` (6rem), so they wrap rather than
+  squash at 200% text. Do not "fix" one of the two to match the other; they answer
+  different questions.
+- The Worker-rendered pages cannot import the token, so `/archive` and `/stats` repeat the
+  numbers. `tests/page-width.spec.ts` asserts the width they *work out to*, not the strings.
+  `/archive`'s `32rem` is already 480px of content behind its 1rem padding — leave it.
+- **One divergence, accepted.** `/archive` is in `rem` and everything else is in `px`, so at
+  200% browser text its column grows to 600px of content while the app stays at 480. At
+  default text they are identical. Both choices are deliberate: `px` stops the app column
+  outrunning the window, and the `rem` genuinely helps `/archive`'s large-text case. If one
+  of them ever has to give, this is the note saying it was a trade-off and not an oversight.
+- **The header and footer are deliberately full width** and have no cap. The jumping around
+  this solves is the content area changing width between page views, not chrome sitting at a
+  different edge from the content.
+- **Every screen starts at the top.** No `justify-center` on a screen container: `/welcome`
+  and `/solved` used to centre vertically while `/play` did not, so moving between screens
+  walked the content up and down the window.
+
+### Other
+
+- No fixed breakpoints beyond the page column.
 - Game screen uses new screen architecture: `data-screens` overlay with `data-screen` sections.
 - Legacy wrapper (`min-h-screen bg-bg`) holds header octo + title.
 - No `!important` unless overriding third-party.
@@ -184,36 +219,104 @@ Component-specific CSS lives in `src/tailwind.css` using data-attribute selector
 - `.fb-cat` -- feedback category pill selected state
 - `.toast-msg` -- toast notification element
 - `.recurring` -- recurring decimal overdot
-- `.stat-block__*`, `.stat-hero`, `.stat-streaks`, `.stat-row`, `.stat-note` -- the
-  completion panel's three blocks
-- `.goes-*` -- the "How many goes you take" chart
 - `.save-note*` -- the untick warning and submit countdown on the play screen
 
 ## The completion panel
 
-Three blocks in reading order: **This game**, **Streaks**, **All time**.
+Three blocks in reading order: **Today**, **Best**, **All time**.
 
-- **This game is the hero** -- one line, the largest type on the panel. It is the only
-  thing that changed in the last ten seconds. It reads `Solved in 1 go, 0m 30s`, and the
-  play screen's solved view says exactly the same thing: one solve described two ways on
-  two screens is how a player starts doubting both.
+**The panel is built from utilities only and has no component classes.** Every rule that
+used to live in `src/tailwind.css` is now a class on the markup in `src/completion.ts`,
+which is what lets edit mode design the panel on a phone: it can only see and step classes
+the design system knows about. Do not add a `.stat-*` rule back. `tests/completion-stats.spec.ts`
+asserts all 22 of the old names stay gone.
+
+- **Today is the hero** -- two figures side by side, each an icon and a number, and the
+  largest type on the panel. It is the only thing that changed in the last ten seconds.
+  It shows `1 go` under a calculator-with-tick and `2m 38s` under a stopwatch.
+- **The completion panel has no `Solved in ...` sentence; the play screen still does.**
+  That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
+  screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
+  code and is not. Leave it alone when tidying that file.
+- **Three rungs of type size**, used by every block: (1) the Today icons and figures,
+  (2) the box titles and the numbers in the boxes, (3) the small labels in the boxes.
+  Numbers are bold; box titles are the same size and not bold; labels are regular in the
+  ordinary foreground colour. All-caps stays on the block headings and never appears
+  inside a box.
+- **Section headings are 24px, normal case, with no rule beside them** and a decorative icon
+  in the section's own colour -- a flame for Streaks, a trophy for Records, a calendar for
+  All time.
+- **Figures sit in boxes borrowing the undo/reset controls' resting state**: surface fill,
+  the same 1.5px border (in the section's colour) and the same radius. The box's own icon is
+  repeated as a **watermark** -- 4rem, rotated 45deg, faint, run off the bottom-right corner
+  so the box clips it. `overflow-hidden` on the `data-stat-col` element is what does the
+  clipping.
+- **The label is above the number, in the DOM as well as on screen.** The redesign needed
+  `column-reverse` to put the number on top; this layout does not, so the visual order and
+  the reading order agree again. Do not add it back.
+- **Labels 16px, box numbers a flat 30px, All-time numbers 20px.** The box numbers used to
+  be a `clamp` that shrank on a narrow screen; they are one fixed size now, and the boxes
+  wrap instead of the type shrinking.
+- **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
+  at all and inherit from `html`/`body`, which is why removal was the right edit rather than
+  an override. The play screen keeps Inconsolata: its keypad relies on every key being the
+  same width.
+- **The two averages live in All time**, as rows with their explanatory lines, alongside
+  plays and first-go wins. They had their own block briefly and it repeated the panel.
+- **All four theme colours are on screen at once**, in picker order from the player's own:
+  their solve keeps `--color-accent`, then Streaks takes `--color-accent-2`, Records
+  `--color-accent-3` and All time `--color-accent-4`. Change theme and all four rotate
+  together. Each element names its colour directly -- `text-accent-2`, `border-accent-3`,
+  `bg-accent-4` -- with no `--section-accent` indirection left. **Write the whole class
+  name as a literal, never assembled.** Tailwind finds classes by scanning source text, so
+  `text-${accent}` compiles to no rule at all and ships a panel with the rotation silently
+  gone. `tests/completion-stats.spec.ts` guards both halves: the literals are present, and
+  no accent name is built at runtime.
+- **Colour lands on icons, numbers and box borders only.** Never on a label, a heading or a
+  divider: everything a player has to read stays in the foreground colour.
+- It is CSS, not JavaScript. Chroma differs per theme *and* per mode, and the panel renders
+  once, so deriving the colours at render time would freeze three of them the moment
+  somebody switched theme on `/solved`. Each slot names the other hue's own `--chroma-*`
+  rather than reusing the current theme's -- borrowing Lime's chroma for Cherry puts Cherry
+  out of gamut. The mapping is pinned in `tests/accent-rotation.spec.ts`, and mirrored into
+  the Worker's inline style because `tests/token-parity.spec.ts` compares every `--accent-*`
+  declaration between the two.
+- **The boxes borrow the play screen's digit-box styling** -- surface background, the same
+  1.5px border and 0.25rem radius -- so a theme change moves both screens together. The
+  border is `border-hairline`, a named utility declared once in `src/tailwind.css`, because
+  Tailwind's border scale has no 1.5 and `border-[1.5px]` is invisible to edit mode.
+  (There is no offset shadow on either any more.)
+- **The boxes wrap themselves; there is no breakpoint.** The row is `flex flex-wrap` and
+  each box is `grow basis-24`, so three go across down to about a 336px viewport and then
+  wrap. `basis-24` is 6rem, so they also wrap at large browser text, which is what the
+  320px / 200% requirement is really about. No responsive variant is in edit mode's
+  catalogue, so a breakpoint here would be a class Jamie could not move.
+- **The visible label is short and the spoken one is full.** "Fastest", "Streak" and
+  "Current" on screen; "Fastest time", "Longest 1-go streak", "Current play streak" in a
+  visually hidden span. Two spans, not a prefix and a suffix -- neither is the start of the
+  other.
+- **There is no Today block.** The two figures for this game sit centred directly under the
+  solved message, which reads `Puzzle #160 solved! You took:` -- and gains those three words
+  only when there are figures to follow them.
 - **Times use unit letters, never a colon**: `0m 30s`, `4m 06s`, `1h 04m`. `4:06` can read
   as four hours at a glance, and the separator the hero used to need -- a bullet, or the
   pipe Dave suggested -- sits right beside a number, where a pipe is hard to tell from a 1.
   Letters remove the ambiguity and the separator both. Seconds are padded to two digits so
   a column lines up; minutes are not. An unknown time is a dash in a column of figures and
-  is dropped entirely from the hero sentence. (Jamie and Dave, 2026-08-11.)
-- **All time is open, not folded, but quiet**: smaller type, muted colour, plain rows
-  rather than boxes. A folded block is a block nobody opens, and these numbers are the
-  reason a returning player scrolls at all. Density is solved by making them quiet.
-- **Every number carries a plain line saying what it means.** That is the whole point of
-  the build -- "streak" used to explain nothing on screen. Text under the stat, never a
-  tooltip.
-- **No new colour tokens and no new type sizes.** Everything is built from `--color-text`,
-  `--color-accent`, `--color-border` and `--color-surface`, whose contrast is already
-  measured in `tests/palette-contrast.spec.ts`.
-- **The streak pair stacks below 22rem**, not below a pixel width -- so it also stacks at
-  200% text on a wide screen, which is what the 320px / 200% requirement is really about.
+  is dropped entirely from the play screen's sentence. On the panel an unknown time drops
+  the stopwatch figure altogether rather than showing an empty one. (Jamie and Dave,
+  2026-08-11.)
+- **All time is open, not folded, but quiet**: plain rows rather than boxes, and no dividing
+  lines between them. Plays, first-go wins, average goes, average time, then the chart. The
+  fastest first-go win is gone for good -- "Fastest" under Records is the same idea told
+  better. The goes chart's bars stay on the player's own accent.
+- **The explanatory lines live in All time only.** Inside a box, "Best" over "Current"
+  under a labelled icon is already the explanation, and three sentences in three small
+  boxes was the clutter the redesign was called for.
+- **No new type sizes, and exactly one new colour token.** Everything is built from
+  `--color-text`, `--color-accent`, `--color-accent-2/3/4`, `--color-border` and
+  `--color-surface`. All four accents are the same four theme accents at the same
+  `--accent-l`, so `tests/palette-contrast.spec.ts` already covers every one of them.
 - **Blocks are absent, not hidden**, when they do not apply. A hidden block can still
   reach the accessibility tree, and an empty "All time" heading reads as broken.
 - **The goes chart's bars are `aria-hidden`**; the count beside each bar is the accessible
