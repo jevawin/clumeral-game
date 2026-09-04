@@ -847,3 +847,31 @@ corrected here.
      106). Save: only when there is something to save. Undo and Reset: only with
      an element selected and something to do. (correction — supersedes item 26's
      first two bullets)
+
+111. **Items 103, 108 and 109 settled.** The synchronous restore, "Lose all and
+     stop?", and the closing message that does not vanish.
+     (Settled: Jamie 2026-09-03)
+
+---
+
+# Brief closed — second time, 2026-09-03
+
+Items 1-111. Short form: sections 1, 3, 7, 8, 9 and 11, plus 5 and 6 which the
+review reopened (items 81-84, 93). Sections 2 (beyond item 8), 4 and 10 are n/a.
+Every section settled by Jamie; `Ack: n/a` throughout, because edit mode is a
+dev-only tool that only Jamie has ever used.
+
+**What the first close got wrong, and the review caught:** the app-switch cause.
+It was settled on a hedged by-eye test, on a mechanism that could not have
+produced the symptom. Measurement replaced it — the reload happens, it takes
+minutes not seconds, and that is Safari discarding the tab. The fix moved from
+"stop re-applying" to "restore sooner", which is close to the opposite.
+
+**Three defects and one feature, all in `src/edit-mode/`:**
+
+- The restore arrives two fetches late after Safari discards the tab (100-105).
+- The empty-session sentinel wedges the pencil AND Save & Stop (13, 76, 79).
+- `panel.sheet` cannot take focus, so item 45 could never have worked (95).
+- Discard, and a control row that earns its place (19-30, 52-60, 67-69, 106-110).
+
+**Not reopened:** staying put on a genuinely failed save with real changes.
