@@ -21,7 +21,7 @@ import {
 import { captureEnvironment, type Patch } from './patches.ts';
 import {
   signature, exitDecision, stopOutcome, controlRowState,
-  countPatches, includesCssPatch, hasSomethingToSave,
+  countPatches, includesCssPatch, hasSomethingToSave, hasSomethingToDiscard,
 } from './pending.ts';
 import { COPY, conflictWarning } from './copy.ts';
 
@@ -321,7 +321,12 @@ async function start(): Promise<void> {
    * with it.
    */
   function syncControlRow(): void {
-    panel.setRow(controlRowState(stopped, isPending(), busy));
+    // Two different questions, and they diverge after a save: nothing left to
+    // save, but a screenful of edits still there to lose (rev 2, H2).
+    panel.setRow(
+      controlRowState(stopped, isPending(), busy),
+      hasSomethingToDiscard(patchCount()),
+    );
   }
 
   /** Is anything selected? The free-CSS patch needs somewhere to hang. */

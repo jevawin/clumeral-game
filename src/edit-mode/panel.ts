@@ -25,6 +25,17 @@
 const TAP_TARGET = '38px';
 
 /**
+ * How long an armed control waits for its second tap.
+ *
+ * Four seconds, and ONLY on the confirm labels (brief item 146). A question
+ * left on screen becomes a statement: come back to the phone ten minutes later
+ * and "Lose all and stop?" reads like a button called Lose All. Discard's
+ * closing MESSAGE is not on a timer - item 144 - because a terminal message
+ * that vanishes leaves a dead page saying nothing.
+ */
+const ARM_TIMEOUT_MS = 4000;
+
+/**
  * Hand-written, because the shadow root cannot see @theme.
  *
  * Deliberately plain: no gradients, no animation, no theming. It has one user,
@@ -375,7 +386,7 @@ const HIGHLIGHT_CSS = `
 `;
 
 import { COPY } from './copy.ts';
-import type { ControlRowState } from './pending.ts';
+import { armOnTap, controlLabel, type ArmedControl, type ControlRowState } from './pending.ts';
 
 export interface Panel {
   /** The host element in the page. Used to tell the tool's events from the game's. */
@@ -410,10 +421,16 @@ export interface Panel {
    * back by Escape or the back gesture — that invariant is carried by
    * `stopped` inside controlRowState, not by the panel.
    */
-  setRow(state: ControlRowState): void;
+  setRow(state: ControlRowState, somethingToDiscard?: boolean): void;
   /** Kill the pencil once the server has gone — there is nothing to edit into. */
   setPencilEnabled(enabled: boolean): void;
   onToggle(handler: () => void): void;
+  /**
+   * Called on the SECOND tap only.
+   *
+   * The first tap arms the control and expands its label into a question; the
+   * panel owns that gesture, so nothing downstream has to know about it.
+   */
   onSave(handler: () => void): void;
   onDiscard(handler: () => void): void;
   destroy(): void;
@@ -453,13 +470,11 @@ export function createPanel(doc: Document): Panel {
   const discardBtn = doc.createElement('button');
   discardBtn.className = 'discard-btn';
   discardBtn.type = 'button';
-  discardBtn.textContent = COPY.discardControl;
   discardBtn.hidden = true;
 
   const saveBtn = doc.createElement('button');
   saveBtn.className = 'save-btn';
   saveBtn.type = 'button';
-  saveBtn.textContent = COPY.stopControl;
   saveBtn.hidden = true;
 
   // Discard, Save, pencil — left to right, pencil on the right where his thumb
@@ -504,6 +519,53 @@ export function createPanel(doc: Document): Panel {
     btn.hidden = !next.visible;
     btn.disabled = !next.enabled;
   }
+
+  // ── The two-tap gesture ───────────────────────────────────────────────────
+  //
+  // Held here rather than in overlay.ts because it is entirely about what the
+  // buttons look like and what a tap means. The rules themselves are pure
+  // functions in pending.ts; this is the wiring and the timer.
+
+  let armed: ArmedControl = null;
+  let armTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Would Discard actually lose anything? It picks between two questions. */
+  let discardable = false;
+  const handlers: { save?: () => void; discard?: () => void } = {};
+
+  function clearArmTimer(): void {
+    if (armTimer === undefined) return;
+    clearTimeout(armTimer);
+    armTimer = undefined;
+  }
+
+  function drawLabels(): void {
+    discardBtn.textContent = controlLabel('discard', armed === 'discard', discardable);
+    saveBtn.textContent = controlLabel('save', armed === 'save', discardable);
+    // The colour arrives with the expansion, not at rest (brief item 55).
+    discardBtn.classList.toggle('is-armed', armed === 'discard');
+    saveBtn.classList.toggle('is-armed', armed === 'save');
+  }
+
+  function tap(control: 'save' | 'discard'): void {
+    const next = armOnTap(armed, control);
+    armed = next.armed;
+    // ONE timer, always. Arming the other control disarms this one, and two
+    // timers running at once would revert a label that had already moved on.
+    clearArmTimer();
+    if (next.act === null) {
+      armTimer = setTimeout(() => {
+        armTimer = undefined;
+        armed = null;
+        drawLabels();
+      }, ARM_TIMEOUT_MS);
+    }
+    drawLabels();
+    if (next.act) handlers[next.act]?.();
+  }
+
+  discardBtn.addEventListener('click', () => tap('discard'));
+  saveBtn.addEventListener('click', () => tap('save'));
+  drawLabels();
 
   return {
     host,
@@ -553,9 +615,18 @@ export function createPanel(doc: Document): Panel {
     notify(message) {
       notice.textContent = message;
     },
-    setRow(next) {
+    setRow(next, somethingToDiscard = false) {
+      discardable = somethingToDiscard;
+      // A control that goes away armed must not come back armed: it would
+      // return holding a question Jamie never asked, one tap from acting.
+      if ((armed === 'save' && !next.save.visible)
+        || (armed === 'discard' && !next.discard.visible)) {
+        clearArmTimer();
+        armed = null;
+      }
       applyControl(discardBtn, next.discard);
       applyControl(saveBtn, next.save);
+      drawLabels();
     },
     setPencilEnabled(enabled) {
       pencil.disabled = !enabled;
@@ -564,12 +635,13 @@ export function createPanel(doc: Document): Panel {
       pencil.addEventListener('click', handler);
     },
     onSave(handler) {
-      saveBtn.addEventListener('click', handler);
+      handlers.save = handler;
     },
     onDiscard(handler) {
-      discardBtn.addEventListener('click', handler);
+      handlers.discard = handler;
     },
     destroy() {
+      clearArmTimer();
       host.remove();
     },
   };

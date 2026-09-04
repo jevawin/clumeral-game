@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   signature, exitDecision, stopOutcome, controlRowState, footerControls,
-  countPatches, includesCssPatch, hasSomethingToSave,
+  countPatches, includesCssPatch, hasSomethingToSave, hasSomethingToDiscard,
+  armOnTap, controlLabel,
 } from '../src/edit-mode/pending.ts';
+import { COPY } from '../src/edit-mode/copy.ts';
 import { createHistory } from '../src/edit-mode/history.ts';
 import type { Change } from '../src/edit-mode/history.ts';
 
@@ -232,5 +234,61 @@ describe('is there anything worth posting? (brief item 121)', () => {
     expect(hasSomethingToSave(0, true)).toBe(false);
     expect(hasSomethingToSave(3, false)).toBe(false);
     expect(hasSomethingToSave(3, true)).toBe(true);
+  });
+});
+
+// Plan task 5. Brief items 24, 141, 143, and rev 2 H2.
+describe('the two-tap gesture (brief item 24)', () => {
+  it('arms on the first tap and acts on the second', () => {
+    const first = armOnTap(null, 'discard');
+    expect(first).toEqual({ armed: 'discard', act: null });
+    expect(armOnTap(first.armed, 'discard')).toEqual({ armed: null, act: 'discard' });
+  });
+
+  it('ARMS THE OTHER ONE AND DISARMS THIS ONE', () => {
+    // Brief item 141. Two armed buttons side by side, both asking a question,
+    // both one tap from ending the session in opposite ways, is the exact
+    // mistake this gesture exists to prevent.
+    expect(armOnTap('discard', 'save')).toEqual({ armed: 'save', act: null });
+    expect(armOnTap('save', 'discard')).toEqual({ armed: 'discard', act: null });
+  });
+
+  it('never acts on a first tap, from either control', () => {
+    expect(armOnTap(null, 'save').act).toBeNull();
+    expect(armOnTap(null, 'discard').act).toBeNull();
+  });
+});
+
+describe('what each control says (brief item 143, rev 2 H2)', () => {
+  it('says the plain word at rest', () => {
+    expect(controlLabel('save', false, true)).toBe(COPY.stopControl);
+    expect(controlLabel('discard', false, true)).toBe(COPY.discardControl);
+  });
+
+  it('asks the question when armed', () => {
+    expect(controlLabel('save', true, true)).toBe(COPY.saveArmed);
+    expect(controlLabel('discard', true, true)).toBe(COPY.discardArmed);
+  });
+
+  it('does not claim there is something to lose in a fresh session', () => {
+    // Brief item 143. "Lose all and stop?" is a lie with nothing to lose, and
+    // in a fresh session this button is only ever a way to stop the server.
+    expect(controlLabel('discard', true, false)).toBe(COPY.discardArmedNothing);
+  });
+
+  it('STILL SAYS "lose all" after a save, because the edits are still there', () => {
+    // The divergence rev 2's H2 found. Make three edits, tap Save, the save
+    // succeeds: there is nothing left to SAVE, and asking that question would
+    // have Discard offer "Stop the server?" while a screenful of visible work
+    // sat on the page waiting to be thrown away.
+    const savedAndUnchanged = hasSomethingToSave(countPatches(3, '', false), false);
+    expect(savedAndUnchanged, 'nothing to save').toBe(false);
+    expect(hasSomethingToDiscard(countPatches(3, '', false)), 'but plenty to lose').toBe(true);
+    expect(controlLabel('discard', true, true)).toBe(COPY.discardArmed);
+  });
+
+  it('has nothing to discard only when there are no patches at all', () => {
+    expect(hasSomethingToDiscard(0)).toBe(false);
+    expect(hasSomethingToDiscard(1)).toBe(true);
   });
 });

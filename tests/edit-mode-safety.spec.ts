@@ -87,7 +87,10 @@ const OVERLAY_COPY = [
   COPY.stopped,
   COPY.stopFailed,
   COPY.pencilHint,
-  COPY.stopControl,
+  // NOT COPY.stopControl. It is the bare word 'Save' since the confirm gesture
+  // landed, and a one-word string a production bundle could contain for a
+  // hundred innocent reasons stops this spec guarding anything (brief 147).
+  // COPY.saveArmed below is the distinctive half of the same control.
   COPY.stoppedNothingSaved,
   // The two-tap gesture's armed labels, and Discard's three closing lines.
   //

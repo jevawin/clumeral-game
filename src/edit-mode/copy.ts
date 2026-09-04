@@ -60,8 +60,15 @@ export const COPY = {
    */
   saved: 'Saved. Ask the bot in Telegram to fold this into a pull request.',
 
-  /** The control that saves and then stops the dev server (brief item 26). */
-  stopControl: 'Save & Stop',
+  /**
+   * The control that saves and then stops the dev server (brief items 26, 30).
+   *
+   * One word, because the buttons block the screen and the whole point of the
+   * shorter label was to give the game back its corner. Safe to shorten only
+   * because the second tap now confirms: on its own, a one-tap button reading
+   * "Save" that also kills the dev server would be a trap.
+   */
+  stopControl: 'Save',
 
   /**
    * The control that throws the session away and then stops the dev server

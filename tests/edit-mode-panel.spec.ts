@@ -186,15 +186,20 @@ describe('the session controls, and somewhere to speak in play mode', () => {
     expect(panel.root.querySelector<HTMLButtonElement>('.save-btn')?.disabled).toBe(false);
   });
 
-  it('calls back when each is tapped', () => {
+  it('calls back when each is confirmed', () => {
+    // Twice each: the first tap arms, the second acts (brief item 24).
     panel = createPanel(document);
     const onSave = vi.fn();
     const onDiscard = vi.fn();
     panel.onSave(onSave);
     panel.onDiscard(onDiscard);
-    panel.setRow(ROW_BOTH);
-    panel.root.querySelector<HTMLButtonElement>('.save-btn')?.click();
-    panel.root.querySelector<HTMLButtonElement>('.discard-btn')?.click();
+    panel.setRow(ROW_BOTH, true);
+    const save = panel.root.querySelector<HTMLButtonElement>('.save-btn')!;
+    const discard = panel.root.querySelector<HTMLButtonElement>('.discard-btn')!;
+    save.click();
+    save.click();
+    discard.click();
+    discard.click();
     expect(onSave).toHaveBeenCalledOnce();
     expect(onDiscard).toHaveBeenCalledOnce();
   });
@@ -216,5 +221,109 @@ describe('the session controls, and somewhere to speak in play mode', () => {
     // Without tabindex="-1" a .focus() call on the sheet does nothing (item 95).
     panel = createPanel(document);
     expect(panel.sheet.tabIndex).toBe(-1);
+  });
+});
+
+// Plan task 5 — the gesture as the panel performs it.
+describe('the confirm tap (brief items 24, 146)', () => {
+  const bothVisible = {
+    discard: { visible: true, enabled: true },
+    save: { visible: true, enabled: true },
+  };
+
+  it('does not act on the first tap', () => {
+    panel = createPanel(document);
+    const onDiscard = vi.fn();
+    panel.onDiscard(onDiscard);
+    panel.setRow(bothVisible, true);
+    panel.root.querySelector<HTMLButtonElement>('.discard-btn')!.click();
+    expect(onDiscard).not.toHaveBeenCalled();
+    expect(panel.root.querySelector('.discard-btn')?.textContent).toBe(COPY.discardArmed);
+  });
+
+  it('acts on the second, and goes back to the plain word', () => {
+    panel = createPanel(document);
+    const onSave = vi.fn();
+    panel.onSave(onSave);
+    panel.setRow(bothVisible, true);
+    const save = panel.root.querySelector<HTMLButtonElement>('.save-btn')!;
+    save.click();
+    expect(save.textContent).toBe(COPY.saveArmed);
+    save.click();
+    expect(onSave).toHaveBeenCalledOnce();
+    expect(save.textContent).toBe(COPY.stopControl);
+  });
+
+  it('disarms the other control when one is armed', () => {
+    panel = createPanel(document);
+    panel.setRow(bothVisible, true);
+    panel.root.querySelector<HTMLButtonElement>('.save-btn')!.click();
+    panel.root.querySelector<HTMLButtonElement>('.discard-btn')!.click();
+    expect(panel.root.querySelector('.save-btn')?.textContent).toBe(COPY.stopControl);
+    expect(panel.root.querySelector('.discard-btn')?.textContent).toBe(COPY.discardArmed);
+  });
+
+  it('asks a different question when there is nothing to lose', () => {
+    panel = createPanel(document);
+    panel.setRow(bothVisible, false);
+    panel.root.querySelector<HTMLButtonElement>('.discard-btn')!.click();
+    expect(panel.root.querySelector('.discard-btn')?.textContent).toBe(COPY.discardArmedNothing);
+  });
+
+  it('goes back to the plain word after four seconds', () => {
+    // Brief item 146. A question left on screen becomes a statement: come back
+    // ten minutes later and "Lose all and stop?" reads like a button called
+    // Lose All.
+    vi.useFakeTimers();
+    try {
+      panel = createPanel(document);
+      const onDiscard = vi.fn();
+      panel.onDiscard(onDiscard);
+      panel.setRow(bothVisible, true);
+      const discard = panel.root.querySelector<HTMLButtonElement>('.discard-btn')!;
+      discard.click();
+      vi.advanceTimersByTime(3999);
+      expect(discard.textContent).toBe(COPY.discardArmed);
+      vi.advanceTimersByTime(1);
+      expect(discard.textContent).toBe(COPY.discardControl);
+      // And the tap that follows arms again rather than acting.
+      discard.click();
+      expect(onDiscard).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('runs ONE timer, so disarming by the other control cannot revert it late', () => {
+    vi.useFakeTimers();
+    try {
+      panel = createPanel(document);
+      panel.setRow(bothVisible, true);
+      const save = panel.root.querySelector<HTMLButtonElement>('.save-btn')!;
+      const discard = panel.root.querySelector<HTMLButtonElement>('.discard-btn')!;
+      save.click();
+      vi.advanceTimersByTime(3000);
+      discard.click();
+      // The save timer, if it were still running, would fire here and blank a
+      // label that has since moved on.
+      vi.advanceTimersByTime(1500);
+      expect(discard.textContent).toBe(COPY.discardArmed);
+      vi.advanceTimersByTime(2500);
+      expect(discard.textContent).toBe(COPY.discardControl);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not come back armed after being hidden', () => {
+    // A control that goes away armed and returns armed is holding a question
+    // Jamie never asked, one tap from acting.
+    panel = createPanel(document);
+    panel.setRow(bothVisible, true);
+    const save = panel.root.querySelector<HTMLButtonElement>('.save-btn')!;
+    save.click();
+    panel.setRow({ ...bothVisible, save: { visible: false, enabled: true } }, true);
+    panel.setRow(bothVisible, true);
+    expect(save.textContent).toBe(COPY.stopControl);
   });
 });

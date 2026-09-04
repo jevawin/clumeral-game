@@ -7,6 +7,7 @@
 // marker clears on a successful save.
 
 import type { Change } from './history.ts';
+import { COPY } from './copy.ts';
 
 /**
  * A fingerprint of everything that would be written by a save.
@@ -156,4 +157,61 @@ export function footerControls(
     undo: hasSelection && canUndo,
     reset: hasSelection && elementChanged,
   };
+}
+
+/**
+ * Which control is waiting for its second tap, if either.
+ *
+ * Both of these end the session and neither has an undo, so neither may fire
+ * on one stray tap of a phone screen in a pocket (brief item 24). A tap arms;
+ * the label expands into a question; a second tap acts.
+ */
+export type ArmedControl = 'save' | 'discard' | null;
+
+/**
+ * The gesture, whole, as a function of what was armed and what was tapped.
+ *
+ * Tapping the OTHER control disarms this one (brief item 141). Two armed
+ * buttons side by side, both asking a question, both one tap from ending the
+ * session in opposite ways, is the exact shape of the mistake this gesture
+ * exists to prevent.
+ */
+export function armOnTap(
+  current: ArmedControl,
+  tapped: 'save' | 'discard'
+): { armed: ArmedControl; act: 'save' | 'discard' | null } {
+  if (current === tapped) return { armed: null, act: tapped };
+  return { armed: tapped, act: null };
+}
+
+/**
+ * Is there anything for Discard to throw away?
+ *
+ * A DIFFERENT QUESTION FROM hasSomethingToSave, and they diverge exactly where
+ * it matters (rev 2, H2). Make three edits and tap Save: the save succeeds, so
+ * there is nothing left to save - but the three edits are still on the screen
+ * and Discard is still about to throw them away. Asked the other question,
+ * Discard would offer "Stop the server?" while a screenful of work sat there.
+ *
+ * They coincide only before the first save.
+ */
+export function hasSomethingToDiscard(patchCount: number): boolean {
+  return patchCount > 0;
+}
+
+/**
+ * What a control says right now.
+ *
+ * The armed labels are questions, and Discard asks a different one when there
+ * is nothing to lose (brief item 143): "Lose all and stop?" would be a lie in
+ * a fresh session, where the button is only a way to stop the server.
+ */
+export function controlLabel(
+  control: 'save' | 'discard',
+  armed: boolean,
+  somethingToDiscard: boolean
+): string {
+  if (control === 'save') return armed ? COPY.saveArmed : COPY.stopControl;
+  if (!armed) return COPY.discardControl;
+  return somethingToDiscard ? COPY.discardArmed : COPY.discardArmedNothing;
 }
