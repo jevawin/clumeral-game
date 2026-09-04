@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { signature, exitDecision, stopOutcome, stopPillState } from '../src/edit-mode/pending.ts';
+import {
+  signature, exitDecision, stopOutcome, stopPillState,
+  countPatches, includesCssPatch, hasSomethingToSave,
+} from '../src/edit-mode/pending.ts';
 import { createHistory } from '../src/edit-mode/history.ts';
 import type { Change } from '../src/edit-mode/history.ts';
 
@@ -123,5 +126,75 @@ describe('what Save & Stop looks like right now (brief items 39, 61)', () => {
     // Escape drops us into play mode, and a pill that looks tappable but
     // silently does nothing is this tool's oldest complaint.
     expect(stopPillState('play', false, true)).toEqual({ visible: true, enabled: false });
+  });
+});
+
+// Plan task 3. Brief items 76, 121, 132, 152.
+describe('is there anything worth posting? (brief item 121)', () => {
+  const changed = (history: ReturnType<typeof createHistory>, at: string) =>
+    signature(history.entries, '') !== at;
+
+  it('says NO in a fresh session, where the pencil used to post nothing', () => {
+    // THE WEDGE. A fresh session starts with savedSignature '' while the
+    // signature of an empty history is '||', so they differed from the first
+    // second. The pencil posted an empty session file, and with the server
+    // stopped afterwards there was no way back into the editor at all.
+    const history = createHistory();
+    expect(hasSomethingToSave(countPatches(history.entries.length, '', false), true)).toBe(false);
+    expect(exitDecision(false, null)).toBe('leave');
+  });
+
+  it('says NO after three edits are all undone', () => {
+    // The case a sentinel-only fix misses (brief item 121). Initialising
+    // savedSignature to signature([], '') fixes the fresh session and leaves
+    // this one: the history is empty again, but it does not match the
+    // signature recorded at the save, so the signature alone still says yes.
+    const history = createHistory();
+    history.record({ target: 'a', before: [], after: ['p-1'], property: 'padding' }, 0);
+    history.record({ target: 'b', before: [], after: ['p-2'], property: 'padding' }, 1000);
+    history.record({ target: 'c', before: [], after: ['p-3'], property: 'padding' }, 2000);
+    const atSave = sig(history.entries);
+    history.undo();
+    history.undo();
+    history.undo();
+
+    expect(history.entries).toHaveLength(0);
+    expect(changed(history, atSave), 'the signature still says yes').toBe(true);
+    expect(hasSomethingToSave(countPatches(0, '', false), true)).toBe(false);
+  });
+
+  it('says yes when there are entries and they have moved since the save', () => {
+    const history = createHistory();
+    const atSave = sig(history.entries);
+    history.record({ target: 'a', before: [], after: ['p-1'], property: 'padding' }, 0);
+    expect(hasSomethingToSave(countPatches(history.entries.length, '', false), changed(history, atSave)))
+      .toBe(true);
+  });
+
+  it('says NO when the entries have not moved since the save', () => {
+    // Saved, and nothing touched since. Posting again would write a second
+    // identical session file for /fold to trip over.
+    const history = createHistory();
+    history.record({ target: 'a', before: [], after: ['p-1'], property: 'padding' }, 0);
+    const atSave = sig(history.entries);
+    expect(hasSomethingToSave(countPatches(history.entries.length, '', false), changed(history, atSave)))
+      .toBe(false);
+  });
+
+  it('counts the free-CSS box as a patch, but only with something selected', () => {
+    // The css patch is recorded against the selected element's breadcrumb, so
+    // typed CSS with nothing selected has nowhere to go.
+    expect(includesCssPatch('margin-top: 1rem;', true)).toBe(true);
+    expect(includesCssPatch('margin-top: 1rem;', false)).toBe(false);
+    expect(includesCssPatch('', true)).toBe(false);
+    expect(countPatches(0, 'margin-top: 1rem;', true)).toBe(1);
+    expect(countPatches(2, 'margin-top: 1rem;', true)).toBe(3);
+    expect(countPatches(2, 'margin-top: 1rem;', false)).toBe(2);
+  });
+
+  it('needs BOTH halves, so neither alone can post an empty set', () => {
+    expect(hasSomethingToSave(0, true)).toBe(false);
+    expect(hasSomethingToSave(3, false)).toBe(false);
+    expect(hasSomethingToSave(3, true)).toBe(true);
   });
 });

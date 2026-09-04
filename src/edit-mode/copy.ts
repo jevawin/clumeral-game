@@ -14,7 +14,10 @@
 export const COPY = {
   /** Brief item 71. */
   enterEditMode: 'Edit mode',
-  exitEditMode: 'Save and exit edit mode',
+  // 'Leave edit mode', not 'Save and exit': after this task the pencil only
+  // saves when there is something to save, so the old label was a promise it
+  // did not keep (brief item 145).
+  exitEditMode: 'Leave edit mode',
   undo: 'Undo',
   // "Reset", not "Reset element" — Jamie, 2026-08-26. The shorter label fits
   // the footer on one row. The Save button that sat beside it is gone: the
@@ -142,7 +145,7 @@ export const COPY = {
    * an aria-label Jamie will never see on a phone. This line is the only actual
    * warning that a tap writes a file.
    */
-  pencilHint: 'The pencil saves your changes and leaves the editor.',
+  pencilHint: 'The pencil saves your changes, if there are any, and leaves the editor.',
 } as const;
 
 /** Brief item 42: surfaced, not silently tidied. It is Jamie's markup. */

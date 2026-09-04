@@ -27,6 +27,44 @@ export function signature(entries: readonly Change[], freeCss: string): string {
 }
 
 /**
+ * Does the free-CSS box become a patch right now?
+ *
+ * ONE CONDITION IN ONE PLACE, called by countPatches below and by save() in
+ * overlay.ts. It used to be two hand-written copies of the same expression in a
+ * file no test can import, and "they cannot disagree" was an assertion rather
+ * than something the code enforced.
+ *
+ * It needs a selection because the css patch is recorded against the selected
+ * element's breadcrumb. Typed CSS with nothing selected has nowhere to go.
+ */
+export function includesCssPatch(freeCss: string, hasSelection: boolean): boolean {
+  return freeCss !== '' && hasSelection;
+}
+
+/** How many patches a save would post, right now. */
+export function countPatches(entryCount: number, freeCss: string, hasSelection: boolean): number {
+  return entryCount + (includesCssPatch(freeCss, hasSelection) ? 1 : 0);
+}
+
+/**
+ * Is there anything worth posting?
+ *
+ * THE RULE, NOT A VALUE, and that distinction is brief item 121. The obvious
+ * fix was to start savedSignature at signature([], '') instead of '', so a
+ * fresh session compares equal and nothing is posted. That fixes the fresh
+ * session and misses the one beside it: make three edits, then undo all three.
+ * The history is empty again, the signature no longer matches the one recorded
+ * at the save, and the tool would post an empty patch set - writing a session
+ * file with nothing in it and, before Discard existed, wedging the pencil.
+ *
+ * Requiring BOTH covers the pair. Nothing to post is nothing to post, however
+ * the history got back to empty.
+ */
+export function hasSomethingToSave(patchCount: number, signatureChanged: boolean): boolean {
+  return patchCount > 0 && signatureChanged;
+}
+
+/**
  * Tapping the pencil to leave edit mode: does it actually leave?
  *
  * `saveOk` is null when no save was attempted, because nothing was pending

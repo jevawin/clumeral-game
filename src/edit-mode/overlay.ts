@@ -19,7 +19,10 @@ import {
   ancestry, crumb, isOverlay, elementAtPoint, nav, computedSnapshot, didNothing,
 } from './select.ts';
 import { captureEnvironment, type Patch } from './patches.ts';
-import { signature, exitDecision, stopOutcome, stopPillState } from './pending.ts';
+import {
+  signature, exitDecision, stopOutcome, stopPillState,
+  countPatches, includesCssPatch, hasSomethingToSave,
+} from './pending.ts';
 import { COPY, conflictWarning } from './copy.ts';
 
 const CATALOGUE_URL = '/__edit-mode/catalogue.json';
@@ -322,8 +325,30 @@ async function start(): Promise<void> {
     panel.setStopBusy(!state.enabled);
   }
 
+  /** Is anything selected? The free-CSS patch needs somewhere to hang. */
+  function hasSelection(): boolean {
+    return selected !== null && selectedPath !== null;
+  }
+
+  /** How many patches a save would post right now. */
+  function patchCount(): number {
+    return countPatches(history.entries.length, freeCss, hasSelection());
+  }
+
+  /**
+   * Is there anything worth posting?
+   *
+   * The signature alone was not enough (brief items 76, 121). A fresh session
+   * starts with savedSignature '' while the signature of an empty history is
+   * '||', so they differed from the first second: the pencil posted an empty
+   * session file and, with nothing yet written, the tool wedged. Undoing every
+   * edit after a save reached the same place by a different road.
+   */
   function isPending(): boolean {
-    return signature(history.entries, freeCss) !== savedSignature;
+    return hasSomethingToSave(
+      patchCount(),
+      signature(history.entries, freeCss) !== savedSignature,
+    );
   }
 
   function draw(): void {
@@ -515,7 +540,9 @@ async function start(): Promise<void> {
       } as Patch;
     });
 
-    if (freeCss && selected && selectedPath) {
+    // The SAME condition patchCount() counts with, so the count and the post
+    // cannot drift apart (rev 2, R7).
+    if (includesCssPatch(freeCss, hasSelection()) && selected && selectedPath) {
       patches.push({
         kind: 'css',
         breadcrumb: selectedPath,
