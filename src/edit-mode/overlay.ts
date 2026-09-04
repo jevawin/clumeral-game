@@ -831,10 +831,16 @@ async function start(): Promise<void> {
   // the Discard Jamie confirmed, silently, leaving the edits saved to the Pi
   // and the server he asked to stop still running.
   //
-  // In this order a held pencil tap is moot rather than dropped: Discard sets
+  // In this order a held pencil tap is moot on every SUCCESS path: Discard sets
   // `stopped` synchronously, and toggleMode's own first line refuses to enter
-  // the editor of a stopped server. Save subsumes what the pencil would have
+  // the editor of a stopped server; Save subsumes what the pencil would have
   // done anyway.
+  //
+  // On the two FAILURE paths it is genuinely dropped, not moot — a shutdown
+  // that returns an error puts `stopped` back and re-enables the pencil, and a
+  // failed save returns without stopping anything. Both leave a notice on
+  // screen and a live pencil, so the cost is one visible re-tap. Said plainly
+  // rather than claimed away.
   if (sessionWaiting) {
     const which = sessionWaiting;
     sessionWaiting = null;

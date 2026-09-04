@@ -823,6 +823,12 @@ and holds it across an `await save()`; both session actions open with
 Discard vanished — no message, no notice, and the button had already collapsed
 back to its icon, so on screen it looked like it acted.
 
+**Narrower than first written:** `toggleMode` only sets `busy` in its edit-mode
+arm — `if (mode !== 'edit') return setMode('edit')` sits above it — so the
+swallow needed a boot with `saved.mode === 'edit'`. That is a normal state for
+this feature, and the fix is right either way, but the blast radius was
+overstated.
+
 The outcome is the one this whole feature exists to prevent: the edits Jamie
 confirmed throwing away get **written to the Pi** by the pencil's save, and the
 server he confirmed stopping **stays up**. Section 9's sentence — "anything held
@@ -830,10 +836,17 @@ is an action Jamie already confirmed, so it is honoured late rather than
 dropped" — was true only when nothing else was held.
 
 **Fixed by draining the session action FIRST and ending the pencil's turn with
-it.** Both session actions are terminal, so a held pencil tap is moot rather than
-dropped: Discard sets `stopped` synchronously before its first await, and
-`toggleMode`'s own first line refuses to enter the editor of a stopped server;
-Save subsumes what the pencil would have done.
+it.** On every SUCCESS path the held pencil tap is then moot: Discard sets
+`stopped` synchronously before its first await, and `toggleMode`'s own first line
+refuses to enter the editor of a stopped server; Save subsumes what the pencil
+would have done.
+
+On the two FAILURE paths it is genuinely **dropped**, not moot — a shutdown that
+returns an error puts `stopped` back and re-enables the pencil, and a failed save
+returns without stopping anything. Both leave a notice on screen and a live
+pencil, so the cost is one visible re-tap. That is not a reason to change the
+order, and it is not left as an absolute claim that two reachable branches
+falsify.
 
 ## Lows fixed with it
 
@@ -859,3 +872,22 @@ exports nothing and ends in a bare `void start()`. R9 already withdrew the
 "everything is unit-testable" claim for exactly this wiring. Both M3 and M4 rest
 entirely on Jamie's acceptance test, item 158 — nothing in sections 9 or 10
 should be read as coverage.
+
+**That sentence covers the drain and nothing else.** Two of the Lows above WERE
+testable where they live, and the fourth review pass was right to say so:
+`setViewport` is a method on the exported `createPanel`, so the 72px threshold is
+a plain jsdom assertion, and `tests/edit-mode-panel.spec.ts` already had the
+armed-label test that `.control-label` belonged in. Both tests are now written.
+A magic threshold nothing asserts on is one that rots silently.
+
+# 11. Fourth pass — PASS
+
+Confirmed M4 closed: the swallow is gone, and the trailing `setMode(mode)` at the
+end of `start()` replays what `runDiscard` already did rather than contradicting
+it, with `persist()` guarded by `stopped`. It also verified the ellipsis, the
+72px threshold arithmetic (the safe-area term cancels on both sides, which is why
+72 excludes it) and the copy docblocks. Its three Lows — two overstated claims in
+this document and the two missing tests — are fixed above.
+
+**Build stage closed.** Tasks 1-8 built and reviewed four times. Task 9 is the
+only thing left, and it is Jamie's to unblock.

@@ -253,6 +253,29 @@ describe('the confirm tap (brief items 24, 146)', () => {
     discard.click();
     expect(discard.querySelector('svg.icon'), 'the icon stays').toBeTruthy();
     expect(discard.textContent).toBe(COPY.discardArmed);
+    // The label is the only thing in the row allowed to shrink, and it can
+    // only shrink from its own class: text-overflow does nothing on the
+    // button, which is a flex container.
+    expect(discard.querySelector('.control-label')?.textContent).toBe(COPY.discardArmed);
+  });
+
+  it('reserves room for the control row only while the row is in front of the sheet', () => {
+    // 72px is the row's own geometry: 56px tall, 16px off the bottom. Below
+    // that inset - an iPad accessory bar, a docked floating keyboard, every
+    // frame of the iOS open animation - part of the row still overlaps the
+    // sheet and the full clearance is still needed. A magic threshold nothing
+    // asserts on is one that rots silently.
+    panel = createPanel(document);
+    const clearance = () => panel!.host.style.getPropertyValue('--row-clearance');
+
+    panel.setViewport(0, 800);
+    expect(clearance(), 'no keyboard: the row is over the sheet').toBe('80px');
+    panel.setViewport(71, 800);
+    expect(clearance(), 'partly covered is not covered').toBe('80px');
+    panel.setViewport(72, 800);
+    expect(clearance(), 'the keyboard is in front of the whole row').toBe('8px');
+    panel.setViewport(400, 400);
+    expect(clearance()).toBe('8px');
   });
 
   it('takes its colour from the expansion, not from rest (brief item 55)', () => {
