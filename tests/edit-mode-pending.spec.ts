@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   signature, exitDecision, stopOutcome, controlRowState, footerControls,
   countPatches, includesCssPatch, hasSomethingToSave, hasSomethingToDiscard,
-  armOnTap, controlLabel,
+  armOnTap, controlLabel, discardClosingLine,
 } from '../src/edit-mode/pending.ts';
 import { COPY } from '../src/edit-mode/copy.ts';
 import { createHistory } from '../src/edit-mode/history.ts';
@@ -290,5 +290,44 @@ describe('what each control says (brief item 143, rev 2 H2)', () => {
   it('has nothing to discard only when there are no patches at all', () => {
     expect(hasSomethingToDiscard(0)).toBe(false);
     expect(hasSomethingToDiscard(1)).toBe(true);
+  });
+});
+
+// Plan task 7, and rev 2 R13. Brief items 123, 140, 144.
+describe('the last thing the page ever says after Discard', () => {
+  it('says changes were discarded when there were changes and nothing banked', () => {
+    expect(discardClosingLine('stopped', true, false)).toBe('discarded');
+  });
+
+  it('NAMES THE SAVED SESSIONS when earlier saves banked some', () => {
+    // Brief item 123. Discard throws away what is in the phone; it cannot
+    // reach a session file already written to the Pi. Saying "discarded"
+    // alone would leave Jamie believing those were gone too - and nothing
+    // else will ever mention them.
+    expect(discardClosingLine('stopped', true, true)).toBe('discardedWithSaved');
+  });
+
+  it('does not claim to have discarded a fresh session', () => {
+    // The whole reason this is two axes and not one. Discard is also the stop
+    // button, so it is routinely tapped with nothing to throw away, and
+    // "changes discarded" would be the last thing the page said about changes
+    // that never existed.
+    expect(discardClosingLine('stopped', false, false)).toBe('stoppedNothingSaved');
+  });
+
+  it('still names the fold when nothing was discarded but something was banked', () => {
+    // Save with the pencil, then tap Discard. stoppedNothingSaved already says
+    // both halves of this, which is what brief item 122 rewrote it for.
+    expect(discardClosingLine('stopped', false, true)).toBe('stoppedNothingSaved');
+  });
+
+  it('says its own thing when the shutdown failed, on every combination', () => {
+    // Brief item 140. stopFailed opens with "Saved", which is wrong twice
+    // over here: nothing was saved, and the changes are gone on purpose.
+    for (const discarded of [true, false]) {
+      for (const banked of [true, false]) {
+        expect(discardClosingLine('stopFailed', discarded, banked)).toBe('discardStopFailed');
+      }
+    }
   });
 });

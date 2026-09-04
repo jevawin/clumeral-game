@@ -215,3 +215,29 @@ export function controlLabel(
   if (!armed) return COPY.discardControl;
   return somethingToDiscard ? COPY.discardArmed : COPY.discardArmedNothing;
 }
+
+/** Which of the four closing lines the page ends on. */
+export type ClosingLine =
+  | 'discarded' | 'discardedWithSaved' | 'stoppedNothingSaved' | 'discardStopFailed';
+
+/**
+ * The last thing the page will ever say, chosen on TWO axes (rev 2, R13).
+ *
+ * Was anything actually thrown away, and is anything already banked on the Pi?
+ * They are independent, and treating them as one axis got both ends wrong:
+ * ending a fresh session claiming to have discarded changes that never
+ * existed, or saying "discarded" flatly while session files sat on the server
+ * that Discard cannot reach and nothing else will ever mention.
+ *
+ * Nothing discarded but something banked reuses stoppedNothingSaved, which
+ * already names the fold - that IS the same sentence.
+ */
+export function discardClosingLine(
+  outcome: 'stopped' | 'stopFailed',
+  anythingDiscarded: boolean,
+  anythingBanked: boolean
+): ClosingLine {
+  if (outcome === 'stopFailed') return 'discardStopFailed';
+  if (!anythingDiscarded) return 'stoppedNothingSaved';
+  return anythingBanked ? 'discardedWithSaved' : 'discarded';
+}

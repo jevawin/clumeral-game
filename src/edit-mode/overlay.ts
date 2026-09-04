@@ -22,6 +22,7 @@ import { captureEnvironment, type Patch } from './patches.ts';
 import {
   signature, exitDecision, stopOutcome, controlRowState,
   countPatches, includesCssPatch, hasSomethingToSave, hasSomethingToDiscard,
+  discardClosingLine,
 } from './pending.ts';
 import { COPY, conflictWarning } from './copy.ts';
 
@@ -76,6 +77,19 @@ async function start(): Promise<void> {
   const saved = store.load();
   let freeCss = saved.freeCss;
   let savedSignature = saved.savedSignature;
+  /**
+   * Has a session file been written for this run?
+   *
+   * Read from the STORE at boot, not started at false, because the tab discard
+   * this whole brief is about would reset an in-memory boolean and Discard
+   * would then tell Jamie nothing had been banked when a session was sitting
+   * on the Pi (rev 2, R12). Only Discard's closing line reads it.
+   *
+   * Not derived from savedSignature at the moment of use: Discard resets that
+   * to signature([], ''), which is not empty, so a second Discard after a
+   * failed shutdown would claim a session that was never written.
+   */
+  let sessionsBanked = saved.savedSignature !== '';
   // Set once the server has gone. Stops persist() writing the session back
   // after store.clear(), and stops the pill being shown again for a dead
   // server (brief item 42).
@@ -579,7 +593,10 @@ async function start(): Promise<void> {
       });
       // Any non-2xx keeps the patch set, because the edit lives on the phone
       // until the save actually succeeds (brief items 54, 74).
-      if (res.ok) savedSignature = signature(history.entries, freeCss);
+      if (res.ok) {
+        savedSignature = signature(history.entries, freeCss);
+        sessionsBanked = true;
+      }
       panel.say(res.ok ? COPY.saved : COPY.saveFailed);
       persist();
       return res.ok;
@@ -618,6 +635,7 @@ async function start(): Promise<void> {
   };
 
   panel.onSave(() => void stopServer());
+  panel.onDiscard(() => void discardAll());
 
   /**
    * Save & Stop: write the session, then ask the server to exit.
@@ -674,6 +692,96 @@ async function start(): Promise<void> {
     panel.notify(hadSomethingToSave ? COPY.stopped : COPY.stoppedNothingSaved);
   }
 
+
+  /**
+   * Discard: throw the session away, then stop the server.
+   *
+   * A SIBLING of stopServer, not a branch inside it (brief item 139). runStop
+   * is save-then-shutdown; this is discard-then-shutdown, and the only thing
+   * they share is the POST at the end.
+   *
+   * Jamie, 2026-09-01: "I need a way to abandon edits, sometimes I mess about
+   * and want to give up." And it is the permanent stop button too - "always
+   * show discard so it's a permanent stop button as well as a discard all
+   * edits button" - which is why it is here even with nothing to discard.
+   */
+  async function discardAll(): Promise<void> {
+    if (busy) return;
+    busy = true;
+    syncControlRow();
+    try {
+      await runDiscard();
+    } finally {
+      busy = false;
+      syncControlRow();
+    }
+  }
+
+  async function runDiscard(): Promise<void> {
+    // Both read BEFORE anything is cleared, because clearing is what makes
+    // them unanswerable.
+    const anythingDiscarded = hasSomethingToDiscard(patchCount());
+    const anythingBanked = sessionsBanked;
+
+    // THE ORDER BELOW IS LOAD-BEARING (brief item 138).
+
+    // 1. `stopped` FIRST. It is what stops persist() writing the session
+    //    straight back after store.clear() - setMode and select both persist -
+    //    and it is the same guard runStop already relies on.
+    stopped = true;
+
+    // 2. Put the originals back on the page while the history still knows what
+    //    they were. Not a re-render: the game may never render this screen
+    //    again, and the edits are on the DOM in front of him right now.
+    for (const target of history.projection().keys()) {
+      const original = history.originalOf(target);
+      const el = findByBreadcrumb(document, target);
+      if (original && el) el.className = original.join(' ');
+    }
+
+    // 3. Everything the session held.
+    history.restore([]);
+    freeCss = '';
+    switchedOff.clear();
+    selected = null;
+    selectedPath = null;
+
+    // 4. NEVER savedSignature = '': that empty string against an empty
+    //    history's '||' is precisely the mismatch that wedged the pencil
+    //    (brief item 82).
+    store.clear();
+    savedSignature = signature(history.entries, freeCss);
+
+    // 5. Out of the editor, and the pencil goes dead with the server.
+    setMode('play');
+    panel.setPencilEnabled(false);
+    syncControlRow();
+
+    // 6. And only now the shutdown.
+    let result: 'ok' | 'network-error' | 'http-error';
+    try {
+      const res = await fetch(SHUTDOWN_URL, { method: 'POST' });
+      result = res.ok ? 'ok' : 'http-error';
+    } catch {
+      // A dead socket is what SUCCESS looks like here (brief item 40).
+      result = 'network-error';
+    }
+
+    const outcome = stopOutcome(result);
+    if (outcome === 'stopFailed') {
+      // The server is still alive, so the page must not be left as though it
+      // were: with `stopped` true and the pencil dead, nothing on screen could
+      // stop it and Jamie would need /devstop (rev 2, R11). A second tap on
+      // Discard now retries the shutdown.
+      stopped = false;
+      panel.setPencilEnabled(true);
+      syncControlRow();
+    }
+
+    // notify, not say: setMode('play') above blanks the sheet, and this is the
+    // last thing the page will ever say (brief item 42).
+    panel.notify(COPY[discardClosingLine(outcome, anythingDiscarded, anythingBanked)]);
+  }
 
   // A tap that landed while the catalogue was still loading, honoured late
   // rather than lost.
