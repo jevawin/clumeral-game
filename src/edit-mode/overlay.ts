@@ -13,7 +13,7 @@ import { createHistory, nextBackAction } from './history.ts';
 import { createSessionStore } from './session-store.ts';
 import { applyClass, removeClass, existingConflicts } from './families.ts';
 import { step } from './scale.ts';
-import { project, breadcrumbOf, findByBreadcrumb } from './project.ts';
+import { project, breadcrumbOf, findByBreadcrumb, mergeProjections } from './project.ts';
 import { readActual, detectOverwrites } from './runtime-classes.ts';
 import {
   ancestry, crumb, isOverlay, elementAtPoint, nav, computedSnapshot, didNothing,
@@ -68,18 +68,6 @@ async function start(): Promise<void> {
     if (toggleMode) toggleMode();
     else toggleWaiting = true;
   });
-
-  // Put back what earlier sessions changed, before anything else touches the
-  // page. This is Jamie's own reload safety net, not Dave's — the read-only
-  // origin it was shared with is gone.
-  const replay = await fetch(REPLAY_URL).then((r) => r.json()).catch(() => null);
-  if (replay?.projection) {
-    project(document, new Map(Object.entries(replay.projection as Record<string, string[]>)));
-  }
-  const { classes, families } = await fetch(CATALOGUE_URL)
-    .then((r) => r.json())
-    .catch(() => ({ classes: [], families: {} as FamilyMap }));
-  const catalogue = createCatalogue(classes, families);
 
   const store = createSessionStore(branch, sessionStorage);
   const saved = store.load();
@@ -147,6 +135,119 @@ async function start(): Promise<void> {
     }
     return order;
   }
+  /**
+   * Put the edits back after the page comes back.
+   *
+   * Jamie, 2026-08-24: "navigating away from and back to Safari resets
+   * everything." The patch set survives — session-store.ts is tested — but
+   * src/router.ts listens for `visibilitychange` and `focus` and re-renders the
+   * screen, which rebuilds the DOM and throws the edits away. Nothing put them
+   * back, because re-projection only ran on undo.
+   *
+   * Re-projecting here is the same one-line answer as everywhere else: the
+   * patch set is the truth and the DOM is a projection of it.
+   */
+  let projecting = false;
+
+  /**
+   * Dave's replay, HELD rather than applied once.
+   *
+   * Held because every re-render needs it again. Applied once and forgotten,
+   * the first time the game rebuilt the screen reproject() would put the live
+   * history back and quietly drop every replay-only breadcrumb with it.
+   *
+   * Empty until the fetch resolves, which is why merging with it is safe from
+   * the very first paint.
+   */
+  let replayProjection: ReadonlyMap<string, string[]> = new Map();
+
+  /**
+   * Is the sheet's contents built yet?
+   *
+   * draw() calls controls.render(), and `controls` is a const created after the
+   * catalogue fetch. This function now runs BEFORE that fetch, so calling
+   * draw() early would throw a ReferenceError inside a requestAnimationFrame
+   * callback — swallowed, invisible, and on a phone (brief item 116).
+   *
+   * The projection itself needs nothing but the history, so it runs regardless.
+   * That is the half that matters: the edits go back on the page.
+   */
+  let controlsReady = false;
+
+  function reproject(): void {
+    if (projecting) return;
+    projecting = true;
+    try {
+      project(document, mergeProjections(replayProjection, history.projection()));
+      if (selectedPath) selected = findByBreadcrumb(document, selectedPath);
+      if (!controlsReady) return;
+      draw();
+    } finally {
+      projecting = false;
+    }
+  }
+
+  /**
+   * Re-apply whenever the game rebuilds the page under us.
+   *
+   * Jamie, 2026-08-26: coming back to Safari "returns to a semi previous state
+   * but with elements deselected." The cause is a race, not lost data. The
+   * overlay's script runs BEFORE the app entry on purpose, and start() then
+   * awaits three fetches — so by the time it restores the patch set and looks
+   * up the selected element, the game has usually not rendered yet. It resolves
+   * against markup that does not exist, projects onto nothing, and the load
+   * event it was waiting for has long since fired.
+   *
+   * Watching the document answers all of it: whenever the game finishes
+   * rendering — first paint, a route change, or a wake-from-background
+   * re-render — the edits go back on and the selection is found again. The
+   * guard above stops our own writes retriggering it.
+   */
+  const observer = new MutationObserver(() => {
+    // Nothing of ours on the page means nothing to put back. The replay counts
+    // as ours: it is what Dave's sessions changed, and it has to survive a
+    // re-render even when Jamie's own history is empty.
+    if (projecting || (history.entries.length === 0 && replayProjection.size === 0)) return;
+    scheduleReproject();
+  });
+
+  let pending = 0;
+  function scheduleReproject(): void {
+    if (pending) return;
+    pending = requestAnimationFrame(() => {
+      pending = 0;
+      reproject();
+    });
+  }
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // FIRST PAINT. The restored history goes on now, before a single byte is
+  // fetched. The game has usually not rendered yet, so this call is often a
+  // no-op and that is fine (brief item 118) — the observer above is what
+  // catches the render, and it is watching from here on.
+  reproject();
+
+  // Everything above this line runs before the two fetches, and that is the
+  // whole of brief item 129's fix: the edits used to be restored only AFTER the
+  // catalogue arrived, which on a phone is two network round trips and the
+  // whole 23,000-class file. Jamie switched back to Safari, watched the game
+  // paint bare, and then watched his edits appear on top of it — the "refresh"
+  // he reported. They now land on first paint.
+  //
+  // Dave's replay still has to wait for its fetch, because it lives on the
+  // server. It is merged in when it arrives rather than projected over the top
+  // (brief item 117).
+  const replay = await fetch(REPLAY_URL).then((r) => r.json()).catch(() => null);
+  if (replay?.projection) {
+    replayProjection = new Map(Object.entries(replay.projection as Record<string, string[]>));
+    project(document, mergeProjections(replayProjection, history.projection()));
+  }
+  const { classes, families } = await fetch(CATALOGUE_URL)
+    .then((r) => r.json())
+    .catch(() => ({ classes: [], families: {} as FamilyMap }));
+  const catalogue = createCatalogue(classes, families);
+
   const interceptor = createInterceptor(document, {
     isOwnUi: (target) => isOverlay(target as Node | null),
     onPointer: (event) => {
@@ -357,6 +458,9 @@ async function start(): Promise<void> {
       if (focused && selected) selected.scrollIntoView({ block: 'center' });
     },
   });
+  // From here draw() is safe, so re-projection can redraw the sheet as well as
+  // the page. Everything before this point projected and returned.
+  controlsReady = true;
 
 
   function setMode(next: 'play' | 'edit'): void {
@@ -547,64 +651,6 @@ async function start(): Promise<void> {
     if (action === 'undo') backOneStep();
     else setMode('play');
   }, { capture: true });
-
-  /**
-   * Put the edits back after the page comes back.
-   *
-   * Jamie, 2026-08-24: "navigating away from and back to Safari resets
-   * everything." The patch set survives — session-store.ts is tested — but
-   * src/router.ts listens for `visibilitychange` and `focus` and re-renders the
-   * screen, which rebuilds the DOM and throws the edits away. Nothing put them
-   * back, because re-projection only ran on undo.
-   *
-   * Re-projecting here is the same one-line answer as everywhere else: the
-   * patch set is the truth and the DOM is a projection of it.
-   */
-  let projecting = false;
-
-  function reproject(): void {
-    if (projecting) return;
-    projecting = true;
-    try {
-      project(document, history.projection());
-      if (selectedPath) selected = findByBreadcrumb(document, selectedPath);
-      draw();
-    } finally {
-      projecting = false;
-    }
-  }
-
-  /**
-   * Re-apply whenever the game rebuilds the page under us.
-   *
-   * Jamie, 2026-08-26: coming back to Safari "returns to a semi previous state
-   * but with elements deselected." The cause is a race, not lost data. The
-   * overlay's script runs BEFORE the app entry on purpose, and start() then
-   * awaits three fetches — so by the time it restores the patch set and looks
-   * up the selected element, the game has usually not rendered yet. It resolves
-   * against markup that does not exist, projects onto nothing, and the load
-   * event it was waiting for has long since fired.
-   *
-   * Watching the document answers all of it: whenever the game finishes
-   * rendering — first paint, a route change, or a wake-from-background
-   * re-render — the edits go back on and the selection is found again. The
-   * guard above stops our own writes retriggering it.
-   */
-  const observer = new MutationObserver(() => {
-    if (projecting || history.entries.length === 0) return;
-    scheduleReproject();
-  });
-
-  let pending = 0;
-  function scheduleReproject(): void {
-    if (pending) return;
-    pending = requestAnimationFrame(() => {
-      pending = 0;
-      reproject();
-    });
-  }
-
-  observer.observe(document.body, { childList: true, subtree: true });
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') scheduleReproject();

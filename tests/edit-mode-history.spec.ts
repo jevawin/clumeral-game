@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   createHistory, nextBackAction, stillOwnsBack, type History,
 } from '../src/edit-mode/history.ts';
-import { project, findByBreadcrumb, breadcrumbOf } from '../src/edit-mode/project.ts';
+import {
+  project, findByBreadcrumb, breadcrumbOf, mergeProjections,
+} from '../src/edit-mode/project.ts';
 
 // C6 — undo, back, and re-projection (brief items 66-70, 104, 105).
 //
@@ -198,5 +200,60 @@ describe('the DOM is a projection of the patch set (brief item 67)', () => {
   it('never projects onto the overlay', () => {
     document.body.insertAdjacentHTML('beforeend', '<div data-clumeral-edit-mode></div>');
     expect(findByBreadcrumb(document, 'div')).toBeNull();
+  });
+});
+
+// Plan task 2. Brief items 117, 129, 153.
+describe('the replay and the live history, merged (brief item 117)', () => {
+  const live = (pairs: [string, string[]][]) => new Map(pairs);
+
+  it('keeps a breadcrumb only the replay knows about', () => {
+    // Dave's sessions are on the server and Jamie's are on the phone. An
+    // element edited in a folded-but-unconsumed session is in the replay alone,
+    // and it still has to reach the page.
+    const merged = mergeProjections(live([['main > h1', ['text-2xl']]]), live([]));
+    expect([...merged]).toEqual([['main > h1', ['text-2xl']]]);
+  });
+
+  it('keeps a breadcrumb only the live history knows about', () => {
+    const merged = mergeProjections(live([]), live([['main > h1', ['text-3xl']]]));
+    expect([...merged]).toEqual([['main > h1', ['text-3xl']]]);
+  });
+
+  it('LETS THE LIVE VALUE WIN when both name the same element', () => {
+    // THE ONE THAT LOSES WORK, and the one today's ordering gets backwards.
+    // Saving several times before anything is folded is the normal way to use
+    // this tool (docs/EDIT-MODE.md:125), so the same element is routinely in
+    // both sets — and the replay holds the OLDER value. Applied second, as it
+    // used to be, it silently overwrote the newer edit: project() writes
+    // className while the observer watches childList, so nothing noticed.
+    const merged = mergeProjections(
+      live([['main > h1', ['text-2xl']]]),
+      live([['main > h1', ['text-3xl']]]),
+    );
+    expect(merged.get('main > h1')).toEqual(['text-3xl']);
+  });
+
+  it('changes neither of the maps it was handed', () => {
+    // reproject() calls this on every re-render with the same held replay map,
+    // so mutating either input would compound one render's edits into the next.
+    const replay = live([['a', ['p-1']]]);
+    const current = live([['a', ['p-2']], ['b', ['m-1']]]);
+    mergeProjections(replay, current);
+    expect([...replay]).toEqual([['a', ['p-1']]]);
+    expect([...current]).toEqual([['a', ['p-2']], ['b', ['m-1']]]);
+  });
+
+  it('projects the merged set onto the page', () => {
+    document.body.innerHTML = '<main><h1 class="text-xl">t</h1><p class="p-1">b</p></main>';
+    // Crumbs are written tag.firstClass, so these are the paths as the tool
+    // records them, not CSS selectors.
+    const merged = mergeProjections(
+      live([['main > p.p-1', ['p-4']]]),
+      live([['main > h1.text-xl', ['text-3xl']]]),
+    );
+    project(document, merged);
+    expect(document.querySelector('h1')!.className).toBe('text-3xl');
+    expect(document.querySelector('p')!.className).toBe('p-4');
   });
 });
