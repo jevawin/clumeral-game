@@ -10,7 +10,7 @@ any fix under discussion. Awaiting Jamie's approval.
 ---
 
 ## 1. What it is
-Settled: Jamie 2026-09-03, EXCEPT item 9 which is reopened by finding H1 · Ack: n/a
+Settled: Jamie 2026-09-03 · Ack: n/a — item 9 was replaced outright by items 100-101 and 112-115; read section 12 for the live version
 
 1. **The report, in Jamie's words.** Switching from Safari to another app and back
    "refreshes" — not a page refresh, it re-applies his changes. (given)
@@ -150,7 +150,7 @@ Settled: Jamie 2026-09-03 · Ack: n/a
 ---
 
 ## 3. How it works
-Settled: pending · Ack: n/a (Jamie's tool; Dave never uses edit mode)
+Settled: Jamie 2026-09-03 · Ack: n/a — superseded in part by section 12 (Jamie's tool; Dave never uses edit mode)
 
 Jamie, 2026-09-03: "Lose the changes. Drop out of edit mode should happen when I
 click the pencil. I think an abandon changes button with the save and close. I
@@ -993,3 +993,162 @@ minutes not seconds, and that is Safari discarding the tab. The fix moved from
      after commit 52c0b38 (the two fetches are at `overlay.ts:75-82`, not 56-62);
      item 96's evidence is wrong though its conclusion holds; item 85 does not
      supersede item 50, which is true of a different element.
+
+---
+
+# 12. Where this landed — the live version
+
+Items 1-128 are the working record and stay for the reasoning. **This section is
+what to build.** Where it disagrees with anything above, this wins. Written
+because six later items had retargeted section 11 and a fresh-context planner
+should not have to reassemble it from three places.
+
+## 12.1 The app-switch reload — build the fix that works either way
+
+129. **The cause is still one word short of settled** (item 114), and the build
+     does not wait for it. The reload is real and happens on a minutes-long
+     switch. Whether vite triggers it or Safari does, **the edits currently come
+     back two fetches late, and that is the visible symptom either way.** So the
+     restore fix is built now and is correct under both. (recommendation)
+
+130. **If the bracket says `reload`, there is a second, better fix available and
+     it is NOT ours to make.** A `server.hmr` setting stops vite reloading at all.
+     `vite.config.ts` is the dev server's own configuration and item 8 puts that
+     with the pi bot. **Action: ask the pi bot, do not edit it.** Recorded here so
+     it is not lost. (recommendation)
+
+131. **The restore fix, corrected** — supersedes items 63, 103, 88:
+     - Move the `sessionStorage` restore and the `MutationObserver` **above** the
+       two fetches at `overlay.ts:75-82`.
+     - The early path is a **bare `project()` with no `draw()`**. `draw()` reaches
+       `controls`, which is created after the catalogue arrives, so calling it
+       early throws a `ReferenceError` inside a rAF callback — silently, on a
+       phone (item 116).
+     - The observer needs a **guard until `controls` exists**, for the same
+       reason.
+     - **Live edits win over the replay.** The replay projection lands after its
+       fetch and overwrites `className` for any element in both sets, and a
+       className write does not retrigger the observer. So re-project the live set
+       once the replay has landed (item 117).
+     - `detectOverwrites` (item 88) is **not** part of this. It answers a
+       different question and is marked dead.
+
+## 12.2 The empty-session wedge
+
+132. **The rule, not the value** — supersedes items 61, 76:
+     **an empty patch set is nothing to save.** Initialising the sentinel alone
+     does not fix it: save three edits, undo all three, and the signature differs
+     from the saved one again (item 121). The check belongs wherever "is anything
+     pending?" is answered, and it must be a pure function so a test can reach it.
+133. **It fixes three symptoms, not two**: the pencil, Save & Stop's `runStop`,
+     and Discard's own guard. Item 79's claim about `COPY.stoppedNothingSaved`
+     being unreachable was wrong (item 122) — that message IS reachable, and is
+     wrong copy on its path: a session was just written and it says nothing about
+     folding it. **Fix that copy too.**
+
+## 12.3 The controls — final
+
+134. **Visibility** — supersedes items 22, 26, 60:
+     - **Discard** — always visible, in play mode AND in edit mode.
+     - **Save** — only when there is something to save.
+     - **Undo** — only with an element selected and a step to undo.
+     - **Reset** — only with an element selected and that element changed.
+     Three rules and one always-on control, not "four visibility rules".
+
+135. **The 2026-08-26 rule is reversed: the row shows in edit mode too.**
+     Jamie's sketch puts all three together and item 106 makes Discard the
+     permanent stop. Leaving it hidden in edit mode creates a dead end: a
+     genuinely failed save keeps him in the editor (the rule not being reopened),
+     and with no Discard and no Save there is then **no way to stop the server
+     from the page at all** (item 119).
+     **Inferred from Jamie's sketch rather than asked, because he said crack on.
+     One line to correct if wrong.** (assumed — flagged to Jamie 2026-09-03)
+
+136. **`.sheet { padding-right: 76px }` clears one pencil, not three controls.**
+     Three 56px controls plus gaps is about 180px, and an expanded pill about
+     300px, sitting over the sheet's chips. The clearance follows the row.
+     (correction — adds to item 86)
+
+137. **Layout** — items 67, 68, 85, 86 stand, with the numbers corrected: the
+     pencil is **56px** (`panel.ts:65-66`), the worst case is about **304px** on a
+     320px screen, and both `position: fixed` rules are replaced by one
+     right-anchored flex row.
+
+## 12.4 Discard is also a stop — the whole operation
+
+138. **Order of operations** — supersedes items 20, 81, 83:
+     1. `stopped = true` **first**. It is the guard that stops `persist()` writing
+        the session back after the clear, and it is why `runStop` gets away with
+        the same sequence (`overlay.ts:204`).
+     2. Project the originals back over every edited element.
+     3. Clear the undo stack, `freeCss`, `switchedOff`, `selected` and
+        `selectedPath`.
+     4. `store.clear()`, and set `savedSignature` to `signature([], freeCss)` —
+        **never `''`**, which is the value that caused the original bug.
+     5. `setMode('play')`, `panel.setPencilEnabled(false)`, `syncStopPill()`.
+     6. POST the shutdown.
+     Guarded by `if (busy) return`, like `stopServer()`.
+
+139. **Discard cannot reuse `runStop()`.** That is save-then-shutdown; this is
+     discard-then-shutdown. It is its own function sharing the shutdown call.
+
+140. **When the discard succeeds and the stop then fails**, `COPY.stopFailed`
+     ("Saved, but the server did not stop") is wrong on both counts.
+     My rec: a Discard-specific line — **"Changes discarded, but the server did
+     not stop. Use /devstop in Telegram."** (recommendation)
+
+141. **The confirm state machine covers two armable controls**, not one. Arming
+     either disarms the other. (correction — adds to item 61)
+
+## 12.5 Copy — final
+
+142. Save at rest **"Save"**, armed **"Save and stop?"** (items 35, 108).
+143. Discard at rest **"Discard"**, armed **"Lose all and stop?"** — **except on a
+     fresh session with nothing to lose, where it reads "Stop the server?"**
+     Item 124: "lose all" with nothing to lose is the same mislabel item 28
+     fixed in the other direction. (recommendation — supersedes item 108)
+144. The closing line after a Discard, **and it does not vanish** (supersedes
+     items 39, 41, 109): **"Changes discarded and the server has stopped. Tap
+     /dev in Telegram to start again."** — with a variant naming the fold when
+     sessions were already banked (item 123):
+     **"Changes discarded and the server has stopped. Sessions you saved earlier
+     are still there — ask the bot in Telegram to fold them, or tap /dev to start
+     again."** (recommendation)
+145. `COPY.exitEditMode` becomes **"Leave edit mode"** (item 97).
+146. The four-second revert applies to the **confirm labels only** (item 37).
+     Item 90's clobbering worry dies with item 41. (correction)
+147. The new strings go in `OVERLAY_COPY`, and the one listed there is the
+     **armed** label, not the bare word "Save" (item 96).
+
+## 12.6 Files — supersedes item 93
+
+148. `src/edit-mode/`: `pending.ts`, `overlay.ts`, `panel.ts`, `controls.ts`,
+     `copy.ts`, `icons.ts` (a bin; the floppy is already there), and
+     **`session-store.ts`** (where `EMPTY` lives).
+149. Outside it, and item 93 was wrong to say nothing is:
+     `tests/edit-mode-safety.spec.ts`, `tests/edit-mode-controls.spec.ts`,
+     `docs/EDIT-MODE.md` (lines 37, 53, 56, 87, 125, 148-150, 157, 176 all go
+     stale), and `src/edit-mode/overlay.ts` again to delete the load counter.
+150. **`vite.config.ts` is NOT ours** (item 130).
+
+## 12.7 Section 11, restated as one list
+
+151. **Pure functions in `pending.ts`**, because `overlay.ts` cannot be imported:
+     the empty-patch-set rule, the four control-visibility rules, and the
+     two-control confirm state machine.
+152. **A test that is red today**: an empty patch set means nothing to save, so
+     the pencil leaves — covering both the fresh session and the undo-everything
+     case (item 121).
+153. **A test for the restore order**: live edits survive the replay landing.
+154. **`edit-mode-safety.spec.ts`** gains the three new armed strings.
+155. **`docs/EDIT-MODE.md`** is updated in the same pull request.
+156. **The load counter is deleted** once item 114 is answered (item 105).
+157. **QA light, no local Playwright.** CI runs the matrix.
+158. **Jamie's acceptance test**, superseding item 66:
+     1. No edits, tap the pencil — it leaves.
+     2. Edits, undo them all, tap the pencil — it leaves.
+     3. Fresh session, tap Discard — it reads "Stop the server?" and stops it.
+     4. Edits, tap Discard — "Lose all and stop?", page back to normal, server
+        stopped, closing line stays up.
+     5. Edits, leave Safari five minutes, come back — the page returns already
+        edited, with no un-edited flash.
