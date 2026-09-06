@@ -78,6 +78,12 @@ deliberately avoided, because `HMAC_SECRET` is a per-Worker secret whose absence
 *silently*: `TextEncoder.encode(undefined)` yields `""`, making the signing key
 `SHA-256("")` and every random-puzzle token forgeable.
 
+**`dev.clumeral.com` is unrelated to this.** Edit mode's read-only view is served
+from the Pi over a `cloudflared` tunnel, and a named tunnel can create a
+`dev.clumeral.com` record on the production zone. That is a record pointing at a
+home machine, not a Worker hostname, so it neither contradicts nor reopens the
+decision below. See [docs/EDIT-MODE.md](docs/EDIT-MODE.md).
+
 Jamie's call, 2026-08-05: keep `workers.dev` for pre-prod. Isolation was the point and it is
 already delivered by `env.preprod`; the hostname was only ever cosmetic. Closed #260. The one
 real cost is that service-worker and PWA behaviour is exercised on a different origin shape
@@ -136,6 +142,7 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Pre-PR architecture review | [docs/DA-REVIEW.md](docs/DA-REVIEW.md) |
 | Pre-PR line-level review | [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md) |
 | Adding a roadmap item as a GitHub issue | [docs/ROADMAP-ISSUES.md](docs/ROADMAP-ISSUES.md) |
+| Edit mode — the dev-only design tool, the session file `/fold` reads, Dave's read-only link | [docs/EDIT-MODE.md](docs/EDIT-MODE.md) |
 | Feedback — storage (D1), reading it, triage process | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
 | Analytics — event storage (D1), `/stats`, the chart, the Analytics Engine migration | [docs/ANALYTICS.md](docs/ANALYTICS.md) |
 
@@ -146,6 +153,13 @@ Update the respective doc if it's incorrect or your work makes it outdated.
 Things owed that no test or CI job will remind anyone about. Surfaced when the topic comes
 up in conversation — **there is no scheduled reminder and Claude cannot send one unprompted.**
 
+- **2026-09-02 — the accessibility pass on the finished stats panel is still owed
+  (stats-Tailwind brief item 34).** The Tailwind conversion was signed off on the basis
+  that it changes nothing a screen reader hears: same DOM order, same `aria-` attributes,
+  same visually hidden spoken labels. The full pass — contrast at the new sizes, focus
+  order, the whole panel with a real screen reader — was deliberately deferred until the
+  redesign that follows the conversion lands. Jamie owns accessibility, so it is his call
+  when to run it.
 - **2026-08-08 — did the shorter puzzles make the game too hard? (#193).** Watch
   `incorrect_guess` divided by `puzzle_complete` on production for a fortnight after the merge.
   Baseline for the 30 days to 2026-08-08: 285 / 466 = **0.61**. If it holds at **0.85 or above

@@ -65,12 +65,15 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.allTime).toBeVisible();
 
     // Three columns under Streak, two under Records (brief 65, 66).
-    await expect(completion.streak.locator(".stat-col")).toHaveCount(3);
-    await expect(completion.records.locator(".stat-col")).toHaveCount(2);
+    await expect(completion.streak.locator("[data-stat-col]")).toHaveCount(3);
+    await expect(completion.records.locator("[data-stat-col]")).toHaveCount(2);
     await expect(completion.average).toHaveCount(0);
-    // Icons on the two headings and on nothing else (brief 68).
-    await expect(completion.streak.locator(".stat-col svg")).toHaveCount(0);
-    await expect(completion.records.locator(".stat-col svg")).toHaveCount(0);
+    // One watermark svg per box, and nothing else inside one (polish brief 94).
+    // These two read 0 until 2026-08-29: the watermark landed in dce25fa and
+    // the spec was never updated, so they were asserting a state that had not
+    // been true for a fortnight.
+    await expect(completion.streak.locator("[data-stat-col] svg")).toHaveCount(3);
+    await expect(completion.records.locator("[data-stat-col] svg")).toHaveCount(2);
 
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is
@@ -89,7 +92,11 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.allTimeLines).toHaveCount(4);
     await expect(completion.allTimeLines.nth(0)).toHaveText("5 Puzzles solved");
     await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) Solved in one");
-    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\d+m \d\ds Average time$/);
+    // The number and its words are two block spans, so the raw text carries the
+    // newlines between them. Playwright normalises whitespace for a string but
+    // NOT for a regular expression, so this one has to allow for them; the three
+    // lines around it are plain strings and do not.
+    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\s*\d+m \d\ds\s+Average time\s*$/);
     // (1 + 3 + 2 + 4 + 1) / 5
     await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 Average attempts");
 

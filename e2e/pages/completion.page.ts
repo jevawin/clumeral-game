@@ -37,8 +37,8 @@ export class CompletionPage {
     this.records = page.locator('[data-stat-block="records"]');
     this.average = page.locator('[data-stat-block="average"]');
     this.allTime = page.locator('[data-stat-block="all-time"]');
-    this.cols = page.locator(".stat-col");
-    this.allTimeLines = page.locator(".stat-line");
+    this.cols = page.locator("[data-stat-col]");
+    this.allTimeLines = page.locator("[data-stat-line]");
     this.goesRows = page.locator("[data-goes-row]");
     this.live = page.locator("[data-completion-live]");
     this.countdown = page.locator("[data-completion-countdown]");
@@ -60,7 +60,7 @@ export class CompletionPage {
    */
   stat(label: string): Locator {
     return this.panel
-      .locator(".stat-col")
+      .locator("[data-stat-col]")
       .filter({ has: this.page.locator("dt, .sr-only", { hasText: new RegExp(`^${label}$`) }) })
       .locator("dd")
       .first();

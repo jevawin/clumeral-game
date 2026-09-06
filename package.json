@@ -11,6 +11,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:smoke": "playwright test --project=chromium-desktop",
     "build": "vite build",
+    "build:preprod": "CLOUDFLARE_ENV=preprod vite build --outDir dist-preprod",
     "preview": "vite build && vite preview --host --port 4173",
     "e2e:db": "npm run e2e:db:feedback && npm run e2e:db:analytics",
     "e2e:db:feedback": "wrangler d1 execute clumeral-feedback --local --command=\"DROP TABLE IF EXISTS feedback;\" && wrangler d1 execute clumeral-feedback --local --file=migrations/feedback/0001_create_feedback.sql",

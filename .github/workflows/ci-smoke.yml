@@ -58,6 +58,20 @@ jobs:
       - name: Lint migrations
         run: npm run lint:migrations
 
+      # Build BOTH deployed artefacts before the unit tests.
+      #
+      # Without this, every build-output assertion in the repo skips in CI:
+      # `npm test` runs on a clean checkout, and Playwright's webServer does not
+      # build until later. tests/sw-precache.spec.ts has been silently skipping
+      # since it was written for exactly this reason.
+      #
+      # Two builds because preprod is not the same command — Cloudflare's version
+      # step runs `CLOUDFLARE_ENV=preprod npm run build`. Measured: it changes
+      # bindings and vars only, and tests/edit-mode-safety.spec.ts is what keeps
+      # that true rather than assumed.
+      - name: Build production and preprod artefacts
+        run: npm run build && npm run build:preprod
+
       - name: Run unit tests
         run: npm test
 

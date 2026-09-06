@@ -38,7 +38,7 @@ function block(id: string): HTMLElement | null {
 
 /** Every All-time line, whitespace-collapsed: "17 puzzles solved". */
 function allTimeLines(): string[] {
-  return [...panel().querySelectorAll('.stat-line')]
+  return [...panel().querySelectorAll('[data-stat-line]')]
     .map((el) => el.textContent!.replace(/\s+/g, ' ').trim());
 }
 
@@ -53,12 +53,12 @@ function blockText(id: string): string {
 
 /** One column, found by the full words a screen reader hears (brief 67). */
 function col(fullLabel: string): { value: string; short: string } | null {
-  for (const el of panel().querySelectorAll('.stat-col')) {
+  for (const el of panel().querySelectorAll('[data-stat-col]')) {
     if (el.querySelector('.sr-only')?.textContent?.trim() !== fullLabel) continue;
-    const value = el.querySelector('.stat-col__value')!;
+    const value = el.querySelector('[data-stat-value]')!;
     return {
       value: value.textContent!.trim(),
-      short: el.querySelector('.stat-col__label')!.textContent!.trim(),
+      short: el.querySelector('[data-stat-label]')!.textContent!.trim(),
     };
   }
   return null;
@@ -66,12 +66,12 @@ function col(fullLabel: string): { value: string; short: string } | null {
 
 /** The visible column labels inside one block, in order. */
 function colLabels(id: string): string[] {
-  return [...block(id)!.querySelectorAll('.stat-col__label')].map((el) => el.textContent!.trim());
+  return [...block(id)!.querySelectorAll('[data-stat-label]')].map((el) => el.textContent!.trim());
 }
 
 /** The visible values of the Today block's figures, in order. */
 function figures(): string[] {
-  return [...panel().querySelectorAll('.stat-figure__value')].map((el) => el.textContent!.trim());
+  return [...panel().querySelectorAll('[data-stat-figure-value]')].map((el) => el.textContent!.trim());
 }
 
 function live(): string {
@@ -252,9 +252,9 @@ describe('the completion panel', () => {
 
   it('keeps the random line and the new-player line under the figures (brief 76)', async () => {
     await render(RETURNING, 2, true, { seconds: 221 });
-    const kids = [...block('this-game')!.children].map((el) => el.className);
+    const kids = [...block('this-game')!.children];
     // No heading now: the figures come first, then the note.
-    expect(kids[0]).toBe('stat-today');
+    expect(kids[0].hasAttribute('data-stat-today')).toBe(true);
     expect(blockText('this-game')).toContain("Random puzzles don't count towards your stats.");
   });
 
@@ -264,7 +264,7 @@ describe('the completion panel', () => {
     expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Current streaks');
     expect(block('records')!.querySelector('h3')!.textContent!.trim()).toBe('Records');
     for (const id of ['streak', 'records']) {
-      const icon = block(id)!.querySelector('h3 .stat-block__icon');
+      const icon = block(id)!.querySelector('h3 [data-stat-icon]');
       expect(icon, `${id} heading icon`).not.toBeNull();
       expect(icon!.getAttribute('aria-hidden')).toBe('true');
     }
@@ -285,7 +285,7 @@ describe('the completion panel', () => {
     // colour class left to get wrong, and the four theme colours cannot drift
     // apart from the section they belong to.
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(panel().querySelector('.stat-col__value--best')).toBeNull();
+    expect(panel().querySelector('[data-stat-value-best]')).toBeNull();
     for (const id of ['streak', 'records', 'all-time']) {
       expect(block(id)!.getAttribute('data-stat-block')).toBe(id);
     }
@@ -295,28 +295,34 @@ describe('the completion panel', () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     // All three sections have one now, All time included.
     for (const id of ['streak', 'records', 'all-time']) {
-      expect(block(id)!.querySelector('h3 .stat-block__icon'), id).not.toBeNull();
+      expect(block(id)!.querySelector('h3 [data-stat-icon]'), id).not.toBeNull();
     }
     // One watermark per box, decorative, and no other icon inside a box.
-    const marks = panel().querySelectorAll('.stat-col__mark');
+    const marks = panel().querySelectorAll('[data-stat-mark]');
     expect(marks.length).toBe(5);
     for (const mark of marks) expect(mark.getAttribute('aria-hidden')).toBe('true');
-    for (const c of panel().querySelectorAll('.stat-col')) {
+    for (const c of panel().querySelectorAll('[data-stat-col]')) {
       expect(c.querySelectorAll('svg').length).toBe(1);
     }
     // The two figures under the solved message keep theirs.
-    expect(panel().querySelectorAll('.stat-figure__icon').length).toBe(2);
+    expect(panel().querySelectorAll('[data-stat-figure-icon]').length).toBe(2);
   });
 
   it('drops the rule beside every heading (brief 73)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(panel().querySelector('.stat-block__rule')).toBeNull();
+    expect(panel().querySelector('[data-stat-rule]')).toBeNull();
   });
 
   it('draws no line between All-time entries (brief 81)', () => {
-    const sheet = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
-    const rule = /\.stat-line\s*\{[^}]*\}/.exec(sheet)![0];
-    expect(rule).not.toContain('border');
+    // Asserted on the markup, not the stylesheet. The All-time lines carry
+    // their own classes now, so this is where the rule lives — and reading the
+    // stylesheet with a non-null assertion would THROW rather than fail once
+    // the .stat-line rule is deleted.
+    const source = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+    const tag = /<[a-z]+ data-stat-line[^>]*>/.exec(source);
+    expect(tag, 'no element carries data-stat-line').not.toBeNull();
+    const classes = (/class="([^"]*)"/.exec(tag![0])?.[1] ?? '').split(/\s+/).filter(Boolean);
+    expect(classes.filter((c) => /^-?border/.test(c))).toEqual([]);
   });
 
   it('says the short word on screen and the full one in speech', async () => {
@@ -334,7 +340,7 @@ describe('the completion panel', () => {
     }
     // Label first in the DOM as well as on screen now (brief 67). The watermark
     // is a third child and comes last, so it never lands between the two.
-    for (const el of panel().querySelectorAll('.stat-col')) {
+    for (const el of panel().querySelectorAll('[data-stat-col]')) {
       expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD', 'svg']);
     }
   });
@@ -362,7 +368,7 @@ describe('the completion panel', () => {
 
   it('puts no explanatory line under the Records columns (brief 45)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(block('records')!.querySelector('.stat-note')).toBeNull();
+    expect(block('records')!.querySelector('[data-stat-note]')).toBeNull();
     expect(text()).not.toContain('Miss a day and the streak starts again.');
     expect(text()).not.toContain('Days in a row you have finished the puzzle.');
     expect(text()).not.toContain('Days in a row you got it on your first guess.');
@@ -383,7 +389,7 @@ describe('the completion panel', () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     // The old two-part row needed a note under it to say what the number meant.
     // "5 puzzles solved" says it in the line itself.
-    expect(panel().querySelector('.stat-note.stat-row')).toBeNull();
+    expect(panel().querySelector('[data-stat-note][data-stat-row]')).toBeNull();
     for (const gone of [
       'Daily puzzles you have finished.',
       'Puzzles you got on your first guess.',
@@ -539,7 +545,7 @@ describe('a forged history row cannot inject markup', () => {
     const mod = await import('../src/completion.ts');
     for (const bad of ['<img src=x onerror=alert(1)>', '2<script>x</script>', 0, -1, 2.5, NaN]) {
       expect(mod.todayFigures(bad as unknown as number, 30, true), String(bad))
-        .toBe('<p class="stat-hero">Solved!</p>');
+        .toBe('<p data-stat-hero class="text-3xl font-bold">Solved!</p>');
     }
   });
 
@@ -560,22 +566,30 @@ describe('a forged history row cannot inject markup', () => {
 // makes the whole class of miss impossible rather than fixing the one instance.
 describe('the panel colours itself once, at the top', () => {
   const css = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+  const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+  const completionSrc = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+
+  /** The panel container's own class list, read out of index.html. */
+  function panelClasses(): string[] {
+    const tag = /<div data-completion-panel[^>]*>/.exec(html);
+    expect(tag, 'no data-completion-panel div in index.html').not.toBeNull();
+    return (/class="([^"]*)"/.exec(tag![0])?.[1] ?? '').split(/\s+/).filter(Boolean);
+  }
 
   it('sets a text colour on the panel container', () => {
-    expect(css).toMatch(/\[data-completion-panel\]\s*\{[^}]*color:\s*var\(--color-text\)/);
+    // The guard moved from the stylesheet to the markup when the panel became
+    // utilities only. It guards the same thing: one colour, on the container,
+    // inherited by everything inside.
+    expect(panelClasses()).toContain('text-text');
   });
 
   it('reads in the body font, with no Inconsolata left on the panel', () => {
-    // Deleted rather than overridden, so the rules inherit Quicksand from
-    // html/body. Swept across the whole panel section rather than listing the
-    // seven rules, so a rule added later is covered too. The play screen keeps
-    // Inconsolata — its keypad needs every key the same width (brief 21).
-    // The slice runs to .digit-box, which is the first rule AFTER the panel —
-    // ending it at .goes-row__fill would leave .goes-row__count unswept.
-    const start = css.indexOf('[data-completion-panel] {');
-    const panel = css.slice(start, css.indexOf('.digit-box {'));
-    expect(panel).toContain('.goes-row__count');
-    expect(panel).not.toContain('Inconsolata');
+    // The panel declares no font family anywhere, so it inherits Quicksand from
+    // html/body. The play screen keeps Inconsolata — its keypad needs every key
+    // the same width (brief 21). Asserted on the markup because that is where
+    // the panel's styling lives now; the stylesheet side is Task 4's guard.
+    expect(completionSrc).not.toContain('Inconsolata');
+    expect(completionSrc).not.toContain('font-mono');
   });
 
   it('leaves no box around the records, in either file (brief 13, 42)', () => {
@@ -595,7 +609,70 @@ describe('the panel colours itself once, at the top', () => {
 
   it('uses the theme token, never a literal colour', () => {
     // A hex here would be one mode's colour hardcoded into both.
-    const block = css.match(/\[data-completion-panel\]\s*\{[^}]*\}/)![0];
-    expect(block).not.toMatch(/#[0-9a-f]{3,8}/i);
+    for (const c of panelClasses()) expect(c).not.toMatch(/#[0-9a-f]{3,8}/i);
+  });
+});
+
+// The conversion's other half: the hand-written rules really are gone, and the
+// utilities that replaced them really do reach the shipped stylesheet. Nothing
+// else in the suite can see either failure — jsdom renders with no stylesheet at
+// all, and the edit-mode dev build pulls in every utility through `@source`, so
+// a panel that shipped grey would pass every other test in this file.
+describe('the panel is utilities only, and the utilities are real', () => {
+  const css = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
+  const completionSrc = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
+
+  // The 22 component classes the panel used to be built from. `stat-block` and
+  // `stat-note` are deliberately absent from this list: they never had a rule,
+  // so asserting their absence would pass trivially and mean nothing.
+  const GONE = [
+    'goes-chart', 'goes-row', 'goes-row__count', 'goes-row__fill', 'goes-row__track',
+    'stat-block__head', 'stat-block__icon', 'stat-col', 'stat-col__label',
+    'stat-col__mark', 'stat-cols', 'stat-cols--two', 'stat-col__value', 'stat-figure',
+    'stat-figure__icon', 'stat-figure__value', 'stat-hero', 'stat-line',
+    'stat-line__label', 'stat-lines', 'stat-line__value', 'stat-today',
+  ];
+
+  it.each(GONE)('has no %s rule left in the stylesheet', (name) => {
+    // Word boundaries, not a bare substring: `-` is a non-word character and `s`
+    // and `_` are word characters, so `\bstat-col\b` correctly misses both
+    // `stat-cols` and `stat-col__label` instead of giving them a false pass.
+    expect(css).not.toMatch(new RegExp(`\\b${name}\\b`));
+  });
+
+  it('has no --section-accent indirection and no per-block accent rule', () => {
+    // Each element names its own accent class now, so neither the variable nor
+    // the three rules that set it have anything left to do.
+    expect(css).not.toContain('--section-accent');
+    expect(css).not.toMatch(/\[data-stat-block=/);
+  });
+
+  it('keeps border-hairline, which is a utility rather than a component class', () => {
+    // Not a violation of the test above and must never be caught by it. Tailwind
+    // compiles an @utility into the utilities layer, getClassList() returns it,
+    // and edit mode can add and remove it like any other class — which is the
+    // whole difference from the 22 names, and the reason it exists at all.
+    expect(css).toMatch(/@utility\s+border-hairline\s*\{/);
+  });
+
+  // Tailwind v4 finds classes by scanning source text, so `class="text-${a}"`
+  // compiles to no rule whatsoever. These six names reached the panel through
+  // --section-accent until this conversion, which means they were absent from
+  // the production stylesheet entirely — this test fails before the conversion
+  // and passes after, which is the proof it is asking the right question.
+  it.each(['text-accent-2', 'text-accent-3', 'text-accent-4', 'border-accent-2', 'border-accent-3', 'bg-accent-4'])(
+    'writes %s as a whole literal, so the scanner can see it',
+    (name) => {
+      expect(completionSrc).toMatch(new RegExp(`\\b${name}\\b`));
+    },
+  );
+
+  it('assembles no accent class name at runtime', () => {
+    // The failure this guards is silent: an interpolated stem ships a panel with
+    // no accent colours at all and the four-colour rotation gone.
+    // Comments are stripped first — the file explains this trap in prose, and
+    // the prose has to be allowed to name the thing it is warning about.
+    const code = completionSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toMatch(/\b(text|bg|border)-[\w-]*\$\{/);
   });
 });

@@ -20,6 +20,7 @@ Desktop.ini
 
 # Build output
 dist/
+dist-preprod/
 node_modules/
 
 # Logs
@@ -54,3 +55,10 @@ NEW_IMAGES/
 # the ledger records only 0001, 0003 and 0004, so every imported row would double.
 migrations/0002_import_legacy_feedback.sql
 migrations/**/0002_import_legacy_feedback.sql
+
+# Edit mode (dev-server only — see docs/work/2026-08-19-edit-mode-roundtrip-plan.md).
+# BOTH of these MUST stay ignored. Tailwind v4 scans everything git does not
+# ignore, so an un-ignored generated class list puts every class in the project
+# into the PRODUCTION stylesheet — measured at 51,218 -> 1,412,751 bytes.
+.edit-mode/
+.edit-sessions/
