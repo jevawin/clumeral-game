@@ -164,25 +164,21 @@ describe('totals and averages', () => {
     ]).avgTimeSeconds).toBe(150);
   });
 
-  it('leaves a game over thirty minutes out of the average and out of fastest (brief 31)', () => {
+  it('counts a game over thirty minutes in the average (redesign brief 22)', () => {
+    // The thirty-minute exclusion is gone: a long game is a real game, and the
+    // average is the average of what you actually did. This is the test that
+    // discriminates — a best-time test cannot, because a slow game can never
+    // lower a minimum.
     const s = stats([
-      { date: day(0), tries: 1, seconds: 1801 },
-      { date: day(1), tries: 1, seconds: 200 },
+      { date: day(0), tries: 1, seconds: 2000 },
+      { date: day(1), tries: 1, seconds: 60 },
     ]);
-    expect(s.avgTimeSeconds).toBe(200);
-    expect(s.fastestFirstGoSeconds).toBe(200);
-    expect(s.plays).toBe(2); // the row still counts, only its time is excluded
+    expect(s.avgTimeSeconds).toBe(1030);
+    expect(s.plays).toBe(2);
   });
 
   it('reports no average time as null, never 0', () => {
     expect(stats([{ date: day(0), tries: 2 }]).avgTimeSeconds).toBeNull();
-  });
-
-  it('only considers first-go rows for the fastest win (brief 13)', () => {
-    expect(stats([
-      { date: day(0), tries: 3, seconds: 30 },
-      { date: day(1), tries: 1, seconds: 90 },
-    ]).fastestFirstGoSeconds).toBe(90);
   });
 
   it('reports empty history as zeros and nulls', () => {
@@ -192,7 +188,42 @@ describe('totals and averages', () => {
     expect(s.avgGoes).toBeNull();
     expect(s.firstGoPercent).toBeNull();
     expect(s.avgTimeSeconds).toBeNull();
-    expect(s.fastestFirstGoSeconds).toBeNull();
+    expect(s.bestTimeSeconds).toBeNull();
+  });
+});
+
+describe('best time (redesign brief 14)', () => {
+  it('is the fastest solve of any number of goes, not first-go only', () => {
+    expect(stats([
+      { date: day(0), tries: 3, seconds: 90 },
+      { date: day(1), tries: 1, seconds: 120 },
+    ]).bestTimeSeconds).toBe(90);
+  });
+
+  it('applies no upper exclusion — a long game is still a real best', () => {
+    expect(stats([{ date: day(0), tries: 2, seconds: 2400 }]).bestTimeSeconds).toBe(2400);
+  });
+
+  it('is null when no countable row carries a valid time', () => {
+    expect(stats([
+      { date: day(0), tries: 2 },
+      { date: day(1), tries: 2, seconds: -5 },
+    ]).bestTimeSeconds).toBeNull();
+  });
+
+  it('ignores archived rows and markers', () => {
+    expect(stats([
+      { date: day(0), tries: 2, seconds: 300 },
+      { date: day(1), tries: 1, archived: true, seconds: 10 },
+      { date: day(2), tries: 0, marker: true, seconds: 20 },
+    ]).bestTimeSeconds).toBe(300);
+  });
+});
+
+describe('the thirty-minute rule is gone, not merely unused (redesign brief 58)', () => {
+  it('exports no OUTLIER_SECONDS', async () => {
+    const playerStats = await import('../src/player-stats.ts');
+    expect('OUTLIER_SECONDS' in playerStats).toBe(false);
   });
 });
 

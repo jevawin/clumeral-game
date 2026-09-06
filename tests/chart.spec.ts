@@ -98,7 +98,8 @@ describe('xLabelStep', () => {
     expect(xLabelStep(d)).toBe(step);
   });
 
-  // Six labels is what 327px fits. If this ever rises, labels overlap on a phone.
+  // Six labels is what the narrowest container fits (343px since /stats joined
+  // the page column). If this ever rises, labels overlap on a phone.
   it('never asks for more than six labels', () => {
     for (const d of [1, 7, 12, 30, 60, 90, 200, 365, 1000]) {
       expect(Math.ceil(d / xLabelStep(d))).toBeLessThanOrEqual(6);

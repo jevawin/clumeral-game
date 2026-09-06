@@ -117,9 +117,9 @@ export function createPlayTimer(opts: {
     },
     seconds(): number {
       const whole = Math.floor(Math.max(0, elapsedMs) / 1000);
-      // Capped on read so what reaches storage is always storable. NOT capped at
-      // OUTLIER_SECONDS: a genuinely long game keeps its real time and is left
-      // out of the averages later (brief 31, 134).
+      // Capped on read so what reaches storage is always storable. That cap is
+      // the only one: a genuinely long game keeps its real time and counts
+      // towards every figure like any other (redesign brief 22).
       return Math.min(whole, MAX_STORED_SECONDS);
     },
     idles(): number {
