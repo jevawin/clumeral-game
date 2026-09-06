@@ -41,7 +41,7 @@ export const SHUTDOWN_ROUTE = '/__edit-mode/shutdown';
  *
  * WHAT THIS STILL DOES NOT STOP: curl, from a machine on the tailnet, which can
  * set every one of these headers to whatever it likes. Accepted knowingly — it
- * is a personal tailnet, the damage is a stopped dev server, and /dev starts
+ * is a personal tailnet, the damage is a stopped dev server, and /devstart starts
  * another.
  */
 function sameOrigin(req: Connect.IncomingMessage): boolean {

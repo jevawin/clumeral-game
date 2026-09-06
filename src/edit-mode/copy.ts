@@ -99,7 +99,7 @@ export const COPY = {
    * served from has gone — so it carries both next steps rather than one.
    */
   stopped:
-    'Saved and the server has stopped. Ask the bot in Telegram to fold this into a pull request, or tap /dev to start again.',
+    'Saved and the server has stopped. Ask the bot in Telegram to fold this into a pull request, or tap /devstart to start again.',
 
   /**
    * Brief item 28. The work is safe and only the stop failed, so this must not
@@ -118,7 +118,7 @@ export const COPY = {
    * The wording is the one `stoppedNothingSaved` carried before item 122, which
    * Jamie had already approved: no new copy is being invented here.
    */
-  stoppedNothing: 'The server has stopped. Tap /dev to start another.',
+  stoppedNothing: 'The server has stopped. Tap /devstart to start another.',
 
   /**
    * The same moment as `stopped`, but nothing was pending, so nothing was
@@ -131,7 +131,7 @@ export const COPY = {
    * earlier and nothing else will ever mention it. Wording settled by Jamie,
    * 2026-09-03.
    */
-  stoppedNothingSaved: 'The server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /dev to start another.',
+  stoppedNothingSaved: 'The server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /devstart to start another.',
 
   /**
    * Discard's closing line, when nothing had been banked (brief item 144).
@@ -141,7 +141,7 @@ export const COPY = {
    * four-second revert and item 144 withdrew it, because a terminal message
    * that vanishes leaves a dead page saying nothing at all.
    */
-  discarded: 'Changes discarded and the server has stopped. Tap /dev in Telegram to start again.',
+  discarded: 'Changes discarded and the server has stopped. Tap /devstart in Telegram to start again.',
 
   /**
    * The same, when earlier saves DID bank sessions (brief items 123, 144).
@@ -150,7 +150,7 @@ export const COPY = {
    * already written to the Pi, and saying "discarded" alone would leave Jamie
    * believing those were gone too.
    */
-  discardedWithSaved: 'Changes discarded and the server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /dev to start again.',
+  discardedWithSaved: 'Changes discarded and the server has stopped. Sessions you saved earlier are still there — ask the bot in Telegram to fold them, or tap /devstart to start again.',
 
   /**
    * Discard, when the shutdown itself failed (brief item 140).

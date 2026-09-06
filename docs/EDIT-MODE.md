@@ -15,8 +15,8 @@ than a config flag.
 
 ## Running it
 
-**Jamie starts and stops it, from Telegram.** `/dev` starts one on the current
-branch and replies with its Tailscale URL; `/devstop` stops it. `/dev` is
+**Jamie starts and stops it, from Telegram.** `/devstart` starts one on the current
+branch and replies with its Tailscale URL; `/devstop` stops it. `/devstart` is
 idempotent — a second one hands back the same server and resets its two-hour
 clock, with a warning ten minutes before that runs out.
 
@@ -24,7 +24,7 @@ clock, with a warning ten minutes before that runs out.
 cgroup and ate its whole memory budget: 179,689,160 throttle events against the
 pi bot's 663,152, and a live `vite dev` plus `workerd` measures 657 MB on a 4 GB
 box. `npm run dev` is still in `package.json` — the Pi runs it for Jamie behind
-`/dev`. He is simply not the one typing it any more, and the bot never does.
+`/devstart`. He is simply not the one typing it any more, and the bot never does.
 
 The dev server binds on all interfaces so the Pi is reachable from a phone. One
 port, 5173.
@@ -32,9 +32,9 @@ port, 5173.
 **If the server exits on its own** — not `/devstop`, not the two-hour limit — the
 daemon notices within 30 seconds and sends one message: "⚠️ The dev server on
 branch `<name>` exited on its own — I didn't stop it and neither did the 2-hour
-limit. /dev to start another." It deletes the registry record, releases the
+limit. /devstart to start another." It deletes the registry record, releases the
 reaper exemption and reaps the zombie, and it fires exactly once. So there is no
-stale registration after a `Save` or a `Discard`, and the next `/dev` never hands
+stale registration after a `Save` or a `Discard`, and the next `/devstart` never hands
 back a URL for a dead process. Worth knowing if you ever touch that code: the liveness
 check has to **exclude zombies**. `kill -0`, `killpg(pgid, 0)` and a bare `/proc`
 pgid comparison all report a dead server as alive.
@@ -166,7 +166,7 @@ plus the built-artefact assertions, and he is the tester.
    shipped game rather than in the tool.
 
 3. **Save really stops it — and so does Discard.**
-   `/dev`, change something, tap the pencil to save and leave, then Save twice.
+   `/devstart`, change something, tap the pencil to save and leave, then Save twice.
    Then repeat the whole thing with Discard, which is the other way out.
    Confirm **no `vite` and no `workerd` process is left** —
    `pgrep -f workerd` finds nothing — and that exactly one session file was

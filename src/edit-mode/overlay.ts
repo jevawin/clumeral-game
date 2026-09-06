@@ -350,7 +350,7 @@ async function start(): Promise<void> {
   function persist(): void {
     // Once the server has stopped there is nothing left to come back to, and
     // writing here would undo store.clear() on the next setMode or select —
-    // handing the next /dev a session that has already been saved.
+    // handing the next /devstart a session that has already been saved.
     if (stopped) return;
     store.save({
       entries: [...history.entries], mode, selected: selectedPath,
