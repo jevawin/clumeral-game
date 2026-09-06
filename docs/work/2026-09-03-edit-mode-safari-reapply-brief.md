@@ -1152,3 +1152,35 @@ should not have to reassemble it from three places.
         stopped, closing line stays up.
      5. Edits, leave Safari five minutes, come back — the page returns already
         edited, with no un-edited flash.
+
+---
+
+## 13. Item 114, answered — and the ask it hands to the pi bot
+
+**`reload`. Jamie, 2026-09-05.** He also reported the counter goes up after only
+"a couple of seconds" in the background, having earlier said it took minutes — so
+it happens easily and often.
+
+**That settles the cause.** `navigation.type === 'reload'` means something called
+`location.reload()`, and on this page the only candidate is **vite's own
+hot-reload client**: backgrounding a Safari tab drops its websocket, and vite's
+default on reconnect is a full page reload. It is the pi bot's first starting
+fact, confirmed. Safari discarding the tab would have said `navigate`.
+
+**Nothing in the fix changes.** The reload is real, the page is rebuilt, and the
+edits have to go back on — which is what task 2 does, on first paint instead of
+two fetches later. Item 129 said this did not block for exactly this reason and
+that held.
+
+**The counter is deleted** (items 105, 156). Task 9 done.
+
+### The ask (items 8, 130, 150) — for the pi bot, not for this branch
+
+A `server.hmr` setting in `vite.config.ts` would stop the reload happening at all,
+which is a better fix ON TOP of this one: no reload means no rebuild, no
+re-projection, and nothing to restore. **`vite.config.ts` belongs to the pi bot
+and this bot does not edit it.** Handing it over rather than doing it.
+
+Worth saying plainly to whoever picks it up: this is a comfort fix, not a
+correctness one. The restore has to work regardless — the game re-renders on
+`visibilitychange` and `focus` on its own, with or without a reload.
