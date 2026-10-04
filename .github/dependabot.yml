@@ -1,0 +1,32 @@
+# Dependabot (added 2026-10-04). Weekly update PRs against main, tested by the
+# normal CI (ci-smoke + ci-matrix) before anyone merges them. Nothing auto-merges.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    groups:
+      # Workers runtime pieces must move together (wrangler, vite plugin,
+      # vitest pool, workers-types) or local dev and tests drift apart.
+      cloudflare:
+        patterns: ["wrangler", "@cloudflare/*"]
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Playwright is deliberately pinned (~1.60): a minor bump needs the
+      # matching Chromium re-installed on the Pi for the dev bot's e2e runs.
+      # Bump it by hand, together with `npx playwright install chromium`.
+      - dependency-name: "@playwright/test"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
