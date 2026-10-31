@@ -124,8 +124,8 @@ describe('trimRedundantClues', () => {
 
 describe('generatePuzzleFromRng across seeds', () => {
   // One pass over 300 seeds, generating each puzzle once, asserting all three
-  // properties. Measured at about 2.4 seconds here; vitest.config.ts sets no
-  // testTimeout, so the 5-second default is too close for a slower machine.
+  // properties. Measured at about 2.4 seconds here; vitest.jsdom.config.ts sets
+  // no testTimeout, so the 5-second default is too close for a slower machine.
   it('produces puzzles that are in range, unique, and carry no spare clue', { timeout: 30_000 }, () => {
     for (let seed = 1; seed <= 300; seed++) {
       const { answer, clues } = generatePuzzleFromRng(makeRng(seed));
