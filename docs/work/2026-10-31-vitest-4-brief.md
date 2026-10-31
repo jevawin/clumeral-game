@@ -297,7 +297,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — No runtime or worker code changes, so there is nothing new to instrument and no existing event is affected.
 
 ## 11. Done / test plan
-Settled: pending · Ack: pending
+Settled: Jamie 2026-10-31 (items 39, 41 → recs accepted; rest assumptions) · Ack: pending — Dave, §11
 
 ### The baseline, measured today before anything moved
 
@@ -339,6 +339,7 @@ Run on this branch under `vitest@2.1.9` + pool `0.12.21`, 2026-10-31:
     What I would do instead: rely on `41 / 826` plus the guard, and note in the PR that e2e
     was deliberately not run, with this reason, so the next reader does not think it was
     forgotten.
+    **Settled 2026-10-31: recommendation accepted — no Playwright gate, skip noted in the PR.**
 40. **CI green means the `npm test` step in `ci-smoke.yml`.** The e2e steps in that workflow
     will stay red until #330's `ubuntu-24.04` runner pin reaches `main` — unrelated to this
     change, and not something this PR fixes or should wait for. Stated here so a red checkmark
@@ -353,8 +354,47 @@ Run on this branch under `vitest@2.1.9` + pool `0.12.21`, 2026-10-31:
     is *honoured* — I measured that — but not that `2` is still the right number on that box.
     Nothing else in this PR has a failure cost anywhere near it, so it is the one thing worth
     blocking on.
+    **Settled 2026-10-31: recommendation accepted — Jamie confirms on the Pi, and it blocks
+    PR A's merge.**
 42. **`da-build` runs on the diff before PR A is opened,** after human review, per `CLAUDE.md`.
     (assumed)
 43. **Rollback is a clean revert.** Two commits, no migration, no runtime change, no stored
     state — reverting them restores vitest 2 exactly. Nothing needs undoing anywhere else.
     (assumed)
+
+
+---
+
+## Outstanding acks
+
+The brief is **not closeable** until these land. Silence is not consent.
+
+- **Dave — §3, §6, §11.** Non-blocking on the work continuing; blocking on closing the brief.
+  What he is being asked to ack: the suite becomes three config files instead of two-plus-a-
+  workspace (§3 item 21), `npm test` gains a guard step that fails the run if either project
+  goes missing (§3 item 23), the Pi cap now covers the workers project too (§3 item 25), and
+  no Playwright run gates this change (§11 item 39). Nothing here touches maths, so he has no
+  blocking sign-off on this brief — this is the joint-section ack only.
+- **Jamie — the brief as a whole,** as dev lead, once Dave has acked or has been overridden.
+
+## Carried forward to the plan
+
+Not decisions, just the things the plan must not lose:
+
+- The test-file surface, counted today: `useFakeTimers` 20 uses / 8 files, `vi.spyOn` 9 uses /
+  3 files, `mock.invocationCallOrder` 3 uses / 1 file, `vi.restoreAllMocks` 1 use. No
+  snapshots, no `mockReset`, no `toThrowError`, no `mock.results`, no `onTestFinished`, no
+  `onTestFailed` anywhere in `tests/`.
+- `tests/completion-stats.spec.ts` is the single file where fake timers and `performance.now()`
+  code meet (§3 item 26).
+- The comments in `vitest.workers.config.ts` that must survive the rewrite, because each one
+  records a failure someone already hit: why the binding is declared here rather than read from
+  `wrangler.jsonc`; why `readD1Migrations` points at `migrations/analytics` and not `migrations`
+  (it does not recurse); why the feedback migrations must stay out (0003 and 0004 are
+  `ALTER TABLE ADD COLUMN` against columns 0001 already creates, so a fresh DB fails on
+  duplicate column); and what `isolatedStorage` buys.
+- The `cloudflareTest` target shape, from the codemod's own source: `test.poolOptions.workers`
+  contents become its argument, it goes in `plugins`, `test.poolOptions` is deleted. It takes
+  an async callback, so `readD1Migrations` moves inside it.
+- PR B's wording, and the fact that it cannot be written until #330 has merged **and** the
+  upgrade has reached `main`.
