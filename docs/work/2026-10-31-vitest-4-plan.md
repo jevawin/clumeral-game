@@ -213,7 +213,7 @@ moves inside it.
 //
 // The jsdom project (vitest.jsdom.config.ts) cannot do this: there is no D1 in jsdom, so
 // "the insert produced a row with these exact columns" had nowhere to live. This project runs
-// tests inside workerd via @cloudflare/vitest-pool-workers, with both analytics migrations
+// tests inside workerd via @cloudflare/vitest-pool-workers, with the analytics migrations
 // applied to an isolated database per test.
 //
 // The binding is declared here rather than read from wrangler.jsonc via
