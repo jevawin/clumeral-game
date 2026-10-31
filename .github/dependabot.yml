@@ -11,8 +11,19 @@ updates:
       timezone: Europe/London
     open-pull-requests-limit: 5
     groups:
-      # Workers runtime pieces must move together (wrangler, vite plugin,
+      # Workers runtime pieces ought to move together (wrangler, vite plugin,
       # vitest pool, workers-types) or local dev and tests drift apart.
+      #
+      # This group is not reliably achieving that. From Dependabot's first run,
+      # 2026-10-05: #321 took wrangler on its own "in the cloudflare group",
+      # while #322 put @cloudflare/vite-plugin and the vitest pool into
+      # minor-and-patch. Both match this group's @cloudflare/* pattern and this
+      # group is listed first, so by the documented rule — "included in the
+      # first group that it matches" — they should have landed here.
+      #
+      # A group could not have fixed the vitest problem below in any case: it
+      # changes which PR a bump arrives in, it never stops the bump being
+      # proposed. That is why the pin uses `ignore` and not a fourth group.
       cloudflare:
         patterns: ["wrangler", "@cloudflare/*"]
       minor-and-patch:
@@ -22,6 +33,50 @@ updates:
       # matching Chromium re-installed on the Pi for the dev bot's e2e runs.
       # Bump it by hand, together with `npx playwright install chromium`.
       - dependency-name: "@playwright/test"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # vitest and @cloudflare/vitest-pool-workers are peer-locked, so they are
+      # bumped by hand, together — same deal as Playwright above.
+      #
+      # The pool's peer range on vitest is "2.0.x - 3.2.x" at 0.12.x, then
+      # "^4.1.0" from 0.13.0 on, with no release in between. So vitest 4 is only
+      # reachable by moving both packages in one commit, and Dependabot moving
+      # either one alone fails `npm ci` with ERESOLVE — every CI job then dies
+      # before one test runs. That is what killed #326, #328 and #329.
+      #
+      # vitest 5 is not reachable at all: 0.23.0, the newest pool release as of
+      # 2026-10-31, still declares peer vitest "^4.1.0".
+      #
+      # vitest 3 *is* compatible with the pool pinned here — 3.2.7 sits inside
+      # "2.0.x - 3.2.x" and installs cleanly today. It is ignored because a major
+      # test-framework bump needs a human, not because it cannot install. If
+      # vitest 4 proves a big job, 3.2.7 is a legitimate stop on the way.
+      #
+      # Lifting these three entries is part of the vitest 4 task, not a bump on
+      # its own — see "Outstanding actions" in CLAUDE.md for what that task owes.
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      # `dependency-name` does take a `*` wildcard, but GitHub documents no
+      # scoped-npm example, so this entry is unproven. It is load-bearing: #329
+      # was filed against @vitest/mocker, which is not in package.json at all —
+      # Dependabot tracks it transitively. The vitest entry above may cover that
+      # case by itself, since the resolution forces the two together, but that is
+      # not documented either. Confirm both on the next scheduled run.
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
+      # 0.12.21 -> 0.13.0 is a *minor* in Dependabot's reading of a 0.x version
+      # — proven, not assumed: #326 put a 0.12 -> 0.22 jump inside the
+      # minor-and-patch group, which only accepts minor and patch. And 0.13.0 is
+      # exactly where the vitest 4 peer begins. So minor has to be ignored here,
+      # not only major.
+      #
+      # Be clear what that costs. 0.12.21 is the LAST 0.12.x release, so patch is
+      # allowed in principle but none will ever come: this is a permanent pin,
+      # security patches included. The pool hard-depends on wrangler 4.72.0 and
+      # miniflare 4.20260310.0 while root wrangler and @cloudflare/vite-plugin
+      # keep bumping, so tests/worker/** runs against an ever-older workerd than
+      # dev, build and deploy do. Taken deliberately: an ageing test runtime
+      # beats a permanently red CI. It ends when the vitest 4 task lands.
+      - dependency-name: "@cloudflare/vitest-pool-workers"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
