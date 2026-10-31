@@ -643,3 +643,56 @@ that run it.
 
 The lesson worth carrying: "CI green" was defined in known limit 4 as "the `npm test` step".
 That was too narrow. A PR cannot merge on a required check being red for someone else's reason.
+
+
+## The Pi check — brief item 41 satisfied, 2026-10-31
+
+**Reported by Jamie via the #330 session, not measured here.** Run on the Pi from
+`dev/vitest-4` at `2d13fec`; no files changed, nothing committed.
+
+| | |
+|---|---|
+| Test files | **41** — 40 passed, 1 skipped |
+| Guard | `both projects ran their full file count (jsdom: 37, workers: 4)` |
+| Tests | **821 passed, 1 skipped (822)** |
+| Host memory | rose **285 MB** over the run (2213 → 2498 MB peak); available never below 1551 MB |
+| Duration | 23s |
+| OOM | **none** — no `oom`/killed lines in dmesg, cgroup `oom_kill` is 0, no throttling |
+
+The skip is `sw-precache.spec.ts`, exactly as item 50 predicted: no built `dist/client/sw.js`
+on that box, so the Pi reads 822 and not 826, with the file count still 41. The output tail was
+read rather than the exit code trusted — the habit the `e2e-exit-code-masks-failure` memory
+exists for.
+
+**The verdict against the ceiling item 41 cites:** 285 MB for the whole run is roughly one
+jsdom worker's footprint, not the three that produced 33.6 million reclaim events on
+2026-08-22. So root placement of `maxWorkers` (item 52) *plus* the new `reset()` D1 I/O (Task 5)
+did not push it near the 1000 MB cgroup. The "watch peak RSS, not wall-clock, and expect no
+improvement" framing was the right thing to ask for, and the answer is that neither change
+costs what it might have.
+
+### Two caveats, recorded rather than smoothed over
+
+Both raised by the session that ran it, and both weaken the measurement without changing the
+verdict:
+
+1. **Sampling was 2s across a 23s run — twelve samples.** A spike between samples would not
+   appear in `free`. So 285 MB is an observed peak at that granularity, not a guaranteed
+   maximum.
+2. **It ran in a 1200 MB cgroup, not the dev bot's 1000 MB** — 200 MB wider headroom than
+   production conditions. The cgroup's `memory.peak` read 1177/1200 MB, but that figure covers
+   the `claude` process and a preceding `npm ci` as well as the tests, so it is not a measure of
+   the test run; the 285 MB delta is.
+
+Given no kills and a wide margin, item 41 is satisfied. **The airtight version, if anyone wants
+it later, is one `npm test` as the actual dev bot with no `npm ci` in the same turn** — recorded
+as available, not as owed.
+
+### One incidental finding from that run
+
+`npm ci` on the Pi warned that install scripts for `esbuild`, `sharp` and `workerd` need
+approving, so those postinstalls are **not** running on that box. It did not block, and the
+workers tests passed — consistent with workerd's platform binary arriving via its prebuilt
+optional dependency (`@cloudflare/workerd-linux-arm64`) rather than via a postinstall step. Not
+chased further, and not this PR's to fix; noted because a future Workers-pool bump that *does*
+depend on a postinstall would fail there and nowhere else.
