@@ -91,7 +91,7 @@ Settled: Jamie 2026-10-31 (items 13, 14 → recs accepted; 7–12, 15 assumption
     fixes the e2e jobs is already on #330's queue to `main`. (assumed)
 
 ## 3. How it works
-Settled: Jamie 2026-10-31 (items 21, 23, 25 → recs accepted; rest assumptions) · Ack: pending — Dave, §3
+Settled: Jamie 2026-10-31 (items 21, 23, 25 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31
 
 ### Verified firsthand, not taken on trust
 
@@ -237,7 +237,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — Nothing is stored. No localStorage, no sessionStorage, no URL state, no server state. The only persisted artefact is `package-lock.json`.
 
 ## 6. How it fits
-Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · Ack: pending — Dave, §6
+Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31
 
 27. **Commit 1 touches** `package.json`, `package-lock.json`, and whichever of the eight
     `useFakeTimers` files / three `vi.spyOn` files / one `invocationCallOrder` file actually
@@ -364,7 +364,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — No runtime or worker code changes, so there is nothing new to instrument and no existing event is affected.
 
 ## 11. Done / test plan
-Settled: Jamie 2026-10-31 (items 39, 41 → recs accepted; rest assumptions) · Ack: pending — Dave, §11
+Settled: Jamie 2026-10-31 (items 39, 41 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31
 
 ### The baseline, measured today before anything moved
 
@@ -432,17 +432,19 @@ Run on this branch under `vitest@2.1.9` + pool `0.12.21`, 2026-10-31:
 
 ---
 
-## Outstanding acks
+## Acks
 
-The brief is **not closeable** until these land. Silence is not consent.
-
-- **Dave — §3, §6, §11.** Non-blocking on the work continuing; blocking on closing the brief.
-  What he is being asked to ack: the suite becomes three config files instead of two-plus-a-
-  workspace (§3 item 21), `npm test` gains a guard step that fails the run if either project
-  goes missing (§3 item 23), the Pi cap now covers the workers project too (§3 item 25), and
-  no Playwright run gates this change (§11 item 39). Nothing here touches maths, so he has no
-  blocking sign-off on this brief — this is the joint-section ack only.
-- **Jamie — the brief as a whole,** as dev lead, once Dave has acked or has been overridden.
+- **Dave — §3, §6, §11: not acked. `Override: Jamie 2026-10-31`.**
+  Recorded as an override, not as an ack, because Dave did not see these sections. What he was
+  going to be asked to ack, left here so it is answerable later rather than lost: the suite
+  becomes three config files instead of two-plus-a-workspace (§3 item 21), `npm test` gains a
+  guard step that fails the run if either project goes missing (§3 item 23), the Pi cap now
+  covers the workers project too (§3 item 25), and no Playwright run gates this change (§11
+  item 39). Nothing in this brief touches maths, so Dave had no *blocking* sign-off on it —
+  the override covers joint-section ack only, and could not have covered a maths section.
+  If any of the four above surprises him when he next runs the suite, §3 and §11 reopen and
+  take fresh numbers.
+- **Jamie — the brief as a whole:** signed 2026-10-31, as dev lead.
 
 ## Carried forward to the plan
 
