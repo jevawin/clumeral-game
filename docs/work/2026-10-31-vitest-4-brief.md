@@ -333,8 +333,11 @@ These items **confirm** the settled decisions rather than change them, so they d
     installed, before or after this work. It needs rewording to exclude the pool's nested copy,
     or it will read as a regression this PR caused. Passed back to that session. (assumed)
 47. **The PR description states the resolved `wrangler`/`miniflare` versions,** root and
-    nested, since #331 is sequenced behind this branch and needs this end state as its
-    baseline. (assumed — asked for by the #330 session)
+    nested — **the table in item 44 above, verbatim.** #331 is sequenced behind this branch by
+    Jamie's decision and cites this PR as its baseline, so the table is an obligation, not a
+    courtesy. Copy it from item 44 rather than re-deriving it; it was resolved from a scratch
+    copy of the manifest and the context in which it was measured will not survive to Build.
+    (assumed — asked for by the #330 session, and #331 now has a "Baseline" section citing it)
 
 33. **No GitHub issue is filed.** The branch is `dev/vitest-4`, the "work without a GitHub
     issue" form in `docs/GIT-WORKFLOW.md`'s branch table, and the brief and plan files are the
