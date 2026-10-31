@@ -3,7 +3,7 @@
 **Date:** 2026-10-31
 **Branch:** `dev/vitest-4` (off `staging`)
 **Brief:** [2026-10-31-vitest-4-brief.md](2026-10-31-vitest-4-brief.md) — closed.
-**Approval:** pending Jamie.
+**Approval:** Jamie, 2026-10-31. Build started on revision 2.
 **Revision 2, 2026-10-31** — rewritten after `da-plan`. See the revision log at the end for
 what changed and why; revision 1's task sequence was not executable as written.
 
