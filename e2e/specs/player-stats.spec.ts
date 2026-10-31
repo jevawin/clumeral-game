@@ -68,9 +68,13 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.streak.locator(".stat-col")).toHaveCount(3);
     await expect(completion.records.locator(".stat-col")).toHaveCount(2);
     await expect(completion.average).toHaveCount(0);
-    // Icons on the two headings and on nothing else (brief 68).
-    await expect(completion.streak.locator(".stat-col svg")).toHaveCount(0);
-    await expect(completion.records.locator(".stat-col svg")).toHaveCount(0);
+    // One clipped watermark per column, from completion.ts's stat-col__mark. Brief 68 put
+    // icons on the two headings and nowhere else, and this asserted 0 to match; the design
+    // round two days later (dce25fa, "boxed figures with clipped watermarks") moved them onto
+    // every column and this was never updated. The marks are aria-hidden, so the headings'
+    // icons remain the only ones that reach the accessibility tree.
+    await expect(completion.streak.locator(".stat-col svg")).toHaveCount(3);
+    await expect(completion.records.locator(".stat-col svg")).toHaveCount(2);
 
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is
@@ -89,7 +93,7 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.allTimeLines).toHaveCount(4);
     await expect(completion.allTimeLines.nth(0)).toHaveText("5 Puzzles solved");
     await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) Solved in one");
-    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\d+m \d\ds Average time$/);
+    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\s*\d+m \d\ds\s+Average time\s*$/);
     // (1 + 3 + 2 + 4 + 1) / 5
     await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 Average attempts");
 
