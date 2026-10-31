@@ -91,7 +91,7 @@ Settled: Jamie 2026-10-31 (items 13, 14 → recs accepted; 7–12, 15 assumption
     fixes the e2e jobs is already on #330's queue to `main`. (assumed)
 
 ## 3. How it works
-Settled: Jamie 2026-10-31 (items 21, 23, 25 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31
+Settled: Jamie 2026-10-31 (items 21, 23, 25 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
 
 ### Verified firsthand, not taken on trust
 
@@ -237,7 +237,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — Nothing is stored. No localStorage, no sessionStorage, no URL state, no server state. The only persisted artefact is `package-lock.json`.
 
 ## 6. How it fits
-Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31
+Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
 
 27. **Commit 1 touches** `package.json`, `package-lock.json`, and whichever of the eight
     `useFakeTimers` files / three `vi.spyOn` files / one `invocationCallOrder` file actually
@@ -364,7 +364,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — No runtime or worker code changes, so there is nothing new to instrument and no existing event is affected.
 
 ## 11. Done / test plan
-Settled: Jamie 2026-10-31 (items 39, 41 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31
+Settled: Jamie 2026-10-31 (items 39, 41 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
 
 ### The baseline, measured today before anything moved
 
@@ -434,7 +434,20 @@ Run on this branch under `vitest@2.1.9` + pool `0.12.21`, 2026-10-31:
 
 ## Acks
 
-- **Dave — §3, §6, §11: not acked. `Override: Jamie 2026-10-31`.**
+- **Dave — §3, §6, §11: not acked. `Override: Jamie 2026-10-31` — and this override is
+  `provisional`.** Jamie said on 2026-10-31 that he would obtain Dave's ack himself, so the
+  override is what unblocked `da-brief`, **not** the final state of these three ledgers.
+
+  **When Dave's ack arrives** — from Jamie or from Dave, and from nobody else; another
+  session relaying it is not it:
+  1. Add the ack alongside, and **leave the override line in place**, so the sequence stays
+     legible: unblocked by override, then acked properly. Do not delete it and do not
+     overwrite it.
+  2. Record Dave's actual **position** on the four items below, not merely that he acked. If
+     he agrees with what is written, say so explicitly. If he changes any of them, that is a
+     brief change: reopen the affected section on fresh numbers and re-run `da-brief` against
+     it — an ack is not a rubber stamp on text he wanted different.
+
   Recorded as an override, not as an ack, because Dave did not see these sections. What he was
   going to be asked to ack, left here so it is answerable later rather than lost: the suite
   becomes three config files instead of two-plus-a-workspace (§3 item 21), `npm test` gains a
