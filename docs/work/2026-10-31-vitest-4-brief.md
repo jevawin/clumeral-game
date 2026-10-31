@@ -140,6 +140,27 @@ So there are two ways to lose a whole suite silently here, not one:
 
 Both exit 0. **"The tests passed" cannot detect either.** This is why item 23 exists.
 
+### Added 2026-10-31 — commit 1's premise, verified rather than assumed
+
+Both checked after §3 settled. They **confirm** the settled sequencing rather than change it,
+so §3's ack is not reopened.
+
+48. **`vitest@3.2.7` resolves against pool `0.12.21` untouched.** Resolved in a scratch copy of
+    this repo's manifest: `vitest 3.2.7`, pool stays `0.12.21`, root `wrangler` stays `4.80.0`,
+    no ERESOLVE. So commit 1 really is a one-package move. (assumed — verified by resolved
+    lockfile)
+49. **`vitest@3.2.7` still reads `vitest.workspace.ts`, and says so out loud.** Functionally
+    tested with a two-project workspace file: both projects ran, and vitest printed
+
+    > `DEPRECATED  The workspace file is deprecated and will be removed in the next major.`
+    > `Please, use the test.projects field in the root config file instead.`
+
+    This is a better reason for the 3.2.7 stop than the bisect argument alone. 3.2.7 is the
+    **only** version in this upgrade that warns about the hazard: the `vitest.workspace` string
+    is present in `3.2.7`'s dist and absent from `4.1.12`'s, so vitest 2 is silent because it is
+    too early and vitest 4 is silent because the support is gone. Commit 1 therefore ends with
+    the tooling itself naming commit 2's main task. (assumed — measured)
+
 ### How the work is sequenced
 
 16. **Commit 1 — `vitest` to `3.2.7` alone.** `package.json` and `package-lock.json` only. The
