@@ -4,13 +4,49 @@
 
 | Branch | Purpose | Commits |
 |---|---|---|
-| `main` | Production | PRs from `staging` only, merged with a **merge commit** (not squash). User merges on GitHub. |
+| `main` | Production | PRs from `staging`, merged with a **merge commit** (not squash). User merges on GitHub. Two things also target `main` directly — Dependabot's own PRs, and `.github/` config that only works on the default branch. See below. |
 | `staging` | Pre-prod review | Merges from approved work branches only. **Protected. Never commit directly.** |
 | `dev/name` | Work without a GitHub issue | Direct commits OK. Off `staging`. |
 | `issue/NUM` | Work linked to GitHub issue | Direct commits OK. Off `staging`. |
 | `release/thing` | Recovery branch (rare) | Direct off `main`. See recovery section. |
 
 Harness auto-assigns `claude/*` — ignore it.
+
+### What else lands on `main`
+
+`main` is not fed by `staging` alone. Two classes of PR target it directly, and together they are
+why `main` keeps acquiring commits `staging` does not have.
+
+**Dependabot's own PRs.** Dependabot files against the default branch by design, so every
+dependency PR targets `main` — nine open as of 2026-10-31. None of them routes through `staging`,
+and this is the larger of the two classes.
+
+**`.github/` config that only works on the default branch.** GitHub reads
+`.github/dependabot.yml` from the default branch alone, so a change routed through `staging` sits
+inert until the next release — months, at the current cadence. #316 (2026-10-04) and the vitest
+pin (2026-10-31) both targeted `main` for this reason.
+
+Keep such a branch narrow: the `.github/` file, plus the docs that record the decision. Open the
+PR against `main` as usual for the user to merge — **never commit to `main` directly.** Everything
+else still goes through `staging`.
+
+#### Realigning `staging` afterwards is a merge, not the fast-forward sync
+
+A commit that reaches `main` without passing through `staging` makes `staging`
+non-fast-forwardable. So the Post-merge sync's `git merge --ff-only origin/main` **will** fail
+after one of these — that is expected, and it is **not** a divergence to recover from. Merge the
+other way instead:
+
+```bash
+git checkout staging
+git fetch origin
+git merge origin/main    # a real merge commit — NOT --ff-only
+git push origin staging
+```
+
+> **Do not use the Recovery path for this.** Its `git reset --hard origin/main` discards
+> everything `staging` is ahead by — 145 commits as of 2026-10-31. Recovery is for a `staging`
+> whose history was *rewritten* (a squashed release), not for one that is simply ahead.
 
 ## Flow
 
@@ -62,7 +98,17 @@ git merge --ff-only origin/main   # fast-forwards staging up to main; fails loud
 git push origin staging
 ```
 
-No `--force` needed. If `--ff-only` refuses, `staging` and `main` have diverged (e.g. the release got squash-merged by mistake) — use the recovery path below.
+No `--force` needed.
+
+If `--ff-only` refuses, check **why** before going anywhere near the recovery path:
+
+- **`staging` is merely ahead of `main`** — normal after a `.github/` PR went direct (see "What
+  else lands on `main`"). Merge `main` into `staging` with a real merge commit. Do **not** reset.
+- **`staging`'s history was rewritten** — e.g. the release got squash-merged by mistake. That is
+  a real divergence; use the recovery path below.
+
+`git rev-list --left-right --count origin/main...origin/staging` tells them apart: a non-zero
+right-hand number means `staging` has work that a reset would destroy.
 
 ## Post-merge cleanup
 
