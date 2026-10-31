@@ -69,6 +69,12 @@ Settled: Jamie 2026-10-31 (items 13, 14 → recs accepted; 7–12, 15 assumption
     `isolatedStorage: true`, the `ANALYTICS_DB` → `clumeral-analytics-test` binding,
     `nodejs_compat`, and `readD1Migrations` pointed at `migrations/analytics` specifically.
     The file is rewritten; what it *does* is not changed. (assumed)
+    **VOID as to `isolatedStorage`, 2026-10-31, found by `da-plan`.** That option does not
+    exist in pool `0.19.1` — zero occurrences in the package against 17 in `0.12.21` — and the
+    options schema is zod `strip`, so passing it is silently discarded with no error or
+    warning. Per-test isolation therefore **does** change: from transactional rollback to an
+    explicit `reset()` plus re-applied migrations. Left unfixed it failed 73 of 103 worker
+    tests. The rest of this item still holds. See Task 5 of the plan.
 11. **No migration file is added, changed or renamed.** (assumed)
 12. **vitest 5 is out of scope** — unreachable, see item 5. (assumed)
 13. **Do we move `compatibilityDate: '2026-03-09'` forward while we are in that file?**
