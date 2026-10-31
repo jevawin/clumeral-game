@@ -4,6 +4,16 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    # Target staging, not the default branch. Work lands on staging and reaches
+    # main only in a release, so main's package.json is routinely scores of
+    # commits behind staging's — on 2026-10-31 it was 180, with a different
+    # vitest major on each side. Dependabot PRs raised against main therefore
+    # targeted a manifest that the next release would replace wholesale, and
+    # eight of them piled up waiting on a release rather than on review.
+    # Pointing it at staging puts dependency bumps through the normal
+    # work-branch pipeline instead. The config itself is still read from the
+    # default branch — that is a GitHub requirement, not a choice.
+    target-branch: staging
     schedule:
       interval: weekly
       day: monday
@@ -89,6 +99,8 @@ updates:
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
+    # Same reasoning as the npm block above.
+    target-branch: staging
     schedule:
       interval: monthly
     groups:
