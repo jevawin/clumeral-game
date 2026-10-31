@@ -155,53 +155,34 @@ up in conversation — **there is no scheduled reminder and Claude cannot send o
   "we'll look at d1, ask you to compare vs ae in a few days." Run
   `node scripts/compare-ae-d1.mjs`; the pass condition and the PR 3 removal checklist are in
   [docs/ANALYTICS.md](docs/ANALYTICS.md).
-- **2026-10-31 — vitest and the Workers test pool are pinned, permanently, until someone
-  upgrades them.** `.github/dependabot.yml` ignores majors on `vitest`/`@vitest/*` and **both**
-  minors and majors on `@cloudflare/vitest-pool-workers`, because the pool peer-locks vitest
-  (`"2.0.x - 3.2.x"` at 0.12.x, `"^4.1.0"` from 0.13.0) and Dependabot moving either alone breaks
-  `npm ci`. Both packages are already at the end of their line: `vitest 2.1.9` is the last stable
-  2.x and pool `0.12.21` the last `0.12.x`, so no patch will ever arrive for either. The pool is
-  also **deprecated outright** — renamed to `@cloudflare/vitest-plugin`, which will carry all
-  future work — so every version of it, including the `0.19.1` upgrade target, is a dead end by
-  name as well as by version. The pool
-  stays on its `wrangler 4.72.0` and `miniflare 4.20260310.0` while root `wrangler` keeps bumping,
-  so `tests/worker/**` drifts further behind dev and production with every release. Nothing in CI
-  will raise any of this.
+- **2026-10-31 — the vitest ignore entries must stay, and the pool is a dead package.** The
+  vitest 4 upgrade is **done** (#332: `vitest@^4.1.12`, pool `^0.19.1`, 41 files / 822 tests, Pi
+  peak 539MB against the 1000MB cgroup). What is still owed is the next move, and a warning not
+  to undo the pin.
 
-  The upgrade owes four things, and two of them are not what they look like:
+  **Do not lift the ignores in `.github/dependabot.yml`.** They look stale now the upgrade has
+  landed, but all three are still correct against the current tree:
 
-  1. **`vitest.workspace.ts` folded into `test.projects` in `vitest.config.ts`.** v4 cannot read a
-     separate workspace file and never looks for one — there is no `vitest.workspace` string
-     anywhere in `vitest@4.1.12`'s dist, so nothing warns. The run falls back to a single default
-     project, which means the jsdom suite still passes while **`tests/worker/**` is silently
-     dropped** (it is excluded in `vitest.config.ts`). Green but incomplete — so "the tests
-     passed" is exactly the wrong thing to check here. Count the projects.
-  2. **`vitest.workers.config.ts` rewritten, not adjusted.** This is *not* a `poolOptions`
-     key-move. In pool `0.19.1` the `./config` subpath export is gone and `defineWorkersConfig`
-     does not exist anywhere in the package; `cloudflareTest` (used as a Vite plugin) and
-     `readD1Migrations` export from the package root instead. The pool ships a codemod at
-     `./codemods/vitest-v3-to-v4`, but it refuses a function argument — and that file passes
-     `defineWorkersConfig(async () => {...})`, so it has to be done by hand.
-  3. **The #313 Pi caps simplified.** They live in `vitest.config.ts` on `staging` only (448c8aa),
-     not on `main`. v4 drops `minWorkers`, so the both-bounds dance that #313 needed disappears
-     and `maxWorkers: 2` alone does it. Still required, though: with `vitest run` (watch off) v4
-     defaults `maxWorkers` to **all** available parallelism.
-  4. **The three ignore entries lifted** from `.github/dependabot.yml`.
+  - `vitest` and `@vitest/*` majors — vitest 5 has nowhere to go. `@cloudflare/vitest-pool-workers@0.23.0`,
+    the last release under that name, still declares peer `vitest@"^4.1.0"`.
+  - `@cloudflare/vitest-pool-workers` minors — this is what holds it at `0.19.1`. Every release
+    from `0.20.0` onward ships a **miniflare 5 alpha**, and a prerelease runtime under
+    `tests/worker/**` is what caused #325.
 
-  Targets as of 2026-10-31: `vitest@^4.1.12` with pool `^0.19.1` — the newest release on a
-  **stable** miniflare under either package name, since `0.20.0` onward all ship miniflare 5
-  alphas and every `@cloudflare/vitest-plugin` release (1.0.0 to 1.4.11) ships a miniflare 5
-  alpha or beta.
+  **The real outstanding item: migrate to `@cloudflare/vitest-plugin`.** The pool is deprecated
+  outright — renamed, and every version of it including `0.19.1` carries the notice, so it will
+  receive no further work. The successor peers `vitest "^4.1.0 || ^5.0.0"` from `1.4.0`, so it is
+  also the only route to vitest 5. **Gated on it shipping a stable miniflare:** as of 2026-10-31
+  all 44 releases, `1.0.0` to `1.4.11`, ship a miniflare 5 alpha or beta. Re-check before
+  starting. That migration replaces the ignore entries rather than lifting them, and it is a
+  config rewrite rather than a version bump — the `./config` subpath export and
+  `defineWorkersConfig` are both gone, with `cloudflareTest` (a Vite plugin) and
+  `readD1Migrations` exporting from the package root instead.
 
-  A fifth thing is owed after that, and it is the one with a real gate on it: **migrate to
-  `@cloudflare/vitest-plugin`.** That package is where the pool's future work goes, and from
-  `1.4.0` it peers `vitest "^4.1.0 || ^5.0.0"`, so it is also the only route to vitest 5. Do not
-  migrate until it ships a **stable** miniflare — today every version is an alpha or beta, and a
-  prerelease runtime under `tests/worker/**` is what caused #325. Re-check that before starting;
-  once it is stable, this migration replaces the `vitest`/pool ignore entries rather than lifting
-  them. `vitest@3.2.7` installs
-  against the pool as pinned today (verified by resolve), so it is a legitimate halfway stop if 4
-  proves large.
+  Also still true, and nothing in CI will raise it: the pool carries its own exact
+  `wrangler 4.116.0` and `miniflare 4.20260730.0`, so `tests/worker/**` runs on an older workerd
+  than dev, build and deploy. Root stays on `wrangler 4.80.0` / `miniflare 4.20260401.0` because
+  `@cloudflare/vite-plugin@1.31.0` pins both exactly — see #331, which exists to reconcile them.
 
 ## Project
 
