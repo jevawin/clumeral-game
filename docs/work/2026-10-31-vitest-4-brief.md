@@ -613,6 +613,35 @@ Numbers are append-only, so the fixes take new numbers and the superseded items 
     item 53, it may turn out neither file needs touching at all — but that is a result, not a
     reason to skip the ack.
 
+59. **Found during Build, 2026-10-31 — the pool has been RENAMED, and item 5 is wrong.**
+    `npm install` printed:
+
+    > `npm warn deprecated @cloudflare/vitest-pool-workers@0.19.1:`
+    > `@cloudflare/vitest-pool-workers has been renamed to @cloudflare/vitest-plugin.`
+    > `This package will not receive future updates.`
+
+    Nothing in this brief, `da-brief` or `da-plan` found this. Three consequences, all checked
+    against npm:
+    - **The deprecation is not new and is not caused by this change.** `0.12.21`, the version
+      this repo was already running, carries the identical message. So the pin was always a
+      rename dead-end as well as an end-of-line.
+    - **Item 5 is factually wrong.** It said vitest 5 "is not reachable at all" because pool
+      `0.23.0` still peers `^4.1.0`. True of that package *name*, but
+      `@cloudflare/vitest-plugin@1.4.0` and later peer **`^4.1.0 || ^5.0.0`**. vitest 5 *is*
+      reachable — through the renamed successor.
+    - **It is still not reachable on a stable runtime, which is why `0.19.1` stands.** Every
+      release of `@cloudflare/vitest-plugin`, all 44 of them from `1.0.0` to `1.4.11`, ships a
+      miniflare **5 alpha or beta** (`5.20260820.0-alpha` through `5.20261023.3-beta`). There
+      is no stable-miniflare option under the new name at all. `0.19.1` remains the newest
+      release on a stable miniflare in either package, so the target chosen in item 4 is
+      unchanged — but for a sharper reason than item 5 gave.
+
+    **What this changes for PR B (items 31, 55):** the justification for keeping the `vitest`
+    major ignore is no longer "no pool supports vitest 5". It is "the only package that
+    supports vitest 5 is on a miniflare beta, and the supported package is a different name
+    we have not migrated to". PR B must say that instead, and should record migrating to
+    `@cloudflare/vitest-plugin` as the real follow-up — once it ships a stable miniflare.
+
 ### Verdict and what it blocks
 
 `da-brief`'s verdict was **not ready for planning**, and I agree. H1, H2, H3 and M1 are fixed

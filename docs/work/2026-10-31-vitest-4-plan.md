@@ -505,6 +505,16 @@ PR B lands only after this upgrade has reached `main`, and must account for the 
 dependency group (`patterns: ["wrangler", "@cloudflare/*"]`) that actually bundles these
 packages, not just the three `ignore` entries (brief item 56).
 
+**Updated by brief item 59, found during Build.** `@cloudflare/vitest-pool-workers` has been
+**renamed** to `@cloudflare/vitest-plugin` and receives no further updates — and the version
+this repo ran before today, `0.12.21`, carries the same deprecation, so this is not new. PR B's
+wording must change accordingly: the reason to keep the `vitest` major ignore is **not** "no
+pool supports vitest 5" (false — `@cloudflare/vitest-plugin@1.4.0+` peers
+`^4.1.0 || ^5.0.0`). It is that the only package supporting vitest 5 is a **different package
+name on a miniflare beta** — all 44 of its releases ship a miniflare 5 alpha or beta, with no
+stable option at any version. PR B should also record migrating to the new name as the genuine
+follow-up, gated on it shipping a stable miniflare.
+
 ---
 
 ## Traceability
