@@ -91,38 +91,38 @@ Settled: Jamie 2026-10-31 (items 13, 14 → recs accepted; 7–12, 15 assumption
     fixes the e2e jobs is already on #330's queue to `main`. (assumed)
 
 ## 3. How it works
-Settled: Jamie 2026-10-31 (items 21, 23, 25 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
+Settled: Jamie 2026-10-31, **items 23, 25, 26 reopened 2026-10-31 by `da-brief` → see items 51, 52, 53** · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
 
 ### Verified firsthand, not taken on trust
 
 Probed in a scratch install of `vitest@4.1.12` + pool `0.19.1` on 2026-10-31. These are
 measurements, not readings of a migration guide:
 
-- **No `vitest.workspace` string exists anywhere in `vitest@4.1.12`'s dist.** The workspace
+- **V1.** **No `vitest.workspace` string exists anywhere in `vitest@4.1.12`'s dist.** The workspace
   file is not deprecated-with-a-warning; it is invisible. Nothing will tell us.
-- **`defineWorkersConfig` does not exist anywhere in pool `0.19.1`,** and the `./config`
+- **V2.** **`defineWorkersConfig` does not exist anywhere in pool `0.19.1`,** and the `./config`
   subpath export is gone. The package exports exactly three paths: `.`, `./types`,
   `./codemods/vitest-v3-to-v4`. The root exports `cloudflareTest`, `cloudflarePool`,
   `readD1Migrations` and `assertCompatibleVitestVersion`, among others.
-- **`cloudflareTest(options)` accepts an async callback** —
+- **V3.** **`cloudflareTest(options)` accepts an async callback** —
   `WorkersPoolOptions | ((ctx) => Promise<WorkersPoolOptions> | WorkersPoolOptions)` — so the
   `readD1Migrations` await moves inside it and stays typed. The rewrite is clean, not a
   workaround.
-- **The codemod's target shape**, read from its source: the contents of
+- **V4.** **The codemod's target shape**, read from its source: the contents of
   `test.poolOptions.workers` become the argument to `cloudflareTest(...)`, which moves into
   `plugins`, and `test.poolOptions` is deleted. It refuses our file because it throws on a
   function argument to `defineWorkersProject`/`defineWorkersConfig` — confirmed in its source.
-- **vitest 4 validates project config filenames** against `(vitest|vite).*.config.*`.
+- **V5.** **vitest 4 validates project config filenames** against `(vitest|vite).*.config.*`.
   `vitest.workers.config.ts` passes. An arbitrary name is a hard `Collect Error`, so any new
   project file must be named to the pattern.
-- **`basic` reporter: a non-issue.** Not configured anywhere in this repo — no `reporters` key
+- **V6.** **`basic` reporter: a non-issue.** Not configured anywhere in this repo — no `reporters` key
   in any vitest config, package.json script or workflow. Nothing to migrate.
-- **`test`/`describe` third-argument options object: not used.** No occurrences in `tests/`.
-- **Pool `0.19.1` bundles `miniflare 4.20260730.0` and `wrangler 4.116.0`.** Note the
+- **V7.** **`test`/`describe` third-argument options object: not used.** No occurrences in `tests/`.
+- **V8.** **Pool `0.19.1` bundles `miniflare 4.20260730.0` and `wrangler 4.116.0`.** Note the
   direction: `4.116.0` is *ahead* of root `wrangler@^4.80.0`, so after this upgrade the test
   runtime is newer than dev and production, not older. The drift the pin created is not merely
   closed, it inverts.
-- **vitest 4 silently accepts `minWorkers`** — no error, no warning, run passes. So leaving it
+- **V9.** **vitest 4 silently accepts `minWorkers`** — no error, no warning, run passes. So leaving it
   in would make it dead config rather than a crash. Removing it is correctness, not necessity.
 
 ### The hazard, and a second form of it the task did not name
@@ -227,9 +227,21 @@ so §3's ack is not reopened.
     (assumed — from a full grep of `tests/` and `src/`)
 
 ## 4. Maths
-Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
+**REOPENED 2026-10-31 by `da-brief` (H4). Was: n/a. Now: Settled pending · Ack: BLOCKING, Dave
+— not yet sought.**
 
-n/a — Touches no puzzle generation, seeding or filtering — the change is confined to test tooling. Dave's blocking maths sign-off is therefore not required for this brief.
+~~n/a — Touches no puzzle generation, seeding or filtering — the change is confined to test
+tooling. Dave's blocking maths sign-off is therefore not required for this brief.~~
+
+**That reason was false, and the waiver should not have been taken.** It conflated *source*
+with *tests*. The change touches no puzzle source, but two files in commit 1's edit set are
+maths tests in Dave's domain — see item 58. `CLAUDE.md` gives Dave maths with a **blocking**
+sign-off, "named person, no substitute".
+
+**Jamie's `Override: Jamie 2026-10-31` on §3/§6/§11 does not and cannot extend here.** That
+override covered joint-section *acks*, which are non-blocking by design. §4 is an owned section
+with a blocking sign-off, and the briefing skill is explicit that such a signature has no
+substitute. Only Dave can clear §4.
 
 ## 5. State & persistence
 Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
@@ -346,7 +358,7 @@ These items **confirm** the settled decisions rather than change them, so they d
 ## 7. How it looks
 Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 
-n/a — No DOM, no CSS, no rendered output. The only visible surface is terminal test output, and its format is not being changed deliberately — see item 25 in §3 on the `basic` reporter.
+n/a — No DOM, no CSS, no rendered output. The only visible surface is terminal test output, and its format is not being changed deliberately — see V6 in §3 on the `basic` reporter.
 
 ## 8. Copy & wording
 Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
@@ -356,7 +368,13 @@ n/a — No user-facing strings. Comments in the config files are rewritten, but 
 ## 9. Accessibility
 Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 
-n/a — Nothing reaches a browser. Jamie's blocking accessibility sign-off is therefore not required for this brief.
+n/a — **but not for the reason first written.** The original reason, "nothing reaches a
+browser", was wrong: the jsdom project *is* a DOM, and `tests/palette-contrast.spec.ts` and
+`tests/stats-contrast.spec.ts` are accessibility assertions inside it. The correct reason is
+narrower: neither contrast spec is in either commit's edit set, so the only exposure is via the
+config rewrite — which the guard (item 51) covers by asserting jsdom's file count. The axe
+suite is `e2e/specs/a11y.spec.ts`, deliberately not run per item 39. Jamie owns accessibility
+and approved the short form, so the exemption stands on the corrected reason.
 
 ## 10. Analytics
 Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
@@ -364,7 +382,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — No runtime or worker code changes, so there is nothing new to instrument and no existing event is affected.
 
 ## 11. Done / test plan
-Settled: Jamie 2026-10-31 (items 39, 41 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
+Settled: Jamie 2026-10-31, **items 34–36, 40, 41 reopened 2026-10-31 by `da-brief` → see items 50, 52** · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
 
 ### The baseline, measured today before anything moved
 
@@ -429,6 +447,160 @@ Run on this branch under `vitest@2.1.9` + pool `0.12.21`, 2026-10-31:
     state — reverting them restores vitest 2 exactly. Nothing needs undoing anywhere else.
     (assumed)
 
+
+---
+
+## `da-brief` findings, 2026-10-31 — and what each one changed
+
+A fresh-context subagent reviewed this brief and returned four High and four Medium findings.
+It re-ran the measurements rather than trusting them, and it was right about every High. I
+re-verified each myself before acting; where its own reasoning was wrong, that is recorded too.
+
+Numbers are append-only, so the fixes take new numbers and the superseded items stay readable.
+
+50. **H1 — `826` was a property of this laptop. Accepted; items 34, 35, 36, 40 and 41 are
+    superseded by this one.**
+    `tests/sw-precache.spec.ts:20` branches on `existsSync(dist/client/sw.js)`: present → 5
+    tests, absent → 1 skipped. `dist/` is gitignored (`.gitignore:22`) and the copy on this
+    machine is dated **22 July** — a stale build I did not know was there. Measured both ways
+    just now:
+
+    | | Test files | Tests |
+    |---|---|---|
+    | with a built `dist/client/sw.js` | `41 passed (41)` | `826 passed (826)` |
+    | without | `40 passed, 1 skipped (41)` | `821 passed, 1 skipped (822)` |
+
+    `ci-smoke.yml` runs `npm test` **before** `npx playwright install` and before Playwright's
+    `webServer` builds, and `npm ci` builds nothing — so CI, a fresh clone and the Pi all see
+    **822**, never 826. Item 40 named that step as the definition of green and item 34 called
+    `41 / 826` the acceptance number for *every* step, so all three would have read a correct
+    run as broken. The reviewer's worry about the consequence is the right one: the likely
+    outcome is that the number gets dismissed as flaky and stops being used, disarming this
+    brief's main defence against the hazard it exists for.
+    **The fix: the acceptance criterion is per-project FILE counts — jsdom 37, workers 4, total
+    41 — which is stable in both states.** The test total is recorded as context only: 826 with
+    a build, 822 without. The guard keys on files, never on the test total.
+51. **H2 — the guard was foolable, and both the reviewer and I had its oracle wrong.
+    Reopens item 23.**
+    Three things measured. Where the reviewer was right: `vitest list --json` runs in a
+    **second process** that cannot see the first one's flags, so `npm test -- --project jsdom`
+    passes a `list`-based guard while half the suite never ran; and "present and non-zero" lets
+    a project collecting a *subset* of its files through.
+    Where the reviewer was wrong: it reported that `list --json` "exits 0 and emits no JSON at
+    all" on a collection error. It exits 0, but it emits **valid, parseable JSON containing
+    only the healthy records** — the broken file is silently dropped. That is *worse* than no
+    output, because a guard that parses successfully and finds both projects present will pass.
+    Where its proposed fix was wrong: it recommended a JSON reporter on the run itself.
+    Measured — `--reporter=json` carries **no `projectName` anywhere** in its payload, and
+    `--reporter=junit` carries only file paths and `classname`. Neither can identify a project.
+    **So no built-in oracle gives both real-run observation and project identity.** The guard is
+    therefore a ~20-line **custom vitest reporter**, which does. Proven in the probe:
+
+    ```
+    normal run              → [guard] observed: {"AAA":1,"BBB":1}  OK
+    run --project AAA       → [guard] observed: {"AAA":1}          FAIL, vitest exits 1
+    ```
+
+    It reads `testModule.project.name` in `onTestModuleCollected`, compares per-project file
+    counts against pinned values in `onTestRunEnd`, and sets a non-zero exit code. In-process,
+    so flag-aware (closes the passthrough hole); keyed on file counts, so immune to item 50's
+    build-dependent test total; and it fails the run rather than reporting success, which the
+    `list` approach could not do at all.
+52. **H3 — root placement is *forced*, not chosen, and "strictly safer on memory" was
+    unfounded. Reopens item 25.**
+    My item 25 measurement did not isolate the variable: the probe it rested on had
+    `maxWorkers` on the root *and* on one project at once, and the single-project run that
+    showed "project-level is honoured" had only one project, so it could never have hit the
+    cross-project rule. Re-measured with two projects and a cap on one:
+
+    ```
+    Error: Projects "AAA" and "BBB" have different 'maxWorkers' but same 'sequence.groupOrder'.
+     Test Files  no tests
+    VITEST EXIT=1
+    ```
+
+    So **today's shape — a cap on `vitest.config.ts` and none on the workers config — is a hard
+    failure when translated literally into vitest 4.** Root placement is the only option that
+    runs at all (verified: exit 0, both projects pass). It remains the right choice; item 25's
+    reasoning for it was wrong.
+    **And the claim "strictly safer on memory and only costs wall-clock" is withdrawn.**
+    `maxWorkers` is a cross-project scheduling budget — specs are bucketed by
+    `sequence.groupOrder` and each bucket shares one worker allowance — so root placement puts
+    jsdom and workerd specs in **one group sharing two slots**, meaning a ~300 MB jsdom worker
+    can now run concurrently with a workerd worker plus miniflare's own processes inside the
+    Pi's 1000 MB cgroup. Verified: `grep -rln "maxWorkers"` across the whole of pool `0.19.1`
+    **returns nothing**, so the pool never consults it and miniflare's footprint sits outside
+    that budget entirely.
+    **What this changes for item 41:** Jamie should watch **peak RSS with both projects in
+    flight**, not wall-clock, and should not be told to expect an improvement. The failure cost
+    here is the measured nine hours, so a false expectation is the worst thing to hand him.
+53. **M1 — the one concrete risk I named does not exist. Item 26 is withdrawn.**
+    `tests/completion-stats.spec.ts` does **not** reach `performance.now()`. Its only imports
+    are a *type* from `src/types.ts` plus `node:fs`/`node:path`; it never imports `src/octo.ts`
+    or `src/bubbles.ts` and never names `performance`. The grep hit I built item 26 on was
+    `<div data-completion-octo></div>` — markup in a DOM fixture, not a module import. I
+    inferred an import from a match count, which is exactly the move this review exists to
+    catch.
+    The analysis was also incomplete: vitest 3's default `toFake` covers
+    `requestAnimationFrame` too, which lives in `src/bubbles.ts`, `src/modals.ts`,
+    `src/octo.ts` and `src/screens.ts`, and item 26 considered only `performance.now`. The
+    reviewer traced all eight fake-timer specs' import graphs and found none reaches either
+    API — so the real exposure is nil, but by luck rather than by my reasoning.
+    Two of the three named breakages are likewise non-issues: `router.spec.ts:236` compares two
+    `invocationCallOrder` values with `toBeLessThan`, so the 0→1 base change cannot affect it;
+    and the `vi.spyOn` uses are already paired with `mockRestore()`/`mockClear()`.
+    **So commit 1's breakage surface is asserted, not demonstrated, and item 6's "every
+    test-file breakage this task owes is a vitest 3 change" overstates it.** The two-commit
+    split is still worth keeping — as bisection insurance and for the deprecation warning in
+    item 49 — but the plan should expect **possibly zero** test-file fixes and treat any as
+    discovered, not scheduled.
+54. **M4 — a third silent-drop mode, accepted.** A project correctly listed in `projects` whose
+    `include` matches nothing is omitted from the run *and* from `vitest list --json` entirely,
+    exit 0. So §3's "two ways to lose a whole suite silently, not one" is itself incomplete —
+    there are **three**. The custom reporter in item 51 catches this one (0 files ≠ the pinned
+    count), which is a further argument for keying the guard on counts rather than presence.
+55. **M3 — items 3 and 31 are in tension, and the remedy is still prose. Needs Jamie.**
+    Item 3's complaint about #330 is that the freeze becomes "permanent *and silent*… the only
+    reminder is a prose entry in `CLAUDE.md`", and item 31's remedy is three `ignore` entries
+    plus a *better-worded* prose entry. The factual reasoning in item 31 stands — the reviewer
+    re-verified every version claim — but no loud-failure mechanism was considered.
+    My rec: add a version-bounded ignore (`versions: ["5.x"]` on `vitest`) so the entry
+    expires by construction when the pool catches up, rather than relying on someone rereading
+    a comment. Flagging rather than deciding: this belongs in PR B, which cannot be written
+    yet, so there is time to settle it.
+56. **L2 — item 31 never accounted for the `cloudflare` dependency group.** `origin/main`'s
+    `dependabot.yml` groups `["wrangler", "@cloudflare/*"]`, so the pool moves in a *group* PR
+    together with root `wrangler` — that grouping, not the per-dependency `ignore` entries
+    alone, is the mechanism that bundles them. Item 9's "root wrangler stays at `^4.80.0`"
+    interacts with it. PR B must reason about the group, not just the three entries. (assumed)
+57. **L3 — item 38's lockfile promise has no mechanism, accepted.** "The diff is read before
+    committing" is a human promise. Concretely: each commit installs with an explicit
+    `npm install <pkg>@<version>`, then `git diff --stat package-lock.json` is inspected, and
+    any hunk unrelated to the named packages is reverted with
+    `git checkout -- package-lock.json` followed by a re-install of just the intended change.
+    The churn seen today was 26 optional platform entries losing `"dev": true`. (assumed)
+58. **H4 — §4 is not n/a. Two maths tests are in commit 1's edit set, and Dave's blocking ack
+    is owed.** Verified in the repo:
+    - `tests/puzzle-redundancy.spec.ts` — imports `MAX_ATTEMPTS` and `generatePuzzleFromRng`,
+      and holds three of the nine `vi.spyOn` uses (line 259, `vi.spyOn(console, 'warn')`). It
+      asserts the generator's fallback, the redundant-clue trim and exact answers, including an
+      invariant whose own comment reads that throwing is loud and fixable where publishing
+      would silently tell correct players they are wrong.
+    - `tests/daily-puzzle.spec.ts` — `useFakeTimers` plus `setSystemTime` over `runDailyCron`
+      and puzzle-of-the-day selection.
+    A mis-fix in either silently weakens a maths invariant and nothing else in the suite
+    notices — precisely the failure class Dave's blocking sign-off exists for. What §4 needs is
+    one line and his signature: *the edit set includes `puzzle-redundancy.spec.ts` and
+    `daily-puzzle.spec.ts`; no assertion's meaning changes, only its mocking plumbing.* Given
+    item 53, it may turn out neither file needs touching at all — but that is a result, not a
+    reason to skip the ack.
+
+### Verdict and what it blocks
+
+`da-brief`'s verdict was **not ready for planning**, and I agree. H1, H2, H3 and M1 are fixed
+above in items 50–54, and 55–57 are recorded. **Planning is blocked on one thing that is not
+mine to clear: Dave's blocking ack on §4 (item 58).** Jamie's existing override cannot cover
+it.
 
 ---
 
