@@ -160,7 +160,10 @@ up in conversation — **there is no scheduled reminder and Claude cannot send o
   minors and majors on `@cloudflare/vitest-pool-workers`, because the pool peer-locks vitest
   (`"2.0.x - 3.2.x"` at 0.12.x, `"^4.1.0"` from 0.13.0) and Dependabot moving either alone breaks
   `npm ci`. Both packages are already at the end of their line: `vitest 2.1.9` is the last stable
-  2.x and pool `0.12.21` the last `0.12.x`, so no patch will ever arrive for either. The pool
+  2.x and pool `0.12.21` the last `0.12.x`, so no patch will ever arrive for either. The pool is
+  also **deprecated outright** — renamed to `@cloudflare/vitest-plugin`, which will carry all
+  future work — so every version of it, including the `0.19.1` upgrade target, is a dead end by
+  name as well as by version. The pool
   stays on its `wrangler 4.72.0` and `miniflare 4.20260310.0` while root `wrangler` keeps bumping,
   so `tests/worker/**` drifts further behind dev and production with every release. Nothing in CI
   will raise any of this.
@@ -185,8 +188,18 @@ up in conversation — **there is no scheduled reminder and Claude cannot send o
      defaults `maxWorkers` to **all** available parallelism.
   4. **The three ignore entries lifted** from `.github/dependabot.yml`.
 
-  Targets as of 2026-10-31: `vitest@^4.1.12` with pool `^0.19.1` — the newest pool still on a
-  **stable** miniflare, since `0.20.0` onward all ship miniflare 5 alphas. `vitest@3.2.7` installs
+  Targets as of 2026-10-31: `vitest@^4.1.12` with pool `^0.19.1` — the newest release on a
+  **stable** miniflare under either package name, since `0.20.0` onward all ship miniflare 5
+  alphas and every `@cloudflare/vitest-plugin` release (1.0.0 to 1.4.11) ships a miniflare 5
+  alpha or beta.
+
+  A fifth thing is owed after that, and it is the one with a real gate on it: **migrate to
+  `@cloudflare/vitest-plugin`.** That package is where the pool's future work goes, and from
+  `1.4.0` it peers `vitest "^4.1.0 || ^5.0.0"`, so it is also the only route to vitest 5. Do not
+  migrate until it ships a **stable** miniflare — today every version is an alpha or beta, and a
+  prerelease runtime under `tests/worker/**` is what caused #325. Re-check that before starting;
+  once it is stable, this migration replaces the `vitest`/pool ignore entries rather than lifting
+  them. `vitest@3.2.7` installs
   against the pool as pinned today (verified by resolve), so it is a legitimate halfway stop if 4
   proves large.
 

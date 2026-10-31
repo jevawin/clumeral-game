@@ -43,8 +43,17 @@ updates:
       # either one alone fails `npm ci` with ERESOLVE — every CI job then dies
       # before one test runs. That is what killed #326, #328 and #329.
       #
-      # vitest 5 is not reachable at all: 0.23.0, the newest pool release as of
-      # 2026-10-31, still declares peer vitest "^4.1.0".
+      # vitest 5 is reachable, but not from this package. @cloudflare/vitest-
+      # pool-workers is DEPRECATED — renamed to @cloudflare/vitest-plugin — and
+      # 0.23.0, its last release, declares peer vitest "^4.1.0". The successor
+      # does peer "^4.1.0 || ^5.0.0" from 1.4.0 on, so vitest 5 needs that
+      # migration first. We have not done it, and there is no stable-miniflare
+      # version to migrate to: all 44 releases of @cloudflare/vitest-plugin,
+      # 1.0.0 to 1.4.11, ship a miniflare 5 alpha or beta (as of 2026-10-31).
+      # 0.19.1 remains the newest release on a stable miniflare under either
+      # name. So the vitest major ignore stays — not because nothing supports
+      # vitest 5, but because the only thing that does is a package we have not
+      # migrated to, on a prerelease runtime.
       #
       # vitest 3 *is* compatible with the pool pinned here — 3.2.7 sits inside
       # "2.0.x - 3.2.x" and installs cleanly today. It is ignored because a major
