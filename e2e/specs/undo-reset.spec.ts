@@ -411,6 +411,13 @@ test.describe("undo and reset controls", () => {
 // not the platform modifier and Meta+X does not cut — a harness that depended on
 // the Mac modifier would be testing the runner, not the app. The matcher accepts
 // either modifier on either platform, which is what makes Control sufficient.
+//
+// One exception, and it is the reason this note is not the whole story: the cut
+// inside the feedback textarea is performed by the BROWSER, not by our matcher,
+// so there the platform modifier is the only one that works. That case presses
+// ControlOrMeta, which Playwright maps to Control on Linux and Windows and to
+// Meta on macOS — so CI behaviour is unchanged and the test stops failing on a
+// Mac. Anywhere our own matcher handles the key, plain Control stays correct.
 test.describe("undo and reset keyboard shortcuts", () => {
   test("Ctrl+Z steps back over an elimination", async ({ page }) => {
     const game = new GamePage(page);
@@ -670,7 +677,9 @@ test.describe("keyboard shortcut exclusions", () => {
 
     await feedback.msg.fill("cut me");
     await feedback.msg.selectText();
-    await page.keyboard.press("Control+x");
+    // ControlOrMeta, not Control: the browser does this cut, so it needs the
+    // platform modifier. Control+X does not cut in a textarea on macOS.
+    await page.keyboard.press("ControlOrMeta+x");
 
     await expect(feedback.msg).toHaveValue("");
     // The board is untouched: 4 is still eliminated and nothing was reset.
