@@ -32,7 +32,13 @@ permissions:
 jobs:
   e2e-matrix:
     name: e2e ${{ matrix.project }}
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest. GitHub rolled ubuntu-latest to 26.04 between
+    # 2026-10-26 and 2026-10-31, and `playwright install` then fails outright:
+    # "Playwright does not support chromium on ubuntu26.04-x64". @playwright/test
+    # is deliberately held at ~1.60 (see the ignore list in
+    # .github/dependabot.yml — a bump needs Chromium re-installed on the Pi), so
+    # pin the runner instead. Revisit when Playwright is next bumped by hand.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       # Report every engine's result, not just the first failure — knowing it
