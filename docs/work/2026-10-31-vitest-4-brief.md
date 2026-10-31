@@ -272,6 +272,49 @@ Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · 
     reached `main` via the normal `staging` → `main` release.** (assumed, but stated explicitly
     because getting the order wrong restores the exact problem #330 fixed)
     **Settled 2026-10-31: recommendation accepted — two PRs, B only after `main` has vitest 4.**
+### Added 2026-10-31, after §6 settled — the #325 runtime-skew risk, checked
+
+Raised by the #330 session: a types-only bump there moved root `wrangler` 4.80.0 → 4.146.0
+via `wrangler`'s *optional* peer on `@cloudflare/workers-types@^5`, pulling a miniflare 5
+alpha, while `@cloudflare/vite-plugin@1.31.0` still pinned wrangler 4.80.0 on miniflare 4.
+`npm run e2e:db` wrote `.wrangler` D1 state with the new workerd and `vite preview` read it
+with the old one: `table _cf_ALARM has 3 columns but 2 values were supplied`, which surfaces
+in CI only as `ERR_RUNTIME_FAILURE`.
+
+These items **confirm** the settled decisions rather than change them, so they do not reopen
+§6 or invalidate its ack. Resolved in a scratch copy of this repo's `package.json` and
+`package-lock.json` with `npm install --package-lock-only`, so nothing in the repo moved:
+
+44. **This change cannot reproduce that skew.** The pool's runtime stays **fully nested**:
+
+    | | today, pool `0.12.21` | after, pool `0.19.1` |
+    |---|---|---|
+    | **root** `wrangler` | 4.80.0 | **4.80.0 — unchanged** |
+    | **root** `miniflare` | 4.20260401.0 | **unchanged** |
+    | **root** `workerd` | 1.20260401.1 | **unchanged** |
+    | pool's nested `wrangler` | 4.72.0 | 4.116.0 |
+    | pool's nested `miniflare` | 4.20260310.0 | 4.20260730.0 |
+    | pool's nested `workerd` | 1.20260310.1 | 1.20260730.1 |
+
+    Root stays put because `@cloudflare/vite-plugin@1.31.0` holds `miniflare 4.20260401.0`
+    and `wrangler 4.80.0` as **exact dependencies**, not ranges, so the pool's newer copies
+    cannot hoist over them. `npm run e2e:db` uses root `wrangler` and `vite preview` uses
+    vite-plugin's `workerd` — my change moves neither. The dry-run also resolves with no
+    ERESOLVE. (assumed — verified by resolved lockfile, not inference)
+45. **The pool's newer runtime is confined to `tests/worker/**`,** which binds an isolated
+    `clumeral-analytics-test` D1 and contains no reference to `.wrangler` anywhere. So the
+    newer workerd never touches the local D1 state that e2e shares. (assumed — grepped)
+46. **A caveat #331 needs, and this is the one place our work touches.** The tree already
+    carries **two** `miniflare` and **two** `workerd` versions *today*, because the pool pins
+    `miniflare` as an exact dependency of its own. This change does not add that duplication —
+    it only moves the nested version. So #331's stated acceptance criterion,
+    `npm ls miniflare workerd` showing a single version of each, cannot pass while the pool is
+    installed, before or after this work. It needs rewording to exclude the pool's nested copy,
+    or it will read as a regression this PR caused. Passed back to that session. (assumed)
+47. **The PR description states the resolved `wrangler`/`miniflare` versions,** root and
+    nested, since #331 is sequenced behind this branch and needs this end state as its
+    baseline. (assumed — asked for by the #330 session)
+
 33. **No GitHub issue is filed.** The branch is `dev/vitest-4`, the "work without a GitHub
     issue" form in `docs/GIT-WORKFLOW.md`'s branch table, and the brief and plan files are the
     durable record. (assumed — say so if you would rather it had an issue and a roadmap card)
