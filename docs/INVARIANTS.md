@@ -42,7 +42,8 @@ browser store as a production database with no backups — because that is what 
 before `seconds`, before `marker`, before `archived` — and asserts it still reads. The realistic
 way to destroy a 200-day history is not a read bug; it is a schema change that silently orphans
 rows written by an older version. A fixture file of real historical shapes, asserted to still
-load, is the single highest-value test this project does not have.
+load, is the single highest-value test this project does not have. Tracked in
+[#338](https://github.com/jevawin/clumeral-game/issues/338).
 
 ---
 
@@ -96,7 +97,8 @@ response merely contains one extra field.
 exercise the endpoints, but no test asserts the answer is **absent** from an `/api/puzzle`
 response. (The `answer` assertions in `tests/save-pref.spec.ts` are about a stored history row
 when score-saving is off — a different thing.) One assertion per puzzle kind, that the response
-body has no answer field, would close the project's most dangerous silent gap.
+body has no answer field, would close the project's most dangerous silent gap. Tracked in
+[#339](https://github.com/jevawin/clumeral-game/issues/339).
 
 ---
 
@@ -123,7 +125,8 @@ reason pre-prod shares one Worker rather than being a second deployment (`CLAUDE
 **Guarded by.** *Nothing tests the secret itself.* `tests/wrangler-bindings.spec.ts` asserts
 bindings are declared, and `tests/worker-guard.spec.ts` covers the date gate (#205), not this.
 A silent failure with no test is the worst combination in this file — a test that signs with an
-absent secret and asserts it is rejected rather than accepted would fix it.
+absent secret and asserts it is rejected rather than accepted would fix it. Tracked in
+[#340](https://github.com/jevawin/clumeral-game/issues/340).
 
 Any new binding must also be added to `env.preprod` — omitting one is only a *warning*, and the
 Worker then throws at runtime.
@@ -150,4 +153,14 @@ workflow. Vite strips types with esbuild, so the build passes regardless, and `t
 vitest configs are not in `tsconfig.json`'s `include` at all. A change that re-types a stored
 history field — exactly the P1 failure mode — would not be caught by types anywhere in CI.
 
-Worth fixing on its own; until then, P1 and P3 rest on tests alone.
+Tracked in [#341](https://github.com/jevawin/clumeral-game/issues/341). Until it lands, P1 and P3
+rest on tests alone.
+
+---
+
+## Keeping this file honest
+
+Every "guarded by" line above was checked against the repository, not assumed — which is how two
+of them turned out to be false (P4 and P6 both claimed coverage that does not exist). If you add
+an invariant here, name the test, then **break it on purpose and watch the test fail.** A guard
+nobody has seen fail is a guess.
