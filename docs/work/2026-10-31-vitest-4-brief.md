@@ -216,7 +216,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — Nothing is stored. No localStorage, no sessionStorage, no URL state, no server state. The only persisted artefact is `package-lock.json`.
 
 ## 6. How it fits
-Settled: pending · Ack: pending
+Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · Ack: pending — Dave, §6
 
 27. **Commit 1 touches** `package.json`, `package-lock.json`, and whichever of the eight
     `useFakeTimers` files / three `vi.spyOn` files / one `invocationCallOrder` file actually
@@ -253,6 +253,7 @@ Settled: pending · Ack: pending
     The cost of my recommendation: the repo keeps three `ignore` entries indefinitely, which
     looks like unfinished business to a reader. The rewritten comments are what stop it being
     mistaken for that.
+    **Settled 2026-10-31: recommendation accepted — narrow and rewrite, do not lift.**
 32. **Which branches, and how many PRs?**
     My rec: **two PRs, sequenced, and the second cannot be written yet.**
     - **PR A — `dev/vitest-4` → `staging`.** The upgrade: both commits, the brief, the plan.
@@ -270,6 +271,7 @@ Settled: pending · Ack: pending
     `main` and the churn would return immediately. **B lands only after the upgrade itself has
     reached `main` via the normal `staging` → `main` release.** (assumed, but stated explicitly
     because getting the order wrong restores the exact problem #330 fixed)
+    **Settled 2026-10-31: recommendation accepted — two PRs, B only after `main` has vitest 4.**
 33. **No GitHub issue is filed.** The branch is `dev/vitest-4`, the "work without a GitHub
     issue" form in `docs/GIT-WORKFLOW.md`'s branch table, and the brief and plan files are the
     durable record. (assumed — say so if you would rather it had an issue and a roadmap card)
@@ -296,3 +298,63 @@ n/a — No runtime or worker code changes, so there is nothing new to instrument
 
 ## 11. Done / test plan
 Settled: pending · Ack: pending
+
+### The baseline, measured today before anything moved
+
+Run on this branch under `vitest@2.1.9` + pool `0.12.21`, 2026-10-31:
+
+| Project | Test files | Tests |
+|---|---|---|
+| jsdom | 37 | 723 |
+| workers | 4 | 103 — harness 4, schema 6, analytics-db 44, backfill 49 |
+| **Total** | **41** | **826** — all passing, 6.21s |
+
+34. **`41` files and `826` tests is the acceptance number for every step.** (assumed) This is
+    the strongest check available, and it is why it is written down *before* the work: both
+    silent-drop failure modes change this number and nothing else about the run. Losing the
+    workers project reads `37 / 723`; losing jsdom reads `4 / 103`. Either is green.
+35. **Commit 1 is done when** `npm test` reports `41 / 826` passing under `vitest@3.2.7`, with
+    the workspace file untouched. (assumed)
+36. **Commit 2 is done when** `npm test` reports `41 / 826` passing under `vitest@4.1.12` +
+    pool `0.19.1`, **and** the guard script passes, **and** `vitest list --json` shows both
+    `jsdom` and `workers` as `projectName` values. Three conditions, not one. (assumed)
+37. **A side-finding worth keeping.** Under vitest 2, `--config vitest.workers.config.ts` is
+    *ignored* while `vitest.workspace.ts` exists — both single-project runs reported the full
+    `41 / 826`, because the workspace file wins. So "run one project" is not something this
+    repo can currently do by `--config`. Under vitest 4 with named projects, `--project jsdom`
+    and `--project workers` will do it properly. A small gain, recorded so nobody hunts for it.
+    (assumed)
+38. **`npm install` on this repo produces unrelated lockfile churn.** Observed today: a plain
+    `npm install` stripped `"dev": true` from 26 optional platform-specific entries, unrelated
+    to anything being changed. Each commit's lockfile diff is read before committing, and
+    unrelated churn is reverted. (assumed)
+39. **What QA level does this warrant — any Playwright run?**
+    My rec: **none, as a gate.** Why, and `CLAUDE.md` asks for this to be decided up front
+    rather than discovered: the change touches no runtime code at all — nothing under `src/`,
+    no worker, no migration — so there is no behaviour for an e2e test to catch that the 826
+    unit tests do not already cover. Against that, every e2e job on GitHub is currently red
+    because `ubuntu-latest` rolled to 26.04 and Playwright ships no chromium for it, so a
+    Playwright run right now returns a red that means nothing about this change. Running it
+    would cost 40 minutes to produce an unreadable signal.
+    What I would do instead: rely on `41 / 826` plus the guard, and note in the PR that e2e
+    was deliberately not run, with this reason, so the next reader does not think it was
+    forgotten.
+40. **CI green means the `npm test` step in `ci-smoke.yml`.** The e2e steps in that workflow
+    will stay red until #330's `ubuntu-24.04` runner pin reaches `main` — unrelated to this
+    change, and not something this PR fixes or should wait for. Stated here so a red checkmark
+    on the PR is read correctly rather than chased. (assumed)
+41. **The Pi cap cannot be validated from a laptop — who confirms it, and when?**
+    My rec: **Jamie runs `npm test` on the Pi from this branch before PR A merges, and it
+    blocks the merge.** Why blocking: this is the one setting in the change whose failure mode
+    is measured and severe — 2026-08-22, three jsdom workers in a 1000 MB cgroup produced 33.6
+    million reclaim events and nine hours of CPU that made almost no progress. My change also
+    newly brings the workers project under the cap (item 25), so the Pi's behaviour is not
+    identical to today's even though it should be strictly safer. A laptop run proves the cap
+    is *honoured* — I measured that — but not that `2` is still the right number on that box.
+    Nothing else in this PR has a failure cost anywhere near it, so it is the one thing worth
+    blocking on.
+42. **`da-build` runs on the diff before PR A is opened,** after human review, per `CLAUDE.md`.
+    (assumed)
+43. **Rollback is a clean revert.** Two commits, no migration, no runtime change, no stored
+    state — reverting them restores vitest 2 exactly. Nothing needs undoing anywhere else.
+    (assumed)
