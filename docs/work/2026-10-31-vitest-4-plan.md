@@ -594,3 +594,52 @@ right. I re-verified every High myself before acting.
   verifiable: once vitest 4 lands it silently runs jsdom-only until the root config lists both
   projects. Saying that once, at the top, is more honest than four separately-worded
   almost-green outcomes.
+
+
+---
+
+## Build record — what it actually took, 2026-10-31
+
+Both commits landed as planned, and `npm test` is **41 files / 826 tests** locally
+(**822 with 1 skipped** in CI, file count 41 either way), both projects named, guard green.
+**No test file needed editing**, confirming brief item 53's "possibly zero" from the far side.
+
+Three things the plan did not predict, all surfaced by CI rather than by review:
+
+1. **`.nvmrc` → 24.** The Cloudflare Workers build failed with no log beyond a dashboard link.
+   Bisected across three real builds:
+
+   | commit | vitest | pool | configs | build |
+   |---|---|---|---|---|
+   | `0d18b38` | 3.2.7 | 0.12.21 | old | **success** |
+   | `cfaca7a` | 4.1.12 | 0.19.1 | **old** | **failure** |
+   | `ba0fb71` | 4.1.12 | 0.19.1 | new | failure |
+
+   The middle row exonerated the config rewrite. Cause: vitest 4 is the first of these to drop
+   Node 18 (`^20 || ^22 || >=24`, where `3.2.7` took `^18 || ^20 || >=22`), `npm ci` installs
+   devDependencies even though the builder never runs them, and there was **no `.nvmrc`** — so
+   the builder chose its own Node while CI pins `24` and dev is `24`.
+   **Wider than this branch:** `.nvmrc` is absent from both `main` and `staging`. That builder
+   has always been unpinned, and any future bump raising an `engines.node` floor fails
+   identically with the same unreadable error.
+2. **The `ubuntu-24.04` runner pin**, taken verbatim from #330. Known limit 4 said the e2e jobs
+   would stay red until #330 reached `main` — true, but it missed that `e2e smoke` is a
+   *required* check, so the PR could not merge at all. Byte-identical to #330's copy so a later
+   merge is a no-op.
+3. **Two stale assertions in `e2e/specs/player-stats.spec.ts`** — a pre-existing `staging`
+   defect this branch is merely the first to run. Every recent passing ci-smoke run came from a
+   **`main`-based** branch (#330 and the Dependabot ones, which target the default branch), and
+   `main` lacks the stats redesign, so e2e had not gated staging's stats markup since
+   `ubuntu-latest` rolled. Kept in this PR by Jamie's call, as one revertible commit.
+
+### What this says about the plan
+
+The plan's own verification was sound — the guard, the counts, the `reset()` fix and the Pi cap
+all behaved exactly as written, and `da-build` could not break them. What it missed was
+entirely **environmental**: the one build host nobody had pinned, and a required check whose
+redness it had classified as merely informational. Both were knowable in advance; neither was
+looked for, because the plan reasoned about this repo's code and not about the three machines
+that run it.
+
+The lesson worth carrying: "CI green" was defined in known limit 4 as "the `npm test` step".
+That was too narrow. A PR cannot merge on a required check being red for someone else's reason.
