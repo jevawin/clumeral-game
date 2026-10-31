@@ -647,6 +647,11 @@ That was too narrow. A PR cannot merge on a required check being red for someone
 
 ## The Pi check — brief item 41 satisfied, 2026-10-31
 
+> **Superseded in part.** The first run's headline figure — a 285 MB host-`free` delta — was
+> wrong by nearly half. A clean re-run measured a **539 MB cgroup peak**. See "The clean
+> re-run" below, which is the authoritative record; this section is kept because *how* the
+> first number misled is worth knowing.
+
 **Reported by Jamie via the #330 session, not measured here.** Run on the Pi from
 `dev/vitest-4` at `2d13fec`; no files changed, nothing committed.
 
@@ -696,3 +701,45 @@ workers tests passed — consistent with workerd's platform binary arriving via 
 optional dependency (`@cloudflare/workerd-linux-arm64`) rather than via a postinstall step. Not
 chased further, and not this PR's to fix; noted because a future Workers-pool bump that *does*
 depend on a postinstall would fail there and nowhere else.
+
+
+## The clean re-run — the authoritative Pi figures, 2026-10-31
+
+**Reported by the Pi via the #330 session, not measured here.** `dev/vitest-4` at `2eef3f9`,
+`npm test` only with no `npm ci` in the same turn. Working tree clean, nothing committed.
+
+The method is what makes this one authoritative. Rather than reading its own turn cgroup — 1200
+MB cap, and containing the `claude` process, which is what contaminated the first run — the Pi
+created a **fresh temporary cgroup carrying the dev bot's real limits** from `ai-devbot.slice`
+(`MemoryHigh=1000M`, `MemoryMax=1200M`) and ran only the suite inside it. So the peak counter
+covers the test run and nothing else.
+
+| | |
+|---|---|
+| **cgroup peak** | **539 MB** (565,460,992 bytes) against the 1000 MB soft limit — **54%**, ~460 MB headroom |
+| Highest sample | 538 MB across **49 samples at 0.5s** over a 22s run — peak and sample agree, so no spike was missed |
+| Throttle line | never reached; no hard-limit hits, no kills, no `oom` lines in dmesg |
+| Test files | 41 — 40 passed, 1 skipped (`sw-precache.spec.ts`) |
+| Guard | `both projects ran their full file count (jsdom: 37, workers: 4)` |
+| Tests | 821 passed, 1 skipped; output tail read, exit 0 |
+
+**Both caveats on the first run are closed.** Sampling was 0.5s across 49 samples rather than 2s
+across 12, and the cgroup carried the dev bot's actual 1000 MB soft limit rather than 1200 MB.
+
+**The verdict is unchanged and stronger.** 539 MB at 54% of the soft limit, against #313's three
+~300 MB workers pushing past 900 MB in the same 1000 MB cgroup and producing 33.6 million
+reclaim events. So root placement of `maxWorkers` (item 52) plus the new `reset()` D1 I/O
+(Task 5) cost about 250 MB of headroom against the old shape, and left roughly 460 MB spare.
+Brief item 41 is satisfied airtight rather than merely passed.
+
+### Why the first number was wrong, which is the part worth keeping
+
+285 MB was a **host-wide `free` delta**; 539 MB is the **cgroup's own peak counter**. The
+host-level measure underestimated by 47% — precisely the failure the first run's own caveat
+predicted, and for both of its reasons at once: 2s sampling across a 23s run can miss a peak
+entirely, and a host-wide delta attributes only memory the host did not already have available,
+not what the run actually charged to its cgroup.
+
+The lesson for anyone re-checking this later: **measure the cgroup, not the host, and build the
+cgroup with the limits you actually care about.** A `free` delta is not a proxy for a memory
+ceiling, and a turn cgroup that also contains the agent is not a measure of the test run.
