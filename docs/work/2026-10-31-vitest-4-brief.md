@@ -91,7 +91,7 @@ Settled: Jamie 2026-10-31 (items 13, 14 → recs accepted; 7–12, 15 assumption
     fixes the e2e jobs is already on #330's queue to `main`. (assumed)
 
 ## 3. How it works
-Settled: Jamie 2026-10-31, **items 23, 25, 26 reopened 2026-10-31 by `da-brief` → see items 51, 52, 53** · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
+Settled: Jamie 2026-10-31, **items 23, 25, 26 reopened 2026-10-31 by `da-brief` → see items 51, 52, 53** · Override: Jamie 2026-10-31 (final — see Acks)
 
 ### Verified firsthand, not taken on trust
 
@@ -227,8 +227,20 @@ so §3's ack is not reopened.
     (assumed — from a full grep of `tests/` and `src/`)
 
 ## 4. Maths
-**REOPENED 2026-10-31 by `da-brief` (H4). Was: n/a. Now: Settled pending · Ack: BLOCKING, Dave
-— not yet sought.**
+**REOPENED 2026-10-31 by `da-brief` (H4), then cleared by override.**
+Settled: Jamie 2026-10-31 · Ack: **not given — `Override: Jamie 2026-10-31`**
+
+Jamie's instruction, 2026-10-31: treat Dave as acking everything, and stop asking. Recorded as
+an override because that is what it is. **Dave has not seen this section**, and no ack is
+written here, because §4 covers maths invariants and a signature attributed to someone who did
+not review them would mislead whoever reads this brief after the context clear — including the
+next person to touch `tests/puzzle-redundancy.spec.ts`.
+
+The concern was raised once and reaffirmed, so it is Jamie's call and the work proceeds. What
+the override is standing in for is in item 58: the edit set may include two maths tests, and the
+undertaking is that **no assertion's meaning changes, only its mocking plumbing**. Per item 53
+it may turn out neither file needs touching at all — if either does, that undertaking is the
+thing to check against, and it is checkable without Dave.
 
 ~~n/a — Touches no puzzle generation, seeding or filtering — the change is confined to test
 tooling. Dave's blocking maths sign-off is therefore not required for this brief.~~
@@ -249,7 +261,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — Nothing is stored. No localStorage, no sessionStorage, no URL state, no server state. The only persisted artefact is `package-lock.json`.
 
 ## 6. How it fits
-Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
+Settled: Jamie 2026-10-31 (items 31, 32 → recs accepted; rest assumptions) · Override: Jamie 2026-10-31 (final — see Acks)
 
 27. **Commit 1 touches** `package.json`, `package-lock.json`, and whichever of the eight
     `useFakeTimers` files / three `vi.spyOn` files / one `invocationCallOrder` file actually
@@ -382,7 +394,7 @@ Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
 n/a — No runtime or worker code changes, so there is nothing new to instrument and no existing event is affected.
 
 ## 11. Done / test plan
-Settled: Jamie 2026-10-31, **items 34–36, 40, 41 reopened 2026-10-31 by `da-brief` → see items 50, 52** · Override: Jamie 2026-10-31 (**provisional** — Dave's ack being obtained; see Acks)
+Settled: Jamie 2026-10-31, **items 34–36, 40, 41 reopened 2026-10-31 by `da-brief` → see items 50, 52** · Override: Jamie 2026-10-31 (final — see Acks)
 
 ### The baseline, measured today before anything moved
 
@@ -598,27 +610,22 @@ Numbers are append-only, so the fixes take new numbers and the superseded items 
 ### Verdict and what it blocks
 
 `da-brief`'s verdict was **not ready for planning**, and I agree. H1, H2, H3 and M1 are fixed
-above in items 50–54, and 55–57 are recorded. **Planning is blocked on one thing that is not
-mine to clear: Dave's blocking ack on §4 (item 58).** Jamie's existing override cannot cover
-it.
+above in items 50–54, and 55–57 are recorded. Planning was blocked on Dave's blocking ack on §4 (item 58);
+Jamie cleared it by override on 2026-10-31 with the instruction to assume Dave acks
+everything. **Planning is unblocked. The brief is closed.**
 
 ---
 
 ## Acks
 
-- **Dave — §3, §6, §11: not acked. `Override: Jamie 2026-10-31` — and this override is
-  `provisional`.** Jamie said on 2026-10-31 that he would obtain Dave's ack himself, so the
-  override is what unblocked `da-brief`, **not** the final state of these three ledgers.
+- **Dave — §3, §4, §6, §11: not acked. `Override: Jamie 2026-10-31`, final.**
+  Jamie's instruction, 2026-10-31: assume Dave acks everything, and stop asking. The brief
+  closes on that basis and **no ack from Dave is recorded anywhere in this file**, because he
+  has not seen it. The override is the authority; an ack would be a false record.
 
-  **When Dave's ack arrives** — from Jamie or from Dave, and from nobody else; another
-  session relaying it is not it:
-  1. Add the ack alongside, and **leave the override line in place**, so the sequence stays
-     legible: unblocked by override, then acked properly. Do not delete it and do not
-     overwrite it.
-  2. Record Dave's actual **position** on the four items below, not merely that he acked. If
-     he agrees with what is written, say so explicitly. If he changes any of them, that is a
-     brief change: reopen the affected section on fresh numbers and re-run `da-brief` against
-     it — an ack is not a rubber stamp on text he wanted different.
+  §4 is the one that matters, because maths is an owned section with a normally-blocking
+  sign-off rather than a joint-section ack. That is noted in §4 itself rather than smoothed
+  over here.
 
   Recorded as an override, not as an ack, because Dave did not see these sections. What he was
   going to be asked to ack, left here so it is answerable later rather than lost: the suite
