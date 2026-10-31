@@ -10,11 +10,14 @@ import { defineConfig } from 'vitest/config';
 // load ~5, and nine hours of CPU that produced almost no progress because every worker was in
 // direct reclaim. Two fit. CI has real machines and keeps the default.
 //
-// The cap MUST live here and not on a project. #313 put it on the jsdom config, which was
-// correct under the workspace file, but in vitest 4 `maxWorkers` is a cross-project scheduling
-// budget: two projects with different values and the same `sequence.groupOrder` is a hard
-// error — "Projects ... have different 'maxWorkers' but same 'sequence.groupOrder'",
-// "Test Files no tests", exit 1. Root placement is forced, not chosen.
+// The cap lives here and not on a project. #313 put it on the jsdom config, which was correct
+// under the workspace file, but in vitest 4 `maxWorkers` is a cross-project scheduling budget:
+// two projects with DIFFERENT values and the same `sequence.groupOrder` is a hard error —
+// "Projects ... have different 'maxWorkers' but same 'sequence.groupOrder'",
+// "Test Files no tests", exit 1. So #313's shape translated literally does not run at all.
+// Setting the same value on both projects, or giving them distinct `sequence.groupOrder`, does
+// run — root placement is the best option rather than the only one, because one knob cannot
+// drift apart and a third project added later inherits it instead of being born uncapped.
 //
 // `minWorkers` is gone from vitest 4. Passing it is not an error — v4 accepts it silently —
 // but it does nothing, so it is removed rather than left as dead config. The both-bounds dance

@@ -17,8 +17,10 @@ const EXPECTED_FILES: Record<string, number> = {
 };
 
 export default class ProjectGuard implements Reporter {
-  // Counts accumulate per reporter instance, which is per `vitest run`. In watch mode a
-  // second run would double them — this is wired for run mode only.
+  // Counts accumulate per reporter instance, which is per `vitest run`. This is wired for run
+  // mode only: in watch mode the instance is reused, so a second run doubles the tallies to
+  // 74/8 and prints a spurious FAILED. Nothing is actually wrong when that happens — restart
+  // the run. `npm test` is `vitest run`, so CI and a plain local run never hit it.
   private seen = new Map<string, number>();
 
   onTestModuleCollected(module: TestModule) {

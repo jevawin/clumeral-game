@@ -28,9 +28,12 @@ export default defineConfig({
       // Read at config time, not test time: the pool serialises them into the worker.
       //
       // Points at migrations/analytics, not migrations/. `readD1Migrations` does NOT recurse
-      // — it is a flat readdir filtered to .sql — so aiming it at the parent returns [], no
-      // migrations reach the test database, and every spec in tests/worker/ fails against an
-      // empty D1.
+      // — it is a flat readdir filtered to .sql — so aiming it at the parent does not pick up
+      // the analytics migrations at all. What it picks up instead is the one .sql file sitting
+      // at the top level, 0002_import_legacy_feedback.sql, which is an INSERT INTO feedback
+      // against a table nothing has created: the setup throws
+      // "D1_ERROR: no such table: feedback" and every spec in tests/worker/ fails. Loud, but
+      // for a reason that looks nothing like the cause.
       //
       // The directory is also what keeps the feedback migrations out: 0003 and 0004 are
       // ALTER TABLE ADD COLUMN against columns 0001 already creates, so on a fresh database

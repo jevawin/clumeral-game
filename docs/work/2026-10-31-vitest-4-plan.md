@@ -467,9 +467,17 @@ per-project file counts; that `isolatedStorage` was removed upstream and isolati
 
 ## Known limits, stated rather than discovered later
 
-1. **A CLI `--reporter` replaces the config's reporters and drops the guard.** Measured:
-   `npm test -- --reporter=dot` exits 0 with the guard never running. CI runs plain `npm test`,
-   so this needs a deliberate act. Worth knowing, not worth engineering around.
+1. **The guard counts files, so three things still slip past it — each needing a deliberate
+   act, and each visible in the output or the diff.** Measured by `da-build`:
+   - `npm test -- --reporter=dot` replaces the config's reporters and drops the guard
+     entirely: exit 0, guard never runs. CI runs plain `npm test`.
+   - A whole-file `describe.skip` keeps the file count, so the guard passes and the run exits
+     0 — but the summary prints `N skipped`, and `-t` filtering behaves the same way.
+   - Deleting a spec file *and* decrementing `EXPECTED_FILES` passes, because the guard knows
+     only that the number matches, not what it ought to be. That one is a two-line diff hunk,
+     which is the point at which a human is looking.
+   None of these is the failure the guard exists for — losing a whole project silently while
+   exiting 0 — and all three are loud or reviewable. Not worth engineering around.
 2. **The Pi cap cannot be validated here, and two things changed in that project, not one.**
    Brief item 41: Jamie runs `npm test` on the Pi from this branch and it **blocks the merge**.
    He should watch **peak RSS with both projects in flight**, not wall-clock, and should not
