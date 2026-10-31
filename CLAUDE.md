@@ -6,6 +6,11 @@ Clumeral is a daily number puzzle at [clumeral.com](https://clumeral.com). Proje
 
 ## Rules (non-negotiables)
 
+- **Protect the invariants** — [docs/INVARIANTS.md](docs/INVARIANTS.md). Player history is the
+  only copy a player has and there are no accounts yet, so storage changes are additive only and
+  the `dlng_` prefix never changes. Playability, the maths, the answer never reaching the client,
+  accessibility and token integrity sit beside it. Read that file before any release and before
+  touching storage, the generator, the guess path or the worker.
 - **Never commit to `main` or `staging`** — both are protected. Work branches only.
 - **Never merge to `main`** — the user does it on GitHub. No exceptions unless explicitly granted with a reason.
 - **Never run `wrangler deploy` or `npm run deploy`** — deployment is automatic on merge to `main`.
@@ -128,6 +133,7 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Working on | Read |
 |------------|------|
 | Starting any task — current priorities, what's next | [Clumeral Roadmap board](https://github.com/users/jevawin/projects/3) — top of _Now_, then _Next_. How to manage it: [docs/ROADMAP.md](docs/ROADMAP.md) |
+| **Anything that could damage player data, playability or the maths** — read before any release | [docs/INVARIANTS.md](docs/INVARIANTS.md) |
 | Puzzle logic, seeding, KV storage, **archive integrity** (puzzles are KV write-once — generator changes don't rewrite history) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Routing, URL rules, screen transitions | [docs/URL-ARCHITECTURE.md](docs/URL-ARCHITECTURE.md) |
 | CSS, theming, clue display | [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |

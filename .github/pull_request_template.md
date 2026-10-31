@@ -17,6 +17,22 @@
 
 ## Checklist
 
+### Protected invariants ([INVARIANTS.md](../docs/INVARIANTS.md))
+
+Tick what this PR could plausibly affect, and say how you checked. "N/A" is a fine answer —
+an untouched invariant is not a risk. The first three are the ones that cause damage rather
+than bugs.
+
+- [ ] **Player history** — no change to the `dlng_` prefix, no `dlng_active.v` bump, no field
+      renamed, re-typed, removed, or given tighter validation. Old stored shapes still read.
+- [ ] **Playability** — the game can be opened, played and completed. e2e green.
+- [ ] **Maths and logic** — exactly one solution, every clue true, none redundant. Dave signed
+      off if the generator changed.
+- [ ] **The answer never reaches the client** — no answer field on any `/api/puzzle` response.
+- [ ] **Accessibility** — keyboard, screen reader and contrast unaffected (or Jamie signed off).
+- [ ] **Bindings and migrations** — any new binding also added to `env.preprod`; migrations
+      additive only.
+
 ### Code quality
 
 - [ ] No `console.log` left in production code
