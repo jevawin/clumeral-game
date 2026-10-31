@@ -91,7 +91,7 @@ Settled: Jamie 2026-10-31 (items 13, 14 → recs accepted; 7–12, 15 assumption
     fixes the e2e jobs is already on #330's queue to `main`. (assumed)
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Jamie 2026-10-31 (items 21, 23, 25 → recs accepted; rest assumptions) · Ack: pending — Dave, §3
 
 ### Verified firsthand, not taken on trust
 
@@ -164,6 +164,7 @@ Both exit 0. **"The tests passed" cannot detect either.** This is why item 23 ex
     The alternative is inlining the jsdom project as an object inside the root's `projects`
     array — fewer files, but the root file then holds both global options and one project's
     options, which is the confusion we are trying to design out.
+    **Settled 2026-10-31: recommendation accepted — new `vitest.jsdom.config.ts`.**
 22. **Both projects get an explicit `test.name`** — `jsdom` and `workers`. (assumed) Why: the
     guard in item 23 asserts on project names, and a name auto-derived from a filename is an
     implementation detail that could change under us.
@@ -178,6 +179,7 @@ Both exit 0. **"The tests passed" cannot detect either.** This is why item 23 ex
     hazard. The guard closes precisely that gap and nothing else.
     Considered and rejected: reading the reporter's project names by eye (works once, protects
     nobody later); a spec that asserts `import.meta.env` (a spec that is not run cannot fail).
+    **Settled 2026-10-31: recommendation accepted — guard script wired into `npm test`.**
 24. **The #313 Pi caps: `maxWorkers: 2` off CI, `minWorkers` removed.** Measured, not inferred
     — with no cap, six independent spec files reached peak concurrency **6**, confirming
     `vitest run` takes all available parallelism and the cap is still load-bearing. (assumed)
@@ -193,7 +195,8 @@ Both exit 0. **"The tests passed" cannot detect either.** This is why item 23 ex
     memory and only costs wall-clock on four spec files, but it *is* a behaviour change to the
     one setting whose failure cost nine hours of a wedged box.
     **Neither placement can be validated from a laptop.** This needs Jamie to confirm on the
-    Pi — see item 31 in §11. I am flagging it rather than asserting it.
+    Pi — see §11. I am flagging it rather than asserting it.
+    **Settled 2026-10-31: recommendation accepted — root config, pending Pi confirmation.**
 26. **The one concrete fake-timer risk is `tests/completion-stats.spec.ts`.** Of the eight
     files using `useFakeTimers`, it is the only one that also reaches code calling
     `performance.now()` — which vitest 3 began faking by default when it dropped `toFake`.
@@ -214,6 +217,62 @@ n/a — Nothing is stored. No localStorage, no sessionStorage, no URL state, no 
 
 ## 6. How it fits
 Settled: pending · Ack: pending
+
+27. **Commit 1 touches** `package.json`, `package-lock.json`, and whichever of the eight
+    `useFakeTimers` files / three `vi.spyOn` files / one `invocationCallOrder` file actually
+    break. No config file. (assumed)
+28. **Commit 2 touches** `package.json`, `package-lock.json`, `vitest.config.ts` (reduced to a
+    root), `vitest.jsdom.config.ts` (new), `vitest.workers.config.ts` (rewritten),
+    `vitest.workspace.ts` (deleted), and a new guard script under `scripts/`. The `test` script
+    in `package.json` gains the guard. (assumed)
+29. **Nothing under `src/`, `migrations/`, `e2e/` or `.github/workflows/` is touched.** No
+    worker or runtime code changes, so `wrangler.jsonc` is untouched too. (assumed)
+30. **`tests/wrangler-bindings.spec.ts` keeps its job.** It asserts `wrangler.jsonc` still
+    declares an `ANALYTICS_DB` binding, which is what stops the duplicated binding in the test
+    config from drifting. The rewrite must not lose that relationship — the comment explaining
+    it moves with the config. (assumed)
+31. **Do we lift the three Dependabot `ignore` entries, as the task set out — and remove the
+    `CLAUDE.md` outstanding action?**
+    My rec: **no. Narrow and rewrite them instead; do not lift them.** Verified against npm
+    2026-10-31, and this contradicts the task as briefed:
+    - No pool release peers vitest 5. `0.23.0`, the newest, still declares `vitest "^4.1.0"`.
+      So lifting the `vitest` major ignore has Dependabot propose vitest 5 against a pool that
+      cannot accept it — ERESOLVE, every CI job dead before a test runs, which is #326, #328
+      and #329 again verbatim.
+    - `@vitest/*` major is the same case, via the transitively-tracked `@vitest/mocker` that
+      #329 was filed against.
+    - Lifting the pool's *minor* ignore has Dependabot propose `0.23.0`, and every pool from
+      `0.20.0` onward ships a **miniflare 5 alpha** (`5.20260730.0-alpha` through
+      `5.20260815.0-alpha`). An alpha runtime under the D1 assertions is worse than an old one.
+    The peer-lock is **structural**, not a symptom of being on vitest 2. Reaching 4 moves the
+    wall from the 2→4 boundary to the 4→5 one; it does not remove it. So the entries stay, and
+    what changes is their *reasons* — and the `CLAUDE.md` outstanding action is **rewritten,
+    not deleted**: it stops saying "upgrade 2→4" (done) and starts saying "the pool gates
+    vitest's major; revisit when a pool release peers `^5`, and when pool 0.x returns to a
+    stable miniflare".
+    The cost of my recommendation: the repo keeps three `ignore` entries indefinitely, which
+    looks like unfinished business to a reader. The rewritten comments are what stop it being
+    mistaken for that.
+32. **Which branches, and how many PRs?**
+    My rec: **two PRs, sequenced, and the second cannot be written yet.**
+    - **PR A — `dev/vitest-4` → `staging`.** The upgrade: both commits, the brief, the plan.
+      Touches no `.github/` file. This is the PR this brief is for.
+    - **PR B — a narrow branch off `main`,** rewriting the three `ignore` reasons in
+      `.github/dependabot.yml` and the `CLAUDE.md` outstanding action. Per
+      `docs/GIT-WORKFLOW.md` ("What else lands on `main`"), GitHub reads
+      `.github/dependabot.yml` from the default branch only, so routing it through `staging`
+      leaves it inert for months. It must target `main` directly and stay narrow.
+    **Why B cannot be written yet, and must not be rushed.** The `ignore` entries do not exist
+    on `staging` or on `main` — checked: `.github/dependabot.yml` is absent from `staging`
+    entirely, and `origin/main`'s copy mentions `vitest` once, in a group comment. They exist
+    only on the unmerged #330. So B has nothing to edit until #330 lands on `main`. Worse, if B
+    went in while `main` is still on vitest 2, Dependabot would re-file against a vitest-2
+    `main` and the churn would return immediately. **B lands only after the upgrade itself has
+    reached `main` via the normal `staging` → `main` release.** (assumed, but stated explicitly
+    because getting the order wrong restores the exact problem #330 fixed)
+33. **No GitHub issue is filed.** The branch is `dev/vitest-4`, the "work without a GitHub
+    issue" form in `docs/GIT-WORKFLOW.md`'s branch table, and the brief and plan files are the
+    durable record. (assumed — say so if you would rather it had an issue and a roadmap card)
 
 ## 7. How it looks
 Settled: n/a (short form, approved by Jamie 2026-10-31) · Ack: n/a
