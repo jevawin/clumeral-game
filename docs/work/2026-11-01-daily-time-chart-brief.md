@@ -106,7 +106,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     loading any page.
 
 ## 4. Maths
-Settled: pending · Ack: n/a (owned section — Dave signs)
+Settled: Jamie 2026-11-01 (accepted item 28: Dave signs) · Sign-off: Dave pending (blocking) · Ack: n/a
 
 27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
 28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
@@ -117,3 +117,34 @@ Settled: pending · Ack: n/a (owned section — Dave signs)
     My rec: yes, Dave signs them here, as the maths owner, before Plan. Why: he set the
     log-scale requirement, and "top X%" is a number we publish to every player. Getting the
     definition wrong is cheap to fix but embarrassing to ship.
+
+## 5. State & persistence
+Settled: pending · Ack: pending
+
+29. The field lives on the server only, in `analytics_events` in `clumeral-analytics`. The
+    one storage change is the puzzle-number column from item 24: a new nullable column via
+    a numbered migration, additive. (assumed — settled in item 24)
+30. Nothing new is stored on the client. No new `localStorage` or `sessionStorage` key; the
+    `dlng_` keys are untouched. The field is fetched each visit and held in memory only.
+    (assumed — item 25 makes a cache pointless)
+31. Your own time comes from today's existing history entry (`seconds`), the same value the
+    hero line already shows. (assumed — read from `src/app.ts:933`)
+32. The field is filtered by hostname, as `/stats` is, so pre-prod and preview traffic never
+    reaches a production card. (assumed — `hostname` exists for exactly this, see the
+    `0005` migration)
+33. The endpoint will answer for any puzzle number, not just today's. A past puzzle's times
+    are harmless — they are times, never answers. (assumed — refusing them buys nothing and
+    the server cannot know a browser's local "today")
+34. Caching and cost: do we cache the read?
+    My rec: no cache. Query the database on every `/solved` visit.
+    Why: volume is tens of solves a day. The query is bounded by event, hostname and a
+    narrow `ts` window, which the existing `(hostname, event, ts)` index covers, so each read
+    touches a handful of rows. D1's free allowance is millions of rows read a day. A cache
+    adds staleness (item 25) to save nothing. Revisit if daily solves pass the thousands.
+35. What does the server expose, given low n makes times identifiable?
+    My rec: return only `(second, count)` pairs for the puzzle number. No uid, no timestamp
+    of the solve, no idle label. Accept that at n = 2 a player who knows who else played
+    can work out that person's time.
+    Why: one dot per distinct second is what the card draws, so the client needs exactly
+    this and no more. A solve time is low-harm to reveal. The alternative — hide the card
+    below some n — throws away the low-data states that item 6 decided to ship.
