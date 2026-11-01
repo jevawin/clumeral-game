@@ -493,10 +493,20 @@ function renderBox(i: number): void {
   // The static aria-label in index.html is the name until this first runs; it is
   // the same string, and dropping it left the boxes nameless while /api/puzzle was
   // in flight. Keep the two in step.
-  const boxName = el.dataset.boxName ?? el.getAttribute("aria-label") ?? "";
-  el.setAttribute("aria-label", `${boxName}, ${left.length} remaining`);
+  //
+  // No fallback if data-box-name is missing: leaving the static label alone is the
+  // only safe failure. Falling back to the element's own aria-label would read the
+  // name this function wrote last time, so each render would append another count
+  // — "Tens box, 10 remaining, 9 remaining" — growing with every keystroke.
+  const boxName = el.dataset.boxName;
+  if (boxName) el.setAttribute("aria-label", `${boxName}, ${left.length} remaining`);
+  // The box name is repeated in the description, which is redundant on focus and
+  // the point of it anywhere else: the target is a sibling of the box rather than
+  // a child (a child would be wiped by the innerHTML above, and would count as the
+  // button's own text), so browse mode and VoiceOver's swipe reach it as a node of
+  // its own. Unprefixed it was three unlabelled digit runs after the three boxes.
   const desc = document.querySelector(`[data-box-digits="${i}"]`);
-  if (desc) desc.textContent = left.join(", ");
+  if (desc) desc.textContent = boxName ? `${boxName}: ${left.join(", ")}` : left.join(", ");
 
   // Active state: accent border + accent shadow
   el.classList.toggle("border-accent", i === activeBox);

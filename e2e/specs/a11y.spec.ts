@@ -216,6 +216,10 @@ test.describe("accessibility — digit box names", () => {
     [2, "Units box", 10, "0, 1, 2, 3, 4, 5, 6, 7, 8, 9"],
   ] as const;
 
+  // Deliberately NOT gated to A11Y_PROJECTS like the axe scans above. Those check
+  // DOM and contrast, which don't vary by engine; the accessible DESCRIPTION is a
+  // computed accname value resolved through an IDREF, and that is exactly the kind
+  // of thing WebKit and Gecko implement differently. Worth the five runs.
   test("each box hides its digits, counts what is left and describes it", async ({ page }) => {
     await gotoPlayableGame(page);
     await waitForScreenSettled(page, "game");
@@ -223,20 +227,47 @@ test.describe("accessibility — digit box names", () => {
 
     // Untouched board. The hundreds box has no 0 — the answer is 100-999.
     for (const [i, name, count, digits] of BOXES) {
-      await expect(game.digit(i)).toHaveAttribute("aria-label", `${name}, ${count} remaining`);
-      await expect(page.locator(`[data-box-digits="${i}"]`)).toHaveText(digits);
+      const box = game.digit(i);
+      await expect(box).toHaveAttribute("aria-label", `${name}, ${count} remaining`);
       await expect(page.locator(`[data-digit="${i}"] .digit-box__grid`)).toHaveAttribute(
         "aria-hidden",
         "true",
       );
+
+      // The computed description, not just the target's text. The IDREF is the
+      // whole delivery mechanism: drop aria-describedby from the boxes or typo one
+      // id and every other assertion here still passes while the fix is dead.
+      await expect(box).toHaveAccessibleDescription(`${name}: ${digits}`);
+      // The accessible name is asserted twice on purpose — once as the attribute
+      // above, once as the computed name here, which is what a screen reader
+      // actually says and which the description must not leak into.
+      await expect(box).toHaveAccessibleName(`${name}, ${count} remaining`);
     }
 
     // Eliminate 0 and 1 from the tens box: the count and the description follow.
     await game.digit(1).click();
     await game.key(0).click();
     await game.key(1).click();
-    await expect(game.digit(1)).toHaveAttribute("aria-label", "Tens box, 8 remaining");
-    await expect(page.locator('[data-box-digits="1"]')).toHaveText("2, 3, 4, 5, 6, 7, 8, 9");
+    await expect(game.digit(1)).toHaveAccessibleName("Tens box, 8 remaining");
+    await expect(game.digit(1)).toHaveAccessibleDescription(
+      "Tens box: 2, 3, 4, 5, 6, 7, 8, 9",
+    );
+  });
+
+  // The one-digit branch paints a single big digit instead of the grid, and hides
+  // it the same way. Nothing else covers that branch's aria-hidden: game-solve
+  // asserts the span's text, which the attribute doesn't affect.
+  test("a box narrowed to one digit hides it and says so", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+    const game = new GamePage(page);
+
+    await game.digit(1).click();
+    for (const d of [0, 1, 2, 3, 4, 5, 6, 7, 8]) await game.key(d).click();
+
+    await expect(game.digit(1)).toHaveAccessibleName("Tens box, 1 remaining");
+    await expect(game.digit(1)).toHaveAccessibleDescription("Tens box: 9");
+    await expect(page.locator('[data-digit="1"] span[aria-hidden="true"]')).toHaveText("9");
   });
 
   // The sort in renderBox is load-bearing and invisible to any test that only
@@ -250,10 +281,12 @@ test.describe("accessibility — digit box names", () => {
 
     await game.digit(1).click();
     await game.key(0).click();
-    await expect(page.locator('[data-box-digits="1"]')).toHaveText("1, 2, 3, 4, 5, 6, 7, 8, 9");
+    await expect(game.digit(1)).toHaveAccessibleDescription("Tens box: 1, 2, 3, 4, 5, 6, 7, 8, 9");
     await game.key(0).click();
-    await expect(page.locator('[data-box-digits="1"]')).toHaveText("0, 1, 2, 3, 4, 5, 6, 7, 8, 9");
-    await expect(game.digit(1)).toHaveAttribute("aria-label", "Tens box, 10 remaining");
+    await expect(game.digit(1)).toHaveAccessibleDescription(
+      "Tens box: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9",
+    );
+    await expect(game.digit(1)).toHaveAccessibleName("Tens box, 10 remaining");
   });
 
   // The regression guard for this fix's own first draft, which dropped the static
@@ -280,7 +313,12 @@ test.describe("accessibility — digit box names", () => {
   // at all, which is why nothing had caught it.
   rawTest("the boxes are named before the puzzle arrives, and if it never does", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    rawTest.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "route interception is unreliable on WebKit with an active service worker (see fixtures.ts)",
+    );
+
     await seedHistory(page, [{ date: "2026-01-01", tries: 3, answer: 123 }]);
     await page.route("**/api/puzzle**", (route) => route.abort());
     await page.goto("/play");
