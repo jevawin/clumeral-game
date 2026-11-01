@@ -154,3 +154,44 @@ Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: D
 37. Jamie, 2026-11-01, on item 35, as a hard rule: the endpoint **never** returns a uid, a
     solve timestamp, or anything other than a time and its count. This holds for any future
     change to the endpoint, not just this build.
+
+## 6. How it fits
+Settled: pending · Ack: pending
+
+38. Client rendering hangs off `renderCompletion` in `src/completion.ts`, which builds the
+    #311 panel synchronously. The chart needs a fetch, so it renders into its own slot after
+    the rest of the panel is up and never delays it. (assumed — item 23 already says the
+    panel must not depend on it)
+39. The Idea-O computation block (positions, sizes, median rule, p95 clip, rank and
+    percentile) is ported into one new pure client module, with no DOM and no fetch, so it
+    is unit-testable on its own. Rendering sits beside it. (assumed — handover: port the
+    block, do not re-derive it)
+40. Your time is sent with the puzzle number: `track()` in `src/app.ts` gains an optional
+    puzzle number, used only by the `puzzle_time` call at `src/app.ts:1131`. No other event
+    changes. (assumed — item 24, and item 14 keeps `puzzle_complete` out)
+41. Worker: `POST /api/event` (`src/worker/index.ts:424`) accepts the optional puzzle
+    number; `recordEvent` (`src/worker/analytics-db.ts:114`) writes it, storing NULL for
+    anything that is not a positive integer. The Analytics Engine dual write does not gain
+    it — AE is being retired. (assumed)
+42. One new public read-only route in `src/worker/index.ts`, with its query in
+    `src/worker/analytics-db.ts`. It returns `(second, count)` pairs only (items 35, 37),
+    clamped to 0–86400, filtered by hostname, and sent `Cache-Control: no-store` (items 25,
+    34). It sits under `/api/`, so the service worker already treats it network-only
+    (`public/sw.js:53`). (assumed)
+43. Migration `migrations/analytics/0008_*.sql` adds the nullable puzzle-number column. 0008
+    follows the highest existing number across both directories (0007). No new binding:
+    `ANALYTICS_DB` is already declared in `env.preprod`. (assumed — CLAUDE.md migration
+    rules)
+44. Untouched: `src/worker/puzzle.ts`, the generator, `/api/guess`, tokens, `PUZZLES` KV,
+    `src/storage.ts` and every `dlng_` key, `src/play-timer.ts`. The answer never comes near
+    the new route. (assumed — read against `docs/INVARIANTS.md`)
+45. Old clients — a cached PWA build that predates this — keep sending `puzzle_time` without
+    a puzzle number. Those rows are stored with NULL and never shown. (assumed — additive,
+    no breakage)
+46. Which panel modes get the card? `panelMode` (`src/completion.ts:78`) has six: random,
+    archive, marker, saving-off, new, full.
+    My rec: full, new and saving-off. Not random or archive (item 4). Not marker — it has no
+    recorded play, so no valid time (item 22).
+    Why include new: the `REVEAL_AFTER_GAMES = 2` gate is about *your* history being too
+    thin to show streaks. Today's field does not depend on your history, so a first-time
+    player has as much reason to see it as anyone — arguably more.
