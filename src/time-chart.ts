@@ -127,19 +127,22 @@ export interface Geometry {
 }
 
 const DOT = 13;
-const DOT_MIN = 5;
+const DOT_MIN = 7;
+// Dots may overlap: each gets 1.6× its share of the axis (item 132).
+const DOT_SPREAD = 1.6;
 const DOT_YOU_MIN = 11;
 const DOT_MAX = 25;
 
 /**
- * The base dot size: the axis length divided by the number of distinct seconds
- * on it, between 5px and 13px (Jamie, item 131). What crowds the axis is how
- * many dots share it, not how many people played, so a quiet day gets 13px dots
- * and a busy one shrinks towards 5px. A wider track keeps bigger dots longer.
+ * The base dot size: 1.6× the axis length divided by the number of distinct
+ * seconds on it, between 7px and 13px (Jamie, items 131, 132). What crowds the
+ * axis is how many dots share it, not how many people played, so a quiet day
+ * gets 13px dots and a busy one shrinks towards 7px. Neighbours may overlap;
+ * the background ring keeps them apart. A wider track keeps bigger dots longer.
  */
 export function dotBase(distinct: number, track: number): number {
   const span = track - 2 * TRACK_INSET;
-  return Math.min(DOT, Math.max(DOT_MIN, Math.round(span / Math.max(1, distinct))));
+  return Math.min(DOT, Math.max(DOT_MIN, Math.round((DOT_SPREAD * span) / Math.max(1, distinct))));
 }
 
 /**

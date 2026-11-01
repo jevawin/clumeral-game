@@ -707,3 +707,7 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     plays a day; past about 50 players the dots still form a band, which a busy-day view
     would answer (not yet briefed). Testing panel gains 50, 100, 200 and 500-player fields.
     Dave's sign-off is owed: dot area now encodes a count. (Jamie 2026-11-01)
+132. (amends 131) **Bigger adaptive base.** Each dot gets 1.6× its share of the axis, so
+    neighbours may overlap (the background ring separates them), with the floor raised from
+    5px to 7px. 50 players on a 375px phone now draws about 11px dots; 100 and more sit at
+    7px. (Jamie 2026-11-01)

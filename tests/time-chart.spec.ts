@@ -86,12 +86,13 @@ describe('dot sizes', () => {
     expect(disc.count).toBe(0);
   });
 
-  it('starts at 13px on a quiet day and shrinks to a 5px floor as seconds crowd in', () => {
+  // Item 132: dots may overlap by 60% of their spacing, with a 7px floor.
+  it('starts at 13px on a quiet day and shrinks to a 7px floor as seconds crowd in', () => {
     expect(dotBase(1, 288)).toBe(13);
     expect(dotBase(19, 288)).toBe(13);
-    expect(dotBase(39, 288)).toBe(7);
-    expect(dotBase(74, 288)).toBe(5);
-    expect(dotBase(300, 288)).toBe(5);
+    expect(dotBase(39, 288)).toBe(11);
+    expect(dotBase(74, 288)).toBe(7);
+    expect(dotBase(300, 288)).toBe(7);
   });
 
   it('gives a wider track bigger dots for the same day', () => {
@@ -106,8 +107,8 @@ describe('dot sizes', () => {
     const shared = geometry(buildField([{ second: 10, count: 3 }, { second: 200, count: 1 }], 400));
     expect(dotSizes(shared, 288)[0]).toBe(23);
     const crowd = geometry(buildField([{ second: 10, count: 9 }, ...rows(strangers(60).map((t) => t + 20))], 9999));
-    // Base 5 here, so nine on one second is 15, nowhere near the cap.
-    expect(dotSizes(crowd, 288)[0]).toBe(15);
+    // Base 7 here, so nine on one second is 21, still under the cap.
+    expect(dotSizes(crowd, 288)[0]).toBe(21);
   });
 
   it('caps every dot at 25', () => {
