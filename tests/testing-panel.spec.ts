@@ -49,6 +49,14 @@ describe('field presets', () => {
     for (const yours of [41, 148, 900]) expect(copyFor(rowsOf(name, yours), yours), String(yours)).toBe(line);
   });
 
+  it.each([50, 100, 500])('%s is a busy day of that many players, the same every time', (n) => {
+    const id = String(n) as FieldPreset;
+    const a = rowsOf(id, 148);
+    expect(buildField(a, 148).n).toBe(n);
+    expect(rowsOf(id, 148)).toEqual(a);
+    for (const r of a) expect(r.second >= 1 && r.second <= 86400).toBe(true);
+  });
+
   it('20 is a twenty-player day', () => {
     expect(buildField(rowsOf('20', 148), 148).n).toBe(20);
   });

@@ -34,6 +34,9 @@ export const FIELD_PRESETS = [
   { id: '3', label: '3 players' },
   { id: '12', label: '12 players' },
   { id: '20', label: '20 players' },
+  { id: '50', label: '50 players' },
+  { id: '100', label: '100 players' },
+  { id: '500', label: '500 players' },
   { id: 'tie', label: 'Tied fastest' },
   { id: 'flat', label: 'All the same' },
   { id: 'slowest', label: 'You slowest' },
@@ -57,6 +60,18 @@ function randomTime(rng: () => number): number {
   return sec(120 * Math.exp(0.6 * z));
 }
 
+/** A seeded generator (mulberry32), so a busy-day preset looks the same every
+ *  time it is opened and two looks can be compared. */
+function seeded(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /** Strangers' rows for a preset, built around your own time `yours`, or 'fail'
  *  for a fetch that fails. */
 export function fieldPreset(name: FieldPreset, yours: number, rng = Math.random): FieldRow[] | 'fail' {
@@ -72,6 +87,13 @@ export function fieldPreset(name: FieldPreset, yours: number, rng = Math.random)
       return rows([0.4, 0.55, 0.7, 0.85, 1.15, 1.3, 1.6, 2, 2.6, 3.4, 5].map(y));
     case '20':
       return rows(BOARD_DAY);
+    case '50':
+    case '100':
+    case '500': {
+      // A busy day: n players in all, you included, log-normal round two minutes.
+      const next = seeded(Number(name));
+      return rows(Array.from({ length: Number(name) - 1 }, () => randomTime(next)));
+    }
     case 'tie':
       return rows([yours, y(1.5), y(2)]);
     case 'flat':
