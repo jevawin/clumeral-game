@@ -13,7 +13,7 @@ import type { Reporter, TestModule } from 'vitest/node';
 // declares test.projects never running its own test.include.
 const EXPECTED_FILES: Record<string, number> = {
   jsdom: 37,
-  workers: 4,
+  workers: 5,
 };
 
 export default class ProjectGuard implements Reporter {

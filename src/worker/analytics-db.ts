@@ -244,3 +244,56 @@ export async function getStats(
     })(),
   };
 }
+
+// ─── Today's solve times (the results card) ──────────────────────────────────
+
+/**
+ * Every puzzle_time for one puzzle number, grouped by second.
+ *
+ * HARD RULE (time chart brief item 37): this read, and the route that serves it,
+ * never returns a uid, a solve timestamp, or anything other than a time and its
+ * count — for any future change, not just this build. The rows are rebuilt below
+ * rather than passed through, so no column can leak by being selected.
+ *
+ * The ts window is the puzzle's UTC day widened by 14 hours each side, enough for
+ * every time zone (item 95). With hostname and event it is a slice of
+ * idx_analytics_host_ev_ts, and the puzzle_num filter runs over that slice only —
+ * tests/worker/schema.spec.ts asserts the plan against this exact string.
+ *
+ * The value floor is 1, not 0 like getStats' mean: recordEvent writes 0 for any
+ * non-finite value, so every junk POST is a 0s row, and a real sub-second solve is
+ * impossible (item 116). Rows outside 1–86400 are dropped, never clamped.
+ *
+ * uid <> ? leaves out every row of the caller's, since the client adds their own
+ * time locally (item 91). An empty excludeUid excludes nothing: stored uids are
+ * never empty.
+ */
+export const TODAY_TIMES_SQL = `SELECT value AS second, SUM(sample_interval) AS count
+     FROM analytics_events
+    WHERE hostname = ? AND event = 'puzzle_time'
+      AND ts BETWEEN ? AND ?
+      AND puzzle_num = ?
+      AND uid <> ?
+      AND value BETWEEN 1 AND 86400
+    GROUP BY value
+    ORDER BY value`;
+
+const ZONE_SLACK_MS = 14 * 3_600_000;
+
+export async function getTodayTimes(
+  db: D1Database,
+  q: { hostname: string; puzzleNum: number; dayStartMs: number; excludeUid: string },
+): Promise<{ second: number; count: number }[]> {
+  // Both bounds inclusive (item 117): UTC+14 sits exactly on the edge.
+  const { results } = await db
+    .prepare(TODAY_TIMES_SQL)
+    .bind(
+      q.hostname,
+      q.dayStartMs - ZONE_SLACK_MS,
+      q.dayStartMs + DAY_MS + ZONE_SLACK_MS,
+      q.puzzleNum,
+      q.excludeUid,
+    )
+    .all<{ second: number; count: number }>();
+  return (results ?? []).map((r) => ({ second: Number(r.second), count: Number(r.count) }));
+}
