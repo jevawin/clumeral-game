@@ -7,11 +7,15 @@ Gates met: no `Ack: pending`; `da-brief` recorded with fixes in items 90–102; 
 (103–108); plan-stage questions answered by Jamie (109, 110); second `da-brief` (Fable)
 recorded with fixes in items 111–121, signed and acked.
 **Revision 2, 2026-11-01** — revised for items 111–121 before any `da-plan` ran.
+**Revision 3, 2026-11-01** — `da-plan` on revision 2 found 2 High, 4 Medium and 8 Low. All
+were checked against the code and all held. Every one is fixed here; the two that needed a
+product answer went to Jamie as brief items 122 and 123. See the revision log at the end.
 **Approval:** pending — Jamie.
 **da-plan:** pending.
 
 Read the brief's "da-brief fixes", "Boards export", "Plan-stage questions" and "Fable da-brief
-fixes" sections first. Later sections win over earlier ones and over the body. Item numbers below are brief item numbers.
+fixes" sections first, then "Plan-stage questions, second round" (122, 123). Later sections
+win over earlier ones and over the body. Item numbers below are brief item numbers.
 
 ---
 
@@ -52,22 +56,30 @@ brief settled.
   grow together at 200% text (item 69). Dot sizes and line weights stay px: they are not text.
 - **D12. The board's width slack goes: `youW * 1.05` and the `+3` in `width()`** (item 115).
   Every label is measured, your own in bold.
-- **D13. The axis note sits on the second label row** (the row of your time, nearest the axis),
-  so its 14px leader starts 2px under it, exactly as your own label's leader does (items 48,
-  107). The board drew it on the top row, but the board has no leader; with the leader restored,
-  a top-row note would leave an 18px gap between text and line. Jamie checks this in the
-  item 81 screenshots.
+- **D13. The axis note** sits on the second row of its top corner (item 123), with its 14px
+  leader. When the far corner would touch your label, it drops to the bottom caption instead,
+  centred, with no leader (item 122). Both are settled in the brief; this plan only
+  implements them.
 - **D14. Dots get a 1.5px border in `--color-bg`,** not the board's `--surface`, since the card
   sits on the page background (item 97). It separates touching dots.
 - **D15. Heading icon:** a new `icon-podium` symbol in `public/sprites.svg`, from the Idea-O
-  heading path `M9 11h6v9H9zM3 15h6v5H3zM15 7h6v13h-6z`, with a viewBox cropped to the ink
-  (canvas notes: the fix belongs in the sprite sheet). The icon takes `--color-accent`, the
-  player's own colour (item 49).
+  heading path `M9 11h6v9H9zM3 15h6v5H3zM15 7h6v13h-6z`, on `viewBox="0 0 24 24"` with
+  `stroke-width="2"` and `stroke-linecap="round"`. That matches `icon-trophy`
+  (`public/sprites.svg:248`) and the rule `tests/sprites.spec.ts:28` enforces for every panel
+  icon. Cropping viewBoxes across the whole sheet (the canvas note) is out of scope. The icon
+  takes `--color-accent`, the player's own colour (item 49).
 - **D16. Defensive parsing of the response.** The client keeps only rows whose `second` is an
   integer 0–86400 and whose `count` is a positive integer, and treats a non-array `times` as a
   failure. The server already drops rows outside 1–86400 (item 116); this guards the pure
   module from malformed JSON, and a 0 that got through is still floored for placement
   (item 21's client guard).
+- **D18. The two chart tokens are declared outside `@theme`,** in a plain `:root` rule in
+  `src/tailwind.css`, as `--chart-dot` and `--chart-line`. `tests/token-parity.spec.ts`
+  requires every `--color-*` in `@theme` to be mirrored in the Worker's `/archive` page
+  (`src/worker/puzzles.ts`), which never shows the chart. Declaring them in `@theme` would
+  mean editing a Worker SSR page for nothing. They are still the two `color-mix` tokens of
+  item 64. Dark mode re-resolves them because `:root` and the `html.dark` override are the
+  same element.
 - **D17. Percentile arithmetic is integer-first, then capped:**
   `Math.min(99, Math.ceil((100 * (faster + 1)) / n))` (items 28, 111).
   `Math.ceil((faster + 1) / n * 100)` gives 71 for 7 of 10, because `0.7 * 100` is
@@ -90,15 +102,19 @@ Modify:
 - `src/worker/analytics-db.ts` — `recordEvent` writes `puzzle_num`; new `getTodayTimes`
 - `src/worker/index.ts` — `/api/event` passes `puzzleNum`; new route; `time_chart` in `VALID_EVENTS`
 - `src/app.ts` — `track()` gains `puzzleNum`; the `puzzle_time` call passes it; `initTimeChart`
+- `package.json` — `e2e:db:analytics` applies 0008 (the local e2e database lists migrations
+  by name)
+- `tests/project-guard.ts` — file counts: jsdom 37 → 39, workers 4 → 5
 - `src/completion.ts` — reserve the slot; set the chart context; call the view on `screens:enter`
 - `src/player-stats.ts` — `formatDuration` gains `{ compact: true }`
-- `src/tailwind.css` — two tokens, card CSS, section accent
+- `src/tailwind.css` — two tokens (outside `@theme`, D18), card CSS, section accent
 - `public/sprites.svg` — `icon-podium`
 - `tests/worker/analytics-db.spec.ts`, `tests/worker/schema.spec.ts`, `tests/worker-guard.spec.ts`,
   `tests/player-stats.spec.ts`, `tests/palette-contrast.spec.ts`, `tests/completion-stats.spec.ts`,
   `tests/sprites.spec.ts`
-- `e2e/helpers/console.ts` — only if Task 8's failure case trips the guard (see there)
-- Docs: `docs/ANALYTICS.md`, `docs/ARCHITECTURE.md`, `docs/CONSIDERATIONS.md`, `CLAUDE.md`
+- `e2e/helpers/console.ts` — a URL-scoped allow for the stubbed failure (Task 8)
+- Docs: `docs/ANALYTICS.md`, `docs/ARCHITECTURE.md`, `docs/CONSIDERATIONS.md`,
+  `docs/INVARIANTS.md`, `CLAUDE.md`
 
 Untouched, and checked in Task 10 (item 44): `src/worker/puzzle.ts` (imported for `puzzleDate`
 only, already exported), the generator, `/api/guess`, tokens, `PUZZLES` KV, `src/storage.ts`
@@ -120,6 +136,12 @@ Implements 24, 29, 41, 43, 45, 79 (recordEvent and migration lines). Commit:
 
 `tests/worker/harness.spec.ts` already proves migrations apply to an isolated D1; it now also
 applies 0008. Run `npm run lint:migrations` (item 79).
+
+`package.json`: append `&& wrangler d1 execute clumeral-analytics --local
+--file=migrations/analytics/0008_add_puzzle_num.sql` to `e2e:db:analytics`, after 0007 and
+before the seed file. Without it, every local `recordEvent` INSERT fails silently and every
+real `/api/times/N` returns 500 on the e2e preview. That trips the console guard in every spec
+that reaches `/solved` unstubbed: completion, a11y, player-stats and game-solve.
 
 **Implementation:**
 1. `migrations/analytics/0008_add_puzzle_num.sql`, with a header comment in the style of 0007
@@ -149,13 +171,15 @@ Implements 7, 8, 15, 21 (server drop), 32, 33, 34, 35, 37, 42, 45, 75, 79, 91, 9
 
 `tests/worker/analytics-db.spec.ts`, new `describe('getTodayTimes')`. Seed helper inserts
 `puzzle_time` rows with `ts`, `uid`, `hostname`, `value`, `puzzle_num`, `sample_interval`.
-`DAY = Date.parse('2026-11-01T00:00:00Z')`, puzzle number 238 for the seeded rows.
+`DAY = Date.parse('2026-11-01T00:00:00Z')`. The seeded rows are puzzle 239: 2026-11-01 is
+puzzle 239 counting from `EPOCH_DATE` 2026-03-08. Tests derive it with
+`puzzleNumber('2026-11-01')` rather than hard-coding it.
 - groups by second and sums `sample_interval`: three rows on 69 → `{ second: 69, count: 3 }`;
   one row on 69 with interval 2 → count 2.
 - returns ascending by second.
 - filters by hostname: a row on `preview.workers.dev` is absent from a `clumeral.com` read.
-- filters by puzzle number: a row for 237 is absent; a row with `puzzle_num` NULL is absent.
-- filters by event: a `puzzle_complete` row with `puzzle_num` 238 is absent.
+- filters by puzzle number: a row for 238 is absent; a row with `puzzle_num` NULL is absent.
+- filters by event: a `puzzle_complete` row with `puzzle_num` 239 is absent.
 - drops values outside 1–86400 (item 116): `-5`, `0` and `86401` absent; `1` and `86400`
   present. The `0` case is the one that matters: `recordEvent` writes 0 for any non-finite
   value, so every junk POST is a 0s row.
@@ -174,7 +198,11 @@ that spec explains why an approximation is worthless).
 
 `tests/worker/times-route.spec.ts` — calls `worker.fetch(new Request(url, init), env, ctx)`
 with `import worker from '../../src/worker/index.ts'` and `env` from `cloudflare:test`, as
-`backfill.spec.ts` does. `ctx` is `{ waitUntil() {}, passThroughOnException() {} }`.
+`backfill.spec.ts` imports it (that spec calls `scheduled`; this one calls `fetch`). `ctx` is
+`{ waitUntil() {}, passThroughOnException() {} }`. The env passed is
+`{ ...env, ASSETS: { fetch: vi.fn(async () => new Response('asset')) } }`, because the
+workers test env binds only `ANALYTICS_DB`, and a request that falls through reaches
+`env.ASSETS.fetch`.
 - the response body's key set is exactly `['times']`, and every element's key set is exactly
   `['count', 'second']` — so a future uid, timestamp or source fails it (item 37).
 - `Cache-Control` is `no-store`; `Content-Type` is `application/json`.
@@ -183,9 +211,12 @@ with `import worker from '../../src/worker/index.ts'` and `env` from `cloudflare
   same over-long uid.
 - the hostname comes from the request URL: seed rows for `clumeral.com` and `a.workers.dev`,
   request each, get only its own.
-- `/api/times/0` → 400; `/api/times/abc` falls through (no match); a far-future number → 400;
-  a past number with rows → 200 with those rows (item 33).
-- POST to `/api/times/238` is not served by this route.
+- `/api/times/0` → 400; a far-future number → 400; a past number with rows → 200 with those
+  rows (item 33).
+- `/api/times/abc` and a POST to `/api/times/239` are not served by this route. Each reaches
+  the `ASSETS` stub (assert it was called) instead of returning JSON.
+
+`tests/project-guard.ts`: workers 4 → 5, in this task's commit, so `npm test` stays green.
 
 `tests/worker-guard.spec.ts`: `accepts the time-chart event` — `VALID_EVENTS.has('time_chart')`.
 `tests/worker/analytics-db.spec.ts`: `accepts all eleven documented events` becomes twelve,
@@ -258,10 +289,13 @@ change to the service worker.
 Implements 12, 24, 40, 74. Commit: `feat(analytics): send the puzzle number with puzzle_time`.
 
 **Test first** — `e2e/specs/time-chart.spec.ts`, the first test of the file (the rest arrive
-in Task 8): `puzzle_time carries the puzzle number`. Freeze the clock, solve today's daily with
-`solvePuzzle` from `e2e/helpers/solve.ts`, capture the `POST /api/event` request whose JSON
-`event` is `puzzle_time` via `page.waitForRequest`, and assert `puzzleNum` equals the
-puzzle number for the frozen date. Also assert the `puzzle_complete` body has no `puzzleNum`
+in Task 8): `puzzle_time carries the puzzle number`. Do **not** freeze the clock to another
+day. `readAnswer` (`e2e/helpers/solve.ts:9`) returns the Worker's real UTC-today answer, so a
+browser on a different date loads a different puzzle and the guess is wrong. Freeze to
+`new Date()`, as `e2e/specs/player-stats.spec.ts:20` does. Solve with `solvePuzzle`, capture
+the `POST /api/event` request whose JSON `event` is `puzzle_time` via `page.waitForRequest`,
+and assert `puzzleNum` equals the number for that date. The test computes it as whole days
+from 2026-03-08, plus one. Also assert the `puzzle_complete` body has no `puzzleNum`
 key (item 40: no other event changes). `app.ts` has no unit harness; this is the test that can
 fail.
 
@@ -351,10 +385,10 @@ export interface Geometry { dots: Dot[]; refs: Ref[]; you: { fraction: number; s
 export function geometry(field: Field): Geometry;
 
 export interface Box { left: number; width: number; align: 'start' | 'center' | 'end'; at: number }
-export interface Layout { refs: Box[]; you: Box; note: 'left' | 'right' }
+export interface Layout { refs: Box[]; you: Box; note: 'left' | 'right' | 'below' }
 
 export function layout(input: {
-  track: number; geometry: Geometry; refWidths: number[]; youWidth: number;
+  track: number; geometry: Geometry; refWidths: number[]; youWidth: number; noteWidth: number;
 }): Layout;
 
 /** Item 113's visually hidden sentence. */
@@ -400,7 +434,9 @@ export function labelTime(seconds: number): string; // formatDuration(s, { compa
   backward pass pulling any box off the right edge and its predecessor with it. Loop variables
   stay `k` and `m` (the board's warning about shadowing). Your box: `align` start if
   `at - w/2 < 0`, end if `at + w/2 > track`, else center; `left` from `align`.
-  `note = you.at < track / 2 ? 'right' : 'left'` (Idea-R flip rule).
+  Note (items 48, 122): the far corner is `right` when `you.at < track / 2`, else `left`. The
+  corner box spans `[track - noteWidth, track]` or `[0, noteWidth]`. If it comes within 8px
+  (the `GAP`) of your box, `note = 'below'`; otherwise `note` is that corner.
   Below the 288px content floor (item 96) the passes still run and leaders stay true, but
   labels may overlap — 288px is the WCAG reflow floor (a 320 CSS px viewport).
 - **spokenSummary** (item 113, "players" throughout), first match wins, durations through
@@ -416,7 +452,8 @@ export function labelTime(seconds: number): string; // formatDuration(s, { compa
 ### Tests — `tests/time-chart.spec.ts`, written before the module
 
 Positions and sizes (78):
-- fastest at fraction 0, slowest at 1; `fraction(√(lo·hi))` is 0.5 (log, not linear).
+- fastest at fraction 0, slowest at 1; `fraction(√(lo·hi))` is 0.5 (log, not linear), with
+  `toBeCloseTo`.
 - base independence (90): the fractions equal those computed with `Math.log10`.
 - one distinct time, any n → every fraction 0.5; refs are `[Fastest center]`.
 - 1s floor: a stranger on 0 and you on 1 → flat; a stranger on 0, you on 10 → stranger at 0.
@@ -464,13 +501,17 @@ Layout (48, 52, 96, 105, 108):
   (Fastest 39.9, Median 40.7, Slowest 42.1, time 43.6) and again doubled (200% text).
 - `you.align` is start at fraction 0, end at fraction 1, center at 0.5.
 - `note` is right when you are left of centre, left when right of centre.
-- the note box (width 66, the measured `— log scale` at 12px, doubled for 200%) and your box
-  never overlap, on the same sweep, at 288 and 480.
+- at normal widths (note 66, the measured `— log scale` at 12px), the sweep never yields
+  `below`, at 288 or 480. This is item 122's "nothing changes at normal text size".
+- at doubled widths (note 132, your box 88) and track 288, you at fraction 0.5 yields `below`.
+  Across the sweep, a corner note never comes within 8px of your box.
 
 All-identical fields (115, 120), at n = 3 and n = 10, everyone on 41: one dot, size 17 at
 n = 3 and 21 at n = 10, `mine` true; refs exactly `[Fastest center]`; no median dot; copy
 `You're the joint fastest today`; spoken `3 players solved today, all in 41 seconds. Yours:
 41 seconds.` and the n = 10 equivalent.
+
+`tests/project-guard.ts`: jsdom 37 → 38, in this task's commit.
 
 Spoken sentence (113, 120): each of the four variants as written above — n = 1, n = 2 with
 two different times, all-identical at n = 2, and the 14-player example — and that it uses
@@ -483,52 +524,59 @@ placement, and its label still reads `0s`.
 
 ## Task 6 — Tokens, icon and CSS
 
-Implements 49, 51, 64, 66, 69, 80, 97, 105 (tokens). Commit:
+Implements 49, 51, 64, 66, 69, 80, 97, 105 (tokens), 122 (caption style). Commit:
 `feat(results): chart tokens, podium icon and card styles`.
 
 **Tests first** — `tests/palette-contrast.spec.ts`, new `describe('time chart tokens')`. It
 computes each token the way the browser does: `color-mix(in srgb, A p%, B)` is a per-channel
 mix of the gamma-encoded bytes. Add a `mixSrgb(a, b, p)` helper to `tests/helpers/colour.ts`.
 For all eight theme × mode combinations:
-- `--color-chart-dot` (accent 72% into bg) against `bg` ≥ 3:1 (69, 97). Measured while
+- `--chart-dot` (accent 72% into bg) against `bg` ≥ 3:1 (69, 97). Measured while
   planning: tightest is Lime light at 3.22.
-- `--color-chart-line` (text 55% into bg) against `bg` ≥ 3:1. Measured: light 3.54, dark 5.95.
+- `--chart-line` (text 55% into bg) against `bg` ≥ 3:1. Measured: light 3.54, dark 5.95.
 - your dot (`--color-accent`) against `bg` ≥ 3:1 — already true at ≥ 5.36, pinned here.
 - chart text is `--color-text` on `bg`, already ≥ 4.5 — assert it in this block so the chart's
   own claim is pinned in one place.
 
 A test that parses `src/tailwind.css` and asserts the two token declarations read exactly
-`color-mix(in srgb, var(--color-accent) 72%, var(--color-bg))` and
-`color-mix(in srgb, var(--color-text) 55%, var(--color-bg))`, so a hand-edit of a percentage
+`--chart-dot: color-mix(in srgb, var(--color-accent) 72%, var(--color-bg))` and
+`--chart-line: color-mix(in srgb, var(--color-text) 55%, var(--color-bg))`, so a hand-edit of a percentage
 cannot pass with the maths test still green. `tests/token-parity.spec.ts` already reads the CSS
 file this way.
 
 `tests/sprites.spec.ts`: add `icon-podium` to `PANEL_ICONS` first, so a missing symbol fails
-the suite instead of rendering nothing.
+the suite instead of rendering nothing. The existing checks (24×24 viewBox, `currentColor`)
+then hold the new symbol to D15.
+
+`tests/token-parity.spec.ts` must pass unchanged. That is the check that D18 kept the tokens
+out of `@theme`.
 
 **Implementation** — `src/tailwind.css`:
-- In the `@theme` block beside `--color-border`, with a comment citing items 64 and 69 and the
-  measured floor:
+- A plain `:root` rule (D18), placed after the `@theme` block, with a comment citing items 64
+  and 69, the measured floor, and why it is outside `@theme`:
   ```css
-  --color-chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-bg));
-  --color-chart-line: color-mix(in srgb, var(--color-text) 55%, var(--color-bg));
+  :root {
+    --chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-bg));
+    --chart-line: color-mix(in srgb, var(--color-text) 55%, var(--color-bg));
+  }
   ```
   Mixed into `--color-bg`, not `transparent`, so the dots are opaque, overlapping dots do not
-  darken, and the ratio is computable. The `@theme` block then holds 12 colour tokens, under
-  the 15 ceiling.
+  darken, and the ratio is computable. They count against the 15-token ceiling all the same:
+  10 in `@theme` plus these two is 12.
 - `[data-stat-block="everyone-today"] { --section-accent: var(--color-accent); }` beside the
   other three.
 - `.time-chart` component rules, converted from Idea-O's `.spread*` rules (lines 95–119) per
   D11 (px ÷ 16 → rem for every vertical metric and font size):
   `.time-chart__line` (1rem, weight 400, margin-block-start 0.875rem),
   `.time-chart__track` (position relative, block-size 7.25rem, margin-block-start 0.875rem),
-  `.time-chart__axis` (top 3.625rem, block-size 1.5px, `--color-chart-line`),
+  `.time-chart__axis` (top 3.625rem, block-size 1.5px, `--chart-line`),
   `.time-chart__above` (top 0, weight 700), `.time-chart__below` (top 5.375rem),
   `.time-chart__t, .time-chart__w` (0.75rem / 0.875rem line-height, nowrap),
-  `.time-chart__lead` (1px × 0.875rem, `--color-chart-line`), `--up` top 2rem, `--down`
-  top 4.375rem, `.time-chart__note` (top 1rem per D13, 0.75rem, nowrap; `--left` left 0,
-  `--right` right 0), `.time-chart__dot` (top 3.625rem, translate −50%, radius full,
-  `--color-chart-dot`, `border: 1.5px solid var(--color-bg)` per D14), `.time-chart__dot--you`
+  `.time-chart__lead` (1px × 0.875rem, `--chart-line`), `--up` top 2rem, `--down`
+  top 4.375rem, `.time-chart__note` (top 1rem per item 123, 0.75rem, nowrap; `--left` left 0,
+  `--right` right 0; `--below` static, centred, margin-block-start 0.375rem, line-height
+  0.75rem, no leader — Idea-R's `.note-s`, item 122), `.time-chart__dot` (top 3.625rem, translate −50%, radius full,
+  `--chart-dot`, `border: 1.5px solid var(--color-bg)` per D14), `.time-chart__dot--you`
   (`--color-accent`, z-index 3).
 - The slot while busy: `[data-time-chart][aria-busy="true"]:empty { min-block-size: … }` with
   the drawn card's height (item 54). The figure is measured in Task 7 from the drawn card in
@@ -544,7 +592,7 @@ of the sprite's other Lucide-style symbols.
 
 ## Task 7 — The view, and wiring it into the panel
 
-Implements 4, 11, 16, 22, 23, 25, 26, 30, 31, 38, 46, 50, 52, 53, 54, 57, 62, 65, 66, 68, 69,
+Implements 4, 11, 16, 22, 23, 25, 26, 30, 31, 38, 46, 50, 52, 53, 54, 57, 62, 65, 66, 68, 69, 122,
 71, 72, 76, 77, 91, 92, 93, 96, 97, 101, 105 (heading, note, width), 107, 109, 110, 112, 118,
 120, 121.
 Commit: `feat(results): Everyone today card on /solved`.
@@ -584,19 +632,28 @@ export function showTimeChart(): void;
      the note `— log scale` (101) with its `--up` leader (107), each ref box with its `--down`
      leader, each dot, and your box (`You` then your time, 109) with its `--up` leader.
      All strings are generated from numbers, so `innerHTML` takes no outside text.
-  Then sets `aria-labelledby="stat-head-everyone-today"`, removes `aria-busy` (68), runs
+  Before writing, it disconnects the previous visit's observer, if any. Then it sets
+  `aria-labelledby="stat-head-everyone-today"`, removes `aria-busy` (68), runs
   `place()`, connects a `ResizeObserver` on the track that calls `place()` (D10), and
   dispatches `analytics:track` with `{ event: 'time_chart', source: 'drawn', value: field.n }`
   (77, D5).
 - `place()`: reads `track.clientWidth`, measures each ref box, your box and the note with
   `getBoundingClientRect().width` (each box is `width: max-content` until placed) (50), calls
   `layout()`, writes `left` and `align-items` in px to each box and `left` to each leader,
-  and puts the note on the side `layout().note` names, its leader at the track's 0 or 100%.
+  and puts the note where `layout().note` says. A top corner gets its leader at the track's
+  0 or 100%. `below` moves the note after the track as a centred caption, with its leader
+  hidden (item 122).
   Dot `left` is written as a percentage of `fraction`, so dots need no re-layout.
 - `fail()`: disconnect any observer, empty the slot, `hidden = true`, remove `aria-busy`,
   dispatch `time_chart` with source `failed`, value 0 (23, 57, 77).
 - No live region and no focusable element anywhere in the card (65, 72). No storage reads or
   writes (30).
+
+Known and accepted, not fixed here (a pre-existing last-render-wins issue):
+`startReplayPuzzle` (`src/app.ts:1012`) re-renders the panel in archive mode, which sets the
+context to null. A later in-app trip back to `/solved` in the same session then shows no
+card until a reload. Every other panel figure already behaves this way after an archive
+replay.
 
 ### `src/completion.ts`
 
@@ -646,9 +703,20 @@ jsdom has no layout, so these test structure and flow, not pixels. `fetch` is st
 - your box reads `You` and your compact time; the note reads `— log scale`.
 - failure on 500, network error, timeout (fake timers, 5s), and `{ times: 'x' }`: slot
   `hidden`, empty, no `aria-busy`.
+- a second successful visit disconnects the first visit's `ResizeObserver` (spy on
+  `disconnect`).
 - one `analytics:track` per visit: `time_chart`/`drawn`/n on success, `failed`/0 on failure;
   saving-off players send it too (77).
 - no `localStorage` key is written by a visit (30): snapshot keys before and after.
+
+`tests/project-guard.ts`: jsdom 38 → 39, in this task's commit.
+
+**Measure before Task 8.** In the browser at a 320px viewport (288 content), draw the longest
+copy lines and confirm each fits on one line: `You're in the top 99% of solve times`,
+`You're the joint 2nd fastest` and `You're the first to solve today`. If any wraps, stop and
+ask Jamie. It is a copy question (items 56, 59, 61), and a wrap breaks item 54's reserved
+height. Then measure the drawn card's height at a 375px viewport, default text, and write it
+into Task 6's reserved `min-block-size`.
 
 ---
 
@@ -668,16 +736,22 @@ service worker sends `/api/` network-only anyway, so blocking it loses nothing t
 - the Task 3 test (puzzle number on `puzzle_time`).
 - the card at n = 1, 3 and 12: the copy line, the sr sentence, `You` and your time, and the
   median label present at 3 and 12 only.
-- **no layout shift:** record the top of `[data-stat-block="streak"]` while the stubbed response
-  is held (route handler awaits a promise), release it, and assert the top moved by less than
-  1px (54). This is what holds the Task 6 reserved height.
-- **no collisions at real widths:** at viewport widths 320 and 375 and at 512 (content 288, 343
-  and 480 — item 96), read every label box's `getBoundingClientRect()` and assert no two
-  overlap and every box is inside the track. Repeat at 320 with the root font size at 200%.
-- a 500 response collapses the slot (`hidden`), and the this-game, streak and all-time blocks
-  are intact (23). If the console guard flags the failed request, add a pattern to `ALLOW` in
-  `e2e/helpers/console.ts` scoped to `/api/times/` and to a 500 status, with a comment, in the
-  style of the `/api/event` entry.
+- **no layout shift:** at 375px and 320px viewports, default text size, with the longest copy
+  line, record the top of `[data-stat-block="streak"]` while the stubbed response is held
+  (the route handler awaits a promise). Release it, and assert the top moved by less than
+  1px (54). This is what holds the Task 6 reserved height. It is not run at 200% text: the
+  reserve is a fixed rem height, and the caption fallback (122) adds height there by design.
+- **no collisions at real widths:** at viewport widths 320, 375 and 512 (content 288, 343 and
+  480 — item 96), read the `getBoundingClientRect()` of every label box and of the note.
+  Assert no two overlap and every box is inside the track. Repeat at 200% root font size at a
+  352px viewport. `--page-gutter` is 1rem, so at 200% each gutter is 32px, and 352 is what
+  gives 288px of content (at 320 it would be 256, below the floor). At 200%, with your dot
+  near the middle, the note is the bottom caption (122).
+- a stubbed 500 collapses the slot (`hidden`), and the this-game, streak and all-time blocks
+  are intact (23). Chromium's "Failed to load resource" text carries no URL, so a text
+  pattern cannot scope it. Extend `attachConsoleGuard` in `e2e/helpers/console.ts` with a
+  second list, `ALLOW_URL`, matched against `msg.location().url`. It holds
+  `/\/api\/times\//`, with a comment that it covers this spec's deliberate failure.
 - absent in random (solve `/random`), archive (`/archive/<date>` solved view) and marker
   (seeded marker for today) modes, and in marker mode no request to `/api/times/` is made.
 - axe on `/solved` with the card drawn, light and dark, using `a11y.spec.ts`'s existing
@@ -700,7 +774,8 @@ Implements 7, 36, 75, 82, 95, 99, 119. Commit: `docs: time chart route, puzzle_n
 - `docs/INVARIANTS.md`: item 37's rule as a standing rule — the field route never returns a
   uid, a solve timestamp, or anything but a time and its count — placed with the privacy and
   answer-safety rules, naming `tests/worker/times-route.spec.ts` as the test that holds it
-  (119).
+  (119). `docs/INVARIANTS.md` requires this of a new rule: break it on purpose (add `uid` to
+  the route's mapped rows), watch the exact-key-set test fail, revert, and say so in the PR.
 - `docs/ARCHITECTURE.md`: the route under "Worker API"; `time-chart.ts` and
   `time-chart-view.ts` in the file list.
 - `CLAUDE.md`: the "No worker/API changes" constraint gains an exception for this one
@@ -716,7 +791,7 @@ Implements 7, 36, 75, 82, 95, 99, 119. Commit: `docs: time chart route, puzzle_n
 
 Implements 44, 81, 82, 89, 108.
 
-1. `npm test` (both projects: count files per project, 41 + the new files) and
+1. `npm test` (both projects: jsdom 39 files, workers 5, total 44; the guard enforces it) and
    `npm run lint:migrations`.
 2. Read `docs/INVARIANTS.md` against the final diff; record P1–P7 one line each in the PR body.
    Confirm `git diff --stat staging` touches none of the files item 44 lists, other than the
@@ -750,6 +825,8 @@ Every brief item, to a task or to "no code".
 | 111, 113, 115 | Task 5 (113 also Task 8; 115 also Task 4) |
 | 112, 118, 121 | Task 7 (118 also Task 2) |
 | 114 | No code — record of acks |
+| 122 | Tasks 5, 6, 7, 8 |
+| 123 | Tasks 6, 7 |
 | 119 | Task 9 |
 | 120 | Tasks 2, 4, 5, 7 |
 | 11, 23, 25, 26, 30, 31, 38, 50, 53, 57, 62, 65, 68, 72, 76, 92, 93, 110 | Task 7 |
@@ -785,3 +862,26 @@ Task 2 reads it, and the route is unused until Task 7 calls it. Task 3's e2e tes
 production build, so it runs in Task 8's run as well as when written. Tasks 4, 5 and 6 depend
 on nothing before them and on each other only in that 5 imports 4's compact option. Task 7
 needs 2, 4, 5 and 6. Task 8 needs 7. Each task is its own commit.
+
+---
+
+## Revision log
+
+**Revision 3** — `da-plan` on revision 2, 2026-11-01. All findings checked against the code.
+
+| Finding | Fix |
+|---|---|
+| H1: the local e2e database never gets 0008 | Task 1 adds it to `e2e:db:analytics`; Task 8's failure allow matches on URL, not text |
+| H2: note and your label collide at 200% text; the e2e 200% width was 256, not 288 | Jamie chose the caption fallback (122). Task 5 `layout` returns `below`; Task 8 runs 200% at 352 |
+| M1: `@theme` tokens break token parity | D18: tokens outside `@theme` |
+| M2: a cropped viewBox fails the sprites test | D15: 24×24, stroke 2, round caps |
+| M3: project guard counts not bumped | Tasks 2, 5, 7 bump them in their own commits |
+| M4: Task 3's e2e cannot solve on a frozen other day | Freeze to now; derive the number |
+| L1: puzzle 238 is 31 Oct | 239, derived with `puzzleNumber` |
+| L2: fall-through tests throw without `ASSETS` | ASSETS stub, asserted |
+| L3: the note row changed settled behaviour | Jamie chose the second row (123); D13 now cites it |
+| L4: the observer leaked across visits | `draw()` disconnects first; tested |
+| L5: an archive replay nulls the context | Recorded as known and accepted in Task 7 |
+| L6: the INVARIANTS rule needs a seen-to-fail test | Task 9 |
+| L7: float equality on √(lo·hi) | `toBeCloseTo` |
+| L8: no-shift test viewport unstated; copy may wrap | Task 7 measures and stops on a wrap; Task 8 states viewports |

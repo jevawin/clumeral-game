@@ -567,6 +567,7 @@ build. Answered by Jamie the same day.
     and adds nothing to what the server already holds. (Jamie 2026-11-01, accepted
     recommendation)
 
+
 ## Fable da-brief fixes
 Review: second fresh-context `da-brief` subagent, run on Fable, 2026-11-01, over the whole
 brief and the board files. Findings G1–G10 checked against the code and boards by the main
@@ -629,3 +630,20 @@ Ack: Dave 2026-11-01 (relayed by Jamie; also covers items 103–110) · Sign-off
 121. (noted) Item 93's `screens:enter` for `completion` also fires after a random solve
     (`src/app.ts:1147`). The listener checks item 46's modes before fetching, so random
     never fetches or sends `time_chart`.
+
+## Plan-stage questions, second round
+Raised by the `da-plan` review of plan revision 2, 2026-11-01. Answered by Jamie the same day.
+Neither touches the maths or the copy.
+
+122. (amends 48, 69; raised by `da-plan`) **The flip rule falls back to the bottom caption when
+    the far corner has no room.** At 200% text on a 288px track, the note (about 132px) and
+    your label (about 88px) overlap by up to 32px when your dot is near the middle; Idea-R's
+    clearances were measured only at 390px and normal text. When the note in the far corner
+    would touch your label, it is drawn centred below the chart instead, Idea-R's fixed
+    alternative, with no leader. It costs about 18px of height, for large-text players only.
+    At normal text size the flip rule always clears, so nothing changes. (Jamie 2026-11-01,
+    accepted recommendation)
+123. (amends 48, 107) **The note sits on the second row of its top corner**, the row of your
+    time nearest the axis, so its restored 14px leader starts 2px under the text as your
+    label's does. On the board's top row the leader would run about 18px longer than every
+    other leader. (Jamie 2026-11-01, accepted recommendation)
