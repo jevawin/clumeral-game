@@ -10,13 +10,114 @@ import { GamePage } from "../pages/game.page.ts";
 import { MenuPage } from "../pages/menu.page.ts";
 import { FeedbackPage } from "../pages/feedback.page.ts";
 
+// The ONE rule this suite overrules, and the exact nodes it overrules it on.
+// Anything else axe reports still fails. Read `label-content-name-mismatch` in
+// docs/INVARIANTS.md (P5) before touching this; #345 is the whole argument.
+//
+// axe 4.14 rewrote the rule to compare the accessible name against text VISIBLE
+// ON SCREEN, ignoring aria-hidden. Both groups below are a value or a hint that
+// is painted and deliberately hidden from the name, which the rule now reads as
+// a label mismatch:
+//
+//   data-undo / data-reset — the visible label is "Undo"; the "Ctrl + Z" beneath
+//     it is a supplementary hint, not what identifies the control. The name is
+//     "Undo last change", which a voice user saying "click Undo" matches. The
+//     only shape that satisfies axe moves the hint outside the button, where it
+//     leaves the key-face — a visual change to the board controls to satisfy a
+//     literal reading of the full visible string.
+//
+//   data-digit 0-2 — the painted digits are a VALUE DISPLAY. They report what is
+//     left in the box; they do not identify it. Once aria-hidden they are content
+//     rather than a visible label, and WCAG 2.5.3 is about labels. The shapes that
+//     pass are a name that says nothing ("Hundreds box 0123456789"), dropping
+//     role="button" from the primary game control, or not painting eliminated
+//     digits at all.
+//
+// What replaces axe here, because the exception silences it permanently on these
+// five: the names are pinned by hand instead. Both board-control aria-labels at
+// "each control exposes its name and its shortcut description" below, the reset
+// relabelling in undo-reset.spec.ts, and all three box names in "accessibility —
+// digit box names". Those assertions are load-bearing now — do not tidy them away.
+//
+// And the gate that makes this safe to rely on: `test:e2e:smoke` is the whole
+// spec set on chromium-desktop and is a required check on PRs into both staging
+// and main, so the tripwire below runs on every future axe bump.
+//
+// Jamie's call, 2026-11-01, P5 owner. The tripwire below is what makes it safe
+// rather than a shrug: a SIXTH node cannot appear silently, and if the set ever
+// shrinks the dedicated test goes red and says to prune this list.
+//
+// A fourth option was considered and declined, and the record should say so
+// rather than claim nothing exists: put the role on a text-free wrapper and make
+// the painted text a SIBLING of the named control rather than a descendant. It
+// clears both groups with the paint unchanged, and it is the conventional fix.
+// Declined because it restructures the board controls and the primary game
+// control to satisfy a reading of the rule we think is wrong anyway — but it is
+// the thing to reach for if this exception is ever revisited.
+const LABEL_IN_NAME_RULE = "label-content-name-mismatch";
+
+// Each entry is the axe target AND a signature that must appear in the node's own
+// markup. The pairing is the fix for a real hole: axe's selector is only
+// guaranteed unique within ONE document, and /archive is a separate
+// Worker-rendered document that `seriousViolations` also scans. (Only /archive
+// — /stats and the Worker feedback dashboard are never passed to axe, and the
+// "feedback modal" scan is the in-app dialog in this same document.) A future
+// `<button data-reset>Clear filters</button>` on /archive would
+// be the only `[data-reset]` there, so axe would emit exactly
+// `button[data-reset=""]` and a target-only match would silently excuse it.
+// `board-ctrl` and `data-box-name` exist nowhere but index.html's board.
+//
+// The signature has to survive axe's own truncation of `node.html`: over 300
+// characters it rebuilds the opening tag, and if the attribute block alone is
+// over 300 it truncates every attribute NAME AND VALUE to 20 characters first.
+// Both signatures clear that today — `data-box-name="Hundreds box"` is 13 and 12
+// characters, and `class="key-face board-ctrl"` is 19 so the controls never reach
+// the branch. Adding a long Tailwind class list to .board-ctrl, or any class
+// BEFORE `board-ctrl`, would truncate the value and drop the signature. It fails
+// closed, but the red reads `unexpected node(s) button[data-undo=""]` — a
+// documented node reported as unexpected. If you see that, check the class order
+// before touching this list.
+const LABEL_IN_NAME_EXCEPTIONS = [
+  { target: 'button[data-undo=""]', signature: "board-ctrl" },
+  { target: 'button[data-reset=""]', signature: "board-ctrl" },
+  { target: 'div[data-digit="0"]', signature: "data-box-name" },
+  { target: 'div[data-digit="1"]', signature: "data-box-name" },
+  { target: 'div[data-digit="2"]', signature: "data-box-name" },
+] as const;
+
+const LABEL_IN_NAME_TARGETS = LABEL_IN_NAME_EXCEPTIONS.map((e) => e.target);
+
+// Excused only when the target AND the signature match. Anything else — a new
+// node, the same selector in another document, or one of these five with its
+// markup changed out from under the reasoning — is reported.
+function isExcusedLabelInName(node: { target: unknown; html: string }): boolean {
+  return LABEL_IN_NAME_EXCEPTIONS.some(
+    (e) => String(node.target) === e.target && node.html.includes(e.signature),
+  );
+}
+
 // Fail only on serious/critical violations — the launch-blocking bar. Lesser
 // (moderate/minor) findings are surfaced by a full `axe` run but don't gate here.
+//
+// Deliberately NOT AxeBuilder's own .disableRules() or .exclude(): the first
+// drops the rule everywhere, so a real mismatch on a future control would never
+// be seen, and the second drops EVERY rule on those nodes, losing contrast and
+// role checks on the digit boxes — the primary game control.
 async function seriousViolations(page: import("@playwright/test").Page) {
   const results = await new AxeBuilder({ page }).analyze();
   return results.violations
     .filter((v) => v.impact === "serious" || v.impact === "critical")
-    .map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
+    .flatMap((v) => {
+      if (v.id !== LABEL_IN_NAME_RULE) {
+        return [`${v.id} (${v.impact}): ${v.nodes.length} node(s)`];
+      }
+      const unexpected = v.nodes.filter((n) => !isExcusedLabelInName(n));
+      // Named, not counted: a new node here is a real finding and the message is
+      // the first thing anyone reads.
+      return unexpected.length
+        ? [`${v.id} (${v.impact}): unexpected node(s) ${unexpected.map((n) => String(n.target)).join(", ")}`]
+        : [];
+    });
 }
 
 // axe rules check the DOM/ARIA/contrast, which don't vary by rendering engine, so
@@ -202,11 +303,14 @@ test.describe("accessibility — board control shortcut hint", () => {
 // asserting directly rather than leaving it to the aggregate axe scan, which does
 // not cover it either way.
 //
-// It does NOT clear axe 4.14's label-content-name-mismatch on these boxes, and
-// nothing reasonable does: 4.14 compares the name against text VISIBLE ON SCREEN
-// and ignores aria-hidden, so the only passing names are the literal painted digits
-// ("Hundreds box 0123456789") or no button role at all. #345 holds that question,
-// which is why the axe bump is not on this branch.
+// It does NOT clear axe's label-content-name-mismatch on these boxes: 4.14
+// compares the name against text VISIBLE ON SCREEN and ignores aria-hidden, so
+// the only passing names are the literal painted digits ("Hundreds box
+// 0123456789") or no button role at all. That rule is overruled on these three
+// nodes instead — see LABEL_IN_NAME_EXCEPTIONS at the top of this file for the
+// reasoning, and #345, which settles it. (#345 closes on the release to main,
+// not on this merge into staging — GitHub only auto-closes from the default
+// branch.)
 test.describe("accessibility — digit box names", () => {
   test.use({ colorScheme: "light" });
 
@@ -328,6 +432,97 @@ test.describe("accessibility — digit box names", () => {
       const box = page.locator(`[data-digit="${i}"]`);
       await expect(box).toHaveAttribute("aria-label", name);
       await expect(box).toHaveAttribute("data-box-name", name);
+    }
+  });
+});
+
+// The tripwire for the exception list above. Without this the list is a shrug:
+// it would silently cover nodes that no longer violate, and the scans would stay
+// green while the reasoning rotted.
+//
+// Asserts the violating set is EXACTLY the five. So:
+//   - a sixth node fails the scans (seriousViolations names it), and
+//   - if the set shrinks — someone moves the shortcut hint out, or the boxes stop
+//     painting eliminated digits — THIS test goes red, which is the signal to
+//     delete those entries. Red on an improvement is the point, not a bug.
+//
+// chromium-desktop only, and that is load-bearing: the shortcut hint's text is
+// written by showKeyboardHint(), which a mobile scan never reaches, so on mobile
+// the board controls carry no extra visible text and two of the five do not
+// violate. The full set exists on desktop.
+//
+// "Only with a fine pointer" would be too strong a claim for the code: that
+// media query is one of TWO triggers, and detectKeyboard latches the hint on any
+// keydown outside a text field. A mobile scan that pressed a key first would see
+// all five. Harmless in that direction — the list already covers five — but the
+// skip is about where the test is MEANINGFUL, not where the hint is impossible.
+test.describe("accessibility — the label-in-name exception stays honest", () => {
+  test.use({ colorScheme: "light" });
+
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium-desktop",
+      "two of the five nodes need the shortcut hint, which a mobile scan never renders",
+    );
+  });
+
+  test("exactly the documented nodes violate it, no more and no fewer", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+
+    const results = await new AxeBuilder({ page }).withRules([LABEL_IN_NAME_RULE]).analyze();
+    expect(results.violations.length, "withRules should have run exactly one rule").toBeLessThan(2);
+    const violating = results.violations.flatMap((v) => v.nodes.map((n) => String(n.target))).sort();
+
+    expect(
+      violating,
+      "If SHORTER than expected, the fix landed: delete those entries from " +
+        "LABEL_IN_NAME_EXCEPTIONS and this list. If LONGER, either a new control has a " +
+        "real Label in Name problem — fix the control, do not extend the list — or axe " +
+        "changed how it names nodes, in which case re-derive the targets. See #345.",
+    ).toEqual([...LABEL_IN_NAME_TARGETS].sort());
+  });
+
+  // The blind spot the assertion above cannot see. It force-enables the rule with
+  // .withRules(), but seriousViolations calls a plain analyze() and gets axe's
+  // DEFAULTS — and 4.14 already ships nine WCAG rules disabled by default. If a
+  // future minor flips this one to default-off, the six real scans stop checking
+  // 2.5.3 everywhere while this describe block still force-enables it and still
+  // counts five. The exception would then be excusing nodes nobody is checking,
+  // green. Removing the dependabot ignore means such a bump now arrives on its own.
+  test("the rule is still ON by default, so the real scans still run it", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const ran = [...results.violations, ...results.passes, ...results.incomplete, ...results.inapplicable];
+    expect(
+      ran.map((r) => r.id),
+      `${LABEL_IN_NAME_RULE} did not run in a default analyze(). If axe has made it ` +
+        "opt-in, seriousViolations must enable it explicitly — otherwise the exception " +
+        "above is excusing nodes that nothing checks. See #345.",
+    ).toContain(LABEL_IN_NAME_RULE);
+  });
+
+  // Low-tech, and the thing that actually closes the hole the exception opens.
+  // axe can no longer see a Label in Name regression on these five, so the names
+  // are pinned by hand. They are asserted elsewhere too, but co-located here they
+  // cannot be tidied away without someone reading why the list exists.
+  test("the excused controls still have the names the exception assumes", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+
+    for (const [selector, name] of [
+      ["[data-undo]", "Undo last change"],
+      ["[data-reset]", "Reset all boxes"],
+      ['[data-digit="0"]', "Hundreds box, 9 remaining"],
+      ['[data-digit="1"]', "Tens box, 10 remaining"],
+      ['[data-digit="2"]', "Units box, 10 remaining"],
+    ] as const) {
+      await expect(
+        page.locator(selector),
+        `${selector} is excused from ${LABEL_IN_NAME_RULE}, so its name is only guarded here`,
+      ).toHaveAccessibleName(name);
     }
   });
 });

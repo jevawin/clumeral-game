@@ -112,6 +112,32 @@ accessibility changes need his blocking sign-off.
 **Guarded by.** `e2e/specs/a11y.spec.ts` (axe), `tests/palette-contrast.spec.ts`,
 `tests/stats-contrast.spec.ts`, and the Accessibility section of `docs/SELF-REVIEW.md`.
 
+**One rule is overruled, on five named nodes — and it is a Level A criterion.**
+`label-content-name-mismatch`, which axe tags `wcag21a` / `wcag253`: **WCAG 2.1 SC 2.5.3 Label in
+Name, Level A**, with an EN 301 549 mapping. It is reported on the two board controls and the
+three digit boxes, and `LABEL_IN_NAME_EXCEPTIONS` in `a11y.spec.ts` filters exactly those. Named
+in full here on purpose: anyone later asking "did we ever set aside a Level A requirement?" will
+grep for the criterion, not for an axe rule id. The reasoning is in that file and in
+[#345](https://github.com/jevawin/clumeral-game/issues/345): axe 4.14 compares the accessible name
+against text *visible on screen* and ignores `aria-hidden`, and in both groups the painted text is
+a value or a supplementary hint rather than the label that identifies the control. Every other
+rule still applies to those nodes, and every other node is still checked by this one — the
+exception is paired with a markup signature so the same axe selector in another document, such as
+`/archive`, cannot inherit it.
+
+**That exception has a tripwire, and the tripwire is the invariant.** A sixth node fails the scans
+by name. If the set ever *shrinks* — someone moves the shortcut hint outside its button, or the
+boxes stop painting eliminated digits — the dedicated test goes red to say the list is now stale.
+Going red on an improvement is deliberate: an allowlist nobody is forced to prune becomes a
+permanent blind spot. Both directions were mutation-tested when the exception landed.
+
+Two further guards sit beside it, because the exception means axe can no longer see a regression on
+those five. One test asserts the rule is still **on by default**, since the scans use a plain
+`analyze()` and axe already ships nine WCAG rules opt-in — were this one to become opt-in, the
+exception would be excusing nodes nothing checks. Another pins all five accessible names by hand.
+The whole set runs under `e2e smoke (chromium)`, a required check on pull requests into both
+`staging` and `main`, so it gates every future axe bump.
+
 ---
 
 ## P6 — Random-puzzle tokens stay unforgeable
