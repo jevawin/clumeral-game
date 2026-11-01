@@ -299,7 +299,7 @@ Settled: pending · Sign-off: Jamie pending · Ack: n/a (owned section)
     not decoration, so they meet 3:1 too. Labels scale with text size and are measured live
     (item 50), so 200% zoom does not break collision handling. (assumed — required, not
     optional)
-70. The `docs/` label-in-name exception list is not widened (#345). (assumed — standing rule)
+70. The label-in-name exception list is not widened (#345). (assumed — standing rule)
 71. What does a screen reader get?
     My rec: the SVG is `aria-hidden`. The copy line is real text and reads first. Beneath it,
     one visually hidden sentence: "14 solve times today. Fastest 23 seconds, median 1
