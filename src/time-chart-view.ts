@@ -156,9 +156,12 @@ function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[]): void {
   const track = slot.querySelector<HTMLElement>('[data-time-chart-track]')!;
   place(slot, track, g);
   // The track's height is in rem, so text zoom resizes it and fires this, as
-  // does any width change (plan D10).
+  // does any width change (plan D10). The labels are observed too: the web font
+  // can swap in after the first measure, widening every label without touching
+  // the track. place() moves boxes and never resizes them, so this cannot loop.
   observer = new ResizeObserver(() => place(slot, track, g));
   observer.observe(track);
+  for (const el of slot.querySelectorAll('[data-tc-ref], [data-tc-you], [data-tc-note]')) observer.observe(el);
 
   report('drawn', field.n);
 }
