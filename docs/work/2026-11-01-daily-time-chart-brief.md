@@ -6,9 +6,9 @@ and the canvas boards it names (Idea-O, P, R, N).
 Branch: `dev/daily-time-chart`
 
 **Status: `da-brief` ran 2026-11-01 — 2 High, 5 Medium, 4 Low. Fixes settled by Jamie the
-same day (items 90–102). Not ready for Plan:** item 102 (canvas boards into the repo) is
-open, and Dave's acks on the reopened §3, §5, §6, §7, §8, §11 and sign-off on item 90 are
-pending.
+same day (items 90–102); boards exported (items 103–108). Not ready for Plan:** items 106
+and 107 are open; Dave's sign-off on items 90 and 106 and his acks on the reopened §3, §5,
+§6, §7, §8, §11 are pending.
 
 **Read "da-brief fixes" at the end before planning. Where it and the body disagree, it wins.**
 
@@ -78,7 +78,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-bri
 19. [amended — see 94] Ties share the better rank. Two players on 41s, both fastest, are both "fastest".
     (assumed — standard competition ranking; the Idea-O block's definition is ported, and
     the plan checks it agrees)
-20. Your time is past the p95 clip: your dot pins to the right edge and your label still
+20. [void if 106 is accepted] Your time is past the p95 clip: your dot pins to the right edge and your label still
     shows your true time. (assumed — your label always tracks you, handover §3)
 21. A time of 0s is floored to 1s for placement only, since `ln(0)` is undefined. Values
     outside 0–86400 are dropped server-side. (assumed)
@@ -122,7 +122,7 @@ Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 
     My rec: yes, Dave signs them here, as the maths owner, before Plan. Why: he set the
     log-scale requirement, and "top X%" is a number we publish to every player. Getting the
     definition wrong is cheap to fix but embarrassing to ship.
-84. p95 for the slow-tail clip is **nearest-rank**: it always lands on a real time, so at
+84. [void if 106 is accepted] p95 for the slow-tail clip is **nearest-rank**: it always lands on a real time, so at
     n = 10 it is the slowest time and nothing clips. Clipping bites only once there is a
     real tail. (reviewed 2026-11-01, accepted recommendation)
 85. Median at even n is the **mean of the middle two, rounded to the nearest second**. The
@@ -179,7 +179,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-bri
     #311 panel synchronously. The chart needs a fetch, so it renders into its own slot after
     the rest of the panel is up and never delays it. (assumed — item 23 already says the
     panel must not depend on it)
-39. The Idea-O computation block (positions, sizes, median rule, p95 clip, rank and
+39. [see 104] The Idea-O computation block (positions, sizes, median rule, p95 clip, rank and
     percentile) is ported into one new pure client module, with no DOM and no fetch, so it
     is unit-testable on its own. Rendering sits beside it. (assumed — handover: port the
     block, do not re-derive it)
@@ -491,3 +491,57 @@ disagree, this section wins.**
     items 39, 47 and 48 at those files and write the position and size formulas, the
     collision rules and the flip-rule clearances into this brief. Owner: Jamie (canvas
     access). **Open.**
+    **Closed 2026-11-01** by items 103–108: the boards are in `docs/work/` (commit 682d227),
+    byte-identical to published canvas version 1793547022-0828 by sha256.
+
+## Boards export (item 102 follow-up)
+Boards exported 2026-11-01 by a separate session; its report was checked against the files.
+
+103. **The boards are the design; this brief is the spec. Where they disagree, the brief
+    wins.** Files, all in `docs/work/`:
+    - `2026-11-01-Idea-O-Time-vs-Everyone.dc.html` — the design to build.
+    - `2026-11-01-Idea-P-First-Plays.dc.html` — n = 1, 2, 3, 10.
+    - `2026-11-01-Idea-R-Log-Positions.dc.html` — the flip rule.
+    - `2026-11-01-Idea-N-Copy-States.dc.html` — six copy states.
+    - `2026-11-01-canvas-notes.md` — the canvas notes, verbatim.
+    Idea-O is a whole results-screen mock. Only its "Daily leaderboard" card is in scope;
+    the other cards and every Share button are context (items 11, 13).
+104. **Port from Idea-O, lines 403–575.** Correcting the handover: the block is *not*
+    byte-identical across O, P and R. The 127 lines from `var tally` to `var vPost` are;
+    P and R wrap the logic in `pack()` and R adds 7 lines for the flip rule. Item 39
+    points here.
+105. **Known divergences the port must change**, each to the brief's settled item:
+    - Axis note `— log time` → `— log scale` (101).
+    - Percentile `Math.round(rank / n * 100)` → ceil (28). The rank itself already
+      matches: `indexOf + 1` is "strictly faster + 1".
+    - `TRACK = 319` in a fixed 390px card → the container's width, 288–480px (52, 96).
+    - Slowest at n ≥ 10 reads "top 100% solve times" → "**{n} players** solved today" (60).
+    - Percentile line "solve times" → "of solve times" (59).
+    - n = 1 "You're first to finish today" → "You're the **first** to solve today" (61).
+    - n = 2–9 sole fastest "You're 1st fastest" → "You're the **fastest** today" (88);
+      no tie handling → "joint" (94).
+    - Card heading "Daily leaderboard" → "Everyone today" (62).
+    - `--accent-soft` / `--fg-50` → the two color-mix tokens (64).
+    - Label widths estimated per character at 12px Quicksand → measured live (50). With a
+      variable-width card this is required, not polish.
+    Already matches: the median at even n (85), the log formula and base (90).
+106. **The p95 clip does not exist in the boards** — removed on purpose. Idea-O line 418:
+    the axis runs fastest to slowest, the last dot is the slowest player, and log spacing
+    replaced the clip. The handover listed p95 by mistake, and items 20 and 84 inherited
+    it. Do we keep a clip?
+    My rec: no clip. Items 20 and 84 are void; item 78 drops its p95 case.
+    Why: log scaling already tames the slow tail, which is why the clip was removed. With
+    no clip there is no chevron, no "pinned past the edge" rule, and the last dot is
+    simply the slowest player. Nearest-rank p95 would rarely bite at today's n anyway. The
+    cost, stated on the board: one very slow solve pushes everyone else left.
+    **Maths — needs Dave's sign-off; it reverses part of his item 84 sign-off.**
+107. **Idea-R draws no leader line on either flip card.** The `spread__lead` spans for
+    the axis note were deleted after the design settled, but canvas note line 80 says the
+    note "carries the same 14px leader every other label on the chart has" and gives the
+    reason: without it the tag reads as floating text. Restore it?
+    My rec: yes, restore the 14px leader to the note's corner. Why: the written decision
+    has a reason and the deletion has none on record. Bottom-centred captions are the ones
+    that deliberately carry no leader (note line 84), and that is not this design.
+108. Item 47's design reference and item 48's flip rule now resolve to these files.
+    Clearances (106px and 186px) and card heights (235px flip, 253px caption) were measured
+    at 390px and are re-measured at 288px and 480px (96).
