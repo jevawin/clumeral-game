@@ -315,7 +315,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026
     update interrupts the one that matters — that you solved it.
 
 ## 10. Analytics
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
 
 73. Nothing new about the player's own result is sent. Their rank and percentile are not
     events — both are derivable from `puzzle_time` rows already. (assumed)
@@ -334,3 +334,56 @@ Settled: pending · Ack: pending
     feeds the CONSIDERATIONS revisit point. Saving-off is fine: the event carries the
     field's size, nothing about their play. `puzzle_complete` is already sent for them
     ungated (`src/app.ts:1082`).
+
+## 11. Done / test plan
+Settled: pending · Ack: pending
+
+Written before code. Each line is a check the build must pass.
+
+78. **Unit, client** (`tests/`, vitest) — the pure module from item 39:
+    - positions on the log axis, the single-distinct-time case at 50%, the 1s floor;
+    - dot sizes, including the 21px cap;
+    - the median rule: absent below 3, present from 3, suppressed when someone finished on
+      the median second; odd and even n; n = 2 does not double-draw;
+    - the p95 clip, and your dot pinned past it with your true time;
+    - the item 28 percentile: fastest of 10 → 10%, slowest of 10 → 100%, ties share;
+    - ordinal ranks with "joint", and the copy chosen at n = 1, 2–9, 10+, and strictly
+      slowest at 10+ (items 56, 59–61);
+    - the compact `formatDuration` option, and that the default form is unchanged;
+    - your time counted once whether or not the field already contains it (item 18).
+    (assumed)
+79. **Unit, worker** (`tests/worker/`):
+    - the new route returns only `(second, count)` pairs — the test asserts the exact key
+      set, so a future uid or timestamp fails it (item 37);
+    - it filters by hostname and puzzle number, drops NULL-number rows, clamps to 0–86400,
+      and sends `Cache-Control: no-store`;
+    - `recordEvent` stores a valid puzzle number and NULL for junk (string, negative,
+      fraction, absent);
+    - `time_chart` is in `VALID_EVENTS`;
+    - migration 0008 applies, and `npm run lint:migrations` passes.
+    (assumed)
+80. **Contrast** — `tests/palette-contrast.spec.ts` extended: the two new tokens (item 64)
+    meet 3:1 against the surface, and chart text meets 4.5:1, in all eight palette × theme
+    combinations. (assumed — item 69)
+81. **Pre-prod, by hand** — on the branch's `workers.dev` preview: solve today's daily, see
+    the card, see your own row land with a puzzle number in `clumeral-analytics-preprod`
+    (read with `--local` mirror or `/stats`, never `wrangler d1 … --remote`), and see a
+    `time_chart` event. Screenshots at 320px and 368px content width for Jamie to compare
+    against Idea-O. (assumed)
+82. **Not done until** Dave has signed item 28, and `docs/INVARIANTS.md` has been read
+    against the final diff. `docs/ANALYTICS.md` documents the column and the event.
+    (assumed)
+83. What level of Playwright e2e?
+    My rec: targeted, not the full battery. One new spec under `e2e/specs/` against the
+    production build, with the endpoint stubbed so the field is deterministic:
+    - the card at n = 1, 3 and 12, on `mobile-chromium` and `mobile-webkit` (the 320px
+      case, item 52) and `chromium-desktop`;
+    - a failed fetch collapses the reserved space and the rest of the panel is intact;
+    - the card is absent in random, archive and marker modes;
+    - axe on `/solved` with the card drawn, light and dark;
+    - the screen-reader sentence (item 71) is present and the SVG is hidden.
+    Plus the existing completion and a11y specs. Not the whole suite.
+    Why: the risk sits in one panel and one route. The worker side is covered better by
+    unit tests than by a browser. A full run buys little over that and costs the 40
+    minutes CLAUDE.md warns about. Firefox is skipped locally (sandbox), so passes are
+    counted per project, not read from the exit code.
