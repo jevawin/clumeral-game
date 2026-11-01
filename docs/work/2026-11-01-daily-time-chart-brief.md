@@ -5,9 +5,9 @@ and the canvas boards it names (Idea-O, P, R, N).
 
 Branch: `dev/daily-time-chart`
 
-**Status: all 11 sections settled by Jamie, 2026-11-01. Not closeable yet.** Waiting on Dave:
-sign-off on §4 item 28 (blocking, maths), and acks on §6, §7 (re-ack after item 64 reopened
-it), §8, §10 and §11. `da-brief` runs once those are in.
+**Status: all 11 sections settled by Jamie, 2026-11-01; §4 signed by Dave. Not closeable yet.** Open:
+item 88 (fastest-line wording) for Jamie; Dave acks on §6, §7 (re-ack after item 64 reopened
+it), §8 (re-ack after item 88), §10 and §11. `da-brief` runs once those are in.
 
 ---
 
@@ -108,7 +108,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     loading any page.
 
 ## 4. Maths
-Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave pending (blocking — covers items 28 and 84–87) · Ack: n/a
+Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave 2026-11-01 (relayed by Jamie; covers items 28 and 84–87) · Ack: n/a
 
 27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
 28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
