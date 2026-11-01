@@ -12,8 +12,9 @@ were checked against the code and all held. Every one is fixed here; the two tha
 product answer went to Jamie as brief items 122 and 123. See the revision log at the end.
 **Revision 4, 2026-11-01** — second `da-plan`, on revision 3: 2 Medium, 7 Low, no High. All
 fixed here; none needed a product answer.
-**Approval:** pending — Jamie.
-**da-plan:** pending.
+**Approval:** Jamie, 2026-11-01, on revision 4. Build may start.
+**da-plan:** run twice — on revision 2 (2 High, 4 Medium, 8 Low; fixed in revision 3) and on
+revision 3 (2 Medium, 7 Low; fixed in revision 4).
 
 Read the brief's "da-brief fixes", "Boards export", "Plan-stage questions" and "Fable da-brief
 fixes" sections first, then "Plan-stage questions, second round" (122, 123). Later sections
