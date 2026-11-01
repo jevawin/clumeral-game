@@ -97,6 +97,29 @@ updates:
       # beats a permanently red CI. It ends when the vitest 4 task lands.
       - dependency-name: "@cloudflare/vitest-pool-workers"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # @cloudflare/workers-types majors are ignored because a types-only bump
+      # drags a real runtime with it. `wrangler` peers the types, and the range
+      # moves with the major: 4.80.0 wants "^4.20260401.1", 4.146.0 wants
+      # "^5.20261001.1". So taking the types to 5 takes root wrangler to 4.146.0,
+      # which brings miniflare 5 alpha and a newer workerd — while
+      # @cloudflare/vite-plugin still pins wrangler 4.80.0 on miniflare 4. The
+      # two halves then disagree about the on-disk D1 format: `npm run e2e:db`
+      # writes `.wrangler` with the new workerd, `vite preview` cannot read it
+      # back, and e2e dies before a test runs. #331 carries the full diagnosis,
+      # including why the CI log never shows the real error.
+      #
+      # Major only, and that is deliberate: 4.x is still being released
+      # (4.20260702.1 as of 2026-10-31, against 4.20260403.1 here), those bumps
+      # sit inside wrangler 4.80.0's peer range, and we want them.
+      #
+      # Dependabot refiles this one fast — #325 was closed and came back as #334
+      # within the hour, which is why an ignore and not just a close.
+      #
+      # This entry is step one of #331, which then bumps @cloudflare/vite-plugin,
+      # wrangler and @cloudflare/workers-types together onto one miniflare.
+      # Remove it in that PR.
+      - dependency-name: "@cloudflare/workers-types"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     # Same reasoning as the npm block above.
