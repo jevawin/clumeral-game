@@ -55,11 +55,13 @@ function fallbackUuid(): string {
 const analyticsUid = getUid();
 const isNewUser = !localStorage.getItem("dlng_history");
 
-function track(event: string, value?: number, source?: string): void {
+// puzzleNum is puzzle_time's only (time chart brief item 40). JSON.stringify drops
+// an undefined key, so every other event's body is byte-identical.
+function track(event: string, value?: number, source?: string, puzzleNum?: number): void {
   fetch("/api/event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event, uid: analyticsUid, value, newUser: isNewUser, source }),
+    body: JSON.stringify({ event, uid: analyticsUid, value, newUser: isNewUser, source, puzzleNum }),
   }).catch(() => {});
 }
 
@@ -1128,7 +1130,7 @@ async function handleGuess() {
         saveScore,
         seconds: timer.seconds(),
       });
-      if (countedSeconds !== null) track("puzzle_time", countedSeconds, timer.idleLabel());
+      if (countedSeconds !== null) track("puzzle_time", countedSeconds, timer.idleLabel(), gameState.puzzleNum ?? undefined);
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();
 
