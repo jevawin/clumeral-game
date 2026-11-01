@@ -156,7 +156,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: D
     change to the endpoint, not just this build.
 
 ## 6. How it fits
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
 
 38. Client rendering hangs off `renderCompletion` in `src/completion.ts`, which builds the
     #311 panel synchronously. The chart needs a fetch, so it renders into its own slot after
@@ -195,3 +195,42 @@ Settled: pending · Ack: pending
     Why include new: the `REVEAL_AFTER_GAMES = 2` gate is about *your* history being too
     thin to show streaks. Today's field does not depend on your history, so a first-time
     player has as much reason to see it as anyone — arguably more.
+
+## 7. How it looks
+Settled: pending · Ack: pending
+
+47. The design is Idea-O: a horizontal log axis, one dot per distinct second sized by how
+    many share it, your dot solid accent with your time above it, Fastest / Median / Slowest
+    below on short leader lines, the copy line above. Low-data states follow Idea-P.
+    (assumed — handover §1, §3)
+48. `— log time` is on the card, always with the dash, positioned by the flip rule (Idea-R):
+    the top corner furthest from your dot, with a 14px leader. (assumed — Dave's
+    requirement, chosen 2026-11-01)
+49. Two colours only: theme accent and foreground, with `--accent-soft` and `--fg-50`
+    reused. Bold for emphasis. No new tokens. Dark mode comes free from the tokens.
+    (assumed — handover §5)
+50. Label widths are measured from the rendered text, not estimated from the mockup's
+    per-character table. (assumed — handover §3; the comment travels with the lifted code)
+51. No entrance animation. The dots are drawn in place. (assumed — nothing to animate that
+    adds meaning, and it removes a reduced-motion case)
+52. The card cannot be the fixed 390px it was designed at. The panel is `max-w-[26rem]`
+    with `px-6` (`index.html:61`), so the content is at most 368px wide — about 320px on a
+    375px phone. How does it fit?
+    My rec: the track takes the container's width. Positions are already fractions of the
+    track, so dots scale for free. Label collisions and the flip rule's clearances (106px
+    and 186px, measured at 390) are re-checked at 320px in the build, with Playwright at a
+    phone viewport.
+    Why: the alternative, a horizontally scrolling or scaled-down card, makes 9px dots
+    smaller still and is worse on exactly the screens most players use.
+53. Where in the panel?
+    My rec: its own block directly under the this-game figures, above Current streaks.
+    Why: it is about today, and so are the figures above it. Streaks and All time are about
+    your history; putting the chart between them would split "today" from "today".
+54. The card arrives after a fetch, below content the player is already reading. Do we
+    reserve its space?
+    My rec: yes. Reserve the card's height (about 235px, Idea-R) the moment the panel
+    renders, draw the chart into it when the data arrives, and collapse it only if the
+    fetch fails.
+    Why: inserting it late pushes Current streaks and All time down mid-read. A failure
+    still shifts, but failure is the rare case. The cost: an empty 235px gap for the
+    length of one request.
