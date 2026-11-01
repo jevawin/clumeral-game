@@ -10,7 +10,7 @@ Branch: `dev/daily-time-chart`
 ---
 
 ## 1. What it is
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01 (relayed by Jamie)
 
 1. The problem: the results panel shows figures that barely move between visits. A daily
    game's results screen is seen once a day, and an all-time distribution reads 237-of-239
@@ -36,7 +36,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
    Writes stay as they are.
 
 ## 2. Out of scope
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01 (relayed by Jamie)
 
 8. No named leaderboard and no other player's identity on the card. A named rank is the first
    real incentive to forge events, and `/api/event` takes any `uid` unauthenticated. Blocked
@@ -60,7 +60,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     a determined troll could make the field look odd for a day.
 
 ## 3. How it works
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01 (relayed by Jamie)
 
 16. The card appears on `/solved` after a daily solve, inside the #311 results panel. Not on
     `/play` in solved-replay mode, not on random or archive completion. (assumed — the stats
@@ -119,7 +119,7 @@ Settled: Jamie 2026-11-01 (accepted item 28: Dave signs) · Sign-off: Dave pendi
     definition wrong is cheap to fix but embarrassing to ship.
 
 ## 5. State & persistence
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: Dave 2026-11-01 (relayed by Jamie)
 
 29. The field lives on the server only, in `analytics_events` in `clumeral-analytics`. The
     one storage change is the puzzle-number column from item 24: a new nullable column via
@@ -148,3 +148,9 @@ Settled: pending · Ack: pending
     Why: one dot per distinct second is what the card draws, so the client needs exactly
     this and no more. A solve time is low-harm to reveal. The alternative — hide the card
     below some n — throws away the low-data states that item 6 decided to ship.
+36. Jamie, 2026-11-01, on item 34: log the no-cache decision and its revisit point so it is
+    not forgotten as traffic grows. Logged in [docs/CONSIDERATIONS.md](../CONSIDERATIONS.md),
+    linked from `CLAUDE.md`.
+37. Jamie, 2026-11-01, on item 35, as a hard rule: the endpoint **never** returns a uid, a
+    solve timestamp, or anything other than a time and its count. This holds for any future
+    change to the endpoint, not just this build.

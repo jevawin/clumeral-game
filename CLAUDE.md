@@ -144,6 +144,7 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Adding a roadmap item as a GitHub issue | [docs/ROADMAP-ISSUES.md](docs/ROADMAP-ISSUES.md) |
 | Feedback — storage (D1), reading it, triage process | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
 | Analytics — event storage (D1), `/stats`, the chart, the Analytics Engine migration | [docs/ANALYTICS.md](docs/ANALYTICS.md) |
+| Traffic growing, or touching anything accepted "for now, at this volume" | [docs/CONSIDERATIONS.md](docs/CONSIDERATIONS.md) |
 
 Update the respective doc if it's incorrect or your work makes it outdated.
 
