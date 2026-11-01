@@ -368,7 +368,8 @@ Written before code. Each line is a check the build must pass.
 81. **Pre-prod, by hand** — on the branch's `workers.dev` preview: solve today's daily, see
     the card, then reload `/solved` and confirm your second comes back from the new route —
     which proves the row landed with its puzzle number, since NULL rows are never returned.
-    Check `time_chart` on the preview's `/stats`. Never `wrangler d1 … --remote`. Screenshots at 320px and 368px content width for Jamie to compare
+    Confirm `time_chart` events arrive; the plan picks how to read them without
+    `wrangler d1 … --remote`. Screenshots at 320px and 368px content width for Jamie to compare
     against Idea-O. (assumed)
 82. **Not done until** Dave has signed item 28, and `docs/INVARIANTS.md` has been read
     against the final diff. `docs/ANALYTICS.md` documents the column and the event.
