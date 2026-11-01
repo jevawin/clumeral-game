@@ -6,8 +6,13 @@ and the canvas boards it names (Idea-O, P, R, N).
 Branch: `dev/daily-time-chart`
 
 **Status: `da-brief` ran 2026-11-01 — 2 High, 5 Medium, 4 Low. Fixes settled by Jamie the
-same day (items 90–102); boards exported (items 103–108). Ready for Plan.** Every section is
-settled and acked, all maths is signed by Dave, and accessibility by Jamie.
+same day (items 90–102); boards exported (items 103–108). Second `da-brief` (Fable) ran
+2026-11-01: 4 Medium, 6 Low. Fixes settled by Jamie (items 111–121). Not closeable:** Dave's
+sign-off on items 111 and 116, his ack on items 103–108, and his re-acks on §3, §4, §5, §8,
+§11 are pending.
+
+**Read "da-brief fixes", "Boards export", "Plan-stage questions" and "Fable da-brief fixes"
+at the end before planning. Later sections win over earlier ones and over the body.**
 
 **Read "da-brief fixes" at the end before planning. Where it and the body disagree, it wins.**
 
@@ -113,7 +118,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-bri
 Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave 2026-11-01 (relayed by Jamie; covers items 28 and 84–87) · Items 90 and 106: Dave 2026-11-01 (relayed by Jamie) · Ack: n/a
 
 27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
-28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
+28. [amended — see 111] The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
     the p95 clip and the 1s floor (item 21). Proposed definition, for n times including
     yours: `top X%`, where X = ceil(100 × (count strictly faster than you + 1) / n).
     Fastest of 10 → top 10%. Slowest of 10 → top 100%. Ties share the better figure.
@@ -130,7 +135,7 @@ Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 
 86. Where the ported Idea-O block disagrees with items 28, 84 and 85, the signed definitions
     win. The plan changes the block to match and tests each definition. (reviewed
     2026-11-01, accepted recommendation)
-87. A 0s time should never happen in practice. The 1s floor (item 21) stays only as a guard
+87. [amended — see 116] A 0s time should never happen in practice. The 1s floor (item 21) stays only as a guard
     against a junk or forged row, not as a case the design expects. Ties are by whole
     second, matching how times are shown. (reviewed 2026-11-01)
 
@@ -280,7 +285,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88,
     My rec: "You're in the **top 70%** of solve times". Why: without "of" it does not parse
     as English. If the canvas dropped it on purpose to fit a line, the measured width at
     320px (item 52) will tell us; fix the width, not the grammar.
-60. The slowest player at 10+ reads "top 100%" (handover §4.1). What do they see?
+60. [amended — see 111] The slowest player at 10+ reads "top 100%" (handover §4.1). What do they see?
     My rec: no rank at all: "**{n} players** solved today". The chart still shows their dot.
     Why: there is no honest phrasing of last place that does not read as a dig, and a
     euphemism ("steadiest solver") reads as one too. The dot already tells them the truth.
@@ -326,7 +331,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026
     (item 50), so 200% zoom does not break collision handling. (assumed — required, not
     optional)
 70. The label-in-name exception list is not widened (#345). (assumed — standing rule)
-71. What does a screen reader get?
+71. [amended — see 113] What does a screen reader get?
     My rec: the SVG is `aria-hidden`. The copy line is real text and reads first. Beneath it,
     one visually hidden sentence: "14 solve times today. Fastest 23 seconds, median 1
     minute 10 seconds, slowest 4 minutes 2 seconds. Yours: 41 seconds." Durations are
@@ -505,11 +510,11 @@ Boards exported 2026-11-01 by a separate session; its report was checked against
     - `2026-11-01-canvas-notes.md` — the canvas notes, verbatim.
     Idea-O is a whole results-screen mock. Only its "Daily leaderboard" card is in scope;
     the other cards and every Share button are context (items 11, 13).
-104. **Port from Idea-O, lines 403–575.** Correcting the handover: the block is *not*
+104. [amended — see 115] **Port from Idea-O, lines 403–575.** Correcting the handover: the block is *not*
     byte-identical across O, P and R. The 127 lines from `var tally` to `var vPost` are;
     P and R wrap the logic in `pack()` and R adds 7 lines for the flip rule. Item 39
     points here.
-105. **Known divergences the port must change**, each to the brief's settled item:
+105. [amended — see 115] **Known divergences the port must change**, each to the brief's settled item:
     - Axis note `— log time` → `— log scale` (101).
     - Percentile `Math.round(rank / n * 100)` → ceil (28). The rank itself already
       matches: `indexOf + 1` is "strictly faster + 1".
@@ -561,3 +566,66 @@ build. Answered by Jamie the same day.
     field, and without the uid they would be counted twice. The uid only removes their row
     and adds nothing to what the server already holds. (Jamie 2026-11-01, accepted
     recommendation)
+
+## Fable da-brief fixes
+Review: second fresh-context `da-brief` subagent, run on Fable, 2026-11-01, over the whole
+brief and the board files. Findings G1–G10 checked against the code and boards by the main
+session; all held. Fixes settled by Jamie 2026-11-01 (accepted all recommendations).
+Ack: Dave pending · Sign-off: Dave pending on items 111 and 116 (maths, blocking) · Jamie
+signs item 113 (accessibility) — signed 2026-11-01.
+
+111. (G1, Medium — amends 28, 60) **"top 100%" never shows for anyone but the strictly
+    slowest.** Rounding up gives 100 for every rank above 0.99n: the second-slowest of 101
+    reads ceil(99.01) = 100. So X = min(99, ceil(100 × rank / n)) for everyone except the
+    strictly slowest, who reads item 60's line. Tests: rank 100 of 101, and tied-slowest at
+    rank 199 of 200, both read "top 99%". **Maths — Dave sign-off pending.**
+112. (G2, Medium) Already settled by item 110: the uid goes with the request whenever
+    today's history holds a recorded entry, so saving toggled off after a saving-on solve
+    still counts you once. Item 78/79 inputs gain that case.
+113. (G3, Medium — amends 71) **Screen-reader sentence variants**, using "players"
+    throughout, matching item 60:
+    - n = 1: "1 player solved today. Yours: 41 seconds."
+    - n = 2: "2 players solved today. Fastest 30 seconds, slowest 41 seconds. Yours: 41
+      seconds."
+    - all identical, any n: "5 players solved today, all in 41 seconds. Yours: 41 seconds."
+    - otherwise, n ≥ 3: "14 players solved today. Fastest 23 seconds, median 1 minute 10
+      seconds, slowest 4 minutes 2 seconds. Yours: 41 seconds."
+    Item 83's e2e check covers n = 1, 2, all-identical and n ≥ 3. (Jamie signs —
+    accessibility; signed 2026-11-01.)
+114. (G4, Medium) Items 103–108 were settled by Jamie alone. Dave's ack is pending; the
+    earlier status line saying "every section is acked" was wrong.
+115. (G5, Low — amends 104, 105) Item 104's block is 137 lines, not 127. Item 105 also
+    misses, each changed in the port to the settled rule:
+    - "You're 2nd fastest" → "You're the **2nd fastest**" (56).
+    - The board has no 1s floor; `Math.log(0)` is −Infinity there (21, and see 116).
+    - `mmss()` has no hour branch. The compact `formatDuration` (63) shows `1h 04m` at
+      an hour or more — the existing long form, already short enough.
+    - The board's all-identical (`flat`) field draws Fastest only, at any n. **The board
+      wins here**: with every dot on one second, Median and Slowest would say the same
+      thing three times. This overrides item 47's "n ≥ 3 shows all three".
+    - The `youW * 1.05` and `+3` width slack factors go; widths are measured (50).
+116. (G6, Low — amends 21, 42, 79, 87) **Out-of-range rows are dropped, never clamped** —
+    one word throughout. The new query reads `BETWEEN 1 AND 86400`, not 0: `recordEvent`
+    writes 0 for any non-finite value (`src/worker/analytics-db.ts:130`), so every junk
+    POST is a 0s row, and a real sub-second solve is impossible. The 1s floor stays as a
+    client guard only. **Maths — Dave sign-off pending on the lower bound.**
+117. (G7, Low — amends 95) The ±14h window bounds are inclusive; UTC+14 sits exactly on the
+    edge. Accepted: a tab left open past local midnight in a negative-offset zone can solve
+    outside the window, and that row is missing from everyone else's field. The player's
+    own dot is local, so they never see the gap.
+118. (G8, Low — amends 91, 110) The uid travels in a request header, never in the query
+    string, so it stays out of URL logs. Accepted beside item 35: anyone who knows a uid
+    could compare responses with and without it to learn that player's time. The uid
+    already travels in clear on every event POST.
+119. (G9, Low — amends 99) Item 37's rule — the field route never returns a uid, a solve
+    timestamp, or anything but a time and its count — is added to `docs/INVARIANTS.md`
+    as a standing rule, and stated in `docs/ANALYTICS.md`. It is meant to outlive this
+    build, so it cannot live only in a brief and one test.
+120. (G10, Low — amends 78, 79) Tests gain: rank 100 of 101 and tied-slowest of 200 (111);
+    uid sent or not per item 110, including saving toggled after a saving-on solve (112);
+    all-identical fields at n = 3 and n = 10 — dots, labels, copy and SR sentence (113,
+    115); a 0s row is dropped (116); compact format at an hour or more (115); the SR
+    sentence at n = 1 and 2 (113).
+121. (noted) Item 93's `screens:enter` for `completion` also fires after a random solve
+    (`src/app.ts:1147`). The listener checks item 46's modes before fetching, so random
+    never fetches or sends `time_chart`.
