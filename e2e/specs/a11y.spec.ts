@@ -234,10 +234,14 @@ test.describe("accessibility — digit box names", () => {
         "true",
       );
 
-      // The computed description, not just the target's text. The IDREF is the
-      // whole delivery mechanism: drop aria-describedby from the boxes or typo one
-      // id and every other assertion here still passes while the fix is dead.
-      await expect(box).toHaveAccessibleDescription(`${name}: ${digits}`);
+      // The computed description, not just the target's text, and the assertion
+      // this suite most needs. The IDREF is the whole delivery mechanism — drop
+      // aria-describedby or typo one id and every other assertion here still
+      // passes while the fix is dead — and the targets are aria-hidden, so this is
+      // also what proves an engine still honours a hidden node that
+      // aria-describedby references directly. If one ever stops, this goes red
+      // instead of the description silently disappearing.
+      await expect(box).toHaveAccessibleDescription(digits);
       // The accessible name is asserted twice on purpose — once as the attribute
       // above, once as the computed name here, which is what a screen reader
       // actually says and which the description must not leak into.
@@ -249,9 +253,7 @@ test.describe("accessibility — digit box names", () => {
     await game.key(0).click();
     await game.key(1).click();
     await expect(game.digit(1)).toHaveAccessibleName("Tens box, 8 remaining");
-    await expect(game.digit(1)).toHaveAccessibleDescription(
-      "Tens box: 2, 3, 4, 5, 6, 7, 8, 9",
-    );
+    await expect(game.digit(1)).toHaveAccessibleDescription("2, 3, 4, 5, 6, 7, 8, 9");
   });
 
   // The one-digit branch paints a single big digit instead of the grid, and hides
@@ -266,7 +268,7 @@ test.describe("accessibility — digit box names", () => {
     for (const d of [0, 1, 2, 3, 4, 5, 6, 7, 8]) await game.key(d).click();
 
     await expect(game.digit(1)).toHaveAccessibleName("Tens box, 1 remaining");
-    await expect(game.digit(1)).toHaveAccessibleDescription("Tens box: 9");
+    await expect(game.digit(1)).toHaveAccessibleDescription("9");
     await expect(page.locator('[data-digit="1"] span[aria-hidden="true"]')).toHaveText("9");
   });
 
@@ -281,11 +283,9 @@ test.describe("accessibility — digit box names", () => {
 
     await game.digit(1).click();
     await game.key(0).click();
-    await expect(game.digit(1)).toHaveAccessibleDescription("Tens box: 1, 2, 3, 4, 5, 6, 7, 8, 9");
+    await expect(game.digit(1)).toHaveAccessibleDescription("1, 2, 3, 4, 5, 6, 7, 8, 9");
     await game.key(0).click();
-    await expect(game.digit(1)).toHaveAccessibleDescription(
-      "Tens box: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9",
-    );
+    await expect(game.digit(1)).toHaveAccessibleDescription("0, 1, 2, 3, 4, 5, 6, 7, 8, 9");
     await expect(game.digit(1)).toHaveAccessibleName("Tens box, 10 remaining");
   });
 

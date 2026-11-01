@@ -500,13 +500,13 @@ function renderBox(i: number): void {
   // — "Tens box, 10 remaining, 9 remaining" — growing with every keystroke.
   const boxName = el.dataset.boxName;
   if (boxName) el.setAttribute("aria-label", `${boxName}, ${left.length} remaining`);
-  // The box name is repeated in the description, which is redundant on focus and
-  // the point of it anywhere else: the target is a sibling of the box rather than
-  // a child (a child would be wiped by the innerHTML above, and would count as the
-  // button's own text), so browse mode and VoiceOver's swipe reach it as a node of
-  // its own. Unprefixed it was three unlabelled digit runs after the three boxes.
+  // The target is a sibling of the box, not a child: the innerHTML above would wipe
+  // a child, and a child counts as the button's own text. Being a sibling it is its
+  // own node in the reading order, so it carries aria-hidden to keep it out of
+  // browse mode — accname includes a hidden node that aria-describedby references
+  // directly, which is what keeps the description working. See index.html.
   const desc = document.querySelector(`[data-box-digits="${i}"]`);
-  if (desc) desc.textContent = boxName ? `${boxName}: ${left.join(", ")}` : left.join(", ");
+  if (desc) desc.textContent = left.join(", ");
 
   // Active state: accent border + accent shadow
   el.classList.toggle("border-accent", i === activeBox);
