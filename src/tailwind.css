@@ -789,6 +789,12 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     line-height: 1rem;
     white-space: nowrap;
   }
+  /* Item 125: when three 14px references cannot sit side by side — large text
+     on a narrow phone — every chart label steps down to 12px together. Set by
+     time-chart-view.ts from measured widths. */
+  .time-chart--tight .time-chart__t,
+  .time-chart--tight .time-chart__w,
+  .time-chart--tight .time-chart__note { font-size: 0.75rem; }
   /* The label is placed to FIT; the LEADER marks the TRUE position. Three labels
      cannot always sit centred on their own dots without touching, so the label
      moves and the line stays honest. */

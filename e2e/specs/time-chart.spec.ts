@@ -226,8 +226,9 @@ test.describe("time chart — layout", () => {
         await openSolved(page);
         await expect(copyLine(page)).toBeVisible();
         const b = await check(page, 1);
-        // Item 122: nothing changes at normal text size.
+        // Item 122: nothing changes at normal text size. Item 125: labels stay 14px.
         expect(b.below).toBe(false);
+        await expect(card(page)).not.toHaveClass(/time-chart--tight/);
       });
     }
   }
@@ -248,6 +249,8 @@ test.describe("time chart — layout", () => {
       const b = await check(page, 2);
       expect(b.track.right - b.track.left).toBeCloseTo(288, 0);
       if (f.name === "you in the middle") expect(b.below).toBe(true);
+      // Item 125: three 14px labels need ~306px here, so they step down to 12px.
+      await expect(card(page)).toHaveClass(/time-chart--tight/);
     });
   }
 });

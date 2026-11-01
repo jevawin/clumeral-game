@@ -14,6 +14,7 @@ import {
   labelTime,
   layout,
   rankCopy,
+  refsFit,
   ranking,
   spokenSummary,
   type FieldRow,
@@ -180,6 +181,14 @@ function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   const youBox = track.querySelector<HTMLElement>('[data-tc-you]')!;
   const youLead = track.querySelector<HTMLElement>('[data-tc-you-lead]')!;
   const note = slot.querySelector<HTMLElement>('[data-tc-note]')!;
+
+  // 14px labels, stepped down to 12px only when the references cannot sit side
+  // by side at 14 (item 125). Measured at 14 every time, so the choice follows a
+  // text-size or width change both ways. The rows stay 1rem tall either way, so
+  // stepping down moves nothing vertically.
+  slot.classList.remove('time-chart--tight');
+  const width14 = refBoxes.map((b) => b.getBoundingClientRect().width);
+  if (!refsFit(width14, width)) slot.classList.add('time-chart--tight');
 
   const out = layout({
     track: width,

@@ -7,6 +7,7 @@ import {
   layout,
   median,
   ordinal,
+  refsFit,
   percentile,
   rankCopy,
   ranking,
@@ -284,6 +285,19 @@ describe('layout', () => {
         }
       }
     }
+  });
+});
+
+// Item 125: labels step down from 14px only when three cannot sit side by side.
+describe('refsFit', () => {
+  it('fits when the boxes and their 8px gaps fit the track', () => {
+    expect(refsFit([90, 90, 92], 288)).toBe(true);
+    expect(refsFit([93.2, 95.1, 102], 288)).toBe(false);
+    expect(refsFit([54, 54, 54], 288)).toBe(true);
+  });
+
+  it('always fits one label that fits the track', () => {
+    expect(refsFit([120], 288)).toBe(true);
   });
 });
 

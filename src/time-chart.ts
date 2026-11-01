@@ -195,6 +195,13 @@ export interface Layout {
 
 const GAP = 8;
 
+/** Whether the reference labels, at the widths measured, sit side by side with
+ *  their 8px gaps. Labels are 14px; when they do not fit — large text on a narrow
+ *  phone — the view steps every label down to 12px (Jamie, item 125). */
+export function refsFit(widths: number[], track: number): boolean {
+  return widths.reduce((sum, w) => sum + w, 0) + GAP * (widths.length - 1) <= track;
+}
+
 /** Where each label box goes on a track `track` px wide, from measured widths
  *  (item 50). The label is placed to FIT; the leader line marks the TRUE
  *  position. Below the 288px content floor (item 96) the passes still run and

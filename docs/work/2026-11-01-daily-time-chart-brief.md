@@ -661,8 +661,11 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     height as the variable, and the reserved height is re-measured (12.6rem). Measured: at
     default text the widest three labels take 178px of a 288px track, so 14px fits with room
     to spare. At 200% text on a 320px phone (288px of content) three 14px labels need about
-    306px, so they cannot sit side by side. **Open — Jamie to choose how 200% text is
-    handled.** (Jamie 2026-11-01)
+    306px, so they cannot sit side by side. **Settled: Jamie 2026-11-01 — keep 14px, and
+    step every chart label down to 12px only when the three references cannot sit side
+    by side at 14** (large text on a narrow phone). Rows stay 16px, so nothing moves
+    vertically. Rejected: 13px everywhere (still overlaps at 200% once times pass about
+    10 minutes) and 12px everywhere. (Jamie 2026-11-01)
 126. (amends 62, 105) **The heading is "Daily leaderboard"**, the board's own name, not
     "Everyone today". Item 8 still holds: no names and no identities on the card. The
     `data-stat-block` id follows the heading (`daily-leaderboard`). Copy is a joint
