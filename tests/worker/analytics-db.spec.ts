@@ -149,6 +149,39 @@ describe('recordEvent', () => {
     expect(row?.value).toBe(3);
   });
 
+  // The results card reads puzzle_time by its puzzle number (brief items 24, 41).
+  it('stores a positive integer puzzleNum in puzzle_num', async () => {
+    await recordEvent(
+      db(),
+      { event: 'puzzle_time', uid: 'u', hostname: 'clumeral.com', value: 41, puzzleNum: 238 },
+      NOW,
+    );
+    const row = await db().prepare('SELECT puzzle_num FROM analytics_events').first();
+    expect(row?.puzzle_num).toBe(238);
+  });
+
+  // The body is unvalidated JSON, and the read filters on the exact number, so a
+  // string '238' must not be coerced into a match.
+  it.each([['238'], [-1], [0], [2.5], [undefined], [NaN], [1e300]])(
+    'stores NULL for a junk puzzleNum (%s)',
+    async (puzzleNum) => {
+      await recordEvent(
+        db(),
+        { event: 'puzzle_time', uid: 'u', hostname: 'clumeral.com', value: 41, puzzleNum },
+        NOW,
+      );
+      const row = await db().prepare('SELECT puzzle_num FROM analytics_events').first();
+      expect(row?.puzzle_num).toBeNull();
+    },
+  );
+
+  // Item 45: a cached PWA build that predates the column sends no puzzleNum key.
+  it('old clients without puzzleNum still record', async () => {
+    await recordEvent(db(), { event: 'puzzle_time', uid: 'u', hostname: 'clumeral.com', value: 41 }, NOW);
+    const row = await db().prepare('SELECT value, puzzle_num FROM analytics_events').first();
+    expect(row).toEqual({ value: 41, puzzle_num: null });
+  });
+
   it('rejects rather than silently succeeding when the table is missing', async () => {
     // Item 58 reframed: the caller must be able to see a D1 failure as a rejected
     // promise, because index.ts relies on catching it to keep the response 202.

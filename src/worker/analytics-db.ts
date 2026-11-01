@@ -27,6 +27,8 @@ export interface AnalyticsEvent {
   hostname: string;
   value?: number;
   newUser?: boolean;
+  /** puzzle_time only. The body is cast, never validated, so this can be anything. */
+  puzzleNum?: unknown;
 }
 
 /** Rolling window in whole UTC days, or every row ever stored. */
@@ -119,7 +121,7 @@ export async function recordEvent(db: D1Database, e: AnalyticsEvent, now: number
   const value = Number(e.value);
   return db
     .prepare(
-      'INSERT INTO analytics_events (ts, event, uid, source, hostname, value, new_user) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO analytics_events (ts, event, uid, source, hostname, value, new_user, puzzle_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       now,
@@ -129,6 +131,10 @@ export async function recordEvent(db: D1Database, e: AnalyticsEvent, now: number
       e.hostname,
       Number.isFinite(value) ? Math.trunc(value) : 0,
       e.newUser ? 1 : 0,
+      // Exact positive integers only. The body is unvalidated JSON and the field
+      // route filters on the exact number, so a string '238' must not be coerced
+      // into a match; anything else is stored as NULL and never shown (item 41).
+      Number.isSafeInteger(e.puzzleNum) && (e.puzzleNum as number) > 0 ? e.puzzleNum : null,
     )
     .run();
 }

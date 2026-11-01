@@ -423,8 +423,8 @@ export default {
 
     if (request.method === 'POST' && url.pathname === '/api/event') {
       try {
-        const body = await request.json() as { event?: string; uid?: string; value?: number; newUser?: boolean; source?: string };
-        const { event, uid, value, newUser, source } = body;
+        const body = await request.json() as { event?: string; uid?: string; value?: number; newUser?: boolean; source?: string; puzzleNum?: unknown };
+        const { event, uid, value, newUser, source, puzzleNum } = body;
         if (!event || !VALID_EVENTS.has(event) || !uid) {
           return new Response('Bad request', { status: 400 });
         }
@@ -446,6 +446,7 @@ export default {
             hostname: url.hostname,
             value,
             newUser,
+            puzzleNum,
           }).catch((err: unknown) => {
             console.error('Analytics D1 write failed:', err instanceof Error ? err.message : String(err));
           }),
