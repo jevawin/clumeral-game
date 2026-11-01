@@ -13,6 +13,7 @@ import {
   REVEAL_AFTER_GAMES,
   type PlayerStats,
 } from './player-stats.ts';
+import { setTimeChartContext, showTimeChart, timeChartSlot } from './time-chart-view.ts';
 
 
 // ─── SVG ─────────────────────────────────────────────────────────────────────
@@ -284,6 +285,11 @@ document.addEventListener('screens:enter', (e) => {
     if (dom.live) dom.live.textContent = '';
     return;
   }
+  // Every entry is one visit to the card, so it fetches fresh each time (time
+  // chart brief item 93). Before the early return below, which skips every
+  // visit after the first announcement. The announcement itself is unchanged:
+  // the card is read in place, never announced (item 72).
+  showTimeChart();
   if (pendingAnnouncement === null) return;
   if (dom.live) dom.live.textContent = pendingAnnouncement;
   pendingAnnouncement = null;
@@ -347,6 +353,17 @@ export function renderCompletion(
   const mode = panelMode(isRandom, isArchivedOtherDate, tries, stats);
   const seconds = validSeconds(opts.seconds);
 
+  // The time chart (time chart brief 46): today's daily with a recorded or
+  // in-memory time. Random and archive have no field (4); a marker has no time
+  // (22, 92), and neither does a 0s time, which is junk (87) and would beat
+  // every real player, since the server drops 0s rows (116). The uid goes with
+  // the request only when today's time was sent — a recorded entry — so the
+  // server can leave the player's own row out (110).
+  const showsChart =
+    (mode === 'full' || mode === 'new' || mode === 'saving-off') && seconds !== null && seconds >= 1;
+  const sendUid = loadHistory().some((e) => e.date === todayKey() && !e.marker && !e.archived);
+  setTimeChartContext(showsChart ? { puzzleNum, seconds, sendUid } : null);
+
   // "You took:" leads into the two figures, so it is only correct when there
   // are figures to follow it (brief 63). A reload after a saving-off solve has
   // neither the goes nor the time, and the sentence would dangle over nothing.
@@ -372,6 +389,9 @@ export function renderCompletion(
     // directly under the solved message, centred, and the two notes that used to
     // live in that block sit under them.
     const blocks = [`<div data-stat-block="this-game">${thisGame}</div>`];
+    // Straight under the figures and above Current streaks: it is about today,
+    // like them (brief 53). Reserved empty now and drawn after the fetch (54).
+    if (showsChart) blocks.push(timeChartSlot());
 
     if (mode === 'full') {
       // Two sections where there used to be one (brief 64): where you are now,

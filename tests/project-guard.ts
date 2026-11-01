@@ -12,8 +12,8 @@ import type { Reporter, TestModule } from 'vitest/node';
 // still exit 0. The other two: vitest 4 ignoring a workspace file, and a root config that
 // declares test.projects never running its own test.include.
 const EXPECTED_FILES: Record<string, number> = {
-  jsdom: 37,
-  workers: 4,
+  jsdom: 40,
+  workers: 5,
 };
 
 export default class ProjectGuard implements Reporter {

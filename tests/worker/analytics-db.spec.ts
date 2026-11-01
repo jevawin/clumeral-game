@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getStats, rangeCutoff, recordEvent, startOfUTCDay } from '../../src/worker/analytics-db.ts';
+import { getStats, getTodayTimes, rangeCutoff, recordEvent, startOfUTCDay } from '../../src/worker/analytics-db.ts';
+import { puzzleNumber } from '../../src/worker/puzzle.ts';
 import { VALID_EVENTS } from '../../src/worker/index.ts';
 
 const DAY = 86_400_000;
@@ -77,9 +78,10 @@ describe('recordEvent', () => {
 
   // A bare count fails with no clue as to why, so: adding an event name is meant
   // to change this number, and removing one is meant to be noticed.
-  it('accepts all eleven documented events', () => {
-    expect(VALID_EVENTS.size).toBe(11);
+  it('accepts all twelve documented events', () => {
+    expect(VALID_EVENTS.size).toBe(12);
     expect(VALID_EVENTS.has('puzzle_time')).toBe(true);
+    expect(VALID_EVENTS.has('time_chart')).toBe(true);
   });
 
   it('normalises an empty source to NULL', async () => {
@@ -147,6 +149,51 @@ describe('recordEvent', () => {
     await recordEvent(db(), { event: 'puzzle_complete', uid: 'u', hostname: 'clumeral.com', value: 3.7 }, NOW);
     const row = await db().prepare('SELECT value FROM analytics_events').first();
     expect(row?.value).toBe(3);
+  });
+
+  // The results card reads puzzle_time by its puzzle number (brief items 24, 41).
+  it('stores a positive integer puzzleNum in puzzle_num', async () => {
+    await recordEvent(
+      db(),
+      { event: 'puzzle_time', uid: 'u', hostname: 'clumeral.com', value: 41, puzzleNum: 238 },
+      NOW,
+    );
+    const row = await db().prepare('SELECT puzzle_num FROM analytics_events').first();
+    expect(row?.puzzle_num).toBe(238);
+  });
+
+  // The body is unvalidated JSON, and the read filters on the exact number, so a
+  // string '238' must not be coerced into a match.
+  it.each([['238'], [-1], [0], [2.5], [undefined], [NaN], [1e300]])(
+    'stores NULL for a junk puzzleNum (%s)',
+    async (puzzleNum) => {
+      await recordEvent(
+        db(),
+        { event: 'puzzle_time', uid: 'u', hostname: 'clumeral.com', value: 41, puzzleNum },
+        NOW,
+      );
+      const row = await db().prepare('SELECT puzzle_num FROM analytics_events').first();
+      expect(row?.puzzle_num).toBeNull();
+    },
+  );
+
+  // The column belongs to puzzle_time; a forged puzzleNum on any other event is
+  // dropped rather than stored (da-build finding 4).
+  it('stores NULL for a puzzleNum on any other event', async () => {
+    await recordEvent(
+      db(),
+      { event: 'time_chart', uid: 'u', hostname: 'clumeral.com', value: 3, puzzleNum: 238 },
+      NOW,
+    );
+    const row = await db().prepare('SELECT puzzle_num FROM analytics_events').first();
+    expect(row?.puzzle_num).toBeNull();
+  });
+
+  // Item 45: a cached PWA build that predates the column sends no puzzleNum key.
+  it('old clients without puzzleNum still record', async () => {
+    await recordEvent(db(), { event: 'puzzle_time', uid: 'u', hostname: 'clumeral.com', value: 41 }, NOW);
+    const row = await db().prepare('SELECT value, puzzle_num FROM analytics_events').first();
+    expect(row).toEqual({ value: 41, puzzle_num: null });
   });
 
   it('rejects rather than silently succeeding when the table is missing', async () => {
@@ -361,5 +408,134 @@ describe('getStats', () => {
       const stats = await getStats(db(), { all: true }, 'clumeral.com', NOW);
       expect(stats.avgTimeSeconds).toBe(240);
     });
+  });
+});
+
+describe('getTodayTimes', () => {
+  // 2026-11-01 is the seeded day. Derived rather than hard-coded, so the test
+  // cannot drift from the epoch.
+  const TODAY = Date.parse('2026-11-01T00:00:00Z');
+  const NUM = puzzleNumber('2026-11-01');
+  const H = 3_600_000;
+  const read = (over: Partial<{ hostname: string; excludeUid: string }> = {}) =>
+    getTodayTimes(db(), { hostname: 'clumeral.com', puzzleNum: NUM, dayStartMs: TODAY, excludeUid: 'me', ...over });
+
+  async function seed(r: {
+    value: number;
+    ts?: number;
+    uid?: string;
+    hostname?: string;
+    puzzleNum?: number | null;
+    interval?: number;
+    event?: string;
+  }) {
+    await db()
+      .prepare(
+        'INSERT INTO analytics_events (ts, event, uid, source, hostname, value, new_user, sample_interval, puzzle_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      )
+      .bind(
+        r.ts ?? TODAY + 12 * H,
+        r.event ?? 'puzzle_time',
+        r.uid ?? 'stranger',
+        'clean',
+        r.hostname ?? 'clumeral.com',
+        r.value,
+        0,
+        r.interval ?? 1,
+        r.puzzleNum === undefined ? NUM : r.puzzleNum,
+      )
+      .run();
+  }
+
+  it('is puzzle 239 on the seeded day', () => {
+    expect(NUM).toBe(239);
+  });
+
+  it('groups by second and sums sample_interval', async () => {
+    await seed({ value: 69, uid: 'a' });
+    await seed({ value: 69, uid: 'b' });
+    await seed({ value: 69, uid: 'c' });
+    expect(await read()).toEqual([{ second: 69, count: 3 }]);
+  });
+
+  it('weights a sampled row by its interval', async () => {
+    await seed({ value: 69, interval: 2 });
+    expect(await read()).toEqual([{ second: 69, count: 2 }]);
+  });
+
+  it('returns ascending by second', async () => {
+    await seed({ value: 300 });
+    await seed({ value: 41 });
+    await seed({ value: 120 });
+    expect((await read()).map((r) => r.second)).toEqual([41, 120, 300]);
+  });
+
+  it('filters by hostname', async () => {
+    await seed({ value: 41 });
+    await seed({ value: 99, hostname: 'preview.workers.dev' });
+    expect(await read()).toEqual([{ second: 41, count: 1 }]);
+  });
+
+  it('filters by puzzle number, and drops rows with none', async () => {
+    await seed({ value: 41 });
+    await seed({ value: 50, puzzleNum: NUM - 1 });
+    await seed({ value: 60, puzzleNum: null });
+    expect(await read()).toEqual([{ second: 41, count: 1 }]);
+  });
+
+  it('filters by event', async () => {
+    await seed({ value: 41 });
+    await seed({ value: 2, event: 'puzzle_complete' });
+    expect(await read()).toEqual([{ second: 41, count: 1 }]);
+  });
+
+  // Item 116: dropped, never clamped. 0 is the case that matters — recordEvent
+  // writes 0 for any non-finite value, so every junk POST is a 0s row.
+  it('drops values outside 1 to 86400', async () => {
+    for (const value of [-5, 0, 86401, 1, 86400]) await seed({ value });
+    expect(await read()).toEqual([
+      { second: 1, count: 1 },
+      { second: 86400, count: 1 },
+    ]);
+  });
+
+  it('applies the 14-hour window, both bounds inclusive', async () => {
+    await seed({ value: 10, ts: TODAY - 14 * H });
+    await seed({ value: 20, ts: TODAY + 38 * H });
+    await seed({ value: 30, ts: TODAY - 14 * H - 1 });
+    await seed({ value: 40, ts: TODAY + 38 * H + 1 });
+    expect((await read()).map((r) => r.second)).toEqual([10, 20]);
+  });
+
+  // Item 91: the client adds your own time, so the server leaves out every row of yours.
+  it('excludes the caller\'s row', async () => {
+    await seed({ value: 41, uid: 'me' });
+    await seed({ value: 60 });
+    expect(await read()).toEqual([{ second: 60, count: 1 }]);
+  });
+
+  it('changes nothing when the caller has no row', async () => {
+    await seed({ value: 60 });
+    expect(await read()).toEqual([{ second: 60, count: 1 }]);
+  });
+
+  it('excludes both of the caller\'s rows when two tabs wrote two', async () => {
+    await seed({ value: 41, uid: 'me' });
+    await seed({ value: 43, uid: 'me' });
+    await seed({ value: 60 });
+    expect(await read()).toEqual([{ second: 60, count: 1 }]);
+  });
+
+  it('still counts a stranger on the caller\'s exact second', async () => {
+    await seed({ value: 41, uid: 'me' });
+    await seed({ value: 41 });
+    expect(await read()).toEqual([{ second: 41, count: 1 }]);
+  });
+
+  // The saving-off case sends no uid. Stored uids are never empty.
+  it('excludes nothing for an empty uid', async () => {
+    await seed({ value: 41, uid: 'me' });
+    await seed({ value: 60 });
+    expect(await read({ excludeUid: '' })).toHaveLength(2);
   });
 });

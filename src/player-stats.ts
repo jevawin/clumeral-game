@@ -205,9 +205,15 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
  *
  * Seconds are padded to two digits so a column of them lines up; minutes are
  * not, because a leading zero on the minutes reads as a stopwatch.
+ *
+ * `compact` drops the zero minutes under a minute (`41s`), and is the same as the
+ * default from a minute up. Only the time chart's own axis labels use it: there is
+ * no room at 288px for `0m 41s` beside a neighbouring label (time chart brief item
+ * 63). Every sentence and every other figure keeps the default form.
  */
-export function formatDuration(seconds: number | null): string {
+export function formatDuration(seconds: number | null, opts: { compact?: boolean } = {}): string {
   if (seconds === null) return '—';
+  if (opts.compact && seconds < 60) return `${seconds}s`;
   if (seconds >= 3600) {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);

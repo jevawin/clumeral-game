@@ -93,6 +93,8 @@ for real players.
 to un-ship it for that day. This fails **silently** — nothing crashes, no test goes red, and the
 response merely contains one extra field.
 
+Its privacy sibling, for the one route that reads other players' data, is P8.
+
 **Guarded by.** *Nothing, directly.* `docs/ARCHITECTURE.md` states the rule, and the route tests
 exercise the endpoints, but no test asserts the answer is **absent** from an `/api/puzzle`
 response. (The `answer` assertions in `tests/save-pref.spec.ts` are about a stored history row
@@ -115,7 +117,8 @@ accessibility changes need his blocking sign-off.
 **One rule is overruled, on five named nodes — and it is a Level A criterion.**
 `label-content-name-mismatch`, which axe tags `wcag21a` / `wcag253`: **WCAG 2.1 SC 2.5.3 Label in
 Name, Level A**, with an EN 301 549 mapping. It is reported on the two board controls and the
-three digit boxes, and `LABEL_IN_NAME_EXCEPTIONS` in `a11y.spec.ts` filters exactly those. Named
+three digit boxes, and `LABEL_IN_NAME_EXCEPTIONS` in `e2e/helpers/axe.ts` (shared by `a11y.spec.ts` and
+`time-chart.spec.ts`) filters exactly those. Named
 in full here on purpose: anyone later asking "did we ever set aside a Level A requirement?" will
 grep for the criterion, not for an axe rule id. The reasoning is in that file and in
 [#345](https://github.com/jevawin/clumeral-game/issues/345): axe 4.14 compares the accessible name
@@ -169,6 +172,27 @@ stops using them. Destructive SQL is refused unless the file is named `*.destruc
 only Jamie adds one.
 
 **Guarded by.** `npm run lint:migrations`, plus `tests/lint-migrations.spec.ts`.
+
+---
+
+## P8 — The field route returns a time and its count, nothing else
+
+**What.** `GET /api/times/:num` — the results card's read of everyone's solve times — never
+returns a uid, a solve timestamp, or anything but a time and its count. For any future change
+to the route, not just the build that added it.
+
+**Why.** It is public, unauthenticated, and reads rows other players wrote. At low n a time
+is already guessable by someone who knows who else played; that is accepted, because a solve
+time is low-harm. A uid or a timestamp is not: it links a time to a browser and to the moment
+it was played, and once served it cannot be un-served. Like P4 it fails **silently** — the
+card renders exactly the same with an extra field in the JSON. Jamie's hard rule,
+[time chart brief](work/2026-11-01-daily-time-chart-brief.md) items 37 and 119.
+
+**Guarded by.** `tests/worker/times-route.spec.ts`, which asserts the response's key set is
+exactly `['times']` and every element's is exactly `['count', 'second']`. `getTodayTimes`
+builds new objects rather than passing D1 rows through, so selecting another column does not
+leak it on its own. Seen to fail 2026-11-01: adding `uid` to the mapped rows turned the
+key-set test red; reverted.
 
 ---
 

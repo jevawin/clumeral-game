@@ -9,6 +9,10 @@ src/
   app.ts         Client UI, guess handling, game flow
   storage.ts     localStorage helpers (prefs, history)
   player-stats.ts  The counting rules — history rows in, displayed figures out (pure)
+  time-chart.ts    Daily leaderboard card: maths, copy, layout arithmetic, spoken sentence (pure)
+  time-chart-view.ts  Daily leaderboard card: the slot, the fetch, the DOM and measuring
+  testing-panel.ts  Preview-only Testing dialog: fill/solve/wrong guess, history swaps, field presets
+  demo-history.ts  Preview-only rich history and the ?demo= switch
   play-timer.ts    Counted play time: event-driven accumulator, injected clock (pure)
   save-warning.ts  The untick warning and the five-second submit countdown (pure)
   modals.ts      How-to-Play, toast, feedback modals
@@ -42,6 +46,7 @@ index.html       Shell
 - `POST /api/event` — analytics
 - `POST /api/feedback` — store player feedback (public)
 - `GET /api/stats` — stats data
+- `GET /api/times/:num` — that puzzle's solve times as `(second, count)` pairs, read-only, for the results card. Never a uid or a timestamp (INVARIANTS P8)
 - `GET /api/dev/answer` — dev only
 - `GET /stats`, `/puzzles`, `/puzzles/:num` — SSR HTML
 - `GET /feedback` — admin feedback dashboard (private, gated by Cloudflare Access)
