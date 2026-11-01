@@ -112,6 +112,20 @@ accessibility changes need his blocking sign-off.
 **Guarded by.** `e2e/specs/a11y.spec.ts` (axe), `tests/palette-contrast.spec.ts`,
 `tests/stats-contrast.spec.ts`, and the Accessibility section of `docs/SELF-REVIEW.md`.
 
+**One rule is overruled, on five named nodes.** `label-content-name-mismatch` is reported on the
+two board controls and the three digit boxes, and `LABEL_IN_NAME_EXCEPTIONS` in `a11y.spec.ts`
+filters exactly those. The reasoning is in that file and in
+[#345](https://github.com/jevawin/clumeral-game/issues/345): axe 4.14 compares the accessible name
+against text *visible on screen* and ignores `aria-hidden`, and in both groups the painted text is
+a value or a supplementary hint rather than the label that identifies the control. Every other
+rule still applies to those nodes, and every other node still fails this rule.
+
+**That exception has a tripwire, and the tripwire is the invariant.** A sixth node fails the scans
+by name. If the set ever *shrinks* — someone moves the shortcut hint outside its button, or the
+boxes stop painting eliminated digits — the dedicated test goes red to say the list is now stale.
+Going red on an improvement is deliberate: an allowlist nobody is forced to prune becomes a
+permanent blind spot. Both directions were mutation-tested when the exception landed.
+
 ---
 
 ## P6 — Random-puzzle tokens stay unforgeable
