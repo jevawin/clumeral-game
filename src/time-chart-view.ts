@@ -36,6 +36,10 @@ let ctx: TimeChartContext | null = null;
 // a slow first visit cannot overwrite a second one (plan D8).
 let visit = 0;
 let observer: ResizeObserver | null = null;
+// Preview-only: the Testing panel swaps the fetched field for a preset
+// (testing-panel.ts, brief item 127). Null everywhere else, and never set on
+// clumeral.com.
+let fieldOverride: ((yours: number) => FieldRow[] | 'fail' | null) | null = null;
 
 /** Called once from app.ts, which owns the analytics uid (plan D6). */
 export function initTimeChart(opts: { uid: string }): void {
@@ -46,6 +50,11 @@ export function initTimeChart(opts: { uid: string }): void {
  *  only once drawn, so it never points at a heading that does not exist. */
 export function timeChartSlot(): string {
   return '<section data-stat-block="daily-leaderboard" data-time-chart class="stat-block" aria-busy="true"></section>';
+}
+
+/** The Testing panel's hook. Returning null falls through to the real fetch. */
+export function setFieldOverride(fn: typeof fieldOverride): void {
+  fieldOverride = fn;
 }
 
 /** Set by renderCompletion; null means no card this render. */
@@ -68,7 +77,9 @@ export function showTimeChart(): void {
   const c = ctx;
   slot.setAttribute('aria-busy', 'true');
   slot.hidden = false;
-  void fetchField(c).then((rows) => {
+  const preset = fieldOverride?.(c.seconds) ?? null;
+  const rowsP = preset === null ? fetchField(c) : Promise.resolve(preset === 'fail' ? null : preset);
+  void rowsP.then((rows) => {
     if (current !== visit || !slot.isConnected) return;
     if (rows) draw(slot, c, rows);
     else fail(slot);

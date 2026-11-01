@@ -670,3 +670,12 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     "Everyone today". Item 8 still holds: no names and no identities on the card. The
     `data-stat-block` id follows the heading (`daily-leaderboard`). Copy is a joint
     section: Dave's ack is owed. (Jamie 2026-11-01)
+127. (new — testing, not a feature) **A Testing panel on preview hosts.** A "Testing"
+    button in the footer opens a dialog with: play actions (fill the correct answer, solve
+    now, submit a wrong answer); history swaps (rich, random, new player, saving off,
+    not solved today, clear); and Daily leaderboard field presets (real data, 1, 2, 3, 12,
+    20 players, tied fastest, all the same, you slowest, random, fetch fails). It shows
+    only on localhost and `*.workers.dev`, never on clumeral.com, and the answer helpers
+    depend on `/api/dev/answer`, which 404s there. The field choice lives in sessionStorage
+    for the tab. It replaces the visible fill-answer link the #226 redesign removed, so no
+    separate roadmap item is needed for it. (Jamie 2026-11-01)

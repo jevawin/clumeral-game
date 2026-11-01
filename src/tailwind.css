@@ -842,6 +842,41 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   .time-chart__dot--you { background: var(--color-accent); z-index: 3; }
 
+  /* ─── Testing panel (preview hosts only, testing-panel.ts) ───────────────
+     Never rendered on clumeral.com. Plain and functional on purpose: a tool for
+     Jamie and Dave, not part of the game's design. */
+  .testing-panel__open {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    min-block-size: 2.75rem;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .testing-panel {
+    inline-size: min(26rem, calc(100% - 2rem));
+    max-block-size: calc(100dvh - 2rem);
+    padding: 0;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+  .testing-panel::backdrop { background: rgb(0 0 0 / 0.4); }
+  .testing-panel__box { padding: 1rem 1.25rem 1.25rem; }
+  .testing-panel__top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .testing-panel__title { margin: 0; font-size: 1.5rem; font-weight: 700; }
+  .testing-panel__head { margin: 1rem 0 0; font-size: 1.125rem; font-weight: 700; }
+  .testing-panel__note { margin: 0.25rem 0 0.5rem; font-size: 0.875rem; }
+  .testing-panel__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .testing-panel__btn { inline-size: 100%; }
+  .testing-panel__btn[aria-pressed="true"] {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
   /* ─── HTP clue styles for welcome screen ─── */
   /* HTP digit box (reused from game digit-box styling) */
   .digit-box {
