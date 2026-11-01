@@ -4,7 +4,9 @@
 //
 // This exists for Jamie and Dave to iterate on the design. It is NOT a feature
 // and it is NOT reachable on clumeral.com: every entry point below returns early
-// on the production hostname, the same gate /api/dev/answer already uses.
+// on the production hostname. (Looser than /api/dev/answer's gate, which also refuses
+// the production deployment's workers.dev address; harmless here, since this only
+// writes that origin's own localStorage.)
 //
 // A query parameter rather than a console command on purpose — both of them test
 // on a phone, where there is no console.
@@ -18,7 +20,7 @@
 import type { HistoryEntry } from './types.ts';
 import { todayKey } from './date.ts';
 
-/** Never runs on production. Mirrors the gate on /api/dev/answer. */
+/** Never runs on clumeral.com. */
 export function demoAllowed(hostname: string): boolean {
   return hostname !== 'clumeral.com';
 }

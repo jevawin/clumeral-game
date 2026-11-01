@@ -42,7 +42,7 @@ index.html       Shell
 - `POST /api/event` — analytics
 - `POST /api/feedback` — store player feedback (public)
 - `GET /api/stats` — stats data
-- `GET /api/dev/answer` — dev only
+- `GET /api/dev/answer` — dev only: localhost and `<branch>-clumeral-game.jevawin.workers.dev` previews, 404 everywhere else, including production's own workers.dev address (`devAnswerAllowed`)
 - `GET /stats`, `/puzzles`, `/puzzles/:num` — SSR HTML
 - `GET /feedback` — admin feedback dashboard (private, gated by Cloudflare Access)
 - `GET /`, `/index.html`, `/random` — app shell
