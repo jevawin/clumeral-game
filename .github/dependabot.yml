@@ -108,6 +108,10 @@ updates:
       # back, and e2e dies before a test runs. #331 carries the full diagnosis,
       # including why the CI log never shows the real error.
       #
+      # "@cloudflare/vite-plugin still pins wrangler 4.80.0" is true of the
+      # version in package.json, NOT of the package — see the entry below, which
+      # is what keeps it true.
+      #
       # Major only, and that is deliberate: 4.x is still being released
       # (4.20260702.1 as of 2026-10-31, against 4.20260403.1 here), those bumps
       # sit inside wrangler 4.80.0's peer range, and we want them.
@@ -120,6 +124,36 @@ updates:
       # Remove it in that PR.
       - dependency-name: "@cloudflare/workers-types"
         update-types: ["version-update:semver-major"]
+      # @cloudflare/vite-plugin minors drag a PRERELEASE runtime in, which is the
+      # same hazard as the entry above arriving by an unguarded route. The entry
+      # above reasons from this package holding wrangler 4.80.0 on miniflare 4;
+      # that is a property of 1.31.0, not of the package, and nothing was stopping
+      # a plain minor from undoing it. #344 proposed exactly that and was closed.
+      #
+      # Measured against the registry on 2026-11-01 — these are exact pins in the
+      # plugin's own `dependencies`, not ranges:
+      #
+      #   1.31.0 (ours) -> wrangler 4.80.0  / miniflare 4.20260401.0
+      #   1.49.0        -> wrangler 4.116.0 / miniflare 4.20260730.0   <- last on 4
+      #   1.49.1        -> wrangler 4.117.0 / miniflare 5.20260730.0-alpha
+      #   1.66.0 (head) -> wrangler 4.154.0 / miniflare 5.20261023.1-beta
+      #
+      # Note WHERE that crossover sits: 1.49.0 -> 1.49.1 is a **patch**. So
+      # "patches are safe for this package" is false in general, and anyone
+      # loosening this entry on that assumption will ship an alpha workerd. It is
+      # safe only because a patch-only allowance keeps us inside 1.31.x, which
+      # stays on miniflare 4 (1.31.2 -> wrangler 4.81.1 / miniflare 4.20260409.0).
+      #
+      # Patch is deliberately still allowed, same as the wrangler/@cloudflare group
+      # above, but it is not quite free: 1.31.2 peers `wrangler ^4.81.1` while root
+      # pins 4.80.0, so a patch bump trades a prerelease runtime for a peer warning.
+      # That reconciliation is #331's job, not this entry's.
+      #
+      # Step two of #331, beside the @cloudflare/workers-types entry above. Remove
+      # both in that PR, which bumps the plugin, wrangler and the types together
+      # onto one miniflare.
+      - dependency-name: "@cloudflare/vite-plugin"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     # Same reasoning as the npm block above.
