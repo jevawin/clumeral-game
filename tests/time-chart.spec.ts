@@ -264,6 +264,17 @@ describe('layout', () => {
     expect(you.at).toBeCloseTo(144, 9);
   });
 
+  // Item 129: the end labels reach the track's edges, so their leaders sit just
+  // inside them, on the end dots.
+  it('puts the end labels flush with the track edges', () => {
+    const { refs } = run(geometry(field([10, 1000], 100)), 288);
+    expect(refs[0].left).toBe(0);
+    expect(refs[2].left + refs[2].width).toBe(288);
+    expect(run(geometry(field([1000], 10)), 288).you.left).toBe(0);
+    const slow = run(geometry(field([10], 1000)), 288).you;
+    expect(slow.left + slow.width).toBe(288);
+  });
+
   it('anchors your box inward at the ends and centres it in the middle', () => {
     const at = (strangers: number[], yours: number) => run(geometry(field(strangers, yours)), 288).you.align;
     expect(at([1000], 10)).toBe('start');

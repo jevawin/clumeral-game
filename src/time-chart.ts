@@ -202,6 +202,14 @@ export interface Box {
   align: 'start' | 'center' | 'end';
   at: number;
 }
+/** Where a label box starts for a leader at `at`. Corner-anchored boxes reach
+ *  out by the inset, so at the axis ends they meet the track's edge. */
+function boxLeft(align: Box['align'], at: number, width: number): number {
+  if (align === 'start') return at - TRACK_INSET;
+  if (align === 'end') return at - width + TRACK_INSET;
+  return at - width / 2;
+}
+
 export interface Layout {
   refs: Box[];
   you: Box;
@@ -230,11 +238,13 @@ export function layout(input: {
 }): Layout {
   const { track, geometry: g, refWidths, youWidth, noteWidth } = input;
 
-  // A box hangs off whichever corner its leader arrives at.
+  // A box hangs off whichever corner its leader arrives at, pushed out by the
+  // inset so an end label is flush with the track's edge and its leader sits
+  // just inside it, on the end dot (Jamie, item 129).
   const refs: Box[] = g.refs.map((r, k) => {
     const width = refWidths[k];
     const at = trackX(r.fraction, track);
-    const left = r.anchor === 'start' ? at : r.anchor === 'end' ? at - width : at - width / 2;
+    const left = boxLeft(r.anchor, at, width);
     return { left, width, align: r.anchor, at };
   });
 
@@ -263,7 +273,7 @@ export function layout(input: {
   const at = trackX(g.you.fraction, track);
   const align: Box['align'] =
     at - youWidth / 2 < 0 ? 'start' : at + youWidth / 2 > track ? 'end' : 'center';
-  const left = align === 'start' ? at : align === 'end' ? at - youWidth : at - youWidth / 2;
+  const left = boxLeft(align, at, youWidth);
   const you: Box = { left, width: youWidth, align, at };
 
   // THE FLIP RULE (Idea-R, items 48, 122): the note takes the top corner furthest

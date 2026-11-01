@@ -689,3 +689,7 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
       inside the track and the Fastest and Slowest leaders sit on their dots' centres.
     - Dots are 11px, yours 15px, +4 per extra player, capped at 23 (were 9, 13 and 21).
       Your dot stays larger than everyone else's (item 66).
+129. (amends 128) **End labels are flush with the track's edges.** Fastest's box starts at
+    the left edge and Slowest's ends at the right edge, so their leaders, on the end dots,
+    sit just inside the labels. Your own label follows the same rule when you are at an
+    end, so it lines up with the label below it. (Jamie 2026-11-01)
