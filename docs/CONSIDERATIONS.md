@@ -23,5 +23,9 @@ Decided 2026-11-01, Jamie — [daily time chart brief](work/2026-11-01-daily-tim
 - **Revisit when:** daily solves pass the low thousands, D1 rows-read shows up on the bill,
   or someone hammers the route — it is public and uncached, so abuse volume, not only
   organic growth, is a trigger.
-- **Likely fix then:** a short edge cache keyed by puzzle number. The response carries no uid
-  or timestamp — only `(second, count)` pairs — so it is safe to share between players.
+- **Likely fix then:** a short edge cache keyed by puzzle number — but it is no longer a
+  drop-in. The response carries no uid or timestamp, but it now leaves out the caller's own
+  rows (brief item 91, via the `X-Clumeral-Uid` header), so it differs per player. A shared
+  edge cache would need that exclusion moved to the client: cache the whole field and have
+  the client remove its own row, which means the client knowing its stored second. Not
+  decided.

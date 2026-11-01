@@ -25,6 +25,8 @@ indefinitely.
 | Backfill cursor | `migrations/analytics/0006_create_backfill_state.sql` |
 | Write path | `POST /api/event` → `recordEvent()` in `src/worker/analytics-db.ts` |
 | Read path | `GET /stats`, `GET /api/stats` → `getStats()` |
+| Field read | `GET /api/times/:num` → `getTodayTimes()` (the results card, below) |
+| Puzzle number | `migrations/analytics/0008_add_puzzle_num.sql` — `puzzle_num`, on `puzzle_time` only |
 
 **Prod and pre-prod are separate databases** — `clumeral-analytics` and
 `clumeral-analytics-preprod`, selected by the `env.preprod` block in `wrangler.jsonc` at
@@ -76,6 +78,41 @@ different things.
 nobody has measured how long players actually sit still. The share of games reporting
 anything other than `clean` is what says whether two minutes was right, and changing it is
 a one-line change to `IDLE_TIMEOUT_MS`.
+
+**It carries the puzzle number** in `puzzle_num` (migration 0008), and no other event
+does. The puzzle day is browser-local and `ts` is UTC, so `ts` alone cannot say which puzzle a
+time belongs to. Rows written before the column existed, and rows from a cached PWA build
+that predates it, are NULL and are never read by the field route. `recordEvent` stores only
+a positive safe integer; anything else, including the string `'238'`, is NULL.
+
+## The results card: `GET /api/times/:num` and `time_chart`
+
+The "Everyone today" card on `/solved` plots your solve time against everyone else's on the
+same puzzle ([brief](work/2026-11-01-daily-time-chart-brief.md)).
+
+**The route.** `GET /api/times/:num` returns `{ "times": [{ "second": 41, "count": 1 }, …] }`,
+ascending, sent `Cache-Control: no-store`. It reads `puzzle_time` rows with that
+`puzzle_num`, on the requesting hostname, with `ts` inside the puzzle's UTC day ± 14 hours
+(both bounds inclusive), and `value BETWEEN 1 AND 86400` — rows outside that are dropped,
+never clamped. The floor is 1, not 0, because `recordEvent` writes 0 for any non-finite
+value. Counts are `SUM(sample_interval)`. It answers 400 for 0 or a future number.
+
+**The caller's own rows are left out.** A player whose time was sent passes their analytics
+uid in the `X-Clumeral-Uid` header (never the URL), truncated to `MAX_UID` as stored, and
+every row with that uid is excluded; the client adds their time locally. So two tabs that
+wrote two rows still count the player once. A saving-off solve sends no uid.
+
+**The rule, and it outlives this build:** the field route never returns a uid, a solve
+timestamp, or anything but a time and its count. `getTodayTimes` rebuilds each row rather
+than passing D1 rows through, and `tests/worker/times-route.spec.ts` asserts the exact key
+set. Restated in [INVARIANTS.md](INVARIANTS.md) (P8).
+
+**`time_chart`** — sent once per `/solved` visit that should show the card (full, new and
+saving-off modes with a time; never random, archive or marker). Source `drawn` with value
+the field size n, or `failed` with value 0 (a non-OK status, a network error, the 5-second
+timeout, or a malformed body). Sent for saving-off players too: it carries the field's size,
+nothing about their play. It exists because the card fails silently by design, and without
+it a broken route looks exactly like a quiet day.
 
 ## Sampling — read this before trusting any number
 

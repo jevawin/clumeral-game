@@ -202,7 +202,7 @@ Clumeral is a daily number puzzle at clumeral.com. Players get clues about a 3-d
 ### Constraints
 
 - **Tech stack**: Tailwind CSS, existing Vite + Cloudflare Workers setup stays
-- **Backend**: No worker/API changes — frontend-only rebuild
+- **Backend**: No worker/API changes — frontend-only rebuild. One exception: the read-only `GET /api/times/:num` route and the `puzzle_num` column behind it, lifted for the results time chart ([brief](docs/work/2026-11-01-daily-time-chart-brief.md) item 7)
 - **Compatibility**: Must work on all current browsers (ES2022 target)
 - **Performance**: Celebration animation must be skippable and under 3s
 - **Design**: Under 15 semantic colour tokens in tailwind.config.ts
