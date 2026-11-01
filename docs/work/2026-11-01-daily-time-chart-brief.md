@@ -546,3 +546,18 @@ Boards exported 2026-11-01 by a separate session; its report was checked against
 108. Item 47's design reference and item 48's flip rule now resolve to these files.
     Clearances (106px and 186px) and card heights (235px flip, 253px caption) were measured
     at 390px and are re-measured at 288px and 480px (96).
+
+## Plan-stage questions
+Raised by the planning session 2026-11-01, where the brief and the boards could not settle the
+build. Answered by Jamie the same day.
+
+109. (amends 55) **Your label is "You" above your time**, as every board draws it. Item 55's
+    "your time only" means no rank or percentile on the dot, not that the word "You" is
+    dropped. (Jamie 2026-11-01, accepted recommendation)
+110. (amends 26, 91; keeps 18) **The uid goes with the request whenever today's time was
+    sent.** The rule is: send the uid when today's history holds a recorded (non-marker)
+    entry; send none when the time comes from memory on a saving-off solve visit. Why: a
+    player who solved with saving on and later turned saving off still has a row in the
+    field, and without the uid they would be counted twice. The uid only removes their row
+    and adds nothing to what the server already holds. (Jamie 2026-11-01, accepted
+    recommendation)
