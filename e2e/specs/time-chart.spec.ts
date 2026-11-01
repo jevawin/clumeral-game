@@ -7,7 +7,7 @@ import { solveRandom } from "../helpers/random.ts";
 import { seriousViolations } from "../helpers/axe.ts";
 import type { Page, Route } from "@playwright/test";
 
-// The "Everyone today" card on /solved (time chart brief item 83).
+// The "Daily leaderboard" card on /solved (time chart brief item 83).
 //
 // No freezeDate and no page.clock anywhere in this file, as player-stats.spec.ts
 // explains: /api/dev/answer serves today's REAL answer, so a frozen other day loads

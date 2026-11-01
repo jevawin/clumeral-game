@@ -1,5 +1,5 @@
 // Clumeral — time-chart-view.ts
-// The "Everyone today" card on /solved: the reserved slot, the fetch, the DOM and
+// The "Daily leaderboard" card on /solved: the reserved slot, the fetch, the DOM and
 // the measuring. The maths, copy and layout arithmetic are in time-chart.ts and
 // pure; this file only puts their answers on screen (time chart brief items 38,
 // 39).
@@ -27,7 +27,7 @@ export interface TimeChartContext {
 }
 
 const FETCH_TIMEOUT_MS = 5000;
-const HEAD_ID = 'stat-head-everyone-today';
+const HEAD_ID = 'stat-head-daily-leaderboard';
 
 let uid = '';
 let ctx: TimeChartContext | null = null;
@@ -44,7 +44,7 @@ export function initTimeChart(opts: { uid: string }): void {
 /** The reserved, empty slot. Inserted by renderCompletion. aria-labelledby is set
  *  only once drawn, so it never points at a heading that does not exist. */
 export function timeChartSlot(): string {
-  return '<section data-stat-block="everyone-today" data-time-chart class="stat-block" aria-busy="true"></section>';
+  return '<section data-stat-block="daily-leaderboard" data-time-chart class="stat-block" aria-busy="true"></section>';
 }
 
 /** Set by renderCompletion; null means no card this render. */
@@ -137,13 +137,12 @@ function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[]): void {
     )
     .join('');
 
-  slot.innerHTML = `<h3 id="${HEAD_ID}" class="stat-block__head"><svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#icon-podium"/></svg>Everyone today</h3>
+  slot.innerHTML = `<h3 id="${HEAD_ID}" class="stat-block__head"><svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#icon-podium"/></svg>Daily leaderboard</h3>
     <p class="time-chart__line">${copy.pre}<b>${copy.bold}</b>${copy.post}</p>
     <p class="sr-only">${spokenSummary(field, g)}</p>
     <div class="time-chart__track" data-time-chart-track aria-hidden="true">
       <div class="time-chart__axis"></div>
       <span class="time-chart__note" data-tc-note aria-hidden="true">— log scale</span>
-      <span class="time-chart__lead time-chart__lead--up" data-tc-note-lead></span>
       ${refs}
       ${dots}
       ${label('time-chart__above', 'data-tc-you', 'You', labelTime(g.you.seconds), false)}
@@ -181,7 +180,6 @@ function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   const youBox = track.querySelector<HTMLElement>('[data-tc-you]')!;
   const youLead = track.querySelector<HTMLElement>('[data-tc-you-lead]')!;
   const note = slot.querySelector<HTMLElement>('[data-tc-note]')!;
-  const noteLead = track.querySelector<HTMLElement>('[data-tc-note-lead]')!;
 
   const out = layout({
     track: width,
@@ -201,18 +199,15 @@ function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   youLead.style.left = `${out.you.at}px`;
 
   note.classList.remove('time-chart__note--left', 'time-chart__note--right', 'time-chart__note--below');
+  // The note is the axis's key, not a label on a mark, so it carries no leader
+  // (Jamie, 2026-11-01, brief item 124).
   if (out.note === 'below') {
-    // Idea-R's caption: centred under the chart, no leader (item 122).
+    // Idea-R's caption: centred under the chart (item 122).
     if (note.parentElement !== slot) track.after(note);
-    note.classList.add('time-chart__note--below');
-    noteLead.hidden = true;
-  } else {
-    if (note.parentElement !== track) noteLead.before(note);
-    note.classList.add(`time-chart__note--${out.note}`);
-    noteLead.hidden = false;
-    noteLead.style.left = out.note === 'left' ? '0' : '';
-    noteLead.style.right = out.note === 'right' ? '0' : '';
+  } else if (note.parentElement !== track) {
+    track.append(note);
   }
+  note.classList.add(`time-chart__note--${out.note}`);
 }
 
 function fail(slot: HTMLElement): void {

@@ -167,7 +167,7 @@ describe('a drawn card', () => {
     await render(recorded, 2, { seconds: 41 });
     await enter();
     const s = slot();
-    expect(s.querySelector('h3')!.textContent!.trim()).toBe('Everyone today');
+    expect(s.querySelector('h3')!.textContent!.trim()).toBe('Daily leaderboard');
     expect(s.querySelector('.time-chart__line')!.textContent).toBe("You're the 2nd fastest");
     expect(s.querySelector('.time-chart__line b')!.textContent).toBe('2nd fastest');
     expect(s.querySelector('.sr-only')!.textContent).toBe(

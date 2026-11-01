@@ -600,7 +600,7 @@ describe('the panel colours itself once, at the top', () => {
   });
 });
 
-// The "Everyone today" slot (time chart brief items 4, 22, 46, 53). Only the
+// The "Daily leaderboard" slot (time chart brief items 4, 22, 46, 53). Only the
 // slot is tested here; tests/time-chart-view.spec.ts covers what is drawn in it.
 describe('the time chart slot', () => {
   beforeEach(() => {
@@ -625,7 +625,7 @@ describe('the time chart slot', () => {
     expect(slot()).not.toBeNull();
     expect(slot()!.innerHTML).toBe('');
     expect(slot()!.getAttribute('aria-busy')).toBe('true');
-    expect(order().slice(0, 3)).toEqual(['this-game', 'everyone-today', 'streak']);
+    expect(order().slice(0, 3)).toEqual(['this-game', 'daily-leaderboard', 'streak']);
   });
 
   it('is there in new and saving-off modes', async () => {

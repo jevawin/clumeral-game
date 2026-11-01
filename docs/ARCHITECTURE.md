@@ -9,8 +9,8 @@ src/
   app.ts         Client UI, guess handling, game flow
   storage.ts     localStorage helpers (prefs, history)
   player-stats.ts  The counting rules — history rows in, displayed figures out (pure)
-  time-chart.ts    Everyone today card: maths, copy, layout arithmetic, spoken sentence (pure)
-  time-chart-view.ts  Everyone today card: the slot, the fetch, the DOM and measuring
+  time-chart.ts    Daily leaderboard card: maths, copy, layout arithmetic, spoken sentence (pure)
+  time-chart-view.ts  Daily leaderboard card: the slot, the fetch, the DOM and measuring
   play-timer.ts    Counted play time: event-driven accumulator, injected clock (pure)
   save-warning.ts  The untick warning and the five-second submit countdown (pure)
   modals.ts      How-to-Play, toast, feedback modals

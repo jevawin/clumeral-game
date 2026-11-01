@@ -1,4 +1,4 @@
-// The "Everyone today" card's maths, copy and layout arithmetic — pure, no DOM,
+// The "Daily leaderboard" card's maths, copy and layout arithmetic — pure, no DOM,
 // no fetch, so every rule is unit-testable on its own (time chart brief item 39).
 // The DOM, the fetch and the measuring live in time-chart-view.ts.
 //

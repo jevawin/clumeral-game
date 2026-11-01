@@ -125,7 +125,7 @@
   --page-gutter: 1rem;
 }
 
-/* The "Everyone today" time chart's two shades (time chart brief items 64, 69,
+/* The "Daily leaderboard" time chart's two shades (time chart brief items 64, 69,
    97). Not new colours: mixes of the accent and the text into the page
    background, as --color-border is a mix of the text. Into --color-bg, not
    transparent, so the dots are opaque, overlapping dots do not darken, and the
@@ -550,9 +550,9 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   [data-stat-block="streak"]   { --section-accent: var(--color-accent-2); }
   [data-stat-block="records"]  { --section-accent: var(--color-accent-3); }
   [data-stat-block="all-time"] { --section-accent: var(--color-accent-4); }
-  /* Everyone today takes the player's own colour: it is the only block about
+  /* Daily leaderboard takes the player's own colour: it is the only block about
      the same thing their own dot is (time chart brief item 49). */
-  [data-stat-block="everyone-today"] { --section-accent: var(--color-accent); }
+  [data-stat-block="daily-leaderboard"] { --section-accent: var(--color-accent); }
   .stat-block__icon { color: var(--section-accent); }
 
   /* This game — the hero. The only thing that changed in the last ten seconds,
@@ -726,11 +726,18 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   .goes-row__count { text-align: end; font-weight: 700; }
 
-  /* ─── Everyone today: the time chart (time chart brief items 47, 105) ──────
+  /* ─── Daily leaderboard: the time chart (time chart brief items 47, 105) ──────
      Converted from Idea-O's .spread rules. Every vertical metric and font size
-     is rem (the board's px ÷ 16), so labels and their rows grow together at
-     200% text (item 69); dot sizes and line weights stay px, since they are not
-     text. Positions across the track are written by time-chart-view.ts.
+     is rem, so labels and their rows grow together at 200% text (item 69); dot
+     sizes and line weights stay px, since they are not text. Positions across
+     the track are written by time-chart-view.ts.
+
+     Labels are 14px on 16px rows, up from the board's 12px on 14px (Jamie,
+     2026-11-01, brief item 125). The board's geometry is kept with the row
+     height L as the one variable: rows at 0 and L+2, leaders 14px long with a
+     2px gap to the text and 12px to the axis, so the axis is at 2L+30, the
+     labels below start at 2L+58, and the track is 4L+60. At L = 16: 62px and
+     124px.
 
      Three rows: you above the axis, dots on it, the three references below. The
      two label groups sit on opposite sides of the line, so they can never run
@@ -740,12 +747,12 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      No transition or animation on any rule here: the dots are drawn in place
      (item 51). */
   /* The reserved space while the field loads (item 54), so the card arriving
-     does not push Current streaks down mid-read. 12.1rem is the drawn card's
+     does not push Current streaks down mid-read. 12.6rem is the drawn card's
      height, measured 2026-11-01 at a 375px viewport and default text, in
-     Chromium and WebKit alike (193.6px), with a one-line copy line — the three
-     longest lines all fit one line at 288px. e2e/specs/time-chart.spec.ts's
-     no-shift test holds it. */
-  [data-time-chart][aria-busy="true"]:empty { min-block-size: 12.1rem; }
+     Chromium and WebKit alike (201.6px with 14px labels), with a one-line copy
+     line — the three longest lines all fit one line at 288px.
+     e2e/specs/time-chart.spec.ts's no-shift test holds it. */
+  [data-time-chart][aria-busy="true"]:empty { min-block-size: 12.6rem; }
   .time-chart__line {
     margin: 0;
     margin-block-start: 0.875rem;
@@ -756,14 +763,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   }
   .time-chart__track {
     position: relative;
-    block-size: 7.25rem;
+    block-size: 7.75rem;
     margin-block-start: 0.875rem;
     color: var(--color-text);
   }
   .time-chart__axis {
     position: absolute;
     inset-inline: 0;
-    top: 3.625rem;
+    top: 3.875rem;
     block-size: 1.5px;
     background: var(--chart-line);
   }
@@ -776,10 +783,10 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     inline-size: max-content;
   }
   .time-chart__above { top: 0; font-weight: 700; }
-  .time-chart__below { top: 5.375rem; }
+  .time-chart__below { top: 5.625rem; }
   .time-chart__t, .time-chart__w {
-    font-size: 0.75rem;
-    line-height: 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1rem;
     white-space: nowrap;
   }
   /* The label is placed to FIT; the LEADER marks the TRUE position. Three labels
@@ -791,34 +798,36 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     block-size: 0.875rem;
     background: var(--chart-line);
   }
-  .time-chart__lead--up { top: 2rem; }
-  .time-chart__lead--down { top: 4.375rem; }
+  .time-chart__lead--up { top: 2.25rem; }
+  .time-chart__lead--down { top: 4.625rem; }
   /* The axis note, on the second row of the top corner furthest from your dot
-     (items 48, 123), so its leader starts 2px under the text as yours does. */
+     (items 48, 123), level with your time. It is the axis's key, not a label on
+     a mark, so it has no leader (item 124). max-content in every position, so
+     it measures its text, never the row it sits in. */
   .time-chart__note {
     position: absolute;
-    top: 1rem;
-    font-size: 0.75rem;
-    line-height: 0.875rem;
+    top: 1.125rem;
+    inline-size: max-content;
+    font-size: 0.875rem;
+    line-height: 1rem;
     white-space: nowrap;
     color: var(--color-text);
   }
   .time-chart__note--left { left: 0; }
   .time-chart__note--right { right: 0; }
   /* The fallback when the far corner has no room (item 122): Idea-R's caption,
-     centred below the chart, with no leader. */
+     centred below the chart. */
   .time-chart__note--below {
     position: static;
     display: block;
     margin-block-start: 0.375rem;
-    line-height: 0.75rem;
-    text-align: center;
+    margin-inline: auto;
   }
   /* The card sits on the page background, so the border is --color-bg: it
      separates touching dots (plan D14). */
   .time-chart__dot {
     position: absolute;
-    top: 3.625rem;
+    top: 3.875rem;
     box-sizing: border-box;
     border-radius: 9999px;
     transform: translate(-50%, -50%);

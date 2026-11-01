@@ -135,7 +135,7 @@ describe('shortcut hint tint (.board-ctrl__key)', () => {
   });
 });
 
-// The "Everyone today" card's two derived tokens (time chart brief items 64, 69,
+// The "Daily leaderboard" card's two derived tokens (time chart brief items 64, 69,
 // 80, 97). The card sits on the page background, so every ratio is against bg.
 // Others' dots are data, not decoration, so they meet 3:1 like the axis.
 describe('time chart tokens', () => {

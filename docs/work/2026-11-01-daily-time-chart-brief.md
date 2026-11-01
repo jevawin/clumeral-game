@@ -647,3 +647,23 @@ Neither touches the maths or the copy.
     time nearest the axis, so its restored 14px leader starts 2px under the text as your
     label's does. On the board's top row the leader would run about 18px longer than every
     other leader. (Jamie 2026-11-01, accepted recommendation)
+
+## Build-stage changes
+Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later items win.
+
+124. (amends 48, 107, 123) **The axis note has no leader line.** `— log scale` is the
+    axis's key, not a label on a mark, so a line from it to the axis reads as pointing at
+    something. Item 107's restored leader is removed. The note stays on the second row of its
+    top corner (123), level with your time, and keeps the flip rule and the caption fallback
+    (122). (Jamie 2026-11-01)
+125. (amends 105's port, 69) **Chart labels are 14px**, up from the board's 12px, on 16px
+    rows; 13px or 12px if 14 does not fit. The board's vertical geometry is kept with the row
+    height as the variable, and the reserved height is re-measured (12.6rem). Measured: at
+    default text the widest three labels take 178px of a 288px track, so 14px fits with room
+    to spare. At 200% text on a 320px phone (288px of content) three 14px labels need about
+    306px, so they cannot sit side by side. **Open — Jamie to choose how 200% text is
+    handled.** (Jamie 2026-11-01)
+126. (amends 62, 105) **The heading is "Daily leaderboard"**, the board's own name, not
+    "Everyone today". Item 8 still holds: no names and no identities on the card. The
+    `data-stat-block` id follows the heading (`daily-leaderboard`). Copy is a joint
+    section: Dave's ack is owed. (Jamie 2026-11-01)

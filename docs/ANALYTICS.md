@@ -87,7 +87,7 @@ a positive safe integer; anything else, including the string `'238'`, is NULL.
 
 ## The results card: `GET /api/times/:num` and `time_chart`
 
-The "Everyone today" card on `/solved` plots your solve time against everyone else's on the
+The "Daily leaderboard" card on `/solved` plots your solve time against everyone else's on the
 same puzzle ([brief](work/2026-11-01-daily-time-chart-brief.md)).
 
 **The route.** `GET /api/times/:num` returns `{ "times": [{ "second": 41, "count": 1 }, …] }`,
