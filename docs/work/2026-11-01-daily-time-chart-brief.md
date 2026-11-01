@@ -5,7 +5,9 @@ and the canvas boards it names (Idea-O, P, R, N).
 
 Branch: `dev/daily-time-chart`
 
-**Status: in progress.**
+**Status: all 11 sections settled by Jamie, 2026-11-01. Not closeable yet.** Waiting on Dave:
+sign-off on §4 item 28 (blocking, maths), and acks on §6, §7 (re-ack after item 64 reopened
+it), §8, §10 and §11. `da-brief` runs once those are in.
 
 ---
 
@@ -336,7 +338,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     ungated (`src/app.ts:1082`).
 
 ## 11. Done / test plan
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
 
 Written before code. Each line is a check the build must pass.
 
