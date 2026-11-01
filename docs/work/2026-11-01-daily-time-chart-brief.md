@@ -197,7 +197,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     player has as much reason to see it as anyone — arguably more.
 
 ## 7. How it looks
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened 2026-11-01 by item 64** · Ack: Dave pending
 
 47. The design is Idea-O: a horizontal log axis, one dot per distinct second sized by how
     many share it, your dot solid accent with your time above it, Fastest / Median / Slowest
@@ -234,9 +234,21 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     Why: inserting it late pushes Current streaks and All time down mid-read. A failure
     still shifts, but failure is the rare case. The cost: an empty 235px gap for the
     length of one request.
+64. **Reopens item 49.** `--accent-soft` and `--fg-50` do not exist in the codebase — they
+    are canvas names. `src/tailwind.css` has `--color-accent` and `--color-text`, and builds
+    derived shades inline with `color-mix` (`--color-border` is text at 12%). The accent
+    comes in four palettes (lime, cherry, blueberry, grape), each in light and dark: eight
+    combinations. What does item 49 mean in code?
+    My rec: two new derived tokens in `src/tailwind.css`, defined with `color-mix` from
+    accent and text exactly as `--color-border` is — not new colours, new mixes of the two
+    colours we have. Their percentages are set by the contrast floor in item 69, not copied
+    from the canvas's 22% and 50%.
+    Why: the "two colours only" rule survives, and the shades follow the player's palette and
+    theme for free. Copying the canvas percentages blind risks dots that vanish in one of
+    the eight combinations. The cost: two new tokens, against a ceiling of 15 (CLAUDE.md).
 
 ## 8. Copy & wording
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
 
 55. Chart labels as on the canvas: Fastest, Median, Slowest, `— log time`. Your dot carries
     your time only. (assumed — designed and agreed on Idea-O/N)
@@ -271,3 +283,33 @@ Settled: pending · Ack: pending
     a sentence, and there is no room at 320px for `10m 05s` beside a neighbouring label.
     The cost: the same solve reads `0m 41s` in the hero and `41s` on the axis — the
     inconsistency `src/app.ts:833` warns about, accepted here as the price of fit.
+
+## 9. Accessibility
+Settled: pending · Sign-off: Jamie pending · Ack: n/a (owned section)
+
+65. Nothing on the card is interactive: no tab stops, no hover, no tooltips. (assumed —
+    Idea-O has none)
+66. Your dot is not distinguished by colour alone: it is solid, larger (13px against 9px)
+    and carries your time as a label. (assumed — WCAG 1.4.1, already true of Idea-O)
+67. No entrance animation (item 51), so no reduced-motion case. (assumed)
+68. The reserved space carries `aria-busy="true"` while loading and drops it when drawn.
+    (assumed)
+69. Contrast is measured in all eight palette × theme combinations: text at 4.5:1, every
+    dot and the axis at 3:1 against the surface (WCAG 1.4.3, 1.4.11). Others' dots are data,
+    not decoration, so they meet 3:1 too. Labels scale with text size and are measured live
+    (item 50), so 200% zoom does not break collision handling. (assumed — required, not
+    optional)
+70. The `docs/` label-in-name exception list is not widened (#345). (assumed — standing rule)
+71. What does a screen reader get?
+    My rec: the SVG is `aria-hidden`. The copy line is real text and reads first. Beneath it,
+    one visually hidden sentence: "14 solve times today. Fastest 23 seconds, median 1
+    minute 10 seconds, slowest 4 minutes 2 seconds. Yours: 41 seconds." Durations are
+    spoken in words, not `41s`.
+    Why: it carries everything the picture does except the shape, in the order a sighted
+    player reads it. A data table of every distinct second is more complete but is noise
+    to listen to, and the shape is the one thing a listener does not need.
+72. Is the result announced when it arrives?
+    My rec: no. The completion announcement (`pendingAnnouncement` in `src/completion.ts`)
+    stays as it is; the card is read in place.
+    Why: it arrives after a fetch, mid-way through the existing announcement. A second live
+    update interrupts the one that matters — that you solved it.
