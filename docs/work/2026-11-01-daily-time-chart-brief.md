@@ -430,7 +430,7 @@ disagree, this section wins.**
 90. (§4) The log is base e (`Math.log`), as in Idea-O. The base cannot move any dot: a change
     of base multiplies numerator and denominator of the position fraction by the same
     constant, which cancels. It would matter only if the axis gained round-number ticks —
-    a base decision then, not now. (Jamie 2026-11-01; Dave sign-off pending)
+    a base decision then, not now. (Jamie 2026-11-01; signed Dave 2026-11-01, relayed by Jamie)
 91. (§3, F2 High — amends 18, 26) **How your dot is counted once.** A saving-on player's
     request carries their analytics uid. The server leaves out every row with that uid, and
     the client adds your own time locally. A saving-off player's request carries no uid,
