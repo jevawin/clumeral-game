@@ -209,8 +209,6 @@ function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   const sizes = dotSizes(g, width);
   track.querySelectorAll<HTMLElement>('[data-tc-dot]').forEach((dot, k) => {
     dot.style.inlineSize = dot.style.blockSize = `${sizes[k]}px`;
-    // A 1.5px ring on a 5px dot leaves a 2px speck, so small dots get 1px.
-    dot.style.borderWidth = sizes[k] < 11 ? '1px' : '';
   });
 
   const out = layout({

@@ -711,3 +711,10 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     neighbours may overlap (the background ring separates them), with the floor raised from
     5px to 7px. 50 players on a 375px phone now draws about 11px dots; 100 and more sit at
     7px. (Jamie 2026-11-01)
+133. (amends 131, 132) **The dot floor is the 50-player size, 11px; yours is at least
+    15px.** On Jamie's iPhone 7px single dots were barely visible, and 50 players is the
+    smallest he finds legible. So dots adapt between 13px and 11px only, and past about 40
+    distinct seconds on a phone they overlap rather than shrink. The 1px small-dot ring is
+    gone, since no dot is small any more. Cost, accepted: on a busy day the field is a
+    band of overlapping dots, and shared-second growth reaches the 25px cap at about five
+    players. (Jamie 2026-11-01)

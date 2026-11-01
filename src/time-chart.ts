@@ -127,17 +127,19 @@ export interface Geometry {
 }
 
 const DOT = 13;
-const DOT_MIN = 7;
+const DOT_MIN = 11;
 // Dots may overlap: each gets 1.6× its share of the axis (item 132).
 const DOT_SPREAD = 1.6;
-const DOT_YOU_MIN = 11;
+const DOT_YOU_MIN = 15;
 const DOT_MAX = 25;
 
 /**
  * The base dot size: 1.6× the axis length divided by the number of distinct
- * seconds on it, between 7px and 13px (Jamie, items 131, 132). What crowds the
+ * seconds on it, between 11px and 13px (Jamie, items 131–133). What crowds the
  * axis is how many dots share it, not how many people played, so a quiet day
- * gets 13px dots and a busy one shrinks towards 7px. Neighbours may overlap;
+ * gets 13px dots and a busy one shrinks to 11px — the size on a 50-player day,
+ * the smallest that reads on an iPhone. Past that, dots overlap rather than
+ * shrink. Neighbours may overlap;
  * the background ring keeps them apart. A wider track keeps bigger dots longer.
  */
 export function dotBase(distinct: number, track: number): number {
@@ -150,7 +152,7 @@ export function dotBase(distinct: number, track: number): number {
  * in proportion to its count (base × √count), so size keeps meaning something on
  * a busy day instead of hitting the cap at four players, as +4px each did. All
  * capped at 25. Yours is 4px larger than a stranger's on the same count, and
- * never under 11, so it stays findable when the base shrinks (item 66).
+ * never under 15, so it stays findable when the base shrinks (item 66).
  */
 export function dotSizes(g: Geometry, track: number): number[] {
   const base = dotBase(g.dots.filter((d) => d.count > 0).length, track);

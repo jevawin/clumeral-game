@@ -86,13 +86,14 @@ describe('dot sizes', () => {
     expect(disc.count).toBe(0);
   });
 
-  // Item 132: dots may overlap by 60% of their spacing, with a 7px floor.
-  it('starts at 13px on a quiet day and shrinks to a 7px floor as seconds crowd in', () => {
+  // Items 132, 133: dots may overlap, and never shrink below their size on a
+  // 50-player day (11px), the smallest Jamie finds legible on an iPhone.
+  it('starts at 13px on a quiet day and stops at an 11px floor', () => {
     expect(dotBase(1, 288)).toBe(13);
     expect(dotBase(19, 288)).toBe(13);
     expect(dotBase(39, 288)).toBe(11);
-    expect(dotBase(74, 288)).toBe(7);
-    expect(dotBase(300, 288)).toBe(7);
+    expect(dotBase(74, 288)).toBe(11);
+    expect(dotBase(300, 288)).toBe(11);
   });
 
   it('gives a wider track bigger dots for the same day', () => {
@@ -107,8 +108,11 @@ describe('dot sizes', () => {
     const shared = geometry(buildField([{ second: 10, count: 3 }, { second: 200, count: 1 }], 400));
     expect(dotSizes(shared, 288)[0]).toBe(23);
     const crowd = geometry(buildField([{ second: 10, count: 9 }, ...rows(strangers(60).map((t) => t + 20))], 9999));
-    // Base 7 here, so nine on one second is 21, still under the cap.
-    expect(dotSizes(crowd, 288)[0]).toBe(21);
+    // Base 11 here, so nine on one second is 33, held at the cap.
+    expect(dotSizes(crowd, 288)[0]).toBe(25);
+    // Two on one second: 11 × √2 = 15.6.
+    const pair = geometry(buildField([{ second: 10, count: 2 }, ...rows(strangers(60).map((t) => t + 20))], 9999));
+    expect(dotSizes(pair, 288)[0]).toBe(16);
   });
 
   it('caps every dot at 25', () => {
@@ -116,12 +120,12 @@ describe('dot sizes', () => {
     expect(Math.max(...dotSizes(g, 288))).toBe(25);
   });
 
-  it('keeps yours 4px larger, and never under 11', () => {
+  it('keeps yours 4px larger, and never under 15', () => {
     expect(dotSizes(geometry(field([1000], 10)), 288)[0]).toBe(17);
     const busy = geometry(field(strangers(80), 3));
     const sizes = dotSizes(busy, 288);
     const mine = busy.dots.findIndex((d) => d.mine);
-    expect(sizes[mine]).toBe(11);
+    expect(sizes[mine]).toBe(15);
     expect(sizes[mine]).toBeGreaterThan(Math.max(...sizes.filter((_, k) => k !== mine)));
   });
 
