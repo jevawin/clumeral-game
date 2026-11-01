@@ -7,9 +7,9 @@ Branch: `dev/daily-time-chart`
 
 **Status: `da-brief` ran 2026-11-01 — 2 High, 5 Medium, 4 Low. Fixes settled by Jamie the
 same day (items 90–102); boards exported (items 103–108). Second `da-brief` (Fable) ran
-2026-11-01: 4 Medium, 6 Low. Fixes settled by Jamie (items 111–121). Not closeable:** Dave's
-sign-off on items 111 and 116, his ack on items 103–108, and his re-acks on §3, §4, §5, §8,
-§11 are pending.
+2026-11-01: 4 Medium, 6 Low. Fixes settled by Jamie (items 111–121). Ready for Plan.** Dave signed
+items 111 and 116, acked items 103–108, and re-acked §3, §4, §5, §8 and §11 (relayed by
+Jamie, 2026-11-01).
 
 **Read "da-brief fixes", "Boards export", "Plan-stage questions" and "Fable da-brief fixes"
 at the end before planning. Later sections win over earlier ones and over the body.**
@@ -571,14 +571,14 @@ build. Answered by Jamie the same day.
 Review: second fresh-context `da-brief` subagent, run on Fable, 2026-11-01, over the whole
 brief and the board files. Findings G1–G10 checked against the code and boards by the main
 session; all held. Fixes settled by Jamie 2026-11-01 (accepted all recommendations).
-Ack: Dave pending · Sign-off: Dave pending on items 111 and 116 (maths, blocking) · Jamie
-signs item 113 (accessibility) — signed 2026-11-01.
+Ack: Dave 2026-11-01 (relayed by Jamie; also covers items 103–110) · Sign-off: Dave
+2026-11-01 on items 111 and 116 (relayed by Jamie) · Item 113: Jamie 2026-11-01.
 
 111. (G1, Medium — amends 28, 60) **"top 100%" never shows for anyone but the strictly
     slowest.** Rounding up gives 100 for every rank above 0.99n: the second-slowest of 101
     reads ceil(99.01) = 100. So X = min(99, ceil(100 × rank / n)) for everyone except the
     strictly slowest, who reads item 60's line. Tests: rank 100 of 101, and tied-slowest at
-    rank 199 of 200, both read "top 99%". **Maths — Dave sign-off pending.**
+    rank 199 of 200, both read "top 99%". **Signed: Dave 2026-11-01 (relayed by Jamie).**
 112. (G2, Medium) Already settled by item 110: the uid goes with the request whenever
     today's history holds a recorded entry, so saving toggled off after a saving-on solve
     still counts you once. Item 78/79 inputs gain that case.
@@ -592,8 +592,8 @@ signs item 113 (accessibility) — signed 2026-11-01.
       seconds, slowest 4 minutes 2 seconds. Yours: 41 seconds."
     Item 83's e2e check covers n = 1, 2, all-identical and n ≥ 3. (Jamie signs —
     accessibility; signed 2026-11-01.)
-114. (G4, Medium) Items 103–108 were settled by Jamie alone. Dave's ack is pending; the
-    earlier status line saying "every section is acked" was wrong.
+114. (G4, Medium) Items 103–108 were settled by Jamie alone; the earlier status line saying
+    "every section is acked" was wrong. Dave acked them 2026-11-01 (relayed by Jamie).
 115. (G5, Low — amends 104, 105) Item 104's block is 137 lines, not 127. Item 105 also
     misses, each changed in the port to the settled rule:
     - "You're 2nd fastest" → "You're the **2nd fastest**" (56).
@@ -608,7 +608,7 @@ signs item 113 (accessibility) — signed 2026-11-01.
     one word throughout. The new query reads `BETWEEN 1 AND 86400`, not 0: `recordEvent`
     writes 0 for any non-finite value (`src/worker/analytics-db.ts:130`), so every junk
     POST is a 0s row, and a real sub-second solve is impossible. The 1s floor stays as a
-    client guard only. **Maths — Dave sign-off pending on the lower bound.**
+    client guard only. **Signed: Dave 2026-11-01 (relayed by Jamie).**
 117. (G7, Low — amends 95) The ±14h window bounds are inclusive; UTC+14 sits exactly on the
     edge. Accepted: a tab left open past local midnight in a negative-offset zone can solve
     outside the window, and that row is missing from everyone else's field. The player's
