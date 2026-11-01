@@ -189,6 +189,36 @@ updates:
       # miniflare. Remove this with the other two there.
       - dependency-name: "wrangler"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # @axe-core/playwright 4.14 turns the a11y suite red, and it is RIGHT to —
+      # which is the whole reason this entry is temporary rather than a pin.
+      #
+      # 4.14 rewrote label-content-name-mismatch to compare the accessible name
+      # against text VISIBLE ON SCREEN, ignoring aria-hidden; 4.11 walked the
+      # accessibility tree instead. The game screen then reports 5 serious nodes —
+      # the two board controls, whose visible "Ctrl + Z" hint is aria-hidden but
+      # painted, and the three digit boxes, whose grid is aria-hidden but painted.
+      #
+      # Nothing reasonable clears it. Measured on the live game screen against
+      # 4.14: moving the key span outside its button clears the two controls, but
+      # for the boxes the only passing shapes are a name that says nothing
+      # ("Hundreds box 0123456789"), dropping role="button" from the primary game
+      # control, or not painting eliminated digits at all. #345 holds that
+      # decision, which is a design call and Jamie's to make.
+      #
+      # Ignored rather than closed because closing does not work: #344 was closed
+      # and came back as #360 within the day. Same lesson as the
+      # @cloudflare/workers-types entry records.
+      #
+      # MINOR only, deliberately. 4.11.x patches still arrive and are wanted — the
+      # rewrite landed in a minor, so patch is not the risky axis here.
+      #
+      # REMOVE THIS WITH #345, whichever way it goes. If the five nodes are
+      # accepted as scoped exceptions, the bump lands with that exception in
+      # e2e/specs/a11y.spec.ts; if the design changes, it lands with the design.
+      # Either way this entry is the thing that must not outlive the decision —
+      # it is holding back a real accessibility checker upgrade.
+      - dependency-name: "@axe-core/playwright"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     # Same reasoning as the npm block above.
