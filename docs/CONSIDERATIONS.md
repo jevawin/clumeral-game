@@ -18,6 +18,10 @@ Decided 2026-11-01, Jamie — [daily time chart brief](work/2026-11-01-daily-tim
   narrow `ts` window on the `(hostname, event, ts)` index, so each read touches a handful of
   rows against a free allowance of millions a day. A cache would make the chart stale for no
   saving.
-- **Revisit when:** daily solves pass the low thousands, or D1 rows-read shows up on the bill.
+- **Bounded by:** a `ts` window of the puzzle's UTC day ± 14 hours (brief item 95), so a
+  read never scans more than about two days of `puzzle_time` rows.
+- **Revisit when:** daily solves pass the low thousands, D1 rows-read shows up on the bill,
+  or someone hammers the route — it is public and uncached, so abuse volume, not only
+  organic growth, is a trigger.
 - **Likely fix then:** a short edge cache keyed by puzzle number. The response carries no uid
   or timestamp — only `(second, count)` pairs — so it is safe to share between players.

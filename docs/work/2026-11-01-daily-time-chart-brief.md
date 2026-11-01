@@ -5,8 +5,12 @@ and the canvas boards it names (Idea-O, P, R, N).
 
 Branch: `dev/daily-time-chart`
 
-**Status: all 11 sections settled and acked, 2026-11-01. §4 signed by Dave, §9 by Jamie.
-`da-brief` review pending.**
+**Status: `da-brief` ran 2026-11-01 — 2 High, 5 Medium, 4 Low. Fixes settled by Jamie the
+same day (items 90–102). Not ready for Plan:** item 102 (canvas boards into the repo) is
+open, and Dave's acks on the reopened §3, §5, §6, §7, §8, §11 and sign-off on item 90 are
+pending.
+
+**Read "da-brief fixes" at the end before planning. Where it and the body disagree, it wins.**
 
 ---
 
@@ -49,8 +53,8 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
 12. The timer itself does not change: what it measures, idle handling, opt-out, and the
     `puzzle_time` event are all untouched. (assumed — reading only)
 13. Share text does not gain your time or rank. (assumed — separate feature if wanted)
-14. Fixing `puzzle_complete` mixing daily, archive and random (`src/app.ts:1065`) is owed but
-    not part of this. The chart does not read it. Raised as its own issue. (assumed — keep
+14. Fixing `puzzle_complete` mixing daily, archive and random (`src/app.ts:1082`) is owed but
+    not part of this. The chart does not read it. Raised as its own issue: #366. (assumed — keep
     maintenance out of a feature)
 15. Forgery protection on `/api/event`: is it out of scope?
     My rec: yes, out of scope — but the new read query clamps values the same way the
@@ -61,24 +65,24 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     a determined troll could make the field look odd for a day.
 
 ## 3. How it works
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01 (relayed by Jamie)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
 
 16. The card appears on `/solved` after a daily solve, inside the #311 results panel. Not on
     `/play` in solved-replay mode, not on random or archive completion. (assumed — the stats
     panel lives on `/solved` only, `src/app.ts:832`)
 17. Below 10 times in the field, the copy is a rank ("2nd fastest"). From 10, a percentile
     ("top 70%"). Visual states follow Idea-P: n = 1, 2, 3, 10+. (assumed — handover §3)
-18. Your dot is always on the chart and counted exactly once, whether or not your own
+18. [amended — see 91] Your dot is always on the chart and counted exactly once, whether or not your own
     `puzzle_time` has reached the database by the time the card loads. (assumed — the POST
     is fire-and-forget, so a race is guaranteed; how to avoid it is the plan's job)
-19. Ties share the better rank. Two players on 41s, both fastest, are both "fastest".
+19. [amended — see 94] Ties share the better rank. Two players on 41s, both fastest, are both "fastest".
     (assumed — standard competition ranking; the Idea-O block's definition is ported, and
     the plan checks it agrees)
 20. Your time is past the p95 clip: your dot pins to the right edge and your label still
     shows your true time. (assumed — your label always tracks you, handover §3)
 21. A time of 0s is floored to 1s for placement only, since `ln(0)` is undefined. Values
     outside 0–86400 are dropped server-side. (assumed)
-22. You have no valid time — solved before the timer shipped, or the stored time is unknown:
+22. [amended — see 92] You have no valid time — solved before the timer shipped, or the stored time is unknown:
     the card does not show. (assumed — the card is about you; without your dot it is a
     chart of strangers)
 23. The fetch fails or you are offline: the card does not show. No error, no retry button.
@@ -92,12 +96,12 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     times on different puzzles are not comparable — one day's puzzle can be twice as hard.
     The cost: rows written before the column exists (today's 5) have no number and are never
     shown. Alternative: window on the UTC day and accept the mix.
-25. You come back to `/solved` later the same day. Does the chart refresh?
+25. [amended — see 93] You come back to `/solved` later the same day. Does the chart refresh?
     My rec: yes, fetch fresh on every visit. Your rank can move as others finish.
     Why: "does it change between visits" is the reason this card exists (item 1). A
     snapshot frozen at your solve would hide that. The cost: a player who was "top 10%" at
     9am may read "top 30%" at 9pm — which is true.
-26. Players with saving turned off (`saveScore` false). Their time is never sent (brief 141).
+26. [amended — see 91, 92] Players with saving turned off (`saveScore` false). Their time is never sent (brief 141).
     Do they see the chart?
     My rec: yes. Their dot is placed locally against the field and is never added to it.
     The request for the field carries no uid and no time.
@@ -107,7 +111,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     loading any page.
 
 ## 4. Maths
-Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave 2026-11-01 (relayed by Jamie; covers items 28 and 84–87) · Ack: n/a
+Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave 2026-11-01 (relayed by Jamie; covers items 28 and 84–87) · Item 90: Dave sign-off pending · Ack: n/a
 
 27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
 28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
@@ -132,7 +136,7 @@ Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 
     second, matching how times are shown. (reviewed 2026-11-01)
 
 ## 5. State & persistence
-Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: Dave 2026-11-01 (relayed by Jamie)
+Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
 
 29. The field lives on the server only, in `analytics_events` in `clumeral-analytics`. The
     one storage change is the puzzle-number column from item 24: a new nullable column via
@@ -140,7 +144,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: D
 30. Nothing new is stored on the client. No new `localStorage` or `sessionStorage` key; the
     `dlng_` keys are untouched. The field is fetched each visit and held in memory only.
     (assumed — item 25 makes a cache pointless)
-31. Your own time comes from today's existing history entry (`seconds`), the same value the
+31. [amended — see 92] Your own time comes from today's existing history entry (`seconds`), the same value the
     hero line already shows. (assumed — read from `src/app.ts:933`)
 32. The field is filtered by hostname, as `/stats` is, so pre-prod and preview traffic never
     reaches a production card. (assumed — `hostname` exists for exactly this, see the
@@ -148,7 +152,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: D
 33. The endpoint will answer for any puzzle number, not just today's. A past puzzle's times
     are harmless — they are times, never answers. (assumed — refusing them buys nothing and
     the server cannot know a browser's local "today")
-34. Caching and cost: do we cache the read?
+34. [amended — see 95] Caching and cost: do we cache the read?
     My rec: no cache. Query the database on every `/solved` visit.
     Why: volume is tens of solves a day. The query is bounded by event, hostname and a
     narrow `ts` window, which the existing `(hostname, event, ts)` index covers, so each read
@@ -169,9 +173,9 @@ Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: D
     change to the endpoint, not just this build.
 
 ## 6. How it fits
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01 (relayed by Jamie)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
 
-38. Client rendering hangs off `renderCompletion` in `src/completion.ts`, which builds the
+38. [amended — see 93] Client rendering hangs off `renderCompletion` in `src/completion.ts`, which builds the
     #311 panel synchronously. The chart needs a fetch, so it renders into its own slot after
     the rest of the panel is up and never delays it. (assumed — item 23 already says the
     panel must not depend on it)
@@ -210,13 +214,13 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     player has as much reason to see it as anyone — arguably more.
 
 ## 7. How it looks
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64, re-settled Jamie 2026-11-01 (accepted recommendation) · Ack: Dave 2026-11-01 (relayed by Jamie)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64, re-settled Jamie 2026-11-01 (accepted recommendation) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
 
 47. The design is Idea-O: a horizontal log axis, one dot per distinct second sized by how
     many share it, your dot solid accent with your time above it, Fastest / Median / Slowest
     below on short leader lines, the copy line above. Low-data states follow Idea-P.
     (assumed — handover §1, §3)
-48. `— log time` is on the card, always with the dash, positioned by the flip rule (Idea-R):
+48. [amended — see 101] `— log scale` is on the card, always with the dash, positioned by the flip rule (Idea-R):
     the top corner furthest from your dot, with a 14px leader. (assumed — Dave's
     requirement, chosen 2026-11-01)
 49. Two colours only: theme accent and foreground, with `--accent-soft` and `--fg-50`
@@ -226,7 +230,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64,
     per-character table. (assumed — handover §3; the comment travels with the lifted code)
 51. No entrance animation. The dots are drawn in place. (assumed — nothing to animate that
     adds meaning, and it removes a reduced-motion case)
-52. The card cannot be the fixed 390px it was designed at. The panel is `max-w-[26rem]`
+52. [amended — see 96] The card cannot be the fixed 390px it was designed at. The panel is `max-w-[26rem]`
     with `px-6` (`index.html:61`), so the content is at most 368px wide — about 320px on a
     375px phone. How does it fit?
     My rec: the track takes the container's width. Positions are already fractions of the
@@ -261,11 +265,11 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64,
     the eight combinations. The cost: two new tokens, against a ceiling of 15 (CLAUDE.md).
 
 ## 8. Copy & wording
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88, re-settled Jamie 2026-11-01 (accepted recommendation) · Ack: Dave 2026-11-01 (relayed by Jamie)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88, re-settled Jamie 2026-11-01 (accepted recommendation) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
 
-55. Chart labels as on the canvas: Fastest, Median, Slowest, `— log time`. Your dot carries
+55. Chart labels as on the canvas: Fastest, Median, Slowest, `— log scale`. Your dot carries
     your time only. (assumed — designed and agreed on Idea-O/N)
-56. Below 10 times, the line is an ordinal rank: "You're the **2nd fastest**". Ties read
+56. [amended — see 94] Below 10 times, the line is an ordinal rank: "You're the **2nd fastest**". Ties read
     "joint": "You're the **joint 2nd fastest**". The copy never calls you "slowest" — last of
     five reads "5th fastest". (assumed — item 19; the chart already shows where you are)
 57. No loading copy, no error copy. The reserved space is empty while loading and collapses
@@ -296,7 +300,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88,
     a sentence, and there is no room at 320px for `10m 05s` beside a neighbouring label.
     The cost: the same solve reads `0m 41s` in the hero and `41s` on the axis — the
     inconsistency `src/app.ts:833` warns about, accepted here as the price of fit.
-88. **Reopens items 56, 59 and 61.** Raised 2026-11-01 on item 28: the sole fastest player —
+88. [amended — see 94] **Reopens items 56, 59 and 61.** Raised 2026-11-01 on item 28: the sole fastest player —
     not tied — always reads a fastest line, never a percentile or "top 10%". Suggested
     wordings: "You're fastest today" or "You solved fastest today".
     My rec: "You're the **fastest** today". Why: it matches the rank frame used below 10
@@ -308,7 +312,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88,
     n = 2; "You're the first to solve today" stays at n = 1.**
 
 ## 9. Accessibility
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026-11-01 · Ack: n/a (owned section)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026-11-01; item 97 amends item 69, accepted Jamie 2026-11-01 · Ack: n/a (owned section)
 
 65. Nothing on the card is interactive: no tab stops, no hover, no tooltips. (assumed —
     Idea-O has none)
@@ -317,7 +321,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026
 67. No entrance animation (item 51), so no reduced-motion case. (assumed)
 68. The reserved space carries `aria-busy="true"` while loading and drops it when drawn.
     (assumed)
-69. Contrast is measured in all eight palette × theme combinations: text at 4.5:1, every
+69. [amended — see 97] Contrast is measured in all eight palette × theme combinations: text at 4.5:1, every
     dot and the axis at 3:1 against the surface (WCAG 1.4.3, 1.4.11). Others' dots are data,
     not decoration, so they meet 3:1 too. Labels scale with text size and are measured live
     (item 50), so 200% zoom does not break collision handling. (assumed — required, not
@@ -347,7 +351,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     it is accepted, and into `docs/ANALYTICS.md`. (assumed — the comment above the set: a
     missing name records nothing and looks fine)
 76. Anonymous as every event is: the existing analytics uid, no identity. (assumed)
-77. Do we measure whether the card renders?
+77. [amended — see 93] Do we measure whether the card renders?
     My rec: yes, one event, `time_chart`, sent once per `/solved` render that should show the
     card (item 46's modes). Source `drawn` or `failed`; value the field size n (0 on
     failure). Sent for saving-off players too.
@@ -359,7 +363,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     ungated (`src/app.ts:1082`).
 
 ## 11. Done / test plan
-Settled: Jamie 2026-11-01 (accepted all recommendations, plus item 89) · Ack: Dave 2026-11-01 (relayed by Jamie)
+Settled: Jamie 2026-11-01 (accepted all recommendations, plus item 89) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
 
 Written before code. Each line is a check the build must pass.
 
@@ -388,7 +392,7 @@ Written before code. Each line is a check the build must pass.
 80. **Contrast** — `tests/palette-contrast.spec.ts` extended: the two new tokens (item 64)
     meet 3:1 against the surface, and chart text meets 4.5:1, in all eight palette × theme
     combinations. (assumed — item 69)
-81. **Pre-prod, by hand** — on the branch's `workers.dev` preview: solve today's daily, see
+81. [amended — see 96] **Pre-prod, by hand** — on the branch's `workers.dev` preview: solve today's daily, see
     the card, then reload `/solved` and confirm your second comes back from the new route —
     which proves the row landed with its puzzle number, since NULL rows are never returned.
     Confirm `time_chart` events arrive; the plan picks how to read them without
@@ -415,3 +419,75 @@ Written before code. Each line is a check the build must pass.
     this brief: the maths definitions, the copy at every state, the privacy rule (item 37),
     contrast and accessibility. It sits alongside the review gates, not instead of them.
     (Jamie, 2026-11-01)
+
+---
+
+## da-brief fixes
+Review: fresh-context `da-brief` subagent, 2026-11-01. Findings F1–F11 checked against the
+code by the main session; all held. Fixes settled by Jamie 2026-11-01 (accepted all
+recommendations, plus item 101 from Jamie and Dave). **Where this section and the body
+disagree, this section wins.**
+
+90. (§4) The log is base e (`Math.log`), as in Idea-O. The base cannot move any dot: a change
+    of base multiplies numerator and denominator of the position fraction by the same
+    constant, which cancels. It would matter only if the axis gained round-number ticks —
+    a base decision then, not now. (Jamie 2026-11-01; Dave sign-off pending)
+91. (§3, F2 High — amends 18, 26) **How your dot is counted once.** A saving-on player's
+    request carries their analytics uid. The server leaves out every row with that uid, and
+    the client adds your own time locally. A saving-off player's request carries no uid,
+    and their time was never sent, so the client adds it locally the same way. The
+    response is still `(second, count)` pairs only — item 37 is unchanged. This also
+    removes the duplicate when two tabs wrote two rows for one player. Test 78/79 inputs:
+    your row present, absent, and present twice; and a stranger on your exact second, who
+    must still be counted.
+92. (§3, F3 Medium — corrects 22, 26, 31) **Saving-off players see the card on the solve
+    visit only.** Their solve deletes history (`recordSolve`, `src/storage.ts:166`), so no
+    time survives a reload. On the solve visit the time comes from the in-memory timer; on
+    any later visit they are in marker mode and item 22 hides the card. Accepted: storing
+    their time anywhere would break brief 141. Item 31's source is therefore "today's
+    history entry, or the in-memory time on the solve visit".
+93. (§3/§6, F4 Medium — defines 25, amends 38, 77) **A "visit" is each `screens:enter` for
+    the completion screen** (`src/completion.ts:280`). The fetch and the `time_chart` event
+    both hang off it — not off `renderCompletion`, which also runs at boot on `/welcome`
+    and `/archive` (`src/app.ts:1591`) and does not re-run on an in-app return to `/solved`.
+94. (§8, F6 Medium — amends 19, 56, 88) **Ties at the top.** Players tied for fastest read
+    "You're the **joint fastest** today" at every n ≥ 2. The sole fastest reads "You're the
+    **fastest** today" (item 88). Other ties read "joint" (item 56); item 19's "both are
+    fastest" means the shared rank, not the copy. Item 78 gains: sole fastest at n = 2, 9,
+    10 and 50 (never a percentile); tied fastest at n = 2 and 10+; a tie mid-field below
+    and above 10.
+95. (§5, F7 Medium — amends 34) **The query is bounded in time.** The server derives a `ts`
+    window from the puzzle number's date: 14 hours either side of that UTC day, enough for
+    every time zone. Combined with hostname and event, the existing
+    `(hostname, event, ts)` index covers it, and the puzzle-number filter runs over that
+    small slice. Item 79 gains an `EXPLAIN QUERY PLAN` assertion that the index is used,
+    following `tests/worker/schema.spec.ts`. `docs/CONSIDERATIONS.md` adds abuse volume —
+    someone hammering the public, uncached route — as a revisit trigger beside organic
+    growth.
+96. (§7, F5 Medium — corrects 52, 81) **The real widths.** Item 52 measured the feedback
+    modal (`index.html:61`) by mistake. The results page is `.page-col` inside `.page-pad`
+    (`src/tailwind.css:124–125, 776–777`): `--page-max` 480px with a 1rem gutter. Content
+    is 288px on a 320px phone, 343px on a 375px phone, and up to 480px. Collision and
+    flip-rule clearances are re-checked at 288px and 480px; item 81's screenshots are at
+    288px, 343px and 480px.
+97. (§7/§9, F8 Low — amends 69) The card sits on the page background (`--color-bg`), not in
+    a `--color-surface` box. Contrast in items 69 and 80 is measured against `--color-bg`
+    in all eight combinations. The block heading follows the same convention as the other
+    panel blocks' headings.
+98. (F9 Low) Item 14's issue is filed: #366, sibling of #306.
+99. (F10 Low) Docs the build must update: `docs/ANALYTICS.md` (column, event, route); the
+    `VALID_EVENTS` comment "No migration: the existing table already holds…", which becomes
+    false; CLAUDE.md's "No worker/API changes" constraint, which item 7 lifts for this
+    route. Item 82's wait on Dave's item 28 sign-off is already met.
+100. (F11 Low) A saving-off player at n = 1 reads "You're the **first** to solve today"
+    even if other saving-off players solved earlier. Accepted: the field counts only
+    players with saving on (item 58), and "first" is true of that field.
+101. (§7/§8 — amends 48, 55) The axis note reads **`— log scale`**, not `— log time`, so
+    it reads as a scale and not a wooden log. Every mention in this brief is updated. The
+    dash and the flip rule are unchanged. (Jamie and Dave, 2026-11-01)
+102. (F1 High — blocks Plan) **The design is not in the repo.** Idea-O, P, R and N exist
+    only on the canvas, and items 39, 47 and 48 depend on them. Before Plan, export the
+    four boards — at minimum Idea-O's computation block — into `docs/work/`, then point
+    items 39, 47 and 48 at those files and write the position and size formulas, the
+    collision rules and the flip-rule clearances into this brief. Owner: Jamie (canvas
+    access). **Open.**
