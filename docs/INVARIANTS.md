@@ -93,6 +93,12 @@ for real players.
 to un-ship it for that day. This fails **silently** — nothing crashes, no test goes red, and the
 response merely contains one extra field.
 
+**The other door.** `GET /api/dev/answer` returns today's answer by design, for the solve
+helpers. Until 2026-11-01 it refused only the `clumeral.com` hostname, so it answered on the
+production deployment's own workers.dev address, which reads the same KV. It now fails
+closed: `devAnswerAllowed` allows localhost and branch previews only, pinned by
+`tests/worker-guard.spec.ts`.
+
 **Guarded by.** *Nothing, directly.* `docs/ARCHITECTURE.md` states the rule, and the route tests
 exercise the endpoints, but no test asserts the answer is **absent** from an `/api/puzzle`
 response. (The `answer` assertions in `tests/save-pref.spec.ts` are about a stored history row

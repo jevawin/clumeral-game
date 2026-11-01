@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isFuturePuzzleDate } from '../src/worker/date-guard.ts';
-import { VALID_EVENTS } from '../src/worker/index.ts';
+import { VALID_EVENTS, devAnswerAllowed } from '../src/worker/index.ts';
 
 describe('isFuturePuzzleDate (Phase 5 D-04, #205 server gate fix)', () => {
   beforeEach(() => { vi.useFakeTimers(); });
@@ -62,5 +62,23 @@ describe('VALID_EVENTS allowlist', () => {
 
   it('is still an allowlist', () => {
     expect(VALID_EVENTS.has('made_up_event')).toBe(false);
+  });
+});
+
+// /api/dev/answer hands out today's answer, so it must fail CLOSED: allowed on
+// localhost and this Worker's branch previews only. It used to block only
+// 'clumeral.com', which left it open on the production deployment's own
+// workers.dev address — a P4 breach (docs/INVARIANTS.md).
+describe('devAnswerAllowed', () => {
+  it('allows localhost and branch previews', () => {
+    for (const h of ['localhost', '127.0.0.1', 'dev-daily-time-chart-clumeral-game.jevawin.workers.dev', 'staging-clumeral-game.jevawin.workers.dev']) {
+      expect(devAnswerAllowed(h), h).toBe(true);
+    }
+  });
+
+  it('refuses production on every hostname, and anything unknown', () => {
+    for (const h of ['clumeral.com', 'www.clumeral.com', 'clumeral-game.jevawin.workers.dev', 'other.workers.dev', 'evil-clumeral-game.jevawin.workers.dev.example.com', '']) {
+      expect(devAnswerAllowed(h), h).toBe(false);
+    }
   });
 });

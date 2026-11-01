@@ -51,6 +51,17 @@ export const VALID_EVENTS = new Set([
   'puzzle_time',
 ]);
 
+/**
+ * Where /api/dev/answer may answer: localhost and this Worker's branch previews
+ * (`<branch>-clumeral-game.jevawin.workers.dev`) only. Fails CLOSED. It used to
+ * refuse just 'clumeral.com', which left today's answer open on the production
+ * deployment's own workers.dev address (clumeral-game.jevawin.workers.dev),
+ * which reads the same PUZZLES KV — a P4 breach (docs/INVARIANTS.md).
+ */
+export function devAnswerAllowed(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('-clumeral-game.jevawin.workers.dev');
+}
+
 function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -278,9 +289,10 @@ export default {
       return json({ answer: puzzle.answer });
     }
 
-    // Dev-only: return the answer for the current puzzle (blocked on production domain)
+    // Dev-only: return the answer for the current puzzle. Localhost and branch
+    // previews only — never production, on any hostname (devAnswerAllowed).
     if (request.method === 'GET' && url.pathname === '/api/dev/answer') {
-      if (url.hostname === 'clumeral.com') return new Response('Not found', { status: 404 });
+      if (!devAnswerAllowed(url.hostname)) return new Response('Not found', { status: 404 });
       const token = url.searchParams.get('token');
       if (token) {
         const seed = await verifyToken(token, env.HMAC_SECRET);
