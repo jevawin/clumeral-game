@@ -366,9 +366,9 @@ Written before code. Each line is a check the build must pass.
     meet 3:1 against the surface, and chart text meets 4.5:1, in all eight palette × theme
     combinations. (assumed — item 69)
 81. **Pre-prod, by hand** — on the branch's `workers.dev` preview: solve today's daily, see
-    the card, see your own row land with a puzzle number in `clumeral-analytics-preprod`
-    (read with `--local` mirror or `/stats`, never `wrangler d1 … --remote`), and see a
-    `time_chart` event. Screenshots at 320px and 368px content width for Jamie to compare
+    the card, then reload `/solved` and confirm your second comes back from the new route —
+    which proves the row landed with its puzzle number, since NULL rows are never returned.
+    Check `time_chart` on the preview's `/stats`. Never `wrangler d1 … --remote`. Screenshots at 320px and 368px content width for Jamie to compare
     against Idea-O. (assumed)
 82. **Not done until** Dave has signed item 28, and `docs/INVARIANTS.md` has been read
     against the final diff. `docs/ANALYTICS.md` documents the column and the event.
