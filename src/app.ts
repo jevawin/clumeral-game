@@ -449,8 +449,11 @@ function renderBox(i: number): void {
   if (!el) return;
   const s = possibles[i];
 
+  // The painted digits are aria-hidden and the state is spoken through the name
+  // instead (see below). Hiding them is what makes the name the only source, so
+  // the two have to move together.
   if (s.size === 1) {
-    el.innerHTML = `<span class="font-mono text-3xl font-bold text-text">${[...s][0]}</span>`;
+    el.innerHTML = `<span class="font-mono text-3xl font-bold text-text" aria-hidden="true">${[...s][0]}</span>`;
   } else {
     // 3/4/3 layout — matches HTP digit-box (via .digit-box__grid.four-col CSS in tailwind.css)
     const spans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -459,8 +462,51 @@ function renderBox(i: number): void {
         return `<span class="${isElim ? 'elim' : ''}">${d}</span>`;
       })
       .join("");
-    el.innerHTML = `<div class="digit-box__grid four-col">${spans}</div>`;
+    el.innerHTML = `<div class="digit-box__grid four-col" aria-hidden="true">${spans}</div>`;
   }
+
+  // The grid always draws all ten digits and strikes out the eliminated ones, so
+  // before this a screen reader got "Hundreds box" and then "0 1 2 3 4 5 6 7 8 9"
+  // for every box however much the player had narrowed it: strikethrough is paint,
+  // not semantics, and the board was effectively invisible non-visually. So the
+  // paint is hidden and the state is spoken instead.
+  //
+  // Count in the NAME, digits in the DESCRIPTION, and that split is deliberate.
+  // Activating a box does not move focus (openBox), so the box keeps focus while
+  // the keypad and the number keys toggle digits — and a focused element's changed
+  // name is re-announced by NVDA and JAWS. With the list in the name, eliminating
+  // three digits re-read nine of them three times. A changed description is not
+  // re-announced, so the keystroke cost is "8 remaining" rather than the board.
+  //
+  // This does NOT clear axe's label-content-name-mismatch on these boxes, and
+  // nothing reasonable does: axe 4.14 compares the name against text VISIBLE ON
+  // SCREEN and ignores aria-hidden, so the only passing names are the literal
+  // painted digits ("Hundreds box 0123456789") or no button role at all. Measured
+  // against 4.14, which is NOT the version pinned here — see #345, which holds
+  // that question. Once the digits are aria-hidden they are content rather than a
+  // visible label, so whether 2.5.3 applies to them at all is the real argument.
+  //
+  // Sorted, because a digit put back by Undo or the keypad re-enters the Set at
+  // the end of its iteration order — so the spoken list would otherwise drift out
+  // of step with the grid, which is always drawn 0-9.
+  const left = [...s].sort((a, b) => a - b);
+  // The static aria-label in index.html is the name until this first runs; it is
+  // the same string, and dropping it left the boxes nameless while /api/puzzle was
+  // in flight. Keep the two in step.
+  //
+  // No fallback if data-box-name is missing: leaving the static label alone is the
+  // only safe failure. Falling back to the element's own aria-label would read the
+  // name this function wrote last time, so each render would append another count
+  // — "Tens box, 10 remaining, 9 remaining" — growing with every keystroke.
+  const boxName = el.dataset.boxName;
+  if (boxName) el.setAttribute("aria-label", `${boxName}, ${left.length} remaining`);
+  // The target is a sibling of the box, not a child: the innerHTML above would wipe
+  // a child, and a child counts as the button's own text. Being a sibling it is its
+  // own node in the reading order, so it carries aria-hidden to keep it out of
+  // browse mode — accname includes a hidden node that aria-describedby references
+  // directly, which is what keeps the description working. See index.html.
+  const desc = document.querySelector(`[data-box-digits="${i}"]`);
+  if (desc) desc.textContent = left.join(", ");
 
   // Active state: accent border + accent shadow
   el.classList.toggle("border-accent", i === activeBox);

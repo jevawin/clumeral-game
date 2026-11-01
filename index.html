@@ -289,10 +289,35 @@
             </div>
 
             <!-- Number boxes -->
+            <!-- Each box carries BOTH a static aria-label and data-box-name, and both
+                 are load-bearing. renderBox in app.ts replaces the label at render time
+                 with one that counts what is left, composing it from data-box-name.
+                 The static label is the name until that first render — the boxes are
+                 visible, tabbable role="button"s while /api/puzzle is in flight, and
+                 stay that way for good if it fails, so dropping it left three nameless
+                 buttons on the board. Keep them in step; e2e asserts both.
+                 The remaining digits go in a description, not the name: the name is
+                 re-announced on every change, and a focused box's name changes on every
+                 keypress, so a nine-digit list would be re-read on each one.
+                 The description targets are aria-hidden AND still describe their box.
+                 That is not a contradiction: accname 1.2 §4.1 includes a hidden node
+                 that aria-describedby references directly, and excludes it everywhere
+                 else — which is the point. They sit outside the boxes (renderBox's
+                 innerHTML would wipe a child, and a child counts as the button's own
+                 text), so left exposed they read as three unlabelled digit runs after
+                 the three boxes in browse mode and on a VoiceOver swipe.
+                 The cost: a browse-mode reader, or anyone with descriptions turned
+                 off, gets the count and not the digits. Jamie's call, 2026-11-01.
+                 e2e asserts the COMPUTED description, so if an engine ever stops
+                 honouring the hidden reference the suite says so rather than the
+                 description silently vanishing. -->
             <div data-digits class="flex gap-2 w-full mt-5" role="group" aria-label="Number boxes">
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="0" role="button" tabindex="0" aria-label="Hundreds box" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="1" role="button" tabindex="0" aria-label="Tens box" aria-expanded="false"></div>
-              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="2" role="button" tabindex="0" aria-label="Units box" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="0" role="button" tabindex="0" aria-label="Hundreds box" data-box-name="Hundreds box" aria-describedby="hundreds-box-digits" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="1" role="button" tabindex="0" aria-label="Tens box" data-box-name="Tens box" aria-describedby="tens-box-digits" aria-expanded="false"></div>
+              <div class="flex-1 aspect-square [container-type:inline-size] flex items-center justify-center bg-surface border-[1.5px] border-border rounded shadow-box cursor-pointer touch-manipulation select-none" data-digit="2" role="button" tabindex="0" aria-label="Units box" data-box-name="Units box" aria-describedby="units-box-digits" aria-expanded="false"></div>
+              <span id="hundreds-box-digits" data-box-digits="0" class="sr-only" aria-hidden="true"></span>
+              <span id="tens-box-digits" data-box-digits="1" class="sr-only" aria-hidden="true"></span>
+              <span id="units-box-digits" data-box-digits="2" class="sr-only" aria-hidden="true"></span>
             </div>
 
             <!-- Keypad -->
