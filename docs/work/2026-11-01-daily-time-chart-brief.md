@@ -108,7 +108,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     loading any page.
 
 ## 4. Maths
-Settled: Jamie 2026-11-01 (accepted item 28: Dave signs) · Sign-off: Dave pending (blocking) · Ack: n/a
+Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave pending (blocking — covers items 28 and 84–87) · Ack: n/a
 
 27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
 28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
@@ -119,6 +119,18 @@ Settled: Jamie 2026-11-01 (accepted item 28: Dave signs) · Sign-off: Dave pendi
     My rec: yes, Dave signs them here, as the maths owner, before Plan. Why: he set the
     log-scale requirement, and "top X%" is a number we publish to every player. Getting the
     definition wrong is cheap to fix but embarrassing to ship.
+84. p95 for the slow-tail clip is **nearest-rank**: it always lands on a real time, so at
+    n = 10 it is the slowest time and nothing clips. Clipping bites only once there is a
+    real tail. (reviewed 2026-11-01, accepted recommendation)
+85. Median at even n is the **mean of the middle two, rounded to the nearest second**. The
+    Idea-O disc rule then applies as written: drawn from n = 3, and only if nobody finished
+    on that second. (reviewed 2026-11-01, accepted recommendation)
+86. Where the ported Idea-O block disagrees with items 28, 84 and 85, the signed definitions
+    win. The plan changes the block to match and tests each definition. (reviewed
+    2026-11-01, accepted recommendation)
+87. A 0s time should never happen in practice. The 1s floor (item 21) stays only as a guard
+    against a junk or forged row, not as a case the design expects. Ties are by whole
+    second, matching how times are shown. (reviewed 2026-11-01)
 
 ## 5. State & persistence
 Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · Ack: Dave 2026-11-01 (relayed by Jamie)
@@ -250,7 +262,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64,
     the eight combinations. The cost: two new tokens, against a ceiling of 15 (CLAUDE.md).
 
 ## 8. Copy & wording
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened 2026-11-01 by item 88** · Ack: Dave pending
 
 55. Chart labels as on the canvas: Fastest, Median, Slowest, `— log time`. Your dot carries
     your time only. (assumed — designed and agreed on Idea-O/N)
@@ -285,6 +297,14 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     a sentence, and there is no room at 320px for `10m 05s` beside a neighbouring label.
     The cost: the same solve reads `0m 41s` in the hero and `41s` on the axis — the
     inconsistency `src/app.ts:833` warns about, accepted here as the price of fit.
+88. **Reopens items 56, 59 and 61.** Raised 2026-11-01 on item 28: the sole fastest player —
+    not tied — always reads a fastest line, never a percentile or "top 10%". Suggested
+    wordings: "You're fastest today" or "You solved fastest today".
+    My rec: "You're the **fastest** today". Why: it matches the rank frame used below 10
+    ("You're the **2nd fastest**"), so the line reads the same at every n.
+    Open: does this also replace item 61's n = 1 line ("You're the **first** to solve
+    today")? My rec: keep "first" at n = 1. Being fastest of one is not an achievement;
+    being first is. From n = 2 the fastest line takes over.
 
 ## 9. Accessibility
 Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026-11-01 · Ack: n/a (owned section)
@@ -338,7 +358,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     ungated (`src/app.ts:1082`).
 
 ## 11. Done / test plan
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations, plus item 89) · Ack: Dave pending
 
 Written before code. Each line is a check the build must pass.
 
@@ -390,3 +410,7 @@ Written before code. Each line is a check the build must pass.
     unit tests than by a browser. A full run buys little over that and costs the 40
     minutes CLAUDE.md warns about. Firefox is skipped locally (sandbox), so passes are
     counted per project, not read from the exit code.
+89. Before going live, a Fable review (`claude-fable-5-1`) checks the whole change against
+    this brief: the maths definitions, the copy at every state, the privacy rule (item 37),
+    contrast and accessibility. It sits alongside the review gates, not instead of them.
+    (Jamie, 2026-11-01)
