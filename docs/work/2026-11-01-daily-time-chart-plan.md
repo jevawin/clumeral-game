@@ -10,6 +10,8 @@ recorded with fixes in items 111–121, signed and acked.
 **Revision 3, 2026-11-01** — `da-plan` on revision 2 found 2 High, 4 Medium and 8 Low. All
 were checked against the code and all held. Every one is fixed here; the two that needed a
 product answer went to Jamie as brief items 122 and 123. See the revision log at the end.
+**Revision 4, 2026-11-01** — second `da-plan`, on revision 3: 2 Medium, 7 Low, no High. All
+fixed here; none needed a product answer.
 **Approval:** pending — Jamie.
 **da-plan:** pending.
 
@@ -112,7 +114,7 @@ Modify:
 - `tests/worker/analytics-db.spec.ts`, `tests/worker/schema.spec.ts`, `tests/worker-guard.spec.ts`,
   `tests/player-stats.spec.ts`, `tests/palette-contrast.spec.ts`, `tests/completion-stats.spec.ts`,
   `tests/sprites.spec.ts`
-- `e2e/helpers/console.ts` — a URL-scoped allow for the stubbed failure (Task 8)
+- `e2e/helpers/console.ts` — a per-test `allowUrl` on the guard (Task 8)
 - Docs: `docs/ANALYTICS.md`, `docs/ARCHITECTURE.md`, `docs/CONSIDERATIONS.md`,
   `docs/INVARIANTS.md`, `CLAUDE.md`
 
@@ -289,13 +291,16 @@ change to the service worker.
 Implements 12, 24, 40, 74. Commit: `feat(analytics): send the puzzle number with puzzle_time`.
 
 **Test first** — `e2e/specs/time-chart.spec.ts`, the first test of the file (the rest arrive
-in Task 8): `puzzle_time carries the puzzle number`. Do **not** freeze the clock to another
-day. `readAnswer` (`e2e/helpers/solve.ts:9`) returns the Worker's real UTC-today answer, so a
-browser on a different date loads a different puzzle and the guess is wrong. Freeze to
-`new Date()`, as `e2e/specs/player-stats.spec.ts:20` does. Solve with `solvePuzzle`, capture
-the `POST /api/event` request whose JSON `event` is `puzzle_time` via `page.waitForRequest`,
-and assert `puzzleNum` equals the number for that date. The test computes it as whole days
-from 2026-03-08, plus one. Also assert the `puzzle_complete` body has no `puzzleNum`
+in Task 8): `puzzle_time carries the puzzle number`. It runs on **real time, with no
+`freezeDate` and no `page.clock`**, as `e2e/specs/player-stats.spec.ts:7–19` explains:
+`readAnswer` (`e2e/helpers/solve.ts:9`) serves today's real answer, so a frozen other day
+loads the wrong puzzle, and the fake clock leaves clicks hanging during a solve.
+`e2e/specs/game-solve.spec.ts` solves the same way. Solve with `solvePuzzle`, capture the
+`POST /api/event` request whose JSON `event` is `puzzle_time` via `page.waitForRequest`, and
+assert `puzzleNum` equals the number for the **browser's local date** (the client keys the
+puzzle day on `todayKey`, not UTC). Read that date in the page with
+`page.evaluate(() => new Date().toLocaleDateString('en-CA'))`, then compute whole days from
+2026-03-08, plus one. Also assert the `puzzle_complete` body has no `puzzleNum`
 key (item 40: no other event changes). `app.ts` has no unit harness; this is the test that can
 fail.
 
@@ -322,7 +327,9 @@ Implements 63, 78 (formatDuration line), 115 (hour branch), 120. Commit: `feat(s
   plus `formatDuration(null, { compact: true })` → `'—'`.
 
 **Implementation** — `formatDuration(seconds: number | null, opts: { compact?: boolean } = {})`;
-when `opts.compact && seconds < 60` return `` `${seconds}s` ``. JSDoc says what compact is for
+after the existing `null` check (so `formatDuration(null, { compact: true })` still returns
+`'—'`; in JS `null < 60` is true), when `opts.compact && seconds < 60` return
+`` `${seconds}s` ``. JSDoc says what compact is for
 and that only the chart's own labels use it (item 63).
 
 ---
@@ -506,8 +513,9 @@ Layout (48, 52, 96, 105, 108):
 - at doubled widths (note 132, your box 88) and track 288, you at fraction 0.5 yields `below`.
   Across the sweep, a corner note never comes within 8px of your box.
 
-All-identical fields (115, 120), at n = 3 and n = 10, everyone on 41: one dot, size 17 at
-n = 3 and 21 at n = 10, `mine` true; refs exactly `[Fastest center]`; no median dot; copy
+All-identical fields (115, 120), at n = 3 and n = 10, everyone on 41: one dot, size 21 at
+both n = 3 and n = 10 (`13 + (3 − 1) × 4 = 21`, and the cap holds it at 21 for n = 10),
+`mine` true; refs exactly `[Fastest center]`; no median dot; copy
 `You're the joint fastest today`; spoken `3 players solved today, all in 41 seconds. Yours:
 41 seconds.` and the n = 10 equivalent.
 
@@ -570,6 +578,9 @@ out of `@theme`.
   `.time-chart__line` (1rem, weight 400, margin-block-start 0.875rem),
   `.time-chart__track` (position relative, block-size 7.25rem, margin-block-start 0.875rem),
   `.time-chart__axis` (top 3.625rem, block-size 1.5px, `--chart-line`),
+  `.time-chart__above, .time-chart__below` (position absolute, display flex, flex-direction
+  column, gap 0.125rem — the board's shared rule; the 2px gap is what lines the second-row
+  note of item 123 up with your time),
   `.time-chart__above` (top 0, weight 700), `.time-chart__below` (top 5.375rem),
   `.time-chart__t, .time-chart__w` (0.75rem / 0.875rem line-height, nowrap),
   `.time-chart__lead` (1px × 0.875rem, `--chart-line`), `--up` top 2rem, `--down`
@@ -578,15 +589,14 @@ out of `@theme`.
   0.75rem, no leader — Idea-R's `.note-s`, item 122), `.time-chart__dot` (top 3.625rem, translate −50%, radius full,
   `--chart-dot`, `border: 1.5px solid var(--color-bg)` per D14), `.time-chart__dot--you`
   (`--color-accent`, z-index 3).
-- The slot while busy: `[data-time-chart][aria-busy="true"]:empty { min-block-size: … }` with
-  the drawn card's height (item 54). The figure is measured in Task 7 from the drawn card in
-  the browser and written here in rem, with a comment saying so; Task 8's no-shift test is
-  what holds it.
+- The reserved height for the busy slot is **not** in this task. It is measured from the drawn
+  card in Task 7 and committed there (item 54).
 - No transition or animation on any `.time-chart` rule (51).
 
-`public/sprites.svg`: `<symbol id="icon-podium" viewBox="…">` per D15, with `fill="none"
-stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"`, matching the stroke style
-of the sprite's other Lucide-style symbols.
+`public/sprites.svg`: `<symbol id="icon-podium" viewBox="0 0 24 24">` per D15, copying
+`icon-trophy`'s attribute set exactly (`public/sprites.svg:248`), including
+`stroke-width="2"`, `stroke-linecap="round"` and `stroke-linejoin="round"`. The board's
+1.8 stroke is not used: every stroke in the sheet is 2 or 2.5.
 
 ---
 
@@ -715,8 +725,11 @@ jsdom has no layout, so these test structure and flow, not pixels. `fetch` is st
 copy lines and confirm each fits on one line: `You're in the top 99% of solve times`,
 `You're the joint 2nd fastest` and `You're the first to solve today`. If any wraps, stop and
 ask Jamie. It is a copy question (items 56, 59, 61), and a wrap breaks item 54's reserved
-height. Then measure the drawn card's height at a 375px viewport, default text, and write it
-into Task 6's reserved `min-block-size`.
+height. Then measure the drawn card's height at a 375px viewport, default text, and add this
+rule to `src/tailwind.css` in this task's commit, with the measured value in rem and a comment
+saying where it came from:
+`[data-time-chart][aria-busy="true"]:empty { min-block-size: <measured>rem; }`.
+Task 8's no-shift test is what holds it.
 
 ---
 
@@ -730,8 +743,11 @@ Not the full suite.
 (other projects skip with a reason). `test.use({ serviceWorkers: 'block' })`: `e2e/fixtures.ts`
 records that `page.route` is unreliable on WebKit with an active service worker, and the
 service worker sends `/api/` network-only anyway, so blocking it loses nothing this spec tests.
-`/api/times/*` is stubbed with `page.route` and a fixed field; history is seeded with
-`seedHistory` and the clock frozen with `freezeDate`, as `completion.spec.ts` does.
+`/api/times/*` is stubbed with `page.route` and a fixed field. **No test in this file uses
+`freezeDate` or `page.clock`.** History is seeded with `seedHistory`, relative to the real
+local today, using the `day(back)` helper pattern from `e2e/specs/player-stats.spec.ts:20–24`.
+The Task 3 test and the random-mode solve need real time; the seeded tests need nothing
+frozen, since the card reads today's entry and the stubbed field.
 
 - the Task 3 test (puzzle number on `puzzle_time`).
 - the card at n = 1, 3 and 12: the copy line, the sr sentence, `You` and your time, and the
@@ -744,14 +760,19 @@ service worker sends `/api/` network-only anyway, so blocking it loses nothing t
 - **no collisions at real widths:** at viewport widths 320, 375 and 512 (content 288, 343 and
   480 — item 96), read the `getBoundingClientRect()` of every label box and of the note.
   Assert no two overlap and every box is inside the track. Repeat at 200% root font size at a
-  352px viewport. `--page-gutter` is 1rem, so at 200% each gutter is 32px, and 352 is what
+  352px viewport. There, a `below` note is left out of the inside-track check: assert instead
+  that its top is below the track's bottom and that it overlaps no other box. `--page-gutter` is 1rem, so at 200% each gutter is 32px, and 352 is what
   gives 288px of content (at 320 it would be 256, below the floor). At 200%, with your dot
   near the middle, the note is the bottom caption (122).
 - a stubbed 500 collapses the slot (`hidden`), and the this-game, streak and all-time blocks
   are intact (23). Chromium's "Failed to load resource" text carries no URL, so a text
-  pattern cannot scope it. Extend `attachConsoleGuard` in `e2e/helpers/console.ts` with a
-  second list, `ALLOW_URL`, matched against `msg.location().url`. It holds
-  `/\/api\/times\//`, with a comment that it covers this spec's deliberate failure.
+  pattern cannot scope it. Add an `allowUrl(re: RegExp)` method to the `ConsoleGuard` that
+  `attachConsoleGuard` returns (`e2e/helpers/console.ts`). It suppresses a console error
+  whose `msg.location().url` matches. Only this one test calls
+  `consoleGuard.allowUrl(/\/api\/times\//)`, so no other spec hides an `/api/times/` error.
+  When writing it, confirm on `mobile-webkit` that `location().url` is the failed resource's
+  URL. If WebKit reports something else, match that instead, and record what it reports in a
+  comment.
 - absent in random (solve `/random`), archive (`/archive/<date>` solved view) and marker
   (seeded marker for today) modes, and in marker mode no request to `/api/times/` is made.
 - axe on `/solved` with the card drawn, light and dark, using `a11y.spec.ts`'s existing
@@ -800,8 +821,12 @@ Implements 44, 81, 82, 89, 108.
    daily, see the card, reload `/solved`, and confirm your second comes back from
    `/api/times/<num>` with the header removed (DevTools, or `curl` without it) — this proves
    the row landed with its number, since NULL rows are never returned (81).
-4. Read `time_chart` events from the preview host's own `/stats` page, which reads
-   `clumeral-analytics-preprod` filtered to that hostname — no `wrangler d1 … --remote` (81).
+4. Read the `time_chart` count from the `events` array of `/api/stats?period=7` on the preview
+   host. It reads `clumeral-analytics-preprod` filtered to that hostname, so no
+   `wrangler d1 … --remote` is needed (81). The `/stats` page itself shows a fixed list of
+   events (`src/worker/stats.ts:215–255`), so `time_chart` does not appear there. The
+   drawn/failed split cannot be read without remote D1. That is accepted: item 81 asks that
+   the events arrive, and the count shows that.
 5. Screenshots at content widths 288, 343 and 480 for Jamie to compare against Idea-O,
    including the D13 note placement (81, 108).
 6. Gates, in the order CLAUDE.md sets: human review → `da-build` → Fable review
@@ -885,3 +910,18 @@ needs 2, 4, 5 and 6. Task 8 needs 7. Each task is its own commit.
 | L6: the INVARIANTS rule needs a seen-to-fail test | Task 9 |
 | L7: float equality on √(lo·hi) | `toBeCloseTo` |
 | L8: no-shift test viewport unstated; copy may wrap | Task 7 measures and stops on a wrap; Task 8 states viewports |
+
+**Revision 4** — second `da-plan`, on revision 3, 2026-11-01. It confirmed every revision 3
+fix holds against the code.
+
+| Finding | Fix |
+|---|---|
+| M1: the all-identical test expected size 17 at n = 3; the formula gives 21 | Expect 21 at n = 3 and n = 10 |
+| M2: the clock advice repeated the earlier M4 problem; `player-stats.spec.ts` freezes nothing | No `freezeDate` anywhere in the spec; seed relative to the real today; derive the number from the local date |
+| L1: the icon attributes disagreed between D15 and Task 6 | Task 6 copies `icon-trophy` exactly |
+| L2: `/stats` does not list `time_chart` | Read `/api/stats` instead; the drawn/failed split is accepted as unreadable |
+| L3: a placeholder height was committed in Task 6 | The rule moves to Task 7, after the measurement |
+| L4: the shared `above`/`below` rule was missing | Listed, with the 2px gap |
+| L5: the inside-track check fails for the caption | The caption is checked as below the track instead |
+| L6: `null < 60` | Compact branch after the null check, stated |
+| L7: a shared `ALLOW_URL`, and WebKit unverified | A per-test `allowUrl`; verify on WebKit when writing |
