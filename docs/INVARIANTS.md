@@ -96,14 +96,18 @@ response merely contains one extra field.
 
 Its privacy sibling, for the one route that reads other players' data, is P8.
 
-**The other door.** `GET /api/dev/answer` returns today's answer by design, for the solve
-helpers. Until #367 shipped it refused only the `clumeral.com` hostname, so it answered on the
-production deployment's own workers.dev address, which reads the same KV. Found on
-2026-11-01, still live on 2026-11-24, when the fix was rebased for release. It now fails
-closed: `devAnswerAllowed` allows localhost and branch previews only, pinned by
-`tests/worker-guard.spec.ts`.
+**The other door, half closed.** `GET /api/dev/answer` returns today's answer by design,
+for the solve helpers. Until #367 shipped it refused only the `clumeral.com` hostname, so it
+answered on the production deployment's own workers.dev address, which reads the same KV.
+Found on 2026-11-01, still live on 2026-11-24, when the fix was rebased for release.
+It now fails closed outside localhost and branch previews (`devAnswerAllowed`, pinned by
+`tests/worker-guard.spec.ts`). **It is still open on every preview:** previews read the
+same PUZZLES KV, the repository is public so branch names are public, and
+`staging-clumeral-game.jevawin.workers.dev/api/dev/answer` returns today's real answer.
+Closing it means taking the no-token path off previews, which removes the preview
+Testing panel's fill and solve buttons, or gating it on a secret. Not yet decided.
 
-**Guarded by.** *Nothing, directly.* `docs/ARCHITECTURE.md` states the rule, and the route tests
+**Guarded by.** For `/api/puzzle`, *nothing, directly.* `docs/ARCHITECTURE.md` states the rule, and the route tests
 exercise the endpoints, but no test asserts the answer is **absent** from an `/api/puzzle`
 response. (The `answer` assertions in `tests/save-pref.spec.ts` are about a stored history row
 when score-saving is off — a different thing.) One assertion per puzzle kind, that the response
