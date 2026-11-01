@@ -197,7 +197,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     player has as much reason to see it as anyone — arguably more.
 
 ## 7. How it looks
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
 
 47. The design is Idea-O: a horizontal log axis, one dot per distinct second sized by how
     many share it, your dot solid accent with your time above it, Fastest / Median / Slowest
@@ -234,3 +234,40 @@ Settled: pending · Ack: pending
     Why: inserting it late pushes Current streaks and All time down mid-read. A failure
     still shifts, but failure is the rare case. The cost: an empty 235px gap for the
     length of one request.
+
+## 8. Copy & wording
+Settled: pending · Ack: pending
+
+55. Chart labels as on the canvas: Fastest, Median, Slowest, `— log time`. Your dot carries
+    your time only. (assumed — designed and agreed on Idea-O/N)
+56. Below 10 times, the line is an ordinal rank: "You're the **2nd fastest**". Ties read
+    "joint": "You're the **joint 2nd fastest**". The copy never calls you "slowest" — last of
+    five reads "5th fastest". (assumed — item 19; the chart already shows where you are)
+57. No loading copy, no error copy. The reserved space is empty while loading and collapses
+    on failure. (assumed — items 23, 54)
+58. No caveat that the field counts only players with saving on. (assumed — true of every
+    figure we publish, and a footnote on a garnish is noise)
+59. From 10 times, the percentile line. The handover quotes it as "You're in the **top 70%**
+    solve times". Keep it, or add "of"?
+    My rec: "You're in the **top 70%** of solve times". Why: without "of" it does not parse
+    as English. If the canvas dropped it on purpose to fit a line, the measured width at
+    320px (item 52) will tell us; fix the width, not the grammar.
+60. The slowest player at 10+ reads "top 100%" (handover §4.1). What do they see?
+    My rec: no rank at all: "**{n} players** solved today". The chart still shows their dot.
+    Why: there is no honest phrasing of last place that does not read as a dig, and a
+    euphemism ("steadiest solver") reads as one too. The dot already tells them the truth.
+    Applies only to the strictly slowest — anyone tied with someone faster keeps a percentile.
+61. n = 1: you are the only time today. "You're the **fastest**" of one is silly.
+    My rec: "You're the **first** to solve today". Why: it is true, it is the one moment
+    being early is the story, and item 25's refresh turns it into a rank later.
+62. The other panel blocks have headings ("Current streaks", "All time"). This one?
+    My rec: "Everyone today". Why: it names the comparison in two words, and "today"
+    separates it from the history blocks below.
+63. Time format (handover §4.2). `formatDuration` renders sub-minute as `0m 41s`; the axis
+    labels need `41s` to fit.
+    My rec: `formatDuration` gains a compact option, used only for the chart's own labels.
+    The percentile line, the hero and every other figure keep the current form.
+    Why: one formatter keeps the rules in one place. Axis labels are a different job from
+    a sentence, and there is no room at 320px for `10m 05s` beside a neighbouring label.
+    The cost: the same solve reads `0m 41s` in the hero and `41s` on the axis — the
+    inconsistency `src/app.ts:833` warns about, accepted here as the price of fit.
