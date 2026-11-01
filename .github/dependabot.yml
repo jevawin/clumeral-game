@@ -154,6 +154,41 @@ updates:
       # onto one miniflare.
       - dependency-name: "@cloudflare/vite-plugin"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # wrangler is the DIRECT route to the same prerelease runtime, and until now
+      # the only unguarded one: the cloudflare group above allows its minors, so
+      # Dependabot proposed 4.80.0 -> 4.155.0 in #354. That PR's own lockfile took
+      # root miniflare 4.20260401.0 -> 5.20261023.2-beta and workerd
+      # 1.20260401.1 -> 1.20261023.1, which is #325 verbatim: `npm run e2e:db`
+      # writes `.wrangler` with the new workerd, `vite preview` cannot read it
+      # back, and e2e dies before a test runs.
+      #
+      # Where the crossover actually sits, measured 2026-11-01:
+      #
+      #   4.80.0 (ours) -> miniflare 4.20260401.0
+      #   4.81.1        -> miniflare 4.20260409.0
+      #   4.116.0       -> miniflare 4.20260730.0   <- last on 4
+      #   4.117.0       -> miniflare 5.20260730.0-alpha
+      #   4.155.0       -> miniflare 5.20261023.2-beta
+      #
+      # So minors are not inherently unsafe — everything up to 4.116.0 is on
+      # miniflare 4. But Dependabot proposes the LATEST allowed version, not the
+      # latest safe one, and `update-types` cannot express "minors below 4.117.0".
+      #
+      # `versions: [">=4.117.0"]` COULD express it, and is deliberately not used:
+      # @cloudflare/vite-plugin@1.31.0 pins wrangler 4.80.0 exactly, so raising
+      # root to 4.116.0 would put two different miniflare 4 builds in one tree
+      # (root 4.20260730.0, the plugin's 4.20260401.0) with different workerds —
+      # the same split that #325 broke on, in miniflare-4 flavour. Worth doing,
+      # with an e2e run behind it, which makes it #331's job and not an ignore
+      # entry's.
+      #
+      # Be clear what this costs: 4.80.0 is the last 4.80.x, so no patch will ever
+      # come and this is a permanent pin, security patches included. Same bargain
+      # as @cloudflare/vitest-pool-workers above, and it ends the same way — in
+      # #331, which bumps the plugin, wrangler and the types together onto one
+      # miniflare. Remove this with the other two there.
+      - dependency-name: "wrangler"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     # Same reasoning as the npm block above.
