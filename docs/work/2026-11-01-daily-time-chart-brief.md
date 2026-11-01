@@ -110,7 +110,10 @@ Settled: pending · Ack: n/a (owned section — Dave signs)
 
 27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
 28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
-    the p95 clip and the 1s floor (item 21). Does Dave sign those?
+    the p95 clip and the 1s floor (item 21). Proposed definition, for n times including
+    yours: `top X%`, where X = ceil(100 × (count strictly faster than you + 1) / n).
+    Fastest of 10 → top 10%. Slowest of 10 → top 100%. Ties share the better figure.
+    Does Dave sign those?
     My rec: yes, Dave signs them here, as the maths owner, before Plan. Why: he set the
     log-scale requirement, and "top X%" is a number we publish to every player. Getting the
     definition wrong is cheap to fix but embarrassing to ship.
