@@ -599,3 +599,52 @@ describe('the panel colours itself once, at the top', () => {
     expect(block).not.toMatch(/#[0-9a-f]{3,8}/i);
   });
 });
+
+// The "Everyone today" slot (time chart brief items 4, 22, 46, 53). Only the
+// slot is tested here; tests/time-chart-view.spec.ts covers what is drawn in it.
+describe('the time chart slot', () => {
+  beforeEach(() => {
+    setupDOM();
+    vi.resetModules();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+    // Held forever, so the slot stays in its reserved state.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const slot = () => panel().querySelector<HTMLElement>('[data-time-chart]');
+  const order = () => [...panel().children].map((el) => (el as HTMLElement).dataset.statBlock);
+
+  it('sits empty and busy straight after this game, above the streaks, in full mode', async () => {
+    await render(RETURNING, 2, false, { seconds: 221 });
+    expect(slot()).not.toBeNull();
+    expect(slot()!.innerHTML).toBe('');
+    expect(slot()!.getAttribute('aria-busy')).toBe('true');
+    expect(order().slice(0, 3)).toEqual(['this-game', 'everyone-today', 'streak']);
+  });
+
+  it('is there in new and saving-off modes', async () => {
+    await render([{ date: day(0), tries: 2, seconds: 100 }], 2, false, { seconds: 100 });
+    expect(slot()?.getAttribute('aria-busy')).toBe('true');
+    setupDOM();
+    vi.resetModules();
+    await render([{ date: day(0), tries: 0, marker: true }], 2, false, { seconds: 41 }, { saveScore: false });
+    expect(slot()?.getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('is absent for random, archive and marker, and without a time', async () => {
+    await render(RETURNING, 2, true, { seconds: 221 });
+    expect(slot()).toBeNull();
+    await render(RETURNING, 3, false, { activeDate: '2026-07-01', todayLocal: TODAY, seconds: 200 });
+    expect(slot()).toBeNull();
+    await render([{ date: day(0), tries: 0, marker: true }], null, false, {}, { saveScore: false });
+    expect(slot()).toBeNull();
+    await render(RETURNING, 2, false, {});
+    expect(slot()).toBeNull();
+  });
+});

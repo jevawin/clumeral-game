@@ -19,6 +19,7 @@ import { isWalkthroughActive } from './walkthrough.ts';
 import { showScreen, getCurrentScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
+import { initTimeChart } from './time-chart-view.ts';
 import { renderCompletion, resetCompletionAnnouncement, heroLine } from './completion.ts';
 import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
 
@@ -1584,6 +1585,9 @@ initFeedbackModal(todayKey, puzzleNumberFor, formatDate);
 
 // Pre-render welcome content so navigate('/welcome') has something to show.
 initWelcome();
+// The results card's request leaves the player's own row out by this uid (time
+// chart brief item 91). Handed over once so the view never reads storage itself.
+initTimeChart({ uid: analyticsUid });
 
 // Pre-render completion content if today is already solved (SLV-02 parity).
 const _todayHistoryAtBoot = todayEntry();

@@ -739,6 +739,13 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 
      No transition or animation on any rule here: the dots are drawn in place
      (item 51). */
+  /* The reserved space while the field loads (item 54), so the card arriving
+     does not push Current streaks down mid-read. 12.1rem is the drawn card's
+     height, measured 2026-11-01 at a 375px viewport and default text, in
+     Chromium and WebKit alike (193.6px), with a one-line copy line — the three
+     longest lines all fit one line at 288px. e2e/specs/time-chart.spec.ts's
+     no-shift test holds it. */
+  [data-time-chart][aria-busy="true"]:empty { min-block-size: 12.1rem; }
   .time-chart__line {
     margin: 0;
     margin-block-start: 0.875rem;
