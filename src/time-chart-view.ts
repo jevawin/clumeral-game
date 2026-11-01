@@ -17,6 +17,7 @@ import {
   refsFit,
   ranking,
   spokenSummary,
+  TRACK_INSET,
   type FieldRow,
   type Geometry,
 } from './time-chart.ts';
@@ -136,7 +137,10 @@ function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[]): void {
   const dots = g.dots
     .map((d) => {
       const cls = d.mine ? 'time-chart__dot time-chart__dot--you' : 'time-chart__dot';
-      return `<span class="${cls}" style="left: ${(d.fraction * 100).toFixed(2)}%; inline-size: ${d.size}px; block-size: ${d.size}px"></span>`;
+      // The same inset span the labels use (trackX), in CSS so it needs no
+      // re-layout when the track resizes.
+      const left = `calc(${TRACK_INSET}px + ${d.fraction.toFixed(4)} * (100% - ${2 * TRACK_INSET}px))`;
+      return `<span class="${cls}" style="left: ${left}; inline-size: ${d.size}px; block-size: ${d.size}px"></span>`;
     })
     .join('');
   // Below the axis the time is nearest the line, so it comes first; above it,
@@ -179,8 +183,8 @@ function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[]): void {
 
 const FLEX = { start: 'flex-start', center: 'center', end: 'flex-end' } as const;
 
-/** Measure the rendered labels and position them (item 50). Dots are placed by
- *  percentage in draw() and need no re-layout. */
+/** Measure the rendered labels and position them (item 50). Dots are placed in
+ *  CSS in draw() and need no re-layout. */
 function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   const width = track.clientWidth;
   // Not laid out (the screen is hidden): nothing to measure, and the observer

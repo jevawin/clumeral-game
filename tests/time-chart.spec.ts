@@ -8,6 +8,7 @@ import {
   median,
   ordinal,
   refsFit,
+  TRACK_INSET,
   percentile,
   rankCopy,
   ranking,
@@ -67,19 +68,20 @@ describe('positions on the log axis', () => {
 });
 
 describe('dot sizes', () => {
-  it('grows by 4px a player and caps at 21', () => {
+  // Item 128: 11px and 15px, up from the board's 9 and 13; the cap moves to 23.
+  it('grows by 4px a player and caps at 23', () => {
     const g = geometry(buildField([{ second: 10, count: 1 }, { second: 20, count: 3 }, { second: 30, count: 7 }], 40));
     expect(g.dots.map((d) => [d.size, d.mine])).toEqual([
-      [9, false],
-      [17, false],
-      [21, false],
-      [13, true],
+      [11, false],
+      [19, false],
+      [23, false],
+      [15, true],
     ]);
   });
 
-  it('makes yours 21 when two strangers share your second', () => {
+  it('makes yours 23 when two strangers share your second', () => {
     const g = geometry(buildField([{ second: 41, count: 2 }, { second: 90, count: 1 }], 41));
-    expect(g.dots.find((d) => d.mine)?.size).toBe(21);
+    expect(g.dots.find((d) => d.mine)?.size).toBe(23);
   });
 });
 
@@ -103,14 +105,14 @@ describe('the median', () => {
     expect(g.dots).toHaveLength(f.tally.size);
   });
 
-  it('at even n off any real time draws one extra 9px disc', () => {
+  it('at even n off any real time draws one extra 11px disc', () => {
     const f = field([10, 20, 40], 31);
     const g = geometry(f);
     expect(g.refs.find((r) => r.word === 'Median')?.seconds).toBe(26);
     expect(g.dots).toHaveLength(f.tally.size + 1);
     const lo = Math.log(10);
     const disc = dotAt(g, (Math.log(26) - lo) / (Math.log(40) - lo));
-    expect(disc).toEqual({ fraction: expect.any(Number), size: 9, mine: false });
+    expect(disc).toEqual({ fraction: expect.any(Number), size: 11, mine: false });
   });
 
   it('at even n on a real time draws no extra disc', () => {
@@ -253,6 +255,15 @@ describe('layout', () => {
     }
   });
 
+  // Item 128: the end dots come in by TRACK_INSET, so the end leaders sit on
+  // their dots' centres inside the track rather than on its edges.
+  it('maps fractions into the inset span', () => {
+    const { refs, you } = run(geometry(field([10, 1000], 100)), 288);
+    expect(refs[0].at).toBe(TRACK_INSET);
+    expect(refs[2].at).toBe(288 - TRACK_INSET);
+    expect(you.at).toBeCloseTo(144, 9);
+  });
+
   it('anchors your box inward at the ends and centres it in the middle', () => {
     const at = (strangers: number[], yours: number) => run(geometry(field(strangers, yours)), 288).you.align;
     expect(at([1000], 10)).toBe('start');
@@ -306,7 +317,7 @@ describe('all-identical fields', () => {
     it(`at n = ${n}: one dot, Fastest only, joint fastest`, () => {
       const f = field(Array(n - 1).fill(41), 41);
       const g = geometry(f);
-      expect(g.dots).toEqual([{ fraction: 0.5, size: 21, mine: true }]);
+      expect(g.dots).toEqual([{ fraction: 0.5, size: 23, mine: true }]);
       expect(g.refs.map((r) => [r.word, r.anchor, r.seconds])).toEqual([['Fastest', 'center', 41]]);
       expect(copy(Array(n - 1).fill(41), 41)).toBe("You're the joint fastest today");
       expect(spokenSummary(f, g)).toBe(`${n} players solved today, all in 41 seconds. Yours: 41 seconds.`);

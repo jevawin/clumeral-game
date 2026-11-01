@@ -125,6 +125,20 @@ export interface Geometry {
   you: { fraction: number; seconds: number };
 }
 
+const DOT = 11;
+const DOT_YOU = 15;
+const DOT_MAX = 23;
+
+/** How far the ends of the axis are drawn in from the track's edges: half the
+ *  largest dot, so an end dot sits whole inside the track and its leader runs to
+ *  its centre rather than to the edge (item 128). */
+export const TRACK_INSET = DOT_MAX / 2;
+
+/** A fraction of the axis as px along a track `track` wide. */
+export function trackX(fraction: number, track: number): number {
+  return TRACK_INSET + fraction * (track - 2 * TRACK_INSET);
+}
+
 export function geometry(field: Field): Geometry {
   const { sorted, tally, yours, n } = field;
   // ln(0) is undefined, so 0 is placed at 1s (items 21, 87). A guard against a
@@ -148,12 +162,13 @@ export function geometry(field: Field): Geometry {
   const lnSpan = Math.log(hi) - lnLo;
   const fraction = (t: number) => (flat ? 0.5 : (Math.log(p(t)) - lnLo) / lnSpan);
 
-  // ONE DOT PER DISTINCT TIME, grown by how many people share that second.
+  // ONE DOT PER DISTINCT TIME, grown by how many people share that second. 11px
+  // and 15px, up from the board's 9 and 13, with the cap at 23 (Jamie, item 128).
   const dots: Dot[] = [...tally.keys()]
     .sort((a, b) => a - b)
     .map((t) => {
       const mine = t === yours;
-      return { fraction: fraction(t), size: Math.min(21, (mine ? 13 : 9) + (tally.get(t)! - 1) * 4), mine };
+      return { fraction: fraction(t), size: Math.min(DOT_MAX, (mine ? DOT_YOU : DOT) + (tally.get(t)! - 1) * 4), mine };
     });
 
   // The median rides along as an ordinary disc, because the word below it names
@@ -161,7 +176,7 @@ export function geometry(field: Field): Geometry {
   // it to belong to; and only when nobody finished on that second, or it would
   // stack a second dot on a person already there (item 85).
   const med = median(sorted);
-  if (n >= 3 && !tally.has(med)) dots.push({ fraction: fraction(med), size: 9, mine: false });
+  if (n >= 3 && !tally.has(med)) dots.push({ fraction: fraction(med), size: DOT, mine: false });
 
   // WHICH REFERENCES EXIST DEPENDS ON HOW MANY HAVE FINISHED. With every dot on
   // one second, Median and Slowest would say the same thing three times, so a
@@ -218,7 +233,7 @@ export function layout(input: {
   // A box hangs off whichever corner its leader arrives at.
   const refs: Box[] = g.refs.map((r, k) => {
     const width = refWidths[k];
-    const at = r.fraction * track;
+    const at = trackX(r.fraction, track);
     const left = r.anchor === 'start' ? at : r.anchor === 'end' ? at - width : at - width / 2;
     return { left, width, align: r.anchor, at };
   });
@@ -245,7 +260,7 @@ export function layout(input: {
   // collide whatever your time is. Your label takes the same corner rule:
   // centred, it would be clamped at the edges, and a clamped box with centred
   // text leaves its own leader behind.
-  const at = g.you.fraction * track;
+  const at = trackX(g.you.fraction, track);
   const align: Box['align'] =
     at - youWidth / 2 < 0 ? 'start' : at + youWidth / 2 > track ? 'end' : 'center';
   const left = align === 'start' ? at : align === 'end' ? at - youWidth : at - youWidth / 2;

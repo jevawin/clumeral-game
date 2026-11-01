@@ -125,22 +125,22 @@
   --page-gutter: 1rem;
 }
 
-/* The "Daily leaderboard" time chart's two shades (time chart brief items 64, 69,
+/* The "Daily leaderboard" time chart's dot shade (time chart brief items 64, 69,
    97). Not new colours: mixes of the accent and the text into the page
    background, as --color-border is a mix of the text. Into --color-bg, not
    transparent, so the dots are opaque, overlapping dots do not darken, and the
    ratio is computable. 72% and 55% are set by the 3:1 floor against --color-bg
-   in all eight theme × mode combinations — tightest is Lime light at 3.22 for
-   the dots; the line is 3.54 light, 5.95 dark. tests/palette-contrast.spec.ts
-   pins both the maths and these exact declarations.
+   in all eight theme × mode combinations — tightest is Lime light at 3.22.
+   tests/palette-contrast.spec.ts pins the maths and this exact declaration.
+   The chart's lines are solid --color-text now (item 128), so they need no
+   shade of their own.
 
    Outside @theme on purpose (plan D18): tests/token-parity.spec.ts requires every
    @theme --color-* to be mirrored in the Worker's /archive page, which never
-   shows the chart. They still count against the 15-token ceiling: 12 in all.
+   shows the chart. It still counts against the 15-token ceiling: 11 in all.
    Dark mode re-resolves them because :root and html.dark are the same element. */
 :root {
   --chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-bg));
-  --chart-line: color-mix(in srgb, var(--color-text) 55%, var(--color-bg));
 }
 
 /* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
@@ -767,12 +767,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     margin-block-start: 0.875rem;
     color: var(--color-text);
   }
+  /* Lines are solid text colour, 1.5px — white in dark mode (Jamie, item 128).
+     The axis is centred on the dots' centre line. */
   .time-chart__axis {
     position: absolute;
     inset-inline: 0;
-    top: 3.875rem;
+    top: calc(3.875rem - 0.75px);
     block-size: 1.5px;
-    background: var(--chart-line);
+    background: var(--color-text);
   }
   /* The 2px gap is what lines the second-row note (item 123) up with your time. */
   .time-chart__above, .time-chart__below {
@@ -798,14 +800,19 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   /* The label is placed to FIT; the LEADER marks the TRUE position. Three labels
      cannot always sit centred on their own dots without touching, so the label
      moves and the line stays honest. */
+  /* Each leader runs from 2px off its text right to the axis, under its dot, so
+     it meets the dot rather than stopping short of it (item 128). Centred on its
+     mark by the translate. */
   .time-chart__lead {
     position: absolute;
-    inline-size: 1px;
-    block-size: 0.875rem;
-    background: var(--chart-line);
+    z-index: 1;
+    inline-size: 1.5px;
+    block-size: 1.625rem;
+    transform: translateX(-50%);
+    background: var(--color-text);
   }
   .time-chart__lead--up { top: 2.25rem; }
-  .time-chart__lead--down { top: 4.625rem; }
+  .time-chart__lead--down { top: 3.875rem; }
   /* The axis note, on the second row of the top corner furthest from your dot
      (items 48, 123), level with your time. It is the axis's key, not a label on
      a mark, so it has no leader (item 124). max-content in every position, so
@@ -836,6 +843,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     top: 3.875rem;
     box-sizing: border-box;
     border-radius: 9999px;
+    z-index: 2;
     transform: translate(-50%, -50%);
     background: var(--chart-dot);
     border: 1.5px solid var(--color-bg);

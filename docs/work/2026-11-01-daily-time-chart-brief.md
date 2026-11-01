@@ -679,3 +679,13 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     depend on `/api/dev/answer`, which 404s there. The field choice lives in sessionStorage
     for the tab. It replaces the visible fill-answer link the #226 redesign removed, so no
     separate roadmap item is needed for it. (Jamie 2026-11-01)
+128. (amends 47, 64, 66, 78's sizes, 105's port) **Heavier chart, from the preview on an
+    iPhone, where it read as spindly.** (Jamie 2026-11-01)
+    - The axis and every leader are solid `--color-text`, 1.5px: white in dark mode.
+      `--chart-line` is gone; text on bg already clears 4.5:1 in every combination.
+    - Leaders run from 2px off their text right to the axis, under the dot, so they meet
+      it. Dots draw over them.
+    - The axis ends come in by half the largest dot (11.5px), so the end dots sit whole
+      inside the track and the Fastest and Slowest leaders sit on their dots' centres.
+    - Dots are 11px, yours 15px, +4 per extra player, capped at 23 (were 9, 13 and 21).
+      Your dot stays larger than everyone else's (item 66).
