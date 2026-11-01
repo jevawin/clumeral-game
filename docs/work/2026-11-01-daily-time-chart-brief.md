@@ -698,3 +698,12 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     preview; costs raised with it: the dense end of a busy day merges into one shape, your
     dot is now 4px larger on a 13px base (was 6px on 9, then 4 on 11), and 15px labels sit
     1px under the 16px copy line. (Jamie 2026-11-01)
+131. (amends 130's dot sizes, 47, 66) **Adaptive dot sizing.** The base size is the axis
+    length divided by the number of distinct seconds, between 5px and 13px, so a quiet day
+    keeps 13px dots and a busy one shrinks. A shared second grows by area in proportion to
+    its count (base × √count) rather than +4px a player, which capped out at four. All dots
+    cap at 25px. Yours is 4px larger than a stranger's on the same count and never under
+    11px. Dots under 11px get a 1px ring instead of 1.5px. Recent peaks: 194, ~90 and 42
+    plays a day; past about 50 players the dots still form a band, which a busy-day view
+    would answer (not yet briefed). Testing panel gains 50, 100, 200 and 500-player fields.
+    Dave's sign-off is owed: dot area now encodes a count. (Jamie 2026-11-01)

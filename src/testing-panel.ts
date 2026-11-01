@@ -36,6 +36,7 @@ export const FIELD_PRESETS = [
   { id: '20', label: '20 players' },
   { id: '50', label: '50 players' },
   { id: '100', label: '100 players' },
+  { id: '200', label: '200 players' },
   { id: '500', label: '500 players' },
   { id: 'tie', label: 'Tied fastest' },
   { id: 'flat', label: 'All the same' },
@@ -89,6 +90,7 @@ export function fieldPreset(name: FieldPreset, yours: number, rng = Math.random)
       return rows(BOARD_DAY);
     case '50':
     case '100':
+    case '200':
     case '500': {
       // A busy day: n players in all, you included, log-normal round two minutes.
       const next = seeded(Number(name));

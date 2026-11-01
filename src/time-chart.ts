@@ -110,7 +110,8 @@ export function rankCopy(r: Ranking): { pre: string; bold: string; post: string 
 
 export interface Dot {
   fraction: number;
-  size: number;
+  /** Players who finished on this second; 0 for the median disc, which is not a player. */
+  count: number;
   mine: boolean;
 }
 export interface Ref {
@@ -126,8 +127,35 @@ export interface Geometry {
 }
 
 const DOT = 13;
-const DOT_YOU = 17;
+const DOT_MIN = 5;
+const DOT_YOU_MIN = 11;
 const DOT_MAX = 25;
+
+/**
+ * The base dot size: the axis length divided by the number of distinct seconds
+ * on it, between 5px and 13px (Jamie, item 131). What crowds the axis is how
+ * many dots share it, not how many people played, so a quiet day gets 13px dots
+ * and a busy one shrinks towards 5px. A wider track keeps bigger dots longer.
+ */
+export function dotBase(distinct: number, track: number): number {
+  const span = track - 2 * TRACK_INSET;
+  return Math.min(DOT, Math.max(DOT_MIN, Math.round(span / Math.max(1, distinct))));
+}
+
+/**
+ * Every dot's diameter in px, in geometry order. A shared second grows by AREA
+ * in proportion to its count (base × √count), so size keeps meaning something on
+ * a busy day instead of hitting the cap at four players, as +4px each did. All
+ * capped at 25. Yours is 4px larger than a stranger's on the same count, and
+ * never under 11, so it stays findable when the base shrinks (item 66).
+ */
+export function dotSizes(g: Geometry, track: number): number[] {
+  const base = dotBase(g.dots.filter((d) => d.count > 0).length, track);
+  return g.dots.map((d) => {
+    const s = Math.min(DOT_MAX, base * Math.sqrt(Math.max(1, d.count)));
+    return Math.round(d.mine ? Math.min(DOT_MAX, Math.max(DOT_YOU_MIN, s + 4)) : s);
+  });
+}
 
 /** How far the ends of the axis are drawn in from the track's edges: half the
  *  largest dot, so an end dot sits whole inside the track and its leader runs to
@@ -162,14 +190,13 @@ export function geometry(field: Field): Geometry {
   const lnSpan = Math.log(hi) - lnLo;
   const fraction = (t: number) => (flat ? 0.5 : (Math.log(p(t)) - lnLo) / lnSpan);
 
-  // ONE DOT PER DISTINCT TIME, grown by how many people share that second. 13px
-  // and 17px, up from the board's 9 and 13, with the cap at 25 (Jamie, items
-  // 128, 130).
+  // ONE DOT PER DISTINCT TIME. Its size depends on the track's width as well as
+  // its count, so it is worked out at layout time by dotSizes (item 131).
   const dots: Dot[] = [...tally.keys()]
     .sort((a, b) => a - b)
     .map((t) => {
       const mine = t === yours;
-      return { fraction: fraction(t), size: Math.min(DOT_MAX, (mine ? DOT_YOU : DOT) + (tally.get(t)! - 1) * 4), mine };
+      return { fraction: fraction(t), count: tally.get(t)!, mine };
     });
 
   // The median rides along as an ordinary disc, because the word below it names
@@ -177,7 +204,7 @@ export function geometry(field: Field): Geometry {
   // it to belong to; and only when nobody finished on that second, or it would
   // stack a second dot on a person already there (item 85).
   const med = median(sorted);
-  if (n >= 3 && !tally.has(med)) dots.push({ fraction: fraction(med), size: DOT, mine: false });
+  if (n >= 3 && !tally.has(med)) dots.push({ fraction: fraction(med), count: 0, mine: false });
 
   // WHICH REFERENCES EXIST DEPENDS ON HOW MANY HAVE FINISHED. With every dot on
   // one second, Median and Slowest would say the same thing three times, so a

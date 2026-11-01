@@ -8,6 +8,8 @@ import {
   median,
   ordinal,
   refsFit,
+  dotBase,
+  dotSizes,
   TRACK_INSET,
   percentile,
   rankCopy,
@@ -68,20 +70,64 @@ describe('positions on the log axis', () => {
 });
 
 describe('dot sizes', () => {
-  // Items 128, 130: 13px and 17px, up from the board's 9 and 13; the cap is 25.
-  it('grows by 4px a player and caps at 25', () => {
+  // Item 131: the base size follows how many distinct seconds share the track,
+  // and a shared second grows by area in proportion to its count.
+  const strangers = (k: number) => Array.from({ length: k }, (_, i) => 10 + i * 7);
+
+  it('carries each second\'s player count, and 0 for the median disc', () => {
     const g = geometry(buildField([{ second: 10, count: 1 }, { second: 20, count: 3 }, { second: 30, count: 7 }], 40));
-    expect(g.dots.map((d) => [d.size, d.mine])).toEqual([
-      [13, false],
-      [21, false],
-      [25, false],
-      [17, true],
+    expect(g.dots.map((d) => [d.count, d.mine])).toEqual([
+      [1, false],
+      [3, false],
+      [7, false],
+      [1, true],
     ]);
+    const disc = geometry(field([10, 20, 40], 31)).dots.at(-1)!;
+    expect(disc.count).toBe(0);
   });
 
-  it('makes yours 25 when two strangers share your second', () => {
-    const g = geometry(buildField([{ second: 41, count: 2 }, { second: 90, count: 1 }], 41));
-    expect(g.dots.find((d) => d.mine)?.size).toBe(25);
+  it('starts at 13px on a quiet day and shrinks to a 5px floor as seconds crowd in', () => {
+    expect(dotBase(1, 288)).toBe(13);
+    expect(dotBase(19, 288)).toBe(13);
+    expect(dotBase(39, 288)).toBe(7);
+    expect(dotBase(74, 288)).toBe(5);
+    expect(dotBase(300, 288)).toBe(5);
+  });
+
+  it('gives a wider track bigger dots for the same day', () => {
+    expect(dotBase(39, 480)).toBeGreaterThan(dotBase(39, 288));
+  });
+
+  it('grows a shared second by area, so size² is proportional to count', () => {
+    const g = geometry(field(strangers(18), 300));
+    const sizes = dotSizes(g, 288);
+    expect(sizes[0]).toBe(13);
+    // 13 × √3 = 22.5, and the cap is 25.
+    const shared = geometry(buildField([{ second: 10, count: 3 }, { second: 200, count: 1 }], 400));
+    expect(dotSizes(shared, 288)[0]).toBe(23);
+    const crowd = geometry(buildField([{ second: 10, count: 9 }, ...rows(strangers(60).map((t) => t + 20))], 9999));
+    // Base 5 here, so nine on one second is 15, nowhere near the cap.
+    expect(dotSizes(crowd, 288)[0]).toBe(15);
+  });
+
+  it('caps every dot at 25', () => {
+    const g = geometry(buildField([{ second: 10, count: 50 }], 400));
+    expect(Math.max(...dotSizes(g, 288))).toBe(25);
+  });
+
+  it('keeps yours 4px larger, and never under 11', () => {
+    expect(dotSizes(geometry(field([1000], 10)), 288)[0]).toBe(17);
+    const busy = geometry(field(strangers(80), 3));
+    const sizes = dotSizes(busy, 288);
+    const mine = busy.dots.findIndex((d) => d.mine);
+    expect(sizes[mine]).toBe(11);
+    expect(sizes[mine]).toBeGreaterThan(Math.max(...sizes.filter((_, k) => k !== mine)));
+  });
+
+  it('sizes the median disc as one player', () => {
+    const g = geometry(field([10, 20, 40], 31));
+    const sizes = dotSizes(g, 288);
+    expect(sizes.at(-1)).toBe(dotBase(4, 288));
   });
 });
 
@@ -105,14 +151,14 @@ describe('the median', () => {
     expect(g.dots).toHaveLength(f.tally.size);
   });
 
-  it('at even n off any real time draws one extra 13px disc', () => {
+  it('at even n off any real time draws one extra disc', () => {
     const f = field([10, 20, 40], 31);
     const g = geometry(f);
     expect(g.refs.find((r) => r.word === 'Median')?.seconds).toBe(26);
     expect(g.dots).toHaveLength(f.tally.size + 1);
     const lo = Math.log(10);
     const disc = dotAt(g, (Math.log(26) - lo) / (Math.log(40) - lo));
-    expect(disc).toEqual({ fraction: expect.any(Number), size: 13, mine: false });
+    expect(disc).toEqual({ fraction: expect.any(Number), count: 0, mine: false });
   });
 
   it('at even n on a real time draws no extra disc', () => {
@@ -328,7 +374,8 @@ describe('all-identical fields', () => {
     it(`at n = ${n}: one dot, Fastest only, joint fastest`, () => {
       const f = field(Array(n - 1).fill(41), 41);
       const g = geometry(f);
-      expect(g.dots).toEqual([{ fraction: 0.5, size: 25, mine: true }]);
+      expect(g.dots).toEqual([{ fraction: 0.5, count: n, mine: true }]);
+      expect(dotSizes(g, 288)).toEqual([25]);
       expect(g.refs.map((r) => [r.word, r.anchor, r.seconds])).toEqual([['Fastest', 'center', 41]]);
       expect(copy(Array(n - 1).fill(41), 41)).toBe("You're the joint fastest today");
       expect(spokenSummary(f, g)).toBe(`${n} players solved today, all in 41 seconds. Yours: 41 seconds.`);
