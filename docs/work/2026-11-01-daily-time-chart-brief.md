@@ -6,9 +6,8 @@ and the canvas boards it names (Idea-O, P, R, N).
 Branch: `dev/daily-time-chart`
 
 **Status: `da-brief` ran 2026-11-01 — 2 High, 5 Medium, 4 Low. Fixes settled by Jamie the
-same day (items 90–102); boards exported (items 103–108). Not ready for Plan:** Dave's acks
-on the reopened §3, §5, §6, §7, §8 and §11 are pending. All decisions are settled and all
-maths is signed.
+same day (items 90–102); boards exported (items 103–108). Ready for Plan.** Every section is
+settled and acked, all maths is signed by Dave, and accessibility by Jamie.
 
 **Read "da-brief fixes" at the end before planning. Where it and the body disagree, it wins.**
 
@@ -65,7 +64,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     a determined troll could make the field look odd for a day.
 
 ## 3. How it works
-Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave 2026-11-01 (relayed by Jamie, after the da-brief fixes)
 
 16. The card appears on `/solved` after a daily solve, inside the #311 results panel. Not on
     `/play` in solved-replay mode, not on random or archive completion. (assumed — the stats
@@ -136,7 +135,7 @@ Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 
     second, matching how times are shown. (reviewed 2026-11-01)
 
 ## 5. State & persistence
-Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
+Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave 2026-11-01 (relayed by Jamie, after the da-brief fixes)
 
 29. The field lives on the server only, in `analytics_events` in `clumeral-analytics`. The
     one storage change is the puzzle-number column from item 24: a new nullable column via
@@ -173,7 +172,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations, with item 36) · **Reop
     change to the endpoint, not just this build.
 
 ## 6. How it fits
-Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave 2026-11-01 (relayed by Jamie, after the da-brief fixes)
 
 38. [amended — see 93] Client rendering hangs off `renderCompletion` in `src/completion.ts`, which builds the
     #311 panel synchronously. The chart needs a fetch, so it renders into its own slot after
@@ -214,7 +213,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-bri
     player has as much reason to see it as anyone — arguably more.
 
 ## 7. How it looks
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64, re-settled Jamie 2026-11-01 (accepted recommendation) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64, re-settled Jamie 2026-11-01 (accepted recommendation) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave 2026-11-01 (relayed by Jamie, after the da-brief fixes)
 
 47. The design is Idea-O: a horizontal log axis, one dot per distinct second sized by how
     many share it, your dot solid accent with your time above it, Fastest / Median / Slowest
@@ -265,7 +264,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64,
     the eight combinations. The cost: two new tokens, against a ceiling of 15 (CLAUDE.md).
 
 ## 8. Copy & wording
-Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88, re-settled Jamie 2026-11-01 (accepted recommendation) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88, re-settled Jamie 2026-11-01 (accepted recommendation) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave 2026-11-01 (relayed by Jamie, after the da-brief fixes)
 
 55. Chart labels as on the canvas: Fastest, Median, Slowest, `— log scale`. Your dot carries
     your time only. (assumed — designed and agreed on Idea-O/N)
@@ -363,7 +362,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave 2026-11-01
     ungated (`src/app.ts:1082`).
 
 ## 11. Done / test plan
-Settled: Jamie 2026-11-01 (accepted all recommendations, plus item 89) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave pending (re-ask)
+Settled: Jamie 2026-11-01 (accepted all recommendations, plus item 89) · **Reopened by da-brief fixes 2026-11-01, re-settled Jamie** · Ack: Dave 2026-11-01 (relayed by Jamie, after the da-brief fixes)
 
 Written before code. Each line is a check the build must pass.
 
