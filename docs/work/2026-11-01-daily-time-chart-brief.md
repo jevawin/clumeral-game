@@ -6,7 +6,7 @@ and the canvas boards it names (Idea-O, P, R, N).
 Branch: `dev/daily-time-chart`
 
 **Status: all 11 sections settled by Jamie, 2026-11-01; §4 signed by Dave. Not closeable yet.** Open:
-item 88 (fastest-line wording) for Jamie; Dave acks on §6, §7 (re-ack after item 64 reopened
+Dave acks on §6, §7 (re-ack after item 64 reopened
 it), §8 (re-ack after item 88), §10 and §11. `da-brief` runs once those are in.
 
 ---
@@ -262,7 +262,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64,
     the eight combinations. The cost: two new tokens, against a ceiling of 15 (CLAUDE.md).
 
 ## 8. Copy & wording
-Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened 2026-11-01 by item 88** · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 88, re-settled Jamie 2026-11-01 (accepted recommendation) · Ack: Dave pending (re-ask — the reopen voids any earlier ack)
 
 55. Chart labels as on the canvas: Fastest, Median, Slowest, `— log time`. Your dot carries
     your time only. (assumed — designed and agreed on Idea-O/N)
@@ -305,6 +305,8 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened 2026-11-0
     Open: does this also replace item 61's n = 1 line ("You're the **first** to solve
     today")? My rec: keep "first" at n = 1. Being fastest of one is not an achievement;
     being first is. From n = 2 the fastest line takes over.
+    **Settled: Jamie 2026-11-01 — "You're the fastest today" for the sole fastest from
+    n = 2; "You're the first to solve today" stays at n = 1.**
 
 ## 9. Accessibility
 Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026-11-01 · Ack: n/a (owned section)
