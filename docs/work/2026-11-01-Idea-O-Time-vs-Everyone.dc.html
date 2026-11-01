@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Results, time vs everyone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&amp;display=swap">
+<style>
+/* Still two colours, plus ONE declared faded step of the accent. It is a token,
+   not an ad-hoc tint, so every faded surface on the page is the same value. */
+:root {
+  --bg: #FAFAFA;
+  --surface: #FFFFFF;
+  --fg: #262624;
+  --accent: oklch(0.5 0.157 145);
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  --fg-50: color-mix(in srgb, var(--fg) 50%, var(--surface));
+  --border: rgba(38,38,36,.12);
+}
+body { margin: 0; font-family: "Quicksand", system-ui, sans-serif; }
+a { color: var(--accent); }
+.card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 6px; padding: 18px; }
+.card__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* The chip stays 32px to the eye. The ::after extends the TOUCH TARGET to 44px
+   tall without moving a pixel of the visible box: it is a child box of the
+   button, so taps on it hit the button. Nothing here may set overflow: hidden
+   or the extra area is clipped away again. */
+.share { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 32px;
+  box-sizing: border-box; background: transparent; color: var(--accent); border: 1.5px solid var(--accent);
+  font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: .04em;
+  border-radius: 6px; padding: 0 10px; line-height: 1; cursor: pointer; }
+/* inset resolves against the PADDING box, so the 1.5px border has to be paid
+   back on every side: -7.5px vertical is 6px clear of the border box. */
+.share::after { content: ""; position: absolute; inset: -7.5px -1.5px; }
+.n { color: var(--accent); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
+  box-sizing: border-box; padding: 12px 16px; background: transparent;
+  border-radius: 6px; border: 1.5px solid var(--accent); color: var(--accent);
+  font-family: inherit; font-size: 16px; font-weight: 600; line-height: 1; text-decoration: none; cursor: pointer; }
+.btn--solid { background: var(--accent); color: var(--bg); width: 100%; }
+/* F's icon pill. Uses --accent-soft rather than its own 14% mix, so the whole
+   page holds exactly two accent values and no near-misses. */
+.pill { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+  flex: none; border-radius: 9999px; background: var(--accent-soft); }
+/* The strip holds EVERY day played. Someone who has not missed since launch has
+   240-odd columns, so it scrolls. direction: rtl on the scroller puts the
+   initial scroll position at the right end, which is today; the inner track is
+   switched back to ltr so the days still read oldest to newest. The left fade
+   is a mask on the cells themselves, so the affordance costs no extra colour. */
+.strip { direction: rtl; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
+  mask-image: linear-gradient(to right, transparent 0, #000 40px); }
+.strip::-webkit-scrollbar { display: none; }
+.strip:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.strip__inner { direction: ltr; display: flex; gap: 4px; align-items: flex-end; width: max-content; }
+.strip__day { width: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
+/* A day that ran past the cap is drawn as a BROKEN column: three blocks at the
+   bottom, a bolt for everything elided, then the solid cap for the go that
+   landed, with the true figure above it. The number has to sit on the column
+   and not on the y axis — a player with 6, 8, 9, 31 and 42 has five broken
+   days and one axis label could only ever name one of them. */
+.strip__slot { border-radius: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.strip__bolt { width: 8px; height: 10px; color: var(--accent); }
+.strip__count { flex: none; height: 14px; display: flex; align-items: flex-end; justify-content: center;
+  font-size: 11px; font-weight: 400; line-height: 1; color: var(--fg); }
+/* The axis label people were missing. It sits OUTSIDE the scroller so it stays
+   put while the days move, and reads bottom-to-top like any y axis. Same size,
+   weight and colour as the "243 days" hint, so the chart's annotations are one
+   family and are told apart from body text. Naming the quantity beat numbering
+   it: the broken columns carry their own figures, so a 1..n scale had to either
+   contradict them or stop short of them. */
+.strip__wrap { display: flex; align-items: flex-start; gap: 8px; margin-top: 20px; }
+.strip__y { flex: none; writing-mode: vertical-rl; transform: rotate(180deg);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 400; line-height: 1; }
+.strip__col { flex: 1; min-width: 0; }
+.strip__meta { display: flex; justify-content: space-between; align-items: center;
+  margin-top: 8px; font-size: 13px; }
+.strip__hint { display: inline-flex; align-items: center; gap: 5px; }
+/* TIME, NOT GOES. Goes cannot rank anybody — 88.1% of all production
+   completions are one-go, so almost everyone ties. Nobody ties on 2m 28s.
+
+   Dots only, no chevron: the axis now runs to the true slowest time, so the
+   rightmost DOT is the slowest person and carries their time. Nothing is
+   clipped and nothing is abbreviated, which is simpler to read and to explain.
+
+   Three rows: time above, dots, label below. The labels at the two ends are
+   anchored INWARD (left label left-aligned, right label right-aligned) so
+   neither can overhang the card; yours and the median are centred on their
+   mark. */
+.spread { margin-top: 16px; }
+/* EVERY MARK NAMED WHERE IT STANDS. The three references sit BELOW the axis
+   and you sit ABOVE it, so the two groups can never run into each other no
+   matter where your dot lands — the collision the rotated version solved by
+   turning the text, solved instead by using the other side of the line.
+   Within each label the TIME is the line nearest the axis and the WORD is the
+   line further from it, which holds for both sides. */
+.spread { margin-top: 14px; }
+.spread__track { position: relative; height: 116px; }
+.spread__axis { position: absolute; left: 0; right: 0; top: 58px; height: 1.5px; background: var(--fg-50); }
+.spread__above, .spread__below { position: absolute; display: flex; flex-direction: column;
+  gap: 2px; }
+.spread__above { top: 0; font-weight: 700; }
+.spread__below { top: 86px; }
+.spread__t, .spread__w { font-size: 12px; line-height: 14px; white-space: nowrap; }
+/* The label is placed to FIT; the LEADER LINE marks the TRUE position. Three
+   labels cannot always sit centred on their own dots without touching, so the
+   label moves and the line stays honest. */
+.spread__lead { position: absolute; width: 1px; height: 14px; background: var(--fg-50); }
+.spread__lead--up { top: 32px; }
+.spread__lead--down { top: 70px; }
+.spread__dot { position: absolute; top: 58px; border-radius: 9999px;
+  transform: translate(-50%, -50%); box-sizing: border-box;
+  background: var(--accent-soft); border: 1.5px solid var(--surface); }
+.spread__dot--you { background: var(--accent); z-index: 3; }
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1260px; box-sizing: border-box; background: var(--bg); color: var(--fg); display: flex; flex-direction: column">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1.5px solid var(--border)">
+    <span style="display: flex; align-items: center; gap: 10px">
+      <svg viewBox="0 0 100 100" aria-hidden="true" style="width: 26px; height: 26px; color: var(--accent)">
+        <path d="M10 45a40 40 0 0 1 80 0v33H10z" fill="currentColor"></path>
+        <rect x="12" y="72" width="10" height="23" rx="5" fill="currentColor"></rect>
+        <rect x="28" y="72" width="10" height="23" rx="5" fill="currentColor"></rect>
+        <rect x="45" y="72" width="10" height="23" rx="5" fill="currentColor"></rect>
+        <rect x="62" y="72" width="10" height="23" rx="5" fill="currentColor"></rect>
+        <rect x="78" y="72" width="10" height="23" rx="5" fill="currentColor"></rect>
+        <circle cx="38" cy="38" r="5" fill="#FAFAFA"></circle>
+        <circle cx="62" cy="38" r="5" fill="#FAFAFA"></circle>
+      </svg>
+      <span style="font-size: 24px; font-weight: 600">Clumeral</span>
+    </span>
+    <button type="button" aria-label="Open menu" style="background: none; border: 0; padding: 4px; cursor: pointer; color: var(--fg)">
+      <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 24px; height: 24px; display: block"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+    </button>
+  </header>
+
+  <div style="padding: 20px 16px 0; display: flex; flex-direction: column; gap: 18px; flex-grow: 1">
+
+    <!-- ── TODAY. Header and figure line kept exactly as Jamie set them. ──── -->
+    <section class="card">
+      <div class="card__head">
+        <div style="display: flex; flex-direction: row; gap: 5px; align-items: center">
+          <h2 style="margin: 0; font-size: 19px; font-weight: 400">Puzzle #238</h2>
+          <h2 class="n" style="margin: 0; font-size: 19px; font-weight: 700">solved</h2>
+        </div>
+        <button type="button" class="share">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 13px; height: 13px"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          Share
+        </button>
+      </div>
+
+      <p class="n" style="margin: 18px 0 0; font-size: 34px; font-weight: 400; line-height: 1.1; letter-spacing: -0.01em"><b>3 goes, 2m 28s</b></p>
+
+      <!-- The only little message on the page now. -->
+      <p style="margin: 16px 0 0; display: flex; align-items: center; gap: 9px; font-size: 15px">
+        <span class="pill">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; color: var(--accent)"><path d="M12 19V5m0 0-6 6m6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </span>
+        <span><b>17s quicker</b> than your average</span>
+      </p>
+    </section>
+
+    <!-- ── EVERYONE TODAY ────────────────────────────────────────────────── -->
+    <!-- Second on the page, because "was that good?" is the question the screen
+         exists to answer and nothing in your own history answers it.
+         A SENTENCE, NOT A CHART. Twenty people is a village, not a sample, so
+         the copy names them and the tally locates you. The two do different
+         jobs: the sentence never points at you when you did badly, and the
+         tally always says exactly where you are. -->
+    <section class="card">
+      <div class="card__head">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 700">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="margin-left: -2.63px; width: 21px; height: 21px; flex: none; color: var(--accent)"><path d="M9 11h6v9H9zM3 15h6v5H3zM15 7h6v13h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg>
+          Daily leaderboard
+        </h2>
+        <button type="button" class="share">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 13px; height: 13px"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          Share
+        </button>
+      </div>
+
+      <p style="margin: 14px 0 0; font-size: 16px; font-weight: 400">{{vPre}}<b>{{vBold}}</b>{{vPost}}</p>
+
+      <div class="spread">
+        <div class="spread__track">
+          <span class="spread__axis"></span>
+          <sc-for list="{{below}}" as="l" hint-placeholder-count="3">
+            <span class="spread__below" style="left: {{l.left}}; width: {{l.w}}; align-items: {{l.align}}">
+              <span class="spread__t">{{l.time}}</span>
+              <span class="spread__w">{{l.word}}</span>
+            </span>
+            <span class="spread__lead spread__lead--down" style="left: {{l.at}}"></span>
+          </sc-for>
+          <sc-for list="{{dots}}" as="d" hint-placeholder-count="18">
+            <span class="spread__dot {{d.cls}}" style="left: {{d.pos}}; width: {{d.size}}; height: {{d.size}}"></span>
+          </sc-for>
+          <span class="spread__above" style="left: {{youLeft}}; width: {{youW}}; align-items: {{youAlign}}">
+            <span class="spread__w">You</span>
+            <span class="spread__t">{{youTime}}</span>
+          </span>
+          <span class="spread__lead spread__lead--up" style="left: {{youAt}}"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── STREAKS ───────────────────────────────────────────────────────── -->
+    <section class="card">
+      <div class="card__head">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 700">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="margin-left: -3.50px; width: 21px; height: 21px; flex: none; color: var(--accent)"><path d="M12 2c1 4-2 5-2 8a4 4 0 0 0 8 0c0-1-.3-2-1-3 2 2 3 4.5 3 7a8 8 0 0 1-16 0c0-4 3-7 5-9 2-1.6 3-2 3-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg>
+          Streaks
+        </h2>
+        <button type="button" class="share">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 13px; height: 13px"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          Share
+        </button>
+      </div>
+
+      <p style="margin: 18px 0 0; font-size: 34px; font-weight: 700; line-height: 1.1">
+        <span class="n">30</span><span style="font-size: 17px; font-weight: 600"> {{streakLabel}}</span>
+      </p>
+      <p style="margin: 8px 0 0; font-size: 15px">Best <b class="n">30</b> &nbsp;·&nbsp; One-go run <b class="n">1</b></p>
+
+      <!-- Wrong, wrong, wrong, RIGHT. The faded cells are the goes that missed,
+           the solid cap is the one that landed. Unused cells are not drawn. -->
+      <div class="strip__wrap">
+        <span class="strip__y" style="height: {{stripH}}; margin-top: 14px; justify-content: flex-start" aria-hidden="true">Goes</span>
+        <div class="strip__col">
+      <div class="strip" role="group" tabindex="0" aria-label="Goes taken on each of your last {{historyDays}} days. Scroll left for earlier days.">
+        <div class="strip__inner" style="height: {{innerH}}">
+          <sc-for list="{{strip}}" as="d" hint-placeholder-count="20">
+            <span class="strip__day">
+              <span style="height: {{d.h1}}; border-radius: 2px; background: {{d.c1}}"></span>
+              <span style="height: {{d.h2}}; border-radius: 2px; background: {{d.c2}}"></span>
+              <span style="height: {{d.h3}}; border-radius: 2px; background: {{d.c3}}"></span>
+              <span class="strip__slot" style="height: {{d.h4}}; background: {{d.c4}}">
+                <svg viewBox="0 0 8 10" aria-hidden="true" class="strip__bolt" style="display: {{d.over}}"><path d="M5 0.5 2.5 3.8 5.5 6.2 3 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </span>
+              <span style="height: {{d.h5}}; border-radius: 2px; background: {{d.c5}}"></span>
+              <span class="strip__count" style="display: {{d.over}}">{{d.count}}</span>
+            </span>
+          </sc-for>
+        </div>
+      </div>
+      <div class="strip__meta">
+        <span class="strip__hint">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 12px; height: 12px"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          {{historyDays}} days
+        </span>
+        <span style="font-weight: 700">Today</span>
+      </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ALL TIME ──────────────────────────────────────────────────────── -->
+    <section class="card" style="padding-bottom: 16px">
+      <div class="card__head">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 700">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="margin-left: -3.06px; width: 21px; height: 21px; flex: none; color: var(--accent)"><path d="M8 21h8m-4-4v4M6 4h12v5a6 6 0 0 1-12 0zM6 6H3.5v1A3.5 3.5 0 0 0 6 10.4M18 6h2.5v1a3.5 3.5 0 0 1-2.5 3.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg>
+          All time
+        </h2>
+        <button type="button" class="share">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 13px; height: 13px"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          Share
+        </button>
+      </div>
+
+      <!-- The attempts chart is GONE from here, and this is the reason:
+           across 3,757 production completions 88.1% are one-go, so every other
+           bar floors and the picture never changes from one day to the next.
+           Dave has 237 of 239 in one. It was a chart of a number that does not
+           move. The comparison card above moves every single day. -->
+      <!-- One size throughout, no rules, figure bold accent on the right. -->
+      <dl style="margin: 20px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 16px; font-size: 16px">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+          <dt>{{r.label}}</dt>
+          <dd class="n" style="margin: 0; text-align: end; font-weight: 700; white-space: nowrap">{{r.value}}</dd>
+        </sc-for>
+      </dl>
+    </section>
+
+    <p style="margin: 0; text-align: center; font-size: 16px">Next puzzle in <b>2h 25m</b></p>
+
+    <!-- Restored from the live Results screen: same three buttons, same order,
+         same icons, solid Feedback over the hollow pair. Only the colours are
+         swapped for tokens, so none of this gets redesigned by accident. -->
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <button type="button" class="btn btn--solid">
+        <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>
+        Feedback
+      </button>
+      <div style="display: flex; gap: 8px">
+        <a href="Play.dc.html" class="btn" style="flex: 1">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M4 7h4.5a2.25 2.25 0 1 1 4.5 0H20v4.5a2.25 2.25 0 1 1 0 4.5V20H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg>
+          Show puzzle
+        </a>
+        <a href="Archive.dc.html" class="btn" style="flex: 1">
+          <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M3 5h18v3H3zM5 8v11h14V8M10 12h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>
+          Archive
+        </a>
+      </div>
+    </div>
+
+    <p style="margin: auto 0 20px; text-align: center; font-size: 14px">Made with <span class="n">♥</span> by Jamie &amp; Dave. © 2026.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var solid = 'var(--accent)';
+    var faded = 'var(--accent-soft)';
+
+    // ── THE STREAK LABEL. The figure is the run either way; the words say what
+    // kind of run it is. When every day in the run was a single-go solve, the
+    // play streak and the one-go streak are the same number, and the harder of
+    // the two is the one worth naming.
+    //   one-go run === play streak -> "days solved in one"
+    //   anything else ............. "days played"
+    var streakLabel = 'days played';
+
+    // ── THE ONE MESSAGE ON THE PAGE. Ranked, first true one wins.
+    //   1  fastest ever ........ "Your fastest ever, 9s under your best."
+    //   2  solved in one ....... "Straight in. Your 8th one-go solve."
+    //   3  beat average time ... "17s quicker than your average."
+    //   4  beat average goes ... "A go better than your usual 2.3."
+    //   5  nothing beaten ...... "Solve number 30."
+    // The bolded span is the figure, so the sentence changes but the shape of
+    // it does not.
+
+    // Each column reads bottom to top: the misses faded, the solve solid.
+    // Every day played, oldest first. A player who has not missed a day since
+    // launch has 240-odd of these, which is the whole reason the strip scrolls.
+    var historyDays = 243;
+    var goes = [];
+    for (var i = 0; i < historyDays; i++) {
+      var r = (i * 2654435761) % 100 / 100;          // deterministic stand-in
+      goes.push(r < 0.23 ? 1 : r < 0.66 ? 2 : r < 0.86 ? 3 : r < 0.96 ? 4 : 5);
+    }
+    // Real outliers, placed inside the opening window so the broken columns
+    // are visible without scrolling. Several at once on purpose: that is the
+    // case where one axis label could never have carried the figures.
+    goes[232] = 8; goes[236] = 42; goes[240] = 31;
+    // The axis stops at the worst day this player has had, so it reads 5..1 for
+    // them and 3..1 for someone who has never needed a fourth go. A fixed
+    // ceiling would leave most players staring at empty rows.
+    //
+    // But the strip never draws more than CAP rows. Someone out there has had a
+    // 42-go day, and 42 rows would squash every other day into nothing. Every
+    // broken day carries its own figure above its own column and the rows in
+    // between are elided, so the figures live on the columns and the axis only
+    // has to name what is being counted.
+    var CAP = 5;
+    var worst = Math.max.apply(null, goes);
+    var rows = Math.min(worst, CAP);
+    var CELL = 10, GAP = 4;   // one cell per go, and the gap between them
+    var rowsH = rows * CELL + (rows - 1) * GAP;
+    var stripH = rowsH + 'px';
+    var HEAD = 14;                       // room above the rows for the figure
+    var innerH = (rowsH + HEAD) + 'px';
+    var strip = goes.map(function (g) {
+      var d = {}, n;
+      var over = g > CAP;
+      if (over) {
+        // Three blocks, then the bolt for everything elided, then the solid cap
+        // for the go that landed.
+        var fill = ['', faded, faded, faded, 'transparent', solid];
+        for (n = 1; n <= 5; n++) { d['c' + n] = fill[n]; d['h' + n] = CELL + 'px'; }
+        d.count = String(g);
+      } else {
+        for (n = 1; n <= 5; n++) {
+          d['c' + n] = n < g ? faded : (n === g ? solid : 'transparent');
+          d['h' + n] = n <= g ? CELL + 'px' : '0';
+        }
+        d.count = '';
+      }
+      d.over = over ? 'flex' : 'none';
+      return d;
+    });
+
+    // ── DAILY LEADERBOARD ───────────────────────────────────────────────
+    //
+    // WHY TIME. 88.1% of 3,757 production completions are one-go, so goes
+    // cannot rank anyone. Nobody ties on 2m 28s.
+    //
+    // THE DATA IS NOT THERE YET: production holds FIVE puzzle_time rows, all
+    // from today. The timer sat on staging from 11 Aug and reached main today
+    // (#347). A month and this is real. Everything else here exists now.
+    //
+    // Twenty times for a median day, with two shared seconds in them so the
+    // stacked dot is visible: three people on 1m 09s, two on 1m 44s.
+    var times = [41, 49, 56, 63, 69, 69, 69, 81, 88, 96,
+                 104, 104, 127, 148, 163, 182, 206, 245, 311, 892];
+    var yours = 148;                   // 2m 28s, matching the Today card
+
+    function mmss(t) {
+      return t < 60 ? t + 's'
+                    : Math.floor(t / 60) + 'm ' + ('0' + (t % 60)).slice(-2) + 's';
+    }
+    function ordinal(n) {
+      var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    var sorted = times.slice().sort(function (a, b) { return a - b; });
+    var lo = sorted[0], hi = sorted[sorted.length - 1];
+    var mid = sorted.length / 2;
+    var median = sorted.length % 2 ? sorted[Math.floor(mid)]
+                                   : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+
+    // NOTHING IS CLIPPED NOW. The axis runs fastest to slowest, so the last dot
+    // IS the slowest player. The p95 clip and its chevron are gone, and with
+    // them the rule that the clip must never swallow you — there is no clip to
+    // swallow anyone. The cost is real and visible on this board: one 14m 52s
+    // day pushes the other nineteen into the left third.
+    var flat = hi === lo;              // n = 1, or everyone on the same second
+    // LOG, NOT LINEAR, and it was forced rather than chosen. Measured on the
+    // linear axis with this very data: 17 of the 18 dots sat inside the left
+    // 101px of a 319px track and every label overlapped its neighbour, because
+    // one 14m 52s day is 21x the fastest. Play times are log-normal, so log
+    // spacing is what the data actually looks like.
+    //
+    // THE TRADE, and it is a real one: distance across the track is no longer
+    // seconds. Halfway along is not half the slowest time. Every dot that
+    // matters carries its own printed time, which is what pays for it.
+    var lnLo = Math.log(lo), lnSpan = Math.log(hi) - lnLo;
+    function pos(t) {
+      return flat ? '50%' : ((Math.log(t) - lnLo) / lnSpan * 100).toFixed(1) + '%';
+    }
+
+    // ONE DOT PER DISTINCT TIME, grown by how many people share that second.
+    var tally = {};
+    times.forEach(function (t) { tally[t] = (tally[t] || 0) + 1; });
+    var dots = Object.keys(tally).map(Number).sort(function (a, b) { return a - b; })
+      .map(function (t) {
+        var mine = t === yours;
+        var size = Math.min(21, (mine ? 13 : 9) + (tally[t] - 1) * 4);
+        return { pos: pos(t), size: size + 'px', cls: mine ? 'spread__dot--you' : '' };
+      });
+    // The median rides along as an ordinary disc, because the word below it is
+    // what names it. Two conditions, and the state sheet is how both were
+    // found. It is only drawn FROM THREE FINISHERS, because below that there
+    // is no median label for it to belong to. And only when no one actually
+    // finished on that second: with an odd count the median IS a real time, so
+    // appending it stacked a second dot on a person who was already there and
+    // inflated the count by one.
+    if (sorted.length >= 3 && tally[median] === undefined) {
+      dots.push({ pos: pos(median), size: '9px', cls: '' });
+    }
+
+    // ── LABELS ──────────────────────────────────────────────────────────
+    // Widths are estimated, because renderVals cannot measure text.
+    // Calibrated at 12px Quicksand against the real thing: "41s" 16.3,
+    // "1m 40s" 37.7, "2m 28s" 39.6, "14m 52s" 43.6, "Fastest" 39.9,
+    // "Median" 40.7, "Slowest" 42.1, "You" 20.3. Letters are the loosest of
+    // the four classes, so they get the most generous figure.
+    // LIVE THIS SHOULD MEASURE — the placement arithmetic is the one
+    // mock-only part of this card.
+    var TRACK = 319;                 // the card is a fixed 390 wide
+    function width(t) {
+      var w = 1;
+      for (var q = 0; q < t.length; q++) {
+        var c = t[q];
+        w += c === ' ' ? 3.3
+           : c >= '0' && c <= '9' ? 6.4
+           : c === 'm' ? 8.2
+           : c === 's' ? 5.8
+           : 7.0;                                   // any letter
+      }
+      return w + 3;                                 // flat slack, see below
+    }
+    function at(v) { return flat ? TRACK / 2 : (Math.log(v) - lnLo) / lnSpan * TRACK; }
+
+    // YOU GO ABOVE THE AXIS, the three references below it, so the two groups
+    // cannot collide with each other whatever your time is. That leaves only
+    // the three below to resolve against one another.
+    // WHICH REFERENCES EXIST DEPENDS ON HOW MANY HAVE FINISHED. Jamie's rule,
+    // 1 Nov: the median only appears from three. Below that it is either
+    // undefined (one player) or a number sitting between the only two dots on
+    // screen and describing neither of them (two players).
+    //   1 finisher  -> Fastest. You are it, and "Fastest" is the kind reading
+    //                  of being alone; "Slowest" is equally true and unkind.
+    //   2 finishers -> Fastest, Slowest.
+    //   3 or more   -> Fastest, Median, Slowest.
+    // Your own label is separate and always drawn, above the axis, tracking
+    // your dot wherever it is. When you ARE the fastest or the slowest, your
+    // label and that reference name the same dot from opposite sides of the
+    // line, which is exactly why the two groups were split in the first place.
+    //
+    // A label box is as wide as its widest line, so where the line MEETS the
+    // box decides where the text has to sit. The leader for the fastest
+    // arrives at the box's left edge and the slowest at its right, so those
+    // two align their text to that edge; only the median is centred. With one
+    // finisher the single dot is centred, so its label is centred too.
+    var refs = [];
+    if (flat) {
+      refs.push({ word: 'Fastest', time: mmss(lo), v: lo, anchor: 'center' });
+    } else {
+      refs.push({ word: 'Fastest', time: mmss(lo), v: lo, anchor: 'start' });
+      if (sorted.length >= 3) {
+        refs.push({ word: 'Median', time: mmss(median), v: median, anchor: 'center' });
+      }
+      refs.push({ word: 'Slowest', time: mmss(hi), v: hi, anchor: 'end' });
+    }
+    var below = refs.map(function (l) {
+       var w = Math.max(width(l.word), width(l.time));
+       var x = at(l.v);
+       return { word: l.word, time: l.time, w: w, at: x,
+                align: l.anchor === 'start' ? 'flex-start'
+                     : l.anchor === 'end'   ? 'flex-end' : 'center',
+                // The box hangs off whichever corner its leader arrives at.
+                left: l.anchor === 'start' ? x
+                    : l.anchor === 'end'   ? x - w
+                                           : x - w / 2 };
+     });
+
+    // Clamp into the track, then walk left to right pushing any label that has
+    // run into the one before it, then walk back if that pushed the last off
+    // the end. The loop variables are k and n, NOT i and j: this block gets
+    // lifted into the state sheet where it sits inside a function whose
+    // parameter is the state index `i`, and a `var i` here shadowed it —
+    // every state silently wrote its data into the slot named after its label
+    // count instead of its own index.
+    var GAP = 8;
+    below.forEach(function (l) { l.left = Math.max(0, Math.min(TRACK - l.w, l.left)); });
+    for (var k = 1; k < below.length; k++) {
+      var minLeft = below[k - 1].left + below[k - 1].w + GAP;
+      if (below[k].left < minLeft) below[k].left = minLeft;
+    }
+    for (var n = below.length - 1; n > 0; n--) {
+      if (below[n].left + below[n].w > TRACK) {
+        below[n].left = TRACK - below[n].w;
+        var maxLeft = below[n].left - below[n - 1].w - GAP;
+        if (below[n - 1].left > maxLeft) below[n - 1].left = maxLeft;
+      }
+    }
+    function pc(x) { return (x / TRACK * 100).toFixed(2) + '%'; }
+    below = below.map(function (l) {
+      return { word: l.word, time: l.time, w: l.w.toFixed(1) + 'px',
+               align: l.align, left: pc(l.left), at: pc(l.at) };
+    });
+
+    // Yours is bold, so a little wider than the estimate.
+    var youW = Math.max(width('You'), width(mmss(yours))) * 1.05;
+    var youAt = at(yours);
+    // Your label takes the same corner rule as the three below. Centred, it
+    // gets clamped at the edges — and a clamped box with centred text leaves
+    // its own leader line behind: measured 13px adrift when you are the
+    // fastest of the day and 25px when you are the slowest.
+    var youAlign = youAt - youW / 2 < 0        ? 'flex-start'
+                 : youAt + youW / 2 > TRACK    ? 'flex-end'
+                                               : 'center';
+    var youLeft = youAlign === 'flex-start' ? youAt
+                : youAlign === 'flex-end'   ? youAt - youW
+                                            : youAt - youW / 2;
+
+    // THE FIGURE. "You're in the top X% solve times" only parses when the
+    // figure IS a percentile, so the two states that are not keep their own
+    // frame — the state sheet caught "You're in the 2nd fastest solve times".
+    var alone = sorted.length === 1;
+    var few   = sorted.length < 10;
+    var rank  = sorted.indexOf(yours) + 1;          // 1 = fastest
+    var pct   = Math.round(rank / sorted.length * 100);
+    var vPre  = alone || few ? "You're "                : "You're in the ";
+    var vBold = alone ? 'first to finish'
+              : few   ? ordinal(rank) + ' fastest'
+                      : 'top ' + pct + '%';
+    var vPost = alone ? ' today' : few ? '' : ' solve times';
+
+    var counts = [
+      { label: '1', count: 7 },  { label: '2', count: 12 },
+      { label: '3', count: 6 },  { label: '4', count: 3 },
+      { label: '5', count: 1 },  { label: '6+', count: 1 }
+    ];
+    // SCALING. The 12 used to be hard-coded, which only worked because the
+    // sample happened to peak at 12. It reads the real peak now.
+    //
+    // Two rules on top of the linear scale, both forced by the same fact: the
+    // bar carries a 1.5px border top and bottom, so its box cannot render
+    // shorter than 3px. Someone with 240 one-go solves and 2 two-go solves
+    // scales the 2 to 0.55px, which draws at 3px — PIXEL-IDENTICAL to the four
+    // counts of zero beside it. "Twice" and "never" looked the same.
+    //   zero   -> draw NOTHING, and no count label. Same rule as the streak
+    //             strip's unused cells, so the two charts agree.
+    //   non-0  -> FLOOR at 8px, comfortably clear of the 3px minimum.
+    // The floor bends proportion at the bottom of the scale. That is the
+    // trade, and it is the right way round: the counts above the bars carry
+    // the precision, the heights carry the shape, and "some" never reads as
+    // "none". Nothing here needs a third shade.
+    var FLOOR = 8, FULL = 66;
+    var peak = Math.max.apply(null, counts.map(function (c) { return c.count; })) || 1;
+    var dist = counts.map(function (c) {
+      return {
+        label: c.label,
+        count: c.count ? String(c.count) : '',
+        h: (c.count ? Math.max(FLOOR, Math.round((c.count / peak) * FULL)) : 0) + 'px',
+        show: c.count ? 'block' : 'none'
+      };
+    });
+
+    return {
+      streakLabel: streakLabel,
+      historyDays: String(historyDays),
+      innerH: innerH,
+      stripH: stripH,
+      strip: strip,
+      vPre: vPre, vBold: vBold, vPost: vPost,
+      youTime: mmss(yours),
+      youW: youW.toFixed(1) + 'px',
+      youLeft: pc(youLeft),
+      youAlign: youAlign,
+      youAt: pc(youAt),
+      below: below,
+      dots: dots,
+      // No rules between rows. One 16px grid gap separates them, and the card's
+      // 16px bottom padding makes the gap under the last row match it exactly.
+      rows: [
+        { label: 'Solved in one',   value: '23%' },
+        { label: 'Best one-go run', value: '3' },
+        { label: 'Fastest solve',   value: '1m 14s' },
+        { label: 'Puzzles solved',  value: '30' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
