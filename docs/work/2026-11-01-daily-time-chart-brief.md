@@ -197,7 +197,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     player has as much reason to see it as anyone — arguably more.
 
 ## 7. How it looks
-Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened 2026-11-01 by item 64** · Ack: Dave pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Reopened by item 64, re-settled Jamie 2026-11-01 (accepted recommendation) · Ack: Dave pending (re-ask — the reopen voids any earlier ack)
 
 47. The design is Idea-O: a horizontal log axis, one dot per distinct second sized by how
     many share it, your dot solid accent with your time above it, Fastest / Median / Slowest
@@ -285,7 +285,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     inconsistency `src/app.ts:833` warns about, accepted here as the price of fit.
 
 ## 9. Accessibility
-Settled: pending · Sign-off: Jamie pending · Ack: n/a (owned section)
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Sign-off: Jamie 2026-11-01 · Ack: n/a (owned section)
 
 65. Nothing on the card is interactive: no tab stops, no hover, no tooltips. (assumed —
     Idea-O has none)
@@ -313,3 +313,23 @@ Settled: pending · Sign-off: Jamie pending · Ack: n/a (owned section)
     stays as it is; the card is read in place.
     Why: it arrives after a fetch, mid-way through the existing announcement. A second live
     update interrupts the one that matters — that you solved it.
+
+## 10. Analytics
+Settled: pending · Ack: pending
+
+73. Nothing new about the player's own result is sent. Their rank and percentile are not
+    events — both are derivable from `puzzle_time` rows already. (assumed)
+74. `puzzle_time` gains the puzzle number (items 24, 40) and nothing else. (assumed)
+75. Any new event goes into `VALID_EVENTS` (`src/worker/index.ts:39`) with a unit test that
+    it is accepted, and into `docs/ANALYTICS.md`. (assumed — the comment above the set: a
+    missing name records nothing and looks fine)
+76. Anonymous as every event is: the existing analytics uid, no identity. (assumed)
+77. Do we measure whether the card renders?
+    My rec: yes, one event, `time_chart`, sent once per `/solved` render that should show the
+    card (item 46's modes). Source `drawn` or `failed`; value the field size n (0 on
+    failure). Sent for saving-off players too.
+    Why: this is the first part of the panel that depends on a network call, and its
+    failure mode is silent by design (item 23). Without it, a broken endpoint looks exactly
+    like a quiet day. n also tells us when the low-data states stop mattering, which
+    feeds the CONSIDERATIONS revisit point. Saving-off is fine: the event carries the
+    field's size, nothing about their play — the same reason `route_change` is sent for them.
