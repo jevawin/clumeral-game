@@ -4,12 +4,14 @@
 **Branch:** `dev/daily-time-chart`. PR into `staging` (docs/GIT-WORKFLOW.md), never `main`.
 **Brief:** [2026-11-01-daily-time-chart-brief.md](2026-11-01-daily-time-chart-brief.md) — closed.
 Gates met: no `Ack: pending`; `da-brief` recorded with fixes in items 90–102; boards exported
-(103–108); plan-stage questions answered by Jamie (109, 110).
+(103–108); plan-stage questions answered by Jamie (109, 110); second `da-brief` (Fable)
+recorded with fixes in items 111–121, signed and acked.
+**Revision 2, 2026-11-01** — revised for items 111–121 before any `da-plan` ran.
 **Approval:** pending — Jamie.
 **da-plan:** pending.
 
-Read the brief's "da-brief fixes", "Boards export" and "Plan-stage questions" sections first.
-Where they amend the body, they win. Item numbers below are brief item numbers.
+Read the brief's "da-brief fixes", "Boards export", "Plan-stage questions" and "Fable da-brief
+fixes" sections first. Later sections win over earlier ones and over the body. Item numbers below are brief item numbers.
 
 ---
 
@@ -22,7 +24,8 @@ brief settled.
   ascending by second (items 35, 37, 42).
 - **D2. The uid travels in a request header, `X-Clumeral-Uid`, not the query string.** It keeps
   the uid out of URLs, which end up in logs and history. The server truncates it to `MAX_UID`
-  exactly as `recordEvent` does, so a long uid still matches its stored row (items 91, 110).
+  exactly as `recordEvent` does, so a long uid still matches its stored row (items 91, 110,
+  118).
 - **D3. Column name `puzzle_num`, `INTEGER`, nullable, no index.** Item 95's `ts` window already
   narrows the scan to a slice of the `(hostname, event, ts)` index.
 - **D4. Two modules.** `src/time-chart.ts` is pure: maths, copy, layout arithmetic, the spoken
@@ -47,7 +50,8 @@ brief settled.
   does any width change (items 50, 52, 69, 96).
 - **D11. Vertical metrics convert from the board's px to rem** (÷16) so labels and their rows
   grow together at 200% text (item 69). Dot sizes and line weights stay px: they are not text.
-- **D12. The board's `youW * 1.05` bold fudge is dropped.** Your label is measured in bold.
+- **D12. The board's width slack goes: `youW * 1.05` and the `+3` in `width()`** (item 115).
+  Every label is measured, your own in bold.
 - **D13. The axis note sits on the second label row** (the row of your time, nearest the axis),
   so its 14px leader starts 2px under it, exactly as your own label's leader does (items 48,
   107). The board drew it on the top row, but the board has no leader; with the leader restored,
@@ -61,8 +65,11 @@ brief settled.
   player's own colour (item 49).
 - **D16. Defensive parsing of the response.** The client keeps only rows whose `second` is an
   integer 0–86400 and whose `count` is a positive integer, and treats a non-array `times` as a
-  failure. The server already clamps; this guards the pure module from malformed JSON.
-- **D17. Percentile arithmetic is integer-first:** `Math.ceil((100 * (faster + 1)) / n)`.
+  failure. The server already drops rows outside 1–86400 (item 116); this guards the pure
+  module from malformed JSON, and a 0 that got through is still floored for placement
+  (item 21's client guard).
+- **D17. Percentile arithmetic is integer-first, then capped:**
+  `Math.min(99, Math.ceil((100 * (faster + 1)) / n))` (items 28, 111).
   `Math.ceil((faster + 1) / n * 100)` gives 71 for 7 of 10, because `0.7 * 100` is
   `70.00000000000001`.
 
@@ -135,8 +142,8 @@ does not affect it. Its spec must still pass unchanged — that is the check.
 
 ## Task 2 — The read: `getTodayTimes` and `GET /api/times/:num`
 
-Implements 7, 8, 15, 21 (server clamp), 32, 33, 34, 35, 37, 42, 45, 75, 79, 91, 95, 99
-(`VALID_EVENTS` comment). Commit: `feat(worker): read-only route for today's solve times`.
+Implements 7, 8, 15, 21 (server drop), 32, 33, 34, 35, 37, 42, 45, 75, 79, 91, 95, 99
+(`VALID_EVENTS` comment), 116, 117, 118, 120. Commit: `feat(worker): read-only route for today's solve times`.
 
 **Tests first.**
 
@@ -149,9 +156,11 @@ Implements 7, 8, 15, 21 (server clamp), 32, 33, 34, 35, 37, 42, 45, 75, 79, 91, 
 - filters by hostname: a row on `preview.workers.dev` is absent from a `clumeral.com` read.
 - filters by puzzle number: a row for 237 is absent; a row with `puzzle_num` NULL is absent.
 - filters by event: a `puzzle_complete` row with `puzzle_num` 238 is absent.
-- drops values outside 0–86400: `-5` and `86401` absent, `0` and `86400` present.
-- applies the window: rows at `DAY - 14h` and `DAY + 38h - 1` present; `DAY - 14h - 1` and
-  `DAY + 38h` absent.
+- drops values outside 1–86400 (item 116): `-5`, `0` and `86401` absent; `1` and `86400`
+  present. The `0` case is the one that matters: `recordEvent` writes 0 for any non-finite
+  value, so every junk POST is a 0s row.
+- applies the window, bounds inclusive (item 117): rows at exactly `DAY - 14h` and
+  `DAY + 38h` present; `DAY - 14h - 1` and `DAY + 38h + 1` absent.
 - excludes the caller's uid (item 91 inputs): your row present → not returned; absent → no
   change; present twice (two tabs) → neither returned; a stranger on your exact second →
   still counted.
@@ -188,10 +197,10 @@ export const TODAY_TIMES_SQL =
   `SELECT value AS second, SUM(sample_interval) AS count
      FROM analytics_events
     WHERE hostname = ? AND event = 'puzzle_time'
-      AND ts >= ? AND ts < ?
+      AND ts BETWEEN ? AND ?
       AND puzzle_num = ?
       AND uid <> ?
-      AND value BETWEEN 0 AND 86400
+      AND value BETWEEN 1 AND 86400
     GROUP BY value
     ORDER BY value`;
 
@@ -203,7 +212,11 @@ export async function getTodayTimes(
 ): Promise<{ second: number; count: number }[]>
 ```
 Binds `hostname, dayStartMs - ZONE_SLACK_MS, dayStartMs + DAY_MS + ZONE_SLACK_MS, puzzleNum,
-excludeUid`. Maps rows to `{ second: Number(r.second), count: Number(r.count) }` — building
+excludeUid`. Both `ts` bounds inclusive (item 117). The comment states why the value floor is
+1, not 0, as `getStats`' mean comment explains its own `BETWEEN` (item 116), and that rows
+outside the range are dropped, never clamped.
+
+Maps rows to `{ second: Number(r.second), count: Number(r.count) }` — building
 new objects, never passing D1 rows through, so no column can leak into the response
 (item 37). Comment carries item 37 as a hard rule and item 95's reasoning.
 
@@ -264,13 +277,13 @@ fail.
 
 ## Task 4 — Compact durations
 
-Implements 63, 78 (formatDuration line). Commit: `feat(stats): compact formatDuration for chart labels`.
+Implements 63, 78 (formatDuration line), 115 (hour branch), 120. Commit: `feat(stats): compact formatDuration for chart labels`.
 
 **Tests first** — `tests/player-stats.spec.ts`, beside the existing `formatDuration` cases:
 - `compact drops the zero minutes`: `formatDuration(41, { compact: true })` → `'41s'`;
   `0` → `'0s'`; `59` → `'59s'`.
 - `compact matches the default from a minute up`: `60` → `'1m 00s'`, `69` → `'1m 09s'`,
-  `892` → `'14m 52s'`, `3900` → `'1h 05m'`.
+  `892` → `'14m 52s'`, `3600` → `'1h 00m'`, `3840` → `'1h 04m'` (115).
 - `the default is unchanged`: the existing `221` → `'3m 41s'` and `48` → `'0m 48s'` cases stay,
   plus `formatDuration(null, { compact: true })` → `'—'`.
 
@@ -283,10 +296,12 @@ and that only the chart's own labels use it (item 63).
 ## Task 5 — The pure module, `src/time-chart.ts`
 
 Implements 17, 18, 19, 21, 28, 39, 47, 48, 55, 56, 59, 60, 61, 71, 78, 85, 86, 87, 88, 90, 91,
-94, 100, 101, 104, 105 (rank, percentile, copy lines), 106, 109.
+94, 100, 101, 104, 105 (rank, percentile, copy lines), 106, 109, 111, 113, 115, 116 (client
+guard), 120.
 Commit: `feat(results): time chart maths, copy and layout (pure)`.
 
-Ported from Idea-O lines 403–575 (item 104), with every item 105 divergence changed. The port
+Ported from Idea-O lines 403–575 (item 104), with every item 105 and item 115 divergence
+changed. The port
 keeps the board's explanatory comments where they still describe the code, trimmed to fit.
 
 ### API
@@ -312,14 +327,15 @@ export function buildField(rows: FieldRow[], yours: number): Field;
 /** Item 85: middle value at odd n; mean of the middle two, rounded, at even n. */
 export function median(sorted: number[]): number;
 
-/** Item 28, integer-first (D17). faster = count strictly faster than you. */
+/** Items 28 and 111, integer-first and capped at 99 (D17). faster = count strictly faster
+ *  than you. Never called for the strictly slowest, who reads item 60's line. */
 export function percentile(faster: number, n: number): number;
 
 export type Ranking =
   | { kind: 'first' }                                   // n = 1 (61)
   | { kind: 'fastest'; joint: boolean }                 // n ≥ 2, nobody faster (88, 94)
   | { kind: 'ordinal'; rank: number; joint: boolean }   // 2 ≤ n < 10 (56)
-  | { kind: 'percentile'; pct: number }                 // n ≥ 10 (59)
+  | { kind: 'percentile'; pct: number }                 // n ≥ 10, 1–99 (59, 111)
   | { kind: 'count'; n: number };                       // n ≥ 10, strictly slowest (60)
 
 export function ranking(field: Field): Ranking;
@@ -341,7 +357,7 @@ export function layout(input: {
   track: number; geometry: Geometry; refWidths: number[]; youWidth: number;
 }): Layout;
 
-/** Item 71's visually hidden sentence. */
+/** Item 113's visually hidden sentence. */
 export function spokenSummary(field: Field, g: Geometry): string;
 
 /** Label text, compact form (item 63). */
@@ -374,7 +390,8 @@ export function labelTime(seconds: number): string; // formatDuration(s, { compa
   `size = Math.min(21, (mine ? 13 : 9) + (count - 1) * 4)`, `mine = second === yours`.
   Then the median disc (85): if `n >= 3` and `!tally.has(median)`, push
   `{ fraction: fraction(median), size: 9, mine: false }`.
-- **Refs** (board, unchanged): flat → `[Fastest center]`. Otherwise `Fastest start`, then
+- **Refs** (board, unchanged): flat → `[Fastest center]`, at any n — the board wins over item
+  47 here (item 115). Otherwise `Fastest start`, then
   `Median center` if `n >= 3`, then `Slowest end`. `seconds` is the true time (not floored).
 - **layout:** the board's algorithm with `TRACK` replaced by `input.track` (105):
   each ref box is `width = refWidths[k]`, `at = fraction * track`, `left` from its anchor
@@ -386,11 +403,15 @@ export function labelTime(seconds: number): string; // formatDuration(s, { compa
   `note = you.at < track / 2 ? 'right' : 'left'` (Idea-R flip rule).
   Below the 288px content floor (item 96) the passes still run and leaders stay true, but
   labels may overlap — 288px is the WCAG reflow floor (a 320 CSS px viewport).
-- **spokenSummary:** `` `${n} solve ${n === 1 ? 'time' : 'times'} today.` `` then the refs in
-  order as `Fastest 23 seconds`, `median 1 minute 10 seconds`, `slowest 4 minutes 2 seconds`
-  (first capitalised, joined by `, `, ended by `.`), then `` `Yours: ${speakDuration(yours)}.` ``.
-  It names exactly the refs the picture draws, so at n = 1 it is
-  `1 solve time today. Fastest 41 seconds. Yours: 41 seconds.` (71).
+- **spokenSummary** (item 113, "players" throughout), first match wins, durations through
+  `speakDuration`:
+  1. n = 1 → `1 player solved today. Yours: 41 seconds.`
+  2. flat (every time on one second), any n ≥ 2 →
+     `5 players solved today, all in 41 seconds. Yours: 41 seconds.`
+  3. n = 2 → `2 players solved today. Fastest 30 seconds, slowest 41 seconds. Yours: 41 seconds.`
+  4. otherwise → `14 players solved today. Fastest 23 seconds, median 1 minute 10 seconds,
+     slowest 4 minutes 2 seconds. Yours: 41 seconds.`
+  The reference times are the true seconds, not the placement floor.
 
 ### Tests — `tests/time-chart.spec.ts`, written before the module
 
@@ -416,8 +437,9 @@ Counting yourself once (18, 91, 110):
   are dropped (D16).
 
 Percentile (28, D17):
-- `percentile(0, 10) === 10`, `percentile(9, 10) === 100`, `percentile(6, 10) === 70`
-  (the float trap), `percentile(0, 50) === 2`, `percentile(1, 3) === 67`.
+- `percentile(0, 10) === 10`, `percentile(6, 10) === 70` (the float trap),
+  `percentile(0, 50) === 2`, `percentile(1, 3) === 67`.
+- the 99 cap (111): `percentile(99, 101) === 99` (ceil gives 100), `percentile(198, 200) === 99`.
 
 Ranking and copy, as full rendered strings `pre + bold + post` (56, 59–61, 88, 94, 100):
 - n = 1 → `You're the first to solve today` (also documents item 100).
@@ -430,6 +452,9 @@ Ranking and copy, as full rendered strings `pre + bold + post` (56, 59–61, 88,
 - 7th of 10 → `You're in the top 70% of solve times`.
 - strictly slowest of 10 → `10 players solved today`; tied slowest at 10 (two on the last
   second) → `You're in the top 90% of solve times`.
+- 100th of 101, with one strictly slower → `You're in the top 99% of solve times`; tied
+  slowest at rank 199 of 200 → `You're in the top 99% of solve times`. "top 100%" never
+  appears (111).
 - ordinals 11th, 12th, 13th, 21st, 22nd at n < 10 are unreachable, so test `ordinal` directly
   for 1–4, 11–13, 21–23.
 
@@ -442,8 +467,17 @@ Layout (48, 52, 96, 105, 108):
 - the note box (width 66, the measured `— log scale` at 12px, doubled for 200%) and your box
   never overlap, on the same sweep, at 288 and 480.
 
-Spoken sentence (71): n = 1, n = 2, the brief's 14-player example, and that it uses words
-(`seconds`, `minute`), never `41s`.
+All-identical fields (115, 120), at n = 3 and n = 10, everyone on 41: one dot, size 17 at
+n = 3 and 21 at n = 10, `mine` true; refs exactly `[Fastest center]`; no median dot; copy
+`You're the joint fastest today`; spoken `3 players solved today, all in 41 seconds. Yours:
+41 seconds.` and the n = 10 equivalent.
+
+Spoken sentence (113, 120): each of the four variants as written above — n = 1, n = 2 with
+two different times, all-identical at n = 2, and the 14-player example — and that it uses
+words (`seconds`, `minute`), never `41s`.
+
+The 1s guard (116): a malformed 0 row that reaches the client is kept, floored to 1 for
+placement, and its label still reads `0s`.
 
 ---
 
@@ -511,7 +545,8 @@ of the sprite's other Lucide-style symbols.
 ## Task 7 — The view, and wiring it into the panel
 
 Implements 4, 11, 16, 22, 23, 25, 26, 30, 31, 38, 46, 50, 52, 53, 54, 57, 62, 65, 66, 68, 69,
-71, 72, 76, 77, 91, 92, 93, 96, 97, 101, 105 (heading, note, width), 107, 109, 110.
+71, 72, 76, 77, 91, 92, 93, 96, 97, 101, 105 (heading, note, width), 107, 109, 110, 112, 118,
+120, 121.
 Commit: `feat(results): Everyone today card on /solved`.
 
 ### `src/time-chart-view.ts`
@@ -531,7 +566,9 @@ export function showTimeChart(): void;
 - `timeChartSlot()` returns
   `<section data-stat-block="everyone-today" data-time-chart class="stat-block" aria-busy="true"></section>`.
   `aria-labelledby` is added only when drawn, so it never points at a missing id.
-- `showTimeChart()`: no context, or no `[data-time-chart]` in the document → return. Otherwise
+- `showTimeChart()`: no context, or no `[data-time-chart]` in the document → return. The
+  context is set only for item 46's modes, so this is the mode check item 121 asks for: a
+  random solve's `screens:enter` fetches nothing and sends no `time_chart`. Otherwise
   `visit += 1`; set `aria-busy="true"` and `hidden = false`; fetch
   `/api/times/${puzzleNum}` with `{ cache: 'no-store', signal }`, adding
   `headers: { 'X-Clumeral-Uid': uid }` only when `ctx.sendUid` (D2, items 91, 110); 5s
@@ -596,9 +633,12 @@ jsdom has no layout, so these test structure and flow, not pixels. `fetch` is st
 
 `tests/time-chart-view.spec.ts`:
 - a `screens:enter` for `completion` fetches `/api/times/<num>` once; for `game` it does not.
+- after a random solve (`renderCompletion(…, true, …)`), a `screens:enter` for `completion`
+  makes no fetch and dispatches no `analytics:track` (121).
+- the uid is never in the request URL, only the header (118).
 - the header is sent when today's history holds a recorded entry, and absent on a saving-off
   solve with no entry; present for a saving-on solve later viewed with saving turned off
-  (91, 110).
+  (91, 110, 112, 120).
 - two visits fetch twice (25); a slow first response arriving after the second is ignored (D8).
 - success: heading `Everyone today`, the copy line text, the sr-only sentence, the track
   `aria-hidden="true"`, `aria-busy` gone, `aria-labelledby` resolving to the heading, no
@@ -614,7 +654,7 @@ jsdom has no layout, so these test structure and flow, not pixels. `fetch` is st
 
 ## Task 8 — Playwright e2e
 
-Implements 52, 54, 69, 70, 71, 81 (in part), 83, 96, 108. Commit: `test(e2e): time chart card`.
+Implements 52, 54, 69, 70, 71, 81 (in part), 83, 96, 108, 113. Commit: `test(e2e): time chart card`.
 QA scope is item 83: this one spec, plus the existing `completion.spec.ts` and `a11y.spec.ts`.
 Not the full suite.
 
@@ -642,7 +682,8 @@ service worker sends `/api/` network-only anyway, so blocking it loses nothing t
   (seeded marker for today) modes, and in marker mode no request to `/api/times/` is made.
 - axe on `/solved` with the card drawn, light and dark, using `a11y.spec.ts`'s existing
   configuration and exception list unchanged (70).
-- the track is `aria-hidden` and the sr sentence is in the accessibility tree.
+- the track is `aria-hidden`, and the sr sentence is in the accessibility tree with the
+  item 113 text at n = 1, n = 2, an all-identical field, and n ≥ 3.
 
 Run per CLAUDE.md and the memories: against the production build, reading passes per project
 from the output, not the exit code.
@@ -651,11 +692,15 @@ from the output, not the exit code.
 
 ## Task 9 — Docs
 
-Implements 7, 36, 75, 82, 95, 99. Commit: `docs: time chart route, puzzle_num and time_chart`.
+Implements 7, 36, 75, 82, 95, 99, 119. Commit: `docs: time chart route, puzzle_num and time_chart`.
 
 - `docs/ANALYTICS.md`: the `puzzle_num` column (what writes it, NULL for older rows and old
   clients); the `time_chart` event (source, value, when sent, sent for saving-off players);
-  the `GET /api/times/:num` route and its hard rule (item 37).
+  the `GET /api/times/:num` route; and item 37's rule stated as a rule (119).
+- `docs/INVARIANTS.md`: item 37's rule as a standing rule — the field route never returns a
+  uid, a solve timestamp, or anything but a time and its count — placed with the privacy and
+  answer-safety rules, naming `tests/worker/times-route.spec.ts` as the test that holds it
+  (119).
 - `docs/ARCHITECTURE.md`: the route under "Worker API"; `time-chart.ts` and
   `time-chart-view.ts` in the file list.
 - `CLAUDE.md`: the "No worker/API changes" constraint gains an exception for this one
@@ -701,12 +746,17 @@ Every brief item, to a task or to "no code".
 | 20, 84 | Void (106) |
 | 4, 16, 22, 46 | Task 7 |
 | 7 | Tasks 2, 9 |
-| 8, 15, 32, 33, 34, 35, 37, 42, 95 | Task 2 |
+| 8, 15, 32, 33, 34, 35, 37, 42, 95, 116, 117 | Task 2 (116 also Task 5) |
+| 111, 113, 115 | Task 5 (113 also Task 8; 115 also Task 4) |
+| 112, 118, 121 | Task 7 (118 also Task 2) |
+| 114 | No code — record of acks |
+| 119 | Task 9 |
+| 120 | Tasks 2, 4, 5, 7 |
 | 11, 23, 25, 26, 30, 31, 38, 50, 53, 57, 62, 65, 68, 72, 76, 92, 93, 110 | Task 7 |
 | 12, 40, 74 | Task 3 |
 | 17, 19, 28, 39, 55, 56, 59, 60, 61, 85, 86, 87, 88, 90, 94, 100, 104, 106, 109 | Task 5 |
 | 18, 91 | Tasks 2, 5, 7 |
-| 21 | Tasks 2 (clamp), 5 (floor) |
+| 21 | Tasks 2 (drop), 5 (floor) |
 | 24 | Tasks 1, 2, 3 |
 | 29, 41, 43, 45 | Task 1 (45 also Task 2) |
 | 36 | Task 9 |
