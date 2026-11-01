@@ -58,12 +58,25 @@ const LABEL_IN_NAME_RULE = "label-content-name-mismatch";
 
 // Each entry is the axe target AND a signature that must appear in the node's own
 // markup. The pairing is the fix for a real hole: axe's selector is only
-// guaranteed unique within ONE document, and the archive, feedback and stats
-// routes are separate Worker-rendered documents that `seriousViolations` also
-// scans. A future `<button data-reset>Clear filters</button>` on /archive would
+// guaranteed unique within ONE document, and /archive is a separate
+// Worker-rendered document that `seriousViolations` also scans. (Only /archive
+// — /stats and the Worker feedback dashboard are never passed to axe, and the
+// "feedback modal" scan is the in-app dialog in this same document.) A future
+// `<button data-reset>Clear filters</button>` on /archive would
 // be the only `[data-reset]` there, so axe would emit exactly
 // `button[data-reset=""]` and a target-only match would silently excuse it.
 // `board-ctrl` and `data-box-name` exist nowhere but index.html's board.
+//
+// The signature has to survive axe's own truncation of `node.html`: over 300
+// characters it rebuilds the opening tag, and if the attribute block alone is
+// over 300 it truncates every attribute NAME AND VALUE to 20 characters first.
+// Both signatures clear that today — `data-box-name="Hundreds box"` is 13 and 12
+// characters, and `class="key-face board-ctrl"` is 19 so the controls never reach
+// the branch. Adding a long Tailwind class list to .board-ctrl, or any class
+// BEFORE `board-ctrl`, would truncate the value and drop the signature. It fails
+// closed, but the red reads `unexpected node(s) button[data-undo=""]` — a
+// documented node reported as unexpected. If you see that, check the class order
+// before touching this list.
 const LABEL_IN_NAME_EXCEPTIONS = [
   { target: 'button[data-undo=""]', signature: "board-ctrl" },
   { target: 'button[data-reset=""]', signature: "board-ctrl" },
@@ -295,7 +308,9 @@ test.describe("accessibility — board control shortcut hint", () => {
 // the only passing names are the literal painted digits ("Hundreds box
 // 0123456789") or no button role at all. That rule is overruled on these three
 // nodes instead — see LABEL_IN_NAME_EXCEPTIONS at the top of this file for the
-// reasoning, and #345, which it closed.
+// reasoning, and #345, which settles it. (#345 closes on the release to main,
+// not on this merge into staging — GitHub only auto-closes from the default
+// branch.)
 test.describe("accessibility — digit box names", () => {
   test.use({ colorScheme: "light" });
 
@@ -466,6 +481,49 @@ test.describe("accessibility — the label-in-name exception stays honest", () =
         "real Label in Name problem — fix the control, do not extend the list — or axe " +
         "changed how it names nodes, in which case re-derive the targets. See #345.",
     ).toEqual([...LABEL_IN_NAME_TARGETS].sort());
+  });
+
+  // The blind spot the assertion above cannot see. It force-enables the rule with
+  // .withRules(), but seriousViolations calls a plain analyze() and gets axe's
+  // DEFAULTS — and 4.14 already ships nine WCAG rules disabled by default. If a
+  // future minor flips this one to default-off, the six real scans stop checking
+  // 2.5.3 everywhere while this describe block still force-enables it and still
+  // counts five. The exception would then be excusing nodes nobody is checking,
+  // green. Removing the dependabot ignore means such a bump now arrives on its own.
+  test("the rule is still ON by default, so the real scans still run it", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+
+    const results = await new AxeBuilder({ page }).analyze();
+    const ran = [...results.violations, ...results.passes, ...results.incomplete, ...results.inapplicable];
+    expect(
+      ran.map((r) => r.id),
+      `${LABEL_IN_NAME_RULE} did not run in a default analyze(). If axe has made it ` +
+        "opt-in, seriousViolations must enable it explicitly — otherwise the exception " +
+        "above is excusing nodes that nothing checks. See #345.",
+    ).toContain(LABEL_IN_NAME_RULE);
+  });
+
+  // Low-tech, and the thing that actually closes the hole the exception opens.
+  // axe can no longer see a Label in Name regression on these five, so the names
+  // are pinned by hand. They are asserted elsewhere too, but co-located here they
+  // cannot be tidied away without someone reading why the list exists.
+  test("the excused controls still have the names the exception assumes", async ({ page }) => {
+    await gotoPlayableGame(page);
+    await waitForScreenSettled(page, "game");
+
+    for (const [selector, name] of [
+      ["[data-undo]", "Undo last change"],
+      ["[data-reset]", "Reset all boxes"],
+      ['[data-digit="0"]', "Hundreds box, 9 remaining"],
+      ['[data-digit="1"]', "Tens box, 10 remaining"],
+      ['[data-digit="2"]', "Units box, 10 remaining"],
+    ] as const) {
+      await expect(
+        page.locator(selector),
+        `${selector} is excused from ${LABEL_IN_NAME_RULE}, so its name is only guarded here`,
+      ).toHaveAccessibleName(name);
+    }
   });
 });
 
