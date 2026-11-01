@@ -27,6 +27,9 @@ export interface Field {
 }
 
 const MAX_SECONDS = 86_400;
+// No real second holds a million players. The rows are expanded into an array
+// below, so an absurd count would hang the tab (Fable review L3).
+const MAX_COUNT = 1_000_000;
 
 /** Strangers' rows (from the server, your uid already excluded) plus your own time,
  *  added once. Drops malformed rows: the server already drops times outside
@@ -36,7 +39,7 @@ export function buildField(rows: FieldRow[], yours: number): Field {
   for (const r of rows) {
     const ok =
       Number.isInteger(r.second) && r.second >= 0 && r.second <= MAX_SECONDS &&
-      Number.isInteger(r.count) && r.count > 0;
+      Number.isInteger(r.count) && r.count > 0 && r.count <= MAX_COUNT;
     if (!ok) continue;
     for (let k = 0; k < r.count; k++) sorted.push(r.second);
   }

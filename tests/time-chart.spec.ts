@@ -192,6 +192,7 @@ describe('counting yourself once', () => {
         { second: 30, count: 0 },
         { second: 30, count: '2' as unknown as number },
         { second: 86401, count: 1 },
+        { second: 70, count: 1e9 },
         { second: 60, count: 2 },
       ],
       41,

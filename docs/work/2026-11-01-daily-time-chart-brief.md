@@ -736,3 +736,11 @@ localStorage throws, which can count that player twice (rare); a stale cached sp
 for one load on PWA updates. **Raised to Jamie separately, out of scope:** `/api/dev/answer`
 answers on the production deployment's workers.dev address, since it blocks only the
 `clumeral.com` hostname — a P4 breach that predates this branch.
+
+**Fable review (item 89), 2026-11-01** — `claude-fable-5-1` subagent over the whole diff,
+checking the maths, the copy at every state, item 37, contrast and accessibility against the
+code. Nothing Medium or above; three Lows. Fixed: a 0s own time no longer shows the card,
+since it is junk (87) and would beat every real player (tested); rows with a count over a
+million are dropped, since rows are expanded into an array (tested). Wording: item 131's
+"yours is 4px larger" holds below the 25px cap; at the cap yours and a stranger's are the
+same size, and yours stays distinct by its solid accent colour and its label (66).

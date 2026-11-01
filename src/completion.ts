@@ -355,9 +355,12 @@ export function renderCompletion(
 
   // The time chart (time chart brief 46): today's daily with a recorded or
   // in-memory time. Random and archive have no field (4); a marker has no time
-  // (22, 92). The uid goes with the request only when today's time was sent —
-  // a recorded entry — so the server can leave the player's own row out (110).
-  const showsChart = (mode === 'full' || mode === 'new' || mode === 'saving-off') && seconds !== null;
+  // (22, 92), and neither does a 0s time, which is junk (87) and would beat
+  // every real player, since the server drops 0s rows (116). The uid goes with
+  // the request only when today's time was sent — a recorded entry — so the
+  // server can leave the player's own row out (110).
+  const showsChart =
+    (mode === 'full' || mode === 'new' || mode === 'saving-off') && seconds !== null && seconds >= 1;
   const sendUid = loadHistory().some((e) => e.date === todayKey() && !e.marker && !e.archived);
   setTimeChartContext(showsChart ? { puzzleNum, seconds, sendUid } : null);
 

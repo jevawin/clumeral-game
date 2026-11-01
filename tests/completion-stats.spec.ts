@@ -646,5 +646,9 @@ describe('the time chart slot', () => {
     expect(slot()).toBeNull();
     await render(RETURNING, 2, false, {});
     expect(slot()).toBeNull();
+    // A 0s own time is junk (item 87) and would beat every real player, since
+    // the server drops 0s rows (Fable review L1).
+    await render(RETURNING, 2, false, { seconds: 0 });
+    expect(slot()).toBeNull();
   });
 });
