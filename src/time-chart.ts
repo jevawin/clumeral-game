@@ -125,9 +125,9 @@ export interface Geometry {
   you: { fraction: number; seconds: number };
 }
 
-const DOT = 11;
-const DOT_YOU = 15;
-const DOT_MAX = 23;
+const DOT = 13;
+const DOT_YOU = 17;
+const DOT_MAX = 25;
 
 /** How far the ends of the axis are drawn in from the track's edges: half the
  *  largest dot, so an end dot sits whole inside the track and its leader runs to
@@ -162,8 +162,9 @@ export function geometry(field: Field): Geometry {
   const lnSpan = Math.log(hi) - lnLo;
   const fraction = (t: number) => (flat ? 0.5 : (Math.log(p(t)) - lnLo) / lnSpan);
 
-  // ONE DOT PER DISTINCT TIME, grown by how many people share that second. 11px
-  // and 15px, up from the board's 9 and 13, with the cap at 23 (Jamie, item 128).
+  // ONE DOT PER DISTINCT TIME, grown by how many people share that second. 13px
+  // and 17px, up from the board's 9 and 13, with the cap at 25 (Jamie, items
+  // 128, 130).
   const dots: Dot[] = [...tally.keys()]
     .sort((a, b) => a - b)
     .map((t) => {
@@ -219,7 +220,7 @@ export interface Layout {
 const GAP = 8;
 
 /** Whether the reference labels, at the widths measured, sit side by side with
- *  their 8px gaps. Labels are 14px; when they do not fit — large text on a narrow
+ *  their 8px gaps. Labels are 15px; when they do not fit — large text on a narrow
  *  phone — the view steps every label down to 12px (Jamie, item 125). */
 export function refsFit(widths: number[], track: number): boolean {
   return widths.reduce((sum, w) => sum + w, 0) + GAP * (widths.length - 1) <= track;

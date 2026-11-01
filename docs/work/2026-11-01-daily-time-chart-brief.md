@@ -693,3 +693,8 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     the left edge and Slowest's ends at the right edge, so their leaders, on the end dots,
     sit just inside the labels. Your own label follows the same rule when you are at an
     end, so it lines up with the label below it. (Jamie 2026-11-01)
+130. (amends 125, 128) **Trial: 2px lines, 13px and 17px dots (cap 25), 15px labels on 18px
+    rows.** Reserved height re-measured at 13.1rem. Built for Jamie to judge on the
+    preview; costs raised with it: the dense end of a busy day merges into one shape, your
+    dot is now 4px larger on a 13px base (was 6px on 9, then 4 on 11), and 15px labels sit
+    1px under the 16px copy line. (Jamie 2026-11-01)

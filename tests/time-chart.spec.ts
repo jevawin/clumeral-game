@@ -68,20 +68,20 @@ describe('positions on the log axis', () => {
 });
 
 describe('dot sizes', () => {
-  // Item 128: 11px and 15px, up from the board's 9 and 13; the cap moves to 23.
-  it('grows by 4px a player and caps at 23', () => {
+  // Items 128, 130: 13px and 17px, up from the board's 9 and 13; the cap is 25.
+  it('grows by 4px a player and caps at 25', () => {
     const g = geometry(buildField([{ second: 10, count: 1 }, { second: 20, count: 3 }, { second: 30, count: 7 }], 40));
     expect(g.dots.map((d) => [d.size, d.mine])).toEqual([
-      [11, false],
-      [19, false],
-      [23, false],
-      [15, true],
+      [13, false],
+      [21, false],
+      [25, false],
+      [17, true],
     ]);
   });
 
-  it('makes yours 23 when two strangers share your second', () => {
+  it('makes yours 25 when two strangers share your second', () => {
     const g = geometry(buildField([{ second: 41, count: 2 }, { second: 90, count: 1 }], 41));
-    expect(g.dots.find((d) => d.mine)?.size).toBe(23);
+    expect(g.dots.find((d) => d.mine)?.size).toBe(25);
   });
 });
 
@@ -105,14 +105,14 @@ describe('the median', () => {
     expect(g.dots).toHaveLength(f.tally.size);
   });
 
-  it('at even n off any real time draws one extra 11px disc', () => {
+  it('at even n off any real time draws one extra 13px disc', () => {
     const f = field([10, 20, 40], 31);
     const g = geometry(f);
     expect(g.refs.find((r) => r.word === 'Median')?.seconds).toBe(26);
     expect(g.dots).toHaveLength(f.tally.size + 1);
     const lo = Math.log(10);
     const disc = dotAt(g, (Math.log(26) - lo) / (Math.log(40) - lo));
-    expect(disc).toEqual({ fraction: expect.any(Number), size: 11, mine: false });
+    expect(disc).toEqual({ fraction: expect.any(Number), size: 13, mine: false });
   });
 
   it('at even n on a real time draws no extra disc', () => {
@@ -310,7 +310,7 @@ describe('layout', () => {
   });
 });
 
-// Item 125: labels step down from 14px only when three cannot sit side by side.
+// Item 125: labels step down from full size only when three cannot sit side by side.
 describe('refsFit', () => {
   it('fits when the boxes and their 8px gaps fit the track', () => {
     expect(refsFit([90, 90, 92], 288)).toBe(true);
@@ -328,7 +328,7 @@ describe('all-identical fields', () => {
     it(`at n = ${n}: one dot, Fastest only, joint fastest`, () => {
       const f = field(Array(n - 1).fill(41), 41);
       const g = geometry(f);
-      expect(g.dots).toEqual([{ fraction: 0.5, size: 23, mine: true }]);
+      expect(g.dots).toEqual([{ fraction: 0.5, size: 25, mine: true }]);
       expect(g.refs.map((r) => [r.word, r.anchor, r.seconds])).toEqual([['Fastest', 'center', 41]]);
       expect(copy(Array(n - 1).fill(41), 41)).toBe("You're the joint fastest today");
       expect(spokenSummary(f, g)).toBe(`${n} players solved today, all in 41 seconds. Yours: 41 seconds.`);
