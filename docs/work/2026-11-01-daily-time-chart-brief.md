@@ -718,3 +718,8 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
     gone, since no dot is small any more. Cost, accepted: on a busy day the field is a
     band of overlapping dots, and shared-second growth reaches the 25px cap at about five
     players. (Jamie 2026-11-01)
+
+**Build-stage sign-off, 2026-11-01.** Dave signed off items 124–133, including the dot
+sizing in 131–133 (dot area encodes a count) and the "Daily leaderboard" copy in 126,
+relayed by Jamie. Jamie's human review of the preview is done: "Good to go". Next gate:
+`da-build`.
