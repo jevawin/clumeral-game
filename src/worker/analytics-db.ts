@@ -131,10 +131,13 @@ export async function recordEvent(db: D1Database, e: AnalyticsEvent, now: number
       e.hostname,
       Number.isFinite(value) ? Math.trunc(value) : 0,
       e.newUser ? 1 : 0,
-      // Exact positive integers only. The body is unvalidated JSON and the field
-      // route filters on the exact number, so a string '238' must not be coerced
-      // into a match; anything else is stored as NULL and never shown (item 41).
-      Number.isSafeInteger(e.puzzleNum) && (e.puzzleNum as number) > 0 ? e.puzzleNum : null,
+      // puzzle_time only, and exact positive integers only. The body is
+      // unvalidated JSON and the field route filters on the exact number, so a
+      // string '238' must not be coerced into a match; anything else is stored as
+      // NULL and never shown (item 41).
+      e.event === 'puzzle_time' && Number.isSafeInteger(e.puzzleNum) && (e.puzzleNum as number) > 0
+        ? e.puzzleNum
+        : null,
     )
     .run();
 }

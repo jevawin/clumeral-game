@@ -259,6 +259,33 @@ describe('analytics', () => {
   });
 });
 
+// da-build finding 5: a render with no card lets go of the last card's observer,
+// so a replaced panel's slot is not kept alive.
+it('disconnects the observer when a later render has no card', async () => {
+  await render(recorded, 2, { seconds: 41 });
+  await enter();
+  expect(observers).toHaveLength(1);
+  const completion = await import('../src/completion.ts');
+  completion.renderCompletion(NUM, 2, true, { seconds: 41 });
+  await enter();
+  expect(observers[0].disconnect).toHaveBeenCalled();
+});
+
+// da-build finding 6: a Testing-panel preset is not a real field, so it sends no
+// time_chart event.
+it('sends no analytics for a preset field', async () => {
+  await render(recorded, 2, { seconds: 41 });
+  const view = await import('../src/time-chart-view.ts');
+  view.setFieldOverride(() => [{ second: 30, count: 1 }]);
+  await enter();
+  expect(slot().querySelector('.time-chart__line')).not.toBeNull();
+  expect(tracked).toEqual([]);
+  view.setFieldOverride(() => 'fail');
+  await enter();
+  expect(slot().hidden).toBe(true);
+  expect(tracked).toEqual([]);
+});
+
 // Item 30: nothing new is stored on the client.
 it('writes no storage key', async () => {
   await render(recorded, 2, { seconds: 41 });

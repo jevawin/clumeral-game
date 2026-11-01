@@ -47,8 +47,8 @@ export const VALID_EVENTS = new Set([
   // Value is the counted play seconds; source is 'clean' or 'idle-N', which is
   // how many times the two-minute cut-off fired that game. Today's daily puzzle
   // only, and only from a player with score saving on — see docs/ANALYTICS.md.
-  // puzzle_num (migration 0008) carries the puzzle number, written by this event
-  // only; it is what GET /api/times/:num filters on.
+  // puzzle_num (migration 0008) carries the puzzle number, stored for this event
+  // only (recordEvent drops it on any other); it is what GET /api/times/:num filters on.
   'puzzle_time',
   // The results card (brief item 77). Source 'drawn' or 'failed', value the field
   // size n (0 on failure). Sent once per /solved visit that should show the card.

@@ -83,7 +83,7 @@ a one-line change to `IDLE_TIMEOUT_MS`.
 does. The puzzle day is browser-local and `ts` is UTC, so `ts` alone cannot say which puzzle a
 time belongs to. Rows written before the column existed, and rows from a cached PWA build
 that predates it, are NULL and are never read by the field route. `recordEvent` stores only
-a positive safe integer; anything else, including the string `'238'`, is NULL.
+a positive safe integer, and only on `puzzle_time`; anything else, including the string `'238'`, is NULL.
 
 ## The results card: `GET /api/times/:num` and `time_chart`
 

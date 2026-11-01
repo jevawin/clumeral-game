@@ -129,7 +129,7 @@
    97). Not new colours: mixes of the accent and the text into the page
    background, as --color-border is a mix of the text. Into --color-bg, not
    transparent, so the dots are opaque, overlapping dots do not darken, and the
-   ratio is computable. 72% and 55% are set by the 3:1 floor against --color-bg
+   ratio is computable. 72% is set by the 3:1 floor against --color-bg
    in all eight theme × mode combinations — tightest is Lime light at 3.22.
    tests/palette-contrast.spec.ts pins the maths and this exact declaration.
    The chart's lines are solid --color-text now (item 128), so they need no

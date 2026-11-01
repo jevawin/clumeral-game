@@ -723,3 +723,16 @@ Raised by Jamie on the pre-prod preview, 2026-11-01, during human review. Later 
 sizing in 131–133 (dot area encodes a count) and the "Daily leaderboard" copy in 126,
 relayed by Jamie. Jamie's human review of the preview is done: "Good to go". Next gate:
 `da-build`.
+
+**da-build, 2026-11-01** — fresh-context subagent over the whole diff against `staging`.
+Nothing Medium or above; ten Lows. Fixed: a stale 55% comment; the podium sprite's comment
+and order; the ResizeObserver comment's loop reasoning; `puzzle_num` now stored for
+`puzzle_time` only (tested); the observer released when a render has no card (tested);
+Testing-panel presets send no `time_chart` (tested); and the panel's host gate narrowed to
+`*-clumeral-game.jevawin.workers.dev` previews and localhost, because the bare
+`clumeral-game.jevawin.workers.dev` serves the production deployment. Accepted: the panel
+overwriting `dlng_prefs` on previews (as `?demo=` does); a fresh uid each load when
+localStorage throws, which can count that player twice (rare); a stale cached sprite sheet
+for one load on PWA updates. **Raised to Jamie separately, out of scope:** `/api/dev/answer`
+answers on the production deployment's workers.dev address, since it blocks only the
+`clumeral.com` hostname — a P4 breach that predates this branch.

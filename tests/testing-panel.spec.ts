@@ -18,13 +18,15 @@ const copyFor = (rows: FieldRow[], yours: number) => {
 
 describe('testingAllowed', () => {
   it('allows local and workers.dev preview hosts', () => {
-    for (const h of ['localhost', '127.0.0.1', '[::1]', 'dev-x-clumeral-game.jevawin.workers.dev']) {
+    for (const h of ['localhost', '127.0.0.1', '[::1]', 'dev-x-clumeral-game.jevawin.workers.dev', 'staging-clumeral-game.jevawin.workers.dev']) {
       expect(testingAllowed(h), h).toBe(true);
     }
   });
 
   it('refuses production and anything else', () => {
-    for (const h of ['clumeral.com', 'www.clumeral.com', 'evilworkers.dev', 'workers.dev.example.com']) {
+    // clumeral-game.jevawin.workers.dev is the PRODUCTION deployment's own
+    // workers.dev address, not a preview (da-build finding 7).
+    for (const h of ['clumeral.com', 'www.clumeral.com', 'clumeral-game.jevawin.workers.dev', 'other.workers.dev', 'evilworkers.dev', 'workers.dev.example.com']) {
       expect(testingAllowed(h), h).toBe(false);
     }
   });

@@ -21,10 +21,11 @@ import { setFieldOverride, showTimeChart } from './time-chart-view.ts';
 
 const FIELD_KEY = 'clumeral-testing-field';
 
-/** Local hosts and workers.dev previews only. Stricter than demoAllowed, which
- *  only excludes clumeral.com itself. */
+/** Local hosts and this Worker's version previews (`<branch>-clumeral-game…`)
+ *  only. Not the bare `clumeral-game.jevawin.workers.dev`, which serves the
+ *  PRODUCTION deployment, and not any other workers.dev host. */
 export function testingAllowed(hostname: string): boolean {
-  return ['localhost', '127.0.0.1', '[::1]'].includes(hostname) || hostname.endsWith('.workers.dev');
+  return ['localhost', '127.0.0.1', '[::1]'].includes(hostname) || hostname.endsWith('-clumeral-game.jevawin.workers.dev');
 }
 
 export const FIELD_PRESETS = [

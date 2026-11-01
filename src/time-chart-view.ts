@@ -74,17 +74,25 @@ export function setTimeChartContext(next: TimeChartContext | null): void {
  */
 export function showTimeChart(): void {
   const slot = document.querySelector<HTMLElement>('[data-time-chart]');
-  if (!ctx || !slot) return;
+  if (!ctx || !slot) {
+    // No card this render: let go of the last card's observer, so a replaced
+    // panel's detached slot is not kept alive (da-build finding 5).
+    observer?.disconnect();
+    observer = null;
+    return;
+  }
   const current = ++visit;
   const c = ctx;
   slot.setAttribute('aria-busy', 'true');
   slot.hidden = false;
   const preset = fieldOverride?.(c.seconds) ?? null;
   const rowsP = preset === null ? fetchField(c) : Promise.resolve(preset === 'fail' ? null : preset);
+  // A Testing-panel preset is not a real field, so it sends no time_chart.
+  const real = preset === null;
   void rowsP.then((rows) => {
     if (current !== visit || !slot.isConnected) return;
-    if (rows) draw(slot, c, rows);
-    else fail(slot);
+    if (rows) draw(slot, c, rows, real);
+    else fail(slot, real);
   });
 }
 
@@ -125,7 +133,7 @@ function label(cls: string, data: string, word: string, time: string, timeFirst:
   return `<div class="${cls}" ${data}>${timeFirst ? t + w : w + t}</div>`;
 }
 
-function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[]): void {
+function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[], real: boolean): void {
   observer?.disconnect();
   observer = null;
 
@@ -174,12 +182,14 @@ function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[]): void {
   // The track's height is in rem, so text zoom resizes it and fires this, as
   // does any width change (plan D10). The labels are observed too: the web font
   // can swap in after the first measure, widening every label without touching
-  // the track. place() moves boxes and never resizes them, so this cannot loop.
+  // the track. It cannot loop: place() resizes labels only by toggling the
+  // tight class, and it removes, measures and re-applies that class in one
+  // call, so the size the observer last saw is the size it sees again.
   observer = new ResizeObserver(() => place(slot, track, g));
   observer.observe(track);
   for (const el of slot.querySelectorAll('[data-tc-ref], [data-tc-you], [data-tc-note]')) observer.observe(el);
 
-  report('drawn', field.n);
+  if (real) report('drawn', field.n);
 }
 
 const FLEX = { start: 'flex-start', center: 'center', end: 'flex-end' } as const;
@@ -240,12 +250,12 @@ function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   note.classList.add(`time-chart__note--${out.note}`);
 }
 
-function fail(slot: HTMLElement): void {
+function fail(slot: HTMLElement, real: boolean): void {
   observer?.disconnect();
   observer = null;
   slot.innerHTML = '';
   slot.hidden = true;
   slot.removeAttribute('aria-busy');
   slot.removeAttribute('aria-labelledby');
-  report('failed', 0);
+  if (real) report('failed', 0);
 }

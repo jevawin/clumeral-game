@@ -177,6 +177,18 @@ describe('recordEvent', () => {
     },
   );
 
+  // The column belongs to puzzle_time; a forged puzzleNum on any other event is
+  // dropped rather than stored (da-build finding 4).
+  it('stores NULL for a puzzleNum on any other event', async () => {
+    await recordEvent(
+      db(),
+      { event: 'time_chart', uid: 'u', hostname: 'clumeral.com', value: 3, puzzleNum: 238 },
+      NOW,
+    );
+    const row = await db().prepare('SELECT puzzle_num FROM analytics_events').first();
+    expect(row?.puzzle_num).toBeNull();
+  });
+
   // Item 45: a cached PWA build that predates the column sends no puzzleNum key.
   it('old clients without puzzleNum still record', async () => {
     await recordEvent(db(), { event: 'puzzle_time', uid: 'u', hostname: 'clumeral.com', value: 41 }, NOW);
