@@ -55,7 +55,7 @@ git push origin staging
 3. Review gates for non-trivial changes: DA review (fresh subagent) → self-review
 4. On user approval: `gh pr merge --squash` into `staging` (work branches are short-lived → squash)
 5. Repeat for other work branches
-6. When staging ready: open PR `staging → main`, share staging URL + PR link — **list a `Closes #NUM` line for every issue in the bundle** (see below)
+6. When staging ready: open PR `staging → main`, share staging URL + PR link — **list a `Closes #NUM` line for every issue in the bundle, and every user-visible change** (see below)
 7. User merges on GitHub with a **merge commit** ("Create a merge commit" — NOT squash; see Post-merge sync for why)
 8. Run post-merge sync + cleanup (below)
 
@@ -72,6 +72,26 @@ list drifted apart until someone read the code to work out what was actually don
 
 Squash-merging a work branch into `staging` does **not** close anything — `staging` is not the
 default branch. The closing reference has to be on the `staging → main` PR.
+
+## User-visible changes on release PRs
+
+Every `staging → main` PR body must also list the **user-visible** changes it ships — the ones a
+player would notice: a screen redesigned, a layout changed, copy rewritten, a flow altered. One
+line each is enough.
+
+This is a different job from the closing references above. Those keep the issue list honest; this
+one makes sure somebody reads what is about to reach players *before* it does.
+
+Skipping it is how the stats panel in #311 surprised everyone. It merged to `staging` on
+2026-09-06 after a normal review, sat unreleased for eight weeks, then reached production in the
+187-commit release #347 — whose body listed the browser matrix and the test results, but not a word
+about the redesigned `/solved` panel. Nothing bypassed a gate. The release simply shipped eight
+weeks of accumulated work without anyone reading a list of it first, and by then the panel could
+not be rolled back: it had already written new shapes into player history (P1 in
+[INVARIANTS.md](INVARIANTS.md)).
+
+**The longer the gap since the last release, the more this matters.** A release bundling a
+fortnight is easy to hold in your head. One bundling 187 commits is not.
 
 ## Preview URLs
 
