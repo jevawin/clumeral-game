@@ -88,6 +88,15 @@ test.describe("/stats daily plays chart", () => {
     await expect(unique).not.toHaveText("0");
   });
 
+  test("shows the average time to complete as a single figure", async ({ page }) => {
+    await page.goto("/stats");
+    const card = page.locator(".card").filter({ hasText: "Avg time to complete" }).locator(".card__val");
+    // Presence and format only, and a dash is a valid answer — the seed holds no
+    // puzzle_time rows. Deliberately NOT a weighting assertion: every row we
+    // write carries sample_interval 1, so there is no difference to observe here.
+    await expect(card).toHaveText(/^(—|\d+:\d\d)$/);
+  });
+
   test("states the real span in the period label", async ({ page }) => {
     await page.goto("/stats?period=all");
     await expect(page.locator(".period-label")).toContainText("All time");

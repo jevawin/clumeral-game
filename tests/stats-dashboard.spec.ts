@@ -16,6 +16,7 @@ function fakeStats(over: Partial<StatsResult> = {}): StatsResult {
     guessDistribution: [],
     sourceSplit: [],
     firstTs: NOW - 6 * DAY,
+    avgTimeSeconds: null,
     ...over,
   };
 }
@@ -399,5 +400,42 @@ describe('renderDashboard — range nav', () => {
     const active = [...parse(html).querySelectorAll('.period-nav a.active')];
     expect(active).toHaveLength(1);
     expect(active[0].textContent).toBe(label);
+  });
+});
+
+
+// The card that carries brief 40, 49 and 110: one figure, no chart, no new range
+// controls.
+describe('renderDashboard — average time to complete', () => {
+  function card(html: string, label: string): string | null {
+    const doc = parse(html);
+    for (const el of doc.querySelectorAll('.card')) {
+      if (el.querySelector('.card__label')?.textContent === label) {
+        return el.querySelector('.card__val')?.textContent ?? null;
+      }
+    }
+    return null;
+  }
+
+  it('shows the average as m:ss', () => {
+    const html = renderDashboard(fakeStats({ avgTimeSeconds: 252 }), { days: 30 }, 'clumeral.com', NOW);
+    expect(card(html, 'Avg time to complete')).toBe('4:12');
+  });
+
+  it('shows a dash, not 0:00, when nothing has been recorded', () => {
+    const html = renderDashboard(fakeStats(), { days: 30 }, 'clumeral.com', NOW);
+    expect(card(html, 'Avg time to complete')).toBe('—');
+  });
+
+  it('is present for every period, including all-time', () => {
+    for (const range of [{ days: 7 }, { days: 30 }, { days: 90 }, { all: true } as const]) {
+      const html = renderDashboard(fakeStats({ avgTimeSeconds: 60 }), range, 'clumeral.com', NOW);
+      expect(card(html, 'Avg time to complete'), JSON.stringify(range)).toBe('1:00');
+    }
+  });
+
+  it('pads the seconds', () => {
+    const html = renderDashboard(fakeStats({ avgTimeSeconds: 305 }), { days: 30 }, 'clumeral.com', NOW);
+    expect(card(html, 'Avg time to complete')).toBe('5:05');
   });
 });

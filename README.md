@@ -88,7 +88,7 @@ The dev server runs the Worker in Cloudflare's local runtime, so API endpoints a
 ## Testing
 
 ```bash
-npm test          # Unit tests (Vitest + jsdom)
+npm test          # Unit tests (Vitest — jsdom and workerd projects)
 npm run test:e2e  # End-to-end browser tests (Playwright)
 ```
 

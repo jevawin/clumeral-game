@@ -32,8 +32,11 @@ describe('worker test harness', () => {
     });
   });
 
-  // isolatedStorage means the previous test's row is rolled back. If this ever
-  // fails, tests are sharing state and every row-count assertion below is suspect.
+  // The previous test's row is gone because tests/worker/apply-migrations.ts calls reset()
+  // before each test and re-applies the migrations. It is NOT isolatedStorage: that option was
+  // removed in pool 0.19.1 and is silently stripped if passed, which is exactly why this
+  // assertion is worth having. If this ever fails, tests are sharing state and every
+  // row-count assertion below is suspect.
   it('isolates storage between tests', async () => {
     const row = await env.ANALYTICS_DB.prepare('SELECT COUNT(*) AS n FROM analytics_events').first();
     expect(row?.n).toBe(0);

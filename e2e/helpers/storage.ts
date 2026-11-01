@@ -8,6 +8,13 @@ export interface HistoryEntry {
   date: string; // YYYY-MM-DD
   tries: number;
   answer?: number;
+  /** An archive replay. Excluded from every stat. */
+  archived?: boolean;
+  /** Counted play seconds, 0-86400. Absent means unknown, never 0. */
+  seconds?: number;
+  /** The day-only marker a player with score saving off leaves behind. `tries`
+   *  is 0 and means nothing. */
+  marker?: true;
 }
 
 // Seed solve history (drives completion stats, streaks, "already played today").

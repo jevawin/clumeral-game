@@ -6,11 +6,11 @@
 // `viewBox="0 0 600 240"` with `width: 100%`, so rendered pixels are
 // `viewBox units × containerPx / 600`.
 //
-// The container is NOT 600px. `/stats` body is max-width 40rem with 1.5rem padding,
-// so it is 592px on desktop and 327px on a 375px phone — a scale of ~0.99 and
-// ~0.55. Every threshold here is sized for the 327px case, because a rule tuned on
-// desktop under-thins text by ~1.8× on a phone, which is exactly how label
-// collisions get shipped.
+// The container is NOT 600px. `/stats` is on the page column now — 480px of
+// content behind a 1rem gutter — so it is 480px on any window wider than 512px
+// and 343px on a 375px phone, a scale of 0.8 and ~0.57. Every threshold here is
+// sized for the phone case, because a rule tuned on desktop under-thins text by
+// ~1.4x on a phone, which is exactly how label collisions get shipped.
 
 export const VIEW_W = 600;
 export const VIEW_H = 240;
@@ -24,8 +24,10 @@ export const PLOT_W = VIEW_W - GUTTER; // 568
  * Width one x-axis label needs, in viewBox units.
  *
  * "5 Jul" in Inconsolata at 0.6875rem is ~40px, plus 8px separation = 48px. At the
- * mobile scale of 0.55 that is ~87 viewBox units. Doubles as the minimum separation
- * for the two direct bar labels.
+ * mobile scale of ~0.55 that is ~87 viewBox units. Kept at 87 after the page-column
+ * change: the narrowest container went UP (327px to 343px), so the budget is now
+ * slightly generous rather than tight. Doubles as the minimum separation for the
+ * two direct bar labels.
  */
 export const LABEL_W = 87;
 

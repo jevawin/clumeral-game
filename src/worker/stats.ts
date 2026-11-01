@@ -171,6 +171,19 @@ function rangeDays(stats: StatsResult, range: StatsRange, now: number): { from: 
   return { from: toISODay(rangeCutoff(range, now) as number), to };
 }
 
+/**
+ * Whole seconds as m:ss, or a dash when there is nothing to show.
+ *
+ * Deliberately a local copy of one rule rather than an import: src/worker/ must
+ * not import client modules and vice versa (docs/CONVENTIONS.md, "Code
+ * separation"). Hours are not formatted here — this is a mean across many games
+ * and it will not reach one.
+ */
+export function formatSeconds(seconds: number | null): string {
+  if (seconds === null) return '—';
+  return `${Math.floor(seconds / 60)}:${String(Math.round(seconds) % 60).padStart(2, '0')}`;
+}
+
 function periodLabel(range: StatsRange, window: { from: string; to: string } | null): string {
   if (window === null) return 'All time · no data yet';
   const span = `${formatDay(window.from)} – ${formatDay(window.to)}`;
@@ -206,6 +219,10 @@ export function renderDashboard(
   const incorrectGuesses = eventMap.get('incorrect_guess') ?? 0;
   const completionRate = totalPlays > 0 ? ((completions / totalPlays) * 100).toFixed(1) : '0';
   const returningUsers = stats.uniqueUsers - stats.newUsers;
+  // A dash rather than 0:00, so "nobody has sent one yet" is not read as
+  // "everybody solves it instantly". Its own tiny formatter rather than an
+  // import: the Worker must not import client modules (docs/CONVENTIONS.md).
+  const avgTime = formatSeconds(stats.avgTimeSeconds);
 
   const window = rangeDays(stats, range, now);
   const dailyRows = stats.daily
@@ -280,8 +297,12 @@ export function renderDashboard(
     font-family: "Quicksand", system-ui, sans-serif;
     background: light-dark(#f5edd8, #262624);
     color: var(--ink);
-    padding: 1.5rem;
-    max-width: 40rem;
+    /* The page column (brief 54, 56). calc() rather than a bare 30rem because
+       the gutter must sit OUTSIDE the cap: 480px of content behind 1rem each
+       side, matching --page-max and --page-gutter in src/tailwind.css, which
+       this page cannot import. */
+    padding: 1rem;
+    max-width: calc(480px + 2rem);
     margin: 0 auto;
   }
   h1 { font-size: 1.5rem; margin-block-end: 0.25rem; }
@@ -325,15 +346,21 @@ export function renderDashboard(
      so it stays visible when neighbouring bars touch at long ranges. */
   .zero { fill: var(--ink-muted); }
   .grid { stroke: var(--grid); stroke-width: 1; }
-  .axis { fill: var(--ink-muted); font-family: "Inconsolata", monospace; font-size: 11px; }
-  .direct { fill: var(--ink); font-family: "Inconsolata", monospace; font-size: 13px; font-weight: 700; }
+  /* 14 and 16 viewBox units, not 11 and 13. The container narrowed from 592px to
+     480px when this page joined the page column, and SVG text scales with it:
+     11 units rendered at 10.9px before and would render at 8.8px now. These
+     numbers put it back at 11.2px and 12.8px — the sizes it has always been. */
+  .axis { fill: var(--ink-muted); font-family: "Inconsolata", monospace; font-size: 14px; }
+  .direct { fill: var(--ink); font-family: "Inconsolata", monospace; font-size: 16px; font-weight: 700; }
   /* Text inside the SVG is drawn in viewBox units, and the viewBox scales with the
-     container — so a size tuned on desktop shrinks with everything else. The
-     container is 592px wide on desktop (scale ~0.99) but 327px on a 375px phone
-     (scale ~0.55), where 11 units would render at 6px. These steps hold axis text
-     at roughly 10-14 real pixels across the range, which is also the size the
-     87-unit label budget in chart.ts assumes. */
-  @media (max-width: 640px) { .axis { font-size: 14px; } .direct { font-size: 17px; } }
+     container — so a size tuned at one width shrinks at another. The container is
+     480px above a 512px window (scale 0.8) and 343px on a 375px phone (~0.57).
+     The steps below hold axis text at roughly 10-13 real pixels across that
+     range, which is also the size the 87-unit label budget in chart.ts assumes. */
+  /* The 640px step is gone: above 512px the container is a constant 480px, so
+     the scale no longer changes with the window and a step there would have made
+     the text JUMP SMALLER as the window grew past 641px. Below 512px the
+     container really is viewport - 32, so these two still earn their keep. */
   @media (max-width: 480px) { .axis { font-size: 18px; } .direct { font-size: 21px; } }
   @media (max-width: 380px) { .axis { font-size: 20px; } .direct { font-size: 24px; } }
   .empty { color: var(--ink-muted); padding: 2rem 0; text-align: center; }
@@ -362,6 +389,7 @@ export function renderDashboard(
     <div class="card"><div class="card__val">${completionRate}%</div><div class="card__label">Completion rate</div></div>
     <div class="card"><div class="card__val">${dailyAvg}</div><div class="card__label">Avg daily plays</div></div>
     <div class="card"><div class="card__val">${incorrectGuesses}</div><div class="card__label">Incorrect guesses</div></div>
+    <div class="card"><div class="card__val">${avgTime}</div><div class="card__label">Avg time to complete</div></div>
   </div>
 
   <section>

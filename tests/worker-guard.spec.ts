@@ -54,6 +54,12 @@ describe('VALID_EVENTS allowlist', () => {
     }
   });
 
+  it('accepts the play-timing event', () => {
+    // Without this the Worker 400s the event, recordEvent never runs, and the
+    // average time on /stats stays empty while the client looks healthy.
+    expect(VALID_EVENTS.has('puzzle_time')).toBe(true);
+  });
+
   it('is still an allowlist', () => {
     expect(VALID_EVENTS.has('made_up_event')).toBe(false);
   });
