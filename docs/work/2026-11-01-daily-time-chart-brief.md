@@ -332,4 +332,5 @@ Settled: pending · Ack: pending
     failure mode is silent by design (item 23). Without it, a broken endpoint looks exactly
     like a quiet day. n also tells us when the low-data states stop mattering, which
     feeds the CONSIDERATIONS revisit point. Saving-off is fine: the event carries the
-    field's size, nothing about their play — the same reason `route_change` is sent for them.
+    field's size, nothing about their play. `puzzle_complete` is already sent for them
+    ungated (`src/app.ts:1082`).
