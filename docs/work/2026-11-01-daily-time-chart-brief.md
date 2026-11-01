@@ -6,9 +6,9 @@ and the canvas boards it names (Idea-O, P, R, N).
 Branch: `dev/daily-time-chart`
 
 **Status: `da-brief` ran 2026-11-01 — 2 High, 5 Medium, 4 Low. Fixes settled by Jamie the
-same day (items 90–102); boards exported (items 103–108). Not ready for Plan:** items 106
-and 107 are open; Dave's sign-off on items 90 and 106 and his acks on the reopened §3, §5,
-§6, §7, §8, §11 are pending.
+same day (items 90–102); boards exported (items 103–108). Not ready for Plan:** Dave's acks
+on the reopened §3, §5, §6, §7, §8 and §11 are pending. All decisions are settled and all
+maths is signed.
 
 **Read "da-brief fixes" at the end before planning. Where it and the body disagree, it wins.**
 
@@ -78,7 +78,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-bri
 19. [amended — see 94] Ties share the better rank. Two players on 41s, both fastest, are both "fastest".
     (assumed — standard competition ranking; the Idea-O block's definition is ported, and
     the plan checks it agrees)
-20. [void if 106 is accepted] Your time is past the p95 clip: your dot pins to the right edge and your label still
+20. [void — item 106] Your time is past the p95 clip: your dot pins to the right edge and your label still
     shows your true time. (assumed — your label always tracks you, handover §3)
 21. A time of 0s is floored to 1s for placement only, since `ln(0)` is undefined. Values
     outside 0–86400 are dropped server-side. (assumed)
@@ -111,7 +111,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · **Reopened by da-bri
     loading any page.
 
 ## 4. Maths
-Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave 2026-11-01 (relayed by Jamie; covers items 28 and 84–87) · Item 90: Dave sign-off pending · Ack: n/a
+Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 2026-11-01) · Sign-off: Dave 2026-11-01 (relayed by Jamie; covers items 28 and 84–87) · Items 90 and 106: Dave 2026-11-01 (relayed by Jamie) · Ack: n/a
 
 27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
 28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
@@ -122,7 +122,7 @@ Settled: Jamie 2026-11-01 (accepted item 28: Dave signs; items 84–87 reviewed 
     My rec: yes, Dave signs them here, as the maths owner, before Plan. Why: he set the
     log-scale requirement, and "top X%" is a number we publish to every player. Getting the
     definition wrong is cheap to fix but embarrassing to ship.
-84. [void if 106 is accepted] p95 for the slow-tail clip is **nearest-rank**: it always lands on a real time, so at
+84. [void — item 106] p95 for the slow-tail clip is **nearest-rank**: it always lands on a real time, so at
     n = 10 it is the slowest time and nothing clips. Clipping bites only once there is a
     real tail. (reviewed 2026-11-01, accepted recommendation)
 85. Median at even n is the **mean of the middle two, rounded to the nearest second**. The
@@ -534,7 +534,8 @@ Boards exported 2026-11-01 by a separate session; its report was checked against
     no clip there is no chevron, no "pinned past the edge" rule, and the last dot is
     simply the slowest player. Nearest-rank p95 would rarely bite at today's n anyway. The
     cost, stated on the board: one very slow solve pushes everyone else left.
-    **Maths — needs Dave's sign-off; it reverses part of his item 84 sign-off.**
+    **Settled: Jamie 2026-11-01 (accepted recommendation). Signed: Dave 2026-11-01 (relayed
+    by Jamie). Items 20 and 84 are void; item 78 drops its p95 case.**
 107. **Idea-R draws no leader line on either flip card.** The `spread__lead` spans for
     the axis note were deleted after the design settled, but canvas note line 80 says the
     note "carries the same 14px leader every other label on the chart has" and gives the
@@ -542,6 +543,7 @@ Boards exported 2026-11-01 by a separate session; its report was checked against
     My rec: yes, restore the 14px leader to the note's corner. Why: the written decision
     has a reason and the deletion has none on record. Bottom-centred captions are the ones
     that deliberately carry no leader (note line 84), and that is not this design.
+    **Settled: Jamie 2026-11-01 (accepted recommendation).**
 108. Item 47's design reference and item 48's flip rule now resolve to these files.
     Clearances (106px and 186px) and card heights (235px flip, 253px caption) were measured
     at 390px and are re-measured at 288px and 480px (96).
