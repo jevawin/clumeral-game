@@ -60,7 +60,7 @@ Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
     a determined troll could make the field look odd for a day.
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-01 (accepted all recommendations) · Ack: Dave pending
 
 16. The card appears on `/solved` after a daily solve, inside the #311 results panel. Not on
     `/play` in solved-replay mode, not on random or archive completion. (assumed — the stats
@@ -104,3 +104,13 @@ Settled: pending · Ack: pending
     nothing about them keeps that. Hiding it punishes the choice to opt out. The cost: the
     request itself shows an anonymous visitor reached the results screen — the same as
     loading any page.
+
+## 4. Maths
+Settled: pending · Ack: n/a (owned section — Dave signs)
+
+27. n/a for puzzle maths: nothing touches generation, clues or filtering. (assumed)
+28. The card does carry statistics — the percentile, tie ranking (item 19), the log axis,
+    the p95 clip and the 1s floor (item 21). Does Dave sign those?
+    My rec: yes, Dave signs them here, as the maths owner, before Plan. Why: he set the
+    log-scale requirement, and "top X%" is a number we publish to every player. Getting the
+    definition wrong is cheap to fix but embarrassing to ship.
