@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { oklchToHex, contrastRatio, inSrgbGamut } from './helpers/colour';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { oklchToHex, contrastRatio, inSrgbGamut, mixSrgb } from './helpers/colour';
 import { PALETTE } from '../src/palette';
 
 describe('colour maths helpers', () => {
@@ -130,5 +132,31 @@ describe('shortcut hint tint (.board-ctrl__key)', () => {
     expect(
       contrastRatio(blend(PALETTE.dark.text, PALETTE.dark.surface, KEY_ALPHA), PALETTE.dark.surface),
     ).toBeCloseTo(9.2037, 3);
+  });
+});
+
+// The "Everyone today" card's two derived tokens (time chart brief items 64, 69,
+// 80, 97). The card sits on the page background, so every ratio is against bg.
+// Others' dots are data, not decoration, so they meet 3:1 like the axis.
+describe('time chart tokens', () => {
+  const DOT_PCT = 72;
+  const LINE_PCT = 55;
+  const combos = (['light', 'dark'] as const).flatMap((mode) => themes.map((name) => [mode, name] as const));
+
+  it.each(combos)('%s %s clears every chart floor on bg', (mode, name) => {
+    const { accentL, accentC, bg, text } = PALETTE[mode];
+    const accent = oklchToHex(accentL, accentC[name], PALETTE.hues[name]);
+    expect(contrastRatio(mixSrgb(accent, bg, DOT_PCT), bg), '--chart-dot').toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(mixSrgb(text, bg, LINE_PCT), bg), '--chart-line').toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(accent, bg), 'your dot').toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(text, bg), 'chart text').toBeGreaterThanOrEqual(4.5);
+  });
+
+  // The maths above holds only for the percentages it names. Pin the CSS to them,
+  // so a hand-edit of one cannot pass with the test still green.
+  it('declares the tokens with exactly these mixes', () => {
+    const css = readFileSync(resolve(__dirname, '..', 'src/tailwind.css'), 'utf-8');
+    expect(css).toContain(`--chart-dot:  color-mix(in srgb, var(--color-accent) ${DOT_PCT}%, var(--color-bg));`);
+    expect(css).toContain(`--chart-line: color-mix(in srgb, var(--color-text) ${LINE_PCT}%, var(--color-bg));`);
   });
 });

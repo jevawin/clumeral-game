@@ -245,6 +245,10 @@
   </symbol>
 
   <!-- Trophy (Lucide trophy) — the Records section heading -->
+  <!-- Podium (Everyone today heading) -->
+  <symbol id="icon-podium" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 11h6v9H9zM3 15h6v5H3zM15 7h6v13h-6z" />
+  </symbol>
   <symbol id="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
     <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
