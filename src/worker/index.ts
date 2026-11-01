@@ -57,6 +57,9 @@ export const VALID_EVENTS = new Set([
  * refuse just 'clumeral.com', which left today's answer open on the production
  * deployment's own workers.dev address (clumeral-game.jevawin.workers.dev),
  * which reads the same PUZZLES KV — a P4 breach (docs/INVARIANTS.md).
+ *
+ * STILL OPEN: previews share that KV too, and branch names are public, so any
+ * preview still serves today's real answer. See INVARIANTS P4.
  */
 export function devAnswerAllowed(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('-clumeral-game.jevawin.workers.dev');
@@ -290,7 +293,8 @@ export default {
     }
 
     // Dev-only: return the answer for the current puzzle. Localhost and branch
-    // previews only — never production, on any hostname (devAnswerAllowed).
+    // previews only — never the production deployment, on any hostname
+    // (devAnswerAllowed). Previews still expose today's answer: see P4.
     if (request.method === 'GET' && url.pathname === '/api/dev/answer') {
       if (!devAnswerAllowed(url.hostname)) return new Response('Not found', { status: 404 });
       const token = url.searchParams.get('token');
