@@ -192,6 +192,26 @@ export function missedDaysHistory(today = todayKey()): HistoryEntry[] {
   return out;
 }
 
+/** Back after a long break: today and the two days before it, then 20 days
+ *  missed, then 20 days played. The break sits next to today, so the strip opens
+ *  on its single marked column ("20d", brief 98) with no scrolling. */
+export const BREAK_BACKS = { recent: 3, missed: 20, before: 20 } as const;
+export function longBreakHistory(today = todayKey()): HistoryEntry[] {
+  const { recent, missed, before } = BREAK_BACKS;
+  const goes = [1, 2, 3, 1, 2];
+  const out: HistoryEntry[] = [];
+  for (let back = 0; back < recent + missed + before; back++) {
+    if (back >= recent && back < recent + missed) continue;
+    out.push({
+      date: dayBefore(today, back),
+      tries: goes[back % goes.length],
+      answer: 100 + back * 11,
+      seconds: 50 + ((back * 41) % 300),
+    });
+  }
+  return out;
+}
+
 const HISTORIES: { id: string; label: string; go: string; write: () => void }[] = [
   {
     id: 'rich',
@@ -210,6 +230,12 @@ const HISTORIES: { id: string; label: string; go: string; write: () => void }[] 
     label: 'Missed days',
     go: '/solved',
     write: () => setHistory(missedDaysHistory(), true),
+  },
+  {
+    id: 'long-break',
+    label: 'Long break',
+    go: '/solved',
+    write: () => setHistory(longBreakHistory(), true),
   },
   {
     id: 'new',

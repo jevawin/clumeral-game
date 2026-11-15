@@ -461,3 +461,8 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
     Runs of 1–6 still draw one empty column per day, so a skipped day or a weekend away
     still shows its true width. The spoken summary still counts every missed day.
     (assumed — 7 days and the "{n}d" mark are Claude's picks; Jamie to confirm on the preview)
+99. **A Long break history in the testing panel.** Jamie could not see the break in Missed
+    days, because it sits off-screen until the strip is scrolled: "i don't have a long enough
+    gap to see the gap can you add a testing function for it?". Long break: today and the two
+    days before, 20 days missed, then 20 days played, so the "20d" column is in view on load.
+    Preview only.

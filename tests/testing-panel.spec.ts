@@ -8,6 +8,7 @@ import {
   randomHistory,
   missedDaysHistory,
   MISSED_BACKS,
+  longBreakHistory,
   testingAllowed,
   stripVariant,
   keepStrip,
@@ -150,6 +151,16 @@ describe('missedDaysHistory', () => {
     expect(h.at(-1)!.date).toBe('2026-09-18'); // 44 days back
     for (const e of h) expect(e.tries).toBeGreaterThanOrEqual(1);
     expect(h.some((e) => e.tries > 5)).toBe(true);
+  });
+});
+
+describe('longBreakHistory', () => {
+  it('plays today and two days before, misses 20, then plays 20', () => {
+    const h = longBreakHistory('2026-11-01');
+    expect(h).toHaveLength(23);
+    expect(h.slice(0, 3).map((e) => e.date)).toEqual(['2026-11-01', '2026-10-31', '2026-10-30']);
+    expect(h[3].date).toBe('2026-10-09'); // 23 days back: the 20 between are missed
+    expect(new Set(h.map((e) => e.date)).size).toBe(h.length);
   });
 });
 

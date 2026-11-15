@@ -76,6 +76,20 @@ test("swaps in a history with missed days", async ({ page }) => {
   await expect(page.locator('[data-stat-block="streak"]')).toContainText(/\D3\s+days played/);
 });
 
+// The 20-day break sits next to today, so it is in view when the strip opens.
+test("swaps in a history with a long break", async ({ page }) => {
+  await page.goto("/welcome");
+  await waitForScreenSettled(page, "welcome");
+  await choose(page, '[data-testing-history="long-break"]');
+  await waitForScreenSettled(page, "completion");
+  const mark = page.locator("[data-strip-break]");
+  await expect(mark).toHaveText("20d");
+  const s = await page.locator("[data-strip-scroller]").boundingBox();
+  const b = await mark.boundingBox();
+  expect(b!.x).toBeGreaterThanOrEqual(s!.x);
+  expect(b!.x + b!.width).toBeLessThanOrEqual(s!.x + s!.width);
+});
+
 // The preview-only strip style switch (results brief 51, 84). Removed with the
 // losing styles once Jamie picks.
 test("a Strip misses button reloads the results page with that style", async ({ page }) => {
