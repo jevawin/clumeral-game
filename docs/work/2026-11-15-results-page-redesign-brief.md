@@ -209,7 +209,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this bette
     spare tokens stay (item 13). (assumed)
 
 ## 7. How it looks
-Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52 accepted) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 
 44. Every section is a card: `--color-surface` fill, 1.5px `--color-border`, 6px radius,
     18px padding, heading row with its icon. The Daily leaderboard takes the same card.
@@ -238,8 +238,47 @@ Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
     solid accent. Why: no new token, the outline passes 3:1 because it is the accent itself,
     and hollow vs solid is the same language as the hollow and solid buttons below. The
     message icon drops O's tinted pill for the same reason and sits as a plain accent icon.
+    **Settled: Jamie 2026-11-15 — not decided on paper. "i need to see it … hollow didn't work
+    well in the designs, possibly we'll try others like a dotted line … i need a live
+    version to view".** Build ships the strip's miss style as switchable variants on the
+    branch preview: at least **faded** (O's tint), **hollow** (accent outline) and **dotted**
+    (dotted accent outline). The switch is preview-only (testing panel or similar, the plan
+    decides) and never reaches production. Jamie picks on the live preview; the losing
+    variants and the switch are removed before the PR. The pick also settles the message
+    icon's pill. If the pick is under 3:1 (WCAG 1.4.11), Jamie as accessibility owner records
+    the call in this brief.
 52. **Can a desktop mouse user scroll the strip?** O hides the scrollbar. Touch and trackpad
     still scroll, keyboard scrolls once the strip has focus, but a plain mouse wheel scrolls
     vertically and a mouse cannot drag, so a mouse-only user cannot reach older days.
     My rec: a thin native scrollbar on fine pointers (`@media (pointer: fine)`), hidden on
     touch, as O. Why: it costs a few pixels on desktop only, and phones keep O's clean look.
+    **Settled: Jamie 2026-11-15 — yes. "don't block things like that (accessibility
+    rules)".**
+
+## 8. Copy & wording
+Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+
+53. Today heading: "Puzzle #238" over "solved"; random: "Puzzle" over "solved". The "!" and
+    "You took:" go. (assumed — O)
+54. Figure line: "{n} go/goes, {time}" in the sentence form of `formatDuration` ("1 go,
+    0m 41s"), never the compact chart form. No time → "3 goes". Marker → "Solved!".
+    (assumed — `formatDuration` rule: sentences keep the default form)
+55. **The five message lines.** Bold part in brackets.
+      1. [Your fastest ever], 9s under your best.
+      2. [Straight in.] Your 8th one-go solve.   (first one: "Your first one-go solve.")
+      3. [17s quicker] than your average.
+      4. [Fewer goes] than your usual 2.3.
+      5. Solve number [30].
+    Differences are whole seconds in the sentence form (`1m 05s quicker`); a difference that
+    rounds to 0s does not count as quicker. The average goes shows one decimal, as today.
+    My rec: these five. Rung 4 is reworded from O's "A go better than your usual 2.3",
+    because 2 goes against an average of 3.4 is not "a go" better.
+56. Streak label: "days played" / "days solved in one"; singular "day" at 1. (assumed)
+57. Second line: "Best 30", plus " · One-go run 2" from a run of 2 (item 21). (assumed)
+58. Headings: "Daily leaderboard" (unchanged), "Streaks", "All time". (assumed — O)
+59. Ledger labels and values: "Solved in one" 23% · "Best one-go run" 3 · "Fastest solve"
+    1m 14s · "Puzzles solved" 30. No valid time → "—". Never solved in one → 0% and 0.
+    (assumed — O, today's dash rule)
+60. Strip: "Goes" y label, "{N} days" (singular "1 day"), "Today". (assumed — O)
+61. The new-player and random notes keep today's wording. "Next puzzle in 2h 25m" keeps its
+    wording with the time in bold. (assumed)
