@@ -439,3 +439,15 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
     refuses a 0s time.
     My rec: rungs 1 and 3 treat a time below 1s, today's or an earlier one, as no time.
     **Settled: Jamie 2026-11-15 (accepted recommendation).**
+
+## Build-stage decisions (2026-11-15)
+
+95. (amends 51) **The faded variant, lighter, under 3:1.** After seeing the preview, Jamie
+    asked for faded to be "more faded" and relaxed the 3:1 floor for it: "relax the wcag rule
+    for this since it's not text". The faded miss cell drops from O's 22% accent tint to 12%.
+    WCAG 1.4.11 is relaxed for the miss cells only, by Jamie as accessibility owner. The
+    message icon's pill stays at 22%. The pick between variants is still open.
+96. **A Missed days history in the testing panel.** Jamie: "i need a missed days testing
+    option". 30 days ending today with seven days skipped, so the play streak breaks three
+    days back and the strip shows that a skipped day draws no column (item 24). Preview only,
+    like the other history swaps.

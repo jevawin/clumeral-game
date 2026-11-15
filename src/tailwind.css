@@ -619,8 +619,10 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
 
   /* Miss-cell variants — preview only; the losers go before the PR (results brief
      51, 87; plan D5). The pick also settles the message icon's pill. */
+  /* 12%, lighter than O's 22%, at Jamie's ask. Under 3:1 by design: Jamie relaxed
+     WCAG 1.4.11 for this non-text cell on 2026-11-15 (brief item 95). */
   [data-strip-variant="faded"] .goes-strip__cell--miss {
-    background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
   }
   [data-strip-variant="faded"] .result-card__pill {
     inline-size: 1.625rem; block-size: 1.625rem; border-radius: 9999px;

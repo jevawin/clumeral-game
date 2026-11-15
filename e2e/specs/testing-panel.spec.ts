@@ -61,6 +61,18 @@ test("swaps in a rich history", async ({ page }) => {
   await expect(page.locator('[data-stat-block="streak"]')).toBeVisible();
 });
 
+// 30 days with seven skipped (src/testing-panel.ts MISSED_BACKS): the play streak
+// breaks three days back, and skipped days draw no column (results brief 24).
+test("swaps in a history with missed days", async ({ page }) => {
+  await page.goto("/welcome");
+  await waitForScreenSettled(page, "welcome");
+  await choose(page, '[data-testing-history="missed"]');
+  await expect(page).toHaveURL(/\/solved$/);
+  await waitForScreenSettled(page, "completion");
+  await expect(page.locator("[data-strip-day]")).toHaveCount(23);
+  await expect(page.locator('[data-stat-block="streak"]')).toContainText(/\D3\s+days played/);
+});
+
 // The preview-only strip style switch (results brief 51, 84). Removed with the
 // losing styles once Jamie picks.
 test("a Strip misses button reloads the results page with that style", async ({ page }) => {
