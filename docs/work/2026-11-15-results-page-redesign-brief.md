@@ -448,12 +448,16 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
     WCAG 1.4.11 is relaxed for the miss cells only, by Jamie as accessibility owner. The
     message icon's pill stays at 22%. The pick between variants is still open.
 96. **A Missed days history in the testing panel.** Jamie: "i need a missed days testing
-    option". 30 days ending today with seven days skipped, so the play streak breaks three
+    option". 45 days ending today with seven days skipped and one 12-day break, so the play streak breaks three
     days back and the strip shows that a skipped day draws no column (item 24). Preview only,
     like the other history swaps.
 97. (amends 24) **Missed days show as empty columns.** After seeing the Missed days history,
     Jamie: "1 empty". Each calendar day missed between two played days draws a column with no
     cells, so the gap shows; nothing is drawn before the first day played. The "{N} days"
     hint still counts days played. The spoken summary adds the count: "your 23 days played,
-    7 missed: …", and says nothing about misses when there are none. A long break draws one
-    empty column per day missed; item 24's worry about long blanks is not capped.
+    7 missed: …", and says nothing about misses when there are none. A long break is item 98.
+98. (amends 97) **A long break is shortened.** Jamie: "1 shorten". A run of 7 or more missed
+    days draws as one column marked with the count, such as "12d", on the cells' baseline.
+    Runs of 1–6 still draw one empty column per day, so a skipped day or a weekend away
+    still shows its true width. The spoken summary still counts every missed day.
+    (assumed — 7 days and the "{n}d" mark are Claude's picks; Jamie to confirm on the preview)

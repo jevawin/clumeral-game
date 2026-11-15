@@ -173,14 +173,14 @@ export function randomHistory(today = todayKey(), rng = Math.random): HistoryEnt
   return out;
 }
 
-/** 30 days back with seven days skipped, in runs of one to three, so the play
- *  streak breaks and the strip shows each skipped day as an empty column
- *  (brief 97). Today solved. Goes vary, with one day past the cap. */
-export const MISSED_BACKS = [3, 4, 9, 15, 16, 17, 22] as const;
+/** 45 days back with seven days skipped in runs of one to three, each an empty
+ *  column (brief 97), and one 12-day break, drawn as a single marked column
+ *  (brief 98). The play streak breaks three days back. Today solved. Goes vary, with one day past the cap. */
+export const MISSED_BACKS = [3, 4, 9, 15, 16, 17, 22, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36] as const;
 export function missedDaysHistory(today = todayKey()): HistoryEntry[] {
   const goes = [1, 2, 1, 3, 1, 4, 2, 1, 7, 2];
   const out: HistoryEntry[] = [];
-  for (let back = 0; back < 30; back++) {
+  for (let back = 0; back < 45; back++) {
     if ((MISSED_BACKS as readonly number[]).includes(back)) continue;
     out.push({
       date: dayBefore(today, back),

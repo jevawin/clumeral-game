@@ -253,7 +253,7 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   code and is not. Leave it alone when tidying that file.
 - **Streaks**: the play streak large in accent, "days played" (or "days solved in one" when
   the one-go run matches it), then "Best streak N", plus "· One-go run N" from 2.
-- **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, an empty 18px column per day missed between them, 4px gaps, 10px
+- **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, an empty 18px column per day missed between them (a break of 7 or more days is one column marked with its count, such as `12d`), 4px gaps, 10px
   cells stacked from the bottom, misses then the solving go. Rows are the worst day capped at
   5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
   true figure on top. The scroller is `direction: rtl` so it opens at today with no script,

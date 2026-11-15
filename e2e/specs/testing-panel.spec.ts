@@ -61,16 +61,18 @@ test("swaps in a rich history", async ({ page }) => {
   await expect(page.locator('[data-stat-block="streak"]')).toBeVisible();
 });
 
-// 30 days with seven skipped (src/testing-panel.ts MISSED_BACKS): the play streak
-// breaks three days back, and each skipped day is an empty column (results brief 97).
+// 45 days (src/testing-panel.ts MISSED_BACKS): seven skipped days, each an empty
+// column (results brief 97), and a 12-day break as one marked column (brief 98).
+// The play streak breaks three days back.
 test("swaps in a history with missed days", async ({ page }) => {
   await page.goto("/welcome");
   await waitForScreenSettled(page, "welcome");
   await choose(page, '[data-testing-history="missed"]');
   await expect(page).toHaveURL(/\/solved$/);
   await waitForScreenSettled(page, "completion");
-  await expect(page.locator("[data-strip-day]")).toHaveCount(23);
+  await expect(page.locator("[data-strip-day]")).toHaveCount(26);
   await expect(page.locator("[data-strip-missed]")).toHaveCount(7);
+  await expect(page.locator("[data-strip-break]")).toHaveText("12d");
   await expect(page.locator('[data-stat-block="streak"]')).toContainText(/\D3\s+days played/);
 });
 

@@ -9,6 +9,7 @@ import {
   goesStripHtml,
   missedBetween,
   missedTotal,
+  BREAK_DAYS,
 } from '../src/goes-strip.ts';
 import type { StripDay } from '../src/player-stats.ts';
 
@@ -182,5 +183,41 @@ describe('missed days (results brief 97)', () => {
       'Goes per day, your 4 days played, 4 missed: 2 in one, 1 in two, 1 in three. Today: 3.',
     );
     expect(stripSummary(days([1, 2]))).not.toContain('missed');
+  });
+});
+
+describe('long breaks (results brief 98)', () => {
+  function kinds(list: StripDay[]): string[] {
+    const doc = parse(goesStripHtml(list));
+    return [...doc.querySelector('.goes-strip__inner')!.children].map((c) => {
+      if (c.hasAttribute('data-strip-missed')) return 'gap';
+      if (c.hasAttribute('data-strip-break')) return `break:${c.textContent}`;
+      return 'day';
+    });
+  }
+
+  it('is a week', () => {
+    expect(BREAK_DAYS).toBe(7);
+  });
+
+  it('draws six missed days in full', () => {
+    expect(kinds([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-08', goes: 1 }])).toEqual([
+      'day', 'gap', 'gap', 'gap', 'gap', 'gap', 'gap', 'day',
+    ]);
+  });
+
+  it('draws seven or more as one break column with the count', () => {
+    expect(kinds([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-09', goes: 1 }])).toEqual([
+      'day', 'break:7d', 'day',
+    ]);
+    expect(kinds([{ date: '2026-01-01', goes: 2 }, { date: '2026-04-01', goes: 1 }])).toEqual([
+      'day', 'break:89d', 'day',
+    ]);
+  });
+
+  it('still counts every missed day in the summary', () => {
+    expect(stripSummary([{ date: '2026-01-01', goes: 2 }, { date: '2026-04-01', goes: 1 }])).toContain(
+      '2 days played, 89 missed',
+    );
   });
 });

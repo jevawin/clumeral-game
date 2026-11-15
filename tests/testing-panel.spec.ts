@@ -141,13 +141,13 @@ describe('randomHistory', () => {
 });
 
 describe('missedDaysHistory', () => {
-  it('solves today and skips exactly the listed days, in a 30-day span', () => {
+  it('solves today and skips exactly the listed days, in a 45-day span', () => {
     const h = missedDaysHistory('2026-11-01');
     expect(h[0].date).toBe('2026-11-01');
-    expect(h).toHaveLength(30 - MISSED_BACKS.length);
+    expect(h).toHaveLength(45 - MISSED_BACKS.length);
     expect(new Set(h.map((e) => e.date)).size).toBe(h.length);
     expect(h.map((e) => e.date)).not.toContain('2026-10-29'); // 3 days back
-    expect(h.at(-1)!.date).toBe('2026-10-03'); // 29 days back
+    expect(h.at(-1)!.date).toBe('2026-09-18'); // 44 days back
     for (const e of h) expect(e.tries).toBeGreaterThanOrEqual(1);
     expect(h.some((e) => e.tries > 5)).toBe(true);
   });
