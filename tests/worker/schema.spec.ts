@@ -7,6 +7,7 @@
 // archive is a year deep.
 import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { TODAY_TIMES_SQL } from '../../src/worker/analytics-db.ts';
 
 async function plan(sql: string, ...params: unknown[]): Promise<string> {
   const { results } = await env.ANALYTICS_DB.prepare(`EXPLAIN QUERY PLAN ${sql}`)
@@ -65,6 +66,13 @@ describe('analytics_events schema', () => {
 
     const first = await plan('SELECT MIN(ts) AS first_ts FROM analytics_events WHERE hostname = ?', 'clumeral.com');
     expect(first).toContain('idx_analytics_host_ts');
+  });
+
+  // Item 95. The exact SQL getTodayTimes runs, imported so the two cannot drift.
+  it('uses an index for the today-times query', async () => {
+    const detail = await plan(TODAY_TIMES_SQL, 'clumeral.com', 0, 1, 239, 'me');
+    expect(detail).toContain('idx_analytics_host_ev_ts');
+    expect(detail).not.toContain('SCAN analytics_events');
   });
 
   it('rejects a new_user value outside 0 and 1', async () => {

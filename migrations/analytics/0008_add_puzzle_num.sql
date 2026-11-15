@@ -1,0 +1,15 @@
+-- The puzzle number a puzzle_time row belongs to (time chart brief items 24, 43).
+--
+-- The results card compares your solve time with everyone else's on the SAME
+-- puzzle. ts alone cannot say which puzzle that was: the puzzle day is
+-- browser-local (todayKey(), #205), and ts is UTC, so a New York player solving
+-- at 8pm on 1 Nov writes a 2 Nov UTC row. Windowing on the UTC day would mix two
+-- different puzzles, and solve times on different puzzles are not comparable.
+--
+-- Nullable on purpose: every row written before this column exists has no
+-- number, and a cached PWA build that predates it keeps sending puzzle_time
+-- without one (item 45). Those rows are stored with NULL and never shown.
+--
+-- No index: the read already narrows by (hostname, event, ts) through
+-- idx_analytics_host_ev_ts, and this filter runs over that small slice (item 95).
+ALTER TABLE analytics_events ADD COLUMN puzzle_num INTEGER;

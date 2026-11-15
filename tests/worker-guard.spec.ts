@@ -60,6 +60,13 @@ describe('VALID_EVENTS allowlist', () => {
     expect(VALID_EVENTS.has('puzzle_time')).toBe(true);
   });
 
+  it('accepts the time-chart event', () => {
+    // The results card's drawn/failed signal (time chart brief item 77). Its
+    // failure is silent by design, so a missing name here would hide a broken
+    // route behind what looks like a quiet day.
+    expect(VALID_EVENTS.has('time_chart')).toBe(true);
+  });
+
   it('is still an allowlist', () => {
     expect(VALID_EVENTS.has('made_up_event')).toBe(false);
   });

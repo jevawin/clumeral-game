@@ -295,6 +295,32 @@ describe('formatting', () => {
     expect(formatDuration(null)).toBe('—');
   });
 
+  // The time chart's own labels (time chart brief item 63): no room for 0m 41s.
+  it('compact drops the zero minutes', () => {
+    expect(formatDuration(41, { compact: true })).toBe('41s');
+    expect(formatDuration(0, { compact: true })).toBe('0s');
+    expect(formatDuration(59, { compact: true })).toBe('59s');
+  });
+
+  it('compact matches the default from a minute up', () => {
+    for (const [s, out] of [
+      [60, '1m 00s'],
+      [69, '1m 09s'],
+      [892, '14m 52s'],
+      [3600, '1h 00m'],
+      [3840, '1h 04m'],
+    ] as const) {
+      expect(formatDuration(s, { compact: true }), String(s)).toBe(out);
+      expect(formatDuration(s), String(s)).toBe(out);
+    }
+  });
+
+  it('the default is unchanged by the compact option', () => {
+    expect(formatDuration(221)).toBe('3m 41s');
+    expect(formatDuration(48)).toBe('0m 48s');
+    expect(formatDuration(null, { compact: true })).toBe('—');
+  });
+
   it('never uses a colon — 4:06 can read as four hours at a glance', () => {
     for (const s of [0, 48, 221, 3840, 86_400]) {
       expect(formatDuration(s), String(s)).not.toContain(':');

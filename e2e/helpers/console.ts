@@ -33,6 +33,13 @@ export interface ConsoleGuard {
   assertClean(): void;
   /** Raw collected messages, for debugging. */
   readonly errors: readonly string[];
+  /**
+   * Suppress, for this test only, a console error whose source URL matches. For a
+   * failed resource whose message text carries no URL — Chromium's "Failed to load
+   * resource" — so no text pattern can scope it. Call it in the one test that
+   * provokes the failure, never in a shared list.
+   */
+  allowUrl(re: RegExp): void;
 }
 
 // Attach a guard that records console.error and uncaught pageerror events. Call
@@ -40,11 +47,13 @@ export interface ConsoleGuard {
 // on any unexpected error — these are real regressions in built output.
 export function attachConsoleGuard(page: Page): ConsoleGuard {
   const errors: string[] = [];
+  const urls: RegExp[] = [];
   const allowed = (text: string) => ALLOW.some((re) => re.test(text));
 
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const text = msg.text();
+    if (urls.some((re) => re.test(msg.location().url))) return;
     if (!allowed(text)) errors.push(`console.error: ${text}`);
   });
   page.on("pageerror", (err) => {
@@ -54,6 +63,9 @@ export function attachConsoleGuard(page: Page): ConsoleGuard {
 
   return {
     errors,
+    allowUrl(re: RegExp) {
+      urls.push(re);
+    },
     assertClean() {
       if (errors.length) {
         throw new Error(

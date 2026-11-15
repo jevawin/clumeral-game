@@ -19,6 +19,8 @@ import { isWalkthroughActive } from './walkthrough.ts';
 import { showScreen, getCurrentScreen } from './screens.ts';
 import { navigate, replaceRoute, initRouter } from './router.ts';
 import { initWelcome } from './welcome.ts';
+import { initTimeChart } from './time-chart-view.ts';
+import { initTestingPanel } from './testing-panel.ts';
 import { renderCompletion, resetCompletionAnnouncement, heroLine } from './completion.ts';
 import { todayKey, puzzleNumberFor, formatDate } from './date.ts';
 
@@ -55,11 +57,13 @@ function fallbackUuid(): string {
 const analyticsUid = getUid();
 const isNewUser = !localStorage.getItem("dlng_history");
 
-function track(event: string, value?: number, source?: string): void {
+// puzzleNum is puzzle_time's only (time chart brief item 40). JSON.stringify drops
+// an undefined key, so every other event's body is byte-identical.
+function track(event: string, value?: number, source?: string, puzzleNum?: number): void {
   fetch("/api/event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event, uid: analyticsUid, value, newUser: isNewUser, source }),
+    body: JSON.stringify({ event, uid: analyticsUid, value, newUser: isNewUser, source, puzzleNum }),
   }).catch(() => {});
 }
 
@@ -1128,7 +1132,7 @@ async function handleGuess() {
         saveScore,
         seconds: timer.seconds(),
       });
-      if (countedSeconds !== null) track("puzzle_time", countedSeconds, timer.idleLabel());
+      if (countedSeconds !== null) track("puzzle_time", countedSeconds, timer.idleLabel(), gameState.puzzleNum ?? undefined);
       // Clear mid-game state on solve — solve is terminal, no need to restore (D-07).
       clearActive();
 
@@ -1582,6 +1586,11 @@ initFeedbackModal(todayKey, puzzleNumberFor, formatDate);
 
 // Pre-render welcome content so navigate('/welcome') has something to show.
 initWelcome();
+// The results card's request leaves the player's own row out by this uid (time
+// chart brief item 91). Handed over once so the view never reads storage itself.
+initTimeChart({ uid: analyticsUid });
+// Preview and local hosts only; returns at once on clumeral.com (brief item 127).
+initTestingPanel();
 
 // Pre-render completion content if today is already solved (SLV-02 parity).
 const _todayHistoryAtBoot = todayEntry();
@@ -1720,15 +1729,24 @@ document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => t
 
 // ─── Dev helpers (non-production only) ───────────────────────────────────────
 
-window._devFillAnswer = async () => {
+// Resolves the boxes to the answer, or to a wrong number one off in the units.
+// Reached from the Testing panel (testing-panel.ts) on preview hosts. On
+// clumeral.com /api/dev/answer 404s, so these do nothing there.
+async function devFill(wrong: boolean): Promise<boolean> {
   try {
     const params = gameState.token ? `?token=${encodeURIComponent(gameState.token)}` : '';
     const res = await fetch(`/api/dev/answer${params}`);
-    if (!res.ok) return;
+    if (!res.ok) return false;
     const { answer } = await res.json() as { answer: number };
     const digits = [Math.floor(answer / 100), Math.floor((answer % 100) / 10), answer % 10];
+    if (wrong) digits[2] = (digits[2] + 1) % 10;
     digits.forEach((d, i) => { possibles[i] = new Set([d]); renderBox(i); });
     renderBoardControls(); // board changed under the controls' feet — keep Reset live
     checkSubmit();
-  } catch { /* dev only */ }
-};
+    return true;
+  } catch { return false; /* dev only */ }
+}
+
+window._devFillAnswer = async () => { await devFill(false); };
+window._devSolve = async () => { if (await devFill(false)) dom.submitBtn?.click(); };
+window._devWrongGuess = async () => { if (await devFill(true)) dom.submitBtn?.click(); };
