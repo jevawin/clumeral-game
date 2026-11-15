@@ -68,7 +68,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: pending (Dave)
     ships".
 
 ## 3. How it works
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: pending (Dave — and item 26 needs his view on the record, since he built the live chart)
 
 Page order and modes
 
@@ -144,3 +144,16 @@ All time card
     item 17 message, just not shown.
     My rec: yes. Why: stats-note dropped average time on every board; the rest are the "three
     ways of saying solved in one" ideas-note set out to remove.
+
+## 4. Maths
+Settled: pending · Sign-off: pending (Dave) · Ack: n/a
+
+28. n/a for puzzle generation and filtering: nothing here touches the generator, clues,
+    seeding or the guess path. (assumed)
+29. **Should Dave still sign the stats definitions?** Items 17, 18, 20, 21 and 25 define
+    figures: the "before today" baselines, "fastest ever" on a strict beat, the one-go run,
+    the one-go percentage. All reuse `computePlayerStats` rules (archive excluded, recency
+    gate, two-go day breaks a one-go run).
+    My rec: yes, a short sign-off from Dave on those five items. Why: they are counting rules
+    a player can check against their own history, and getting a streak or a "fastest ever"
+    wrong is the kind of bug players report.
