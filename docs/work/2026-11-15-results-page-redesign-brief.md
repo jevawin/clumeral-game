@@ -284,7 +284,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
     wording with the time in bold. (assumed)
 
 ## 9. Accessibility
-Settled: pending · Sign-off: pending (Jamie) · Ack: n/a (owned section)
+Settled: Jamie 2026-11-15 (accepted all recommendations; item 67 "summary") · Sign-off: Jamie 2026-11-15 · Ack: n/a (owned section)
 
 62. Each card is a `<section aria-labelledby>` pointing at its heading, as today. (assumed)
 63. The Today heading is the screen's one `h2`, as the current "…solved!" heading is. "Puzzle
@@ -315,3 +315,13 @@ Settled: pending · Sign-off: pending (Jamie) · Ack: n/a (owned section)
     new motion. (assumed)
 71. axe runs on `/solved` in full mode, light and dark. The Label in Name exception list is
     not widened. (assumed — memory: the five-node exception is deliberate)
+
+## 10. Analytics
+Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+
+72. No new events. Views of `/solved` are already counted by `route_change`; the solve itself
+    by `puzzle_complete` and `puzzle_time`. (assumed)
+73. Not tracked: which message line showed, and whether anyone scrolls the strip. Either
+    would need a new name in `VALID_EVENTS` (`src/worker/index.ts`), which is a worker change
+    and out of scope (item 10). If wanted later, it is its own small item. (assumed)
+74. The preview-only variant switch (item 51) sends nothing. (assumed)
