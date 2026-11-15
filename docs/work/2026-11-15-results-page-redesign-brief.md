@@ -526,3 +526,7 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      the same at default text, px so they hold their rows). The leaderboard's dot labels keep
      0.9375rem and 0.75rem when tight: their collision logic was tuned to them, so they are
      left for the design-system work.
+108. (amends 102) **Row numbers stop at 3.** Jamie: "Remove 4 and 5 from the y axis … they don't
+     make sense when we skip numbers eg you have 9 … only up to 3 makes sense then the skip
+     starts". Rows 4 and 5 keep their space but carry no number, on every strip, whether or not
+     it has a broken column.

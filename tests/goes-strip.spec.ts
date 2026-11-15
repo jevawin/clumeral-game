@@ -55,7 +55,12 @@ describe('stripAreaPx', () => {
 describe('the axes (results brief 102)', () => {
   it('numbers each row, top first, with "1 go" at the bottom', () => {
     expect(yLabels(1)).toEqual(['1 go']);
-    expect(yLabels(4)).toEqual(['4', '3', '2', '1 go']);
+    expect(yLabels(3)).toEqual(['3', '2', '1 go']);
+  });
+
+  it('leaves rows 4 and 5 unnumbered, as a broken column skips goes there (brief 108)', () => {
+    expect(yLabels(4)).toEqual(['', '3', '2', '1 go']);
+    expect(yLabels(5)).toEqual(['', '', '3', '2', '1 go']);
   });
 
   it('puts one y label per row in the markup', () => {

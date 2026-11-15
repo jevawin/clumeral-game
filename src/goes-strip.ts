@@ -26,10 +26,18 @@ export function stripAreaPx(rows: number): number {
   return rows * CELL_PX + (rows - 1) * GAP_PX;
 }
 
-/** The y axis's labels, top row first: the row number, and "1 go" on the bottom
- *  row so the axis says what it counts (brief 102). */
+/** Rows above this are unnumbered: in a broken column, row 4 is the bolt and
+ *  row 5 the solving go, so "4" and "5" would be wrong there (brief 108). */
+export const LABELLED_ROWS = 3;
+
+/** The y axis's labels, top row first: the row number up to row 3, '' above it,
+ *  and "1 go" on the bottom row so the axis says what it counts (brief 102, 108). */
 export function yLabels(rows: number): string[] {
-  return Array.from({ length: rows }, (_, k) => (rows - k === 1 ? '1 go' : String(rows - k)));
+  return Array.from({ length: rows }, (_, k) => {
+    const r = rows - k;
+    if (r === 1) return '1 go';
+    return r <= LABELLED_ROWS ? String(r) : '';
+  });
 }
 
 /** The x axis's left label: how long ago the oldest column is (brief 102). */

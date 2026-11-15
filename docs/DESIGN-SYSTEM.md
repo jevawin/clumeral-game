@@ -264,7 +264,7 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   purpose -- Jamie relaxed WCAG 1.4.11 for them as accessibility owner (results brief 95).
   The message icon beside today's line is a plain accent icon with no pill. Rows are the worst day capped at
   5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
-  true figure on top. Row numbers down the left, "1 go" at the bottom, in 13px type (px, not rem) so
+  true figure on top. Row numbers down the left, "1 go" at the bottom and none above 3 (results brief 108), in 13px type (px, not rem) so
   each stays on its 10px row at any text size; no axis lines (results brief 102, 105). Under the
   scroller, outside it so they never scroll away: "{n} days ago" on the left and "today" on
   the right, with a Lucide left arrow before the first and a 40px fade at the left edge
