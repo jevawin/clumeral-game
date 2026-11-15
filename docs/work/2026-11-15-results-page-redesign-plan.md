@@ -406,9 +406,10 @@ export function stripVariant(url: URL): StripVariant;
   `Faded (passing)`, `Hollow`, `Dotted`). `mark()` sets `aria-pressed` on the one matching
   `stripVariant(new URL(location.href))`. A click does
   `location.assign('/solved?strip=' + id)`.
-- The history buttons keep the parameter: `location.assign(h.go + keepStrip())`, where
-  `keepStrip()` returns `?strip={value}` when the current URL has a valid one, else `''`. A
-  history swap mid-comparison should not reset the style.
+- The history buttons keep the parameter: `location.assign(h.go + keepStrip(new
+  URL(location.href)))`, where the exported pure `keepStrip(url: URL): string` returns
+  `?strip={value}` when `url` carries a valid one, else `''`. A history swap mid-comparison
+  should not reset the style.
 
 ### Tests first — `tests/testing-panel.spec.ts`
 
@@ -417,10 +418,18 @@ export function stripVariant(url: URL): StripVariant;
 - It returns `faded-passing` on `clumeral.com` and on `clumeral-game.jevawin.workers.dev`
   (the production deployment) even with `?strip=hollow`, with no parameter, and with
   `?strip=bogus`.
-- The panel renders four strip buttons; clicking one calls `location.assign` with
-  `/solved?strip=hollow` (stub `location.assign` as the existing history-button tests do).
-- With `?strip=dotted` in the URL, a history button navigates to `/solved?strip=dotted`.
-- No `localStorage` or `sessionStorage` key is written by a strip click.
+- `keepStrip`: `?strip=dotted` → `'?strip=dotted'`; `?strip=bogus` → `''`; no parameter →
+  `''`.
+- In the existing `initTestingPanel` describe: the dialog holds four
+  `[data-testing-strip]` buttons with the four ids, and with no parameter the
+  `faded-passing` one has `aria-pressed="true"` after the panel opens.
+- Before and after a strip button click, `localStorage.length` and `sessionStorage.length`
+  are unchanged (item 74). jsdom cannot follow `location.assign`, so the click is stubbed
+  with `vi.spyOn(window.location, 'assign')` where jsdom allows it; if it does not, the
+  navigation itself is covered by the e2e case in Task 8 and this test asserts storage only.
+
+The navigation targets (`/solved?strip=hollow`, and a history swap keeping `?strip=`) are
+asserted in `e2e/specs/testing-panel.spec.ts` (Task 8).
 
 Commit: `feat(results): preview-only ?strip= switch for the miss style`.
 
@@ -728,9 +737,10 @@ Locators: `heading` = `[data-completion-heading]`; `panel`; `today` =
   `[data-completion-heading]` still resolves (D10). Any text assertion on it changes to
   `Puzzle #N solved` / `Puzzle solved`.
 - `e2e/specs/time-chart.spec.ts` lines 271–273: `this-game` → `today`.
-- `e2e/specs/testing-panel.spec.ts` line 61: unchanged selector (`streak`); add one case — a
-  "Strip misses" button navigates to `/solved?strip=hollow` and the panel then carries
-  `data-strip-variant="hollow"`.
+- `e2e/specs/testing-panel.spec.ts` line 61: unchanged selector (`streak`); add two cases —
+  a "Strip misses" button navigates to `/solved?strip=hollow` and the panel then carries
+  `data-strip-variant="hollow"`; from `/solved?strip=dotted`, the "Rich history" button lands
+  on `/solved?strip=dotted`.
 - `e2e/specs/archive.spec.ts`, `undo-reset.spec.ts`: no old selector found in them at plan
   time (grep 2026-11-15); they run unchanged in the full suite.
 
