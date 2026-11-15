@@ -7,11 +7,14 @@ import {
   stripAreaPx,
   stripSummary,
   goesStripHtml,
+  missedBetween,
+  missedTotal,
 } from '../src/goes-strip.ts';
 import type { StripDay } from '../src/player-stats.ts';
 
+/** Consecutive days from 2026-01-01, so no day is missed. */
 function days(goes: number[]): StripDay[] {
-  return goes.map((g, i) => ({ date: `2026-01-${String(i + 1).padStart(2, '0')}`, goes: g }));
+  return goes.map((g, i) => ({ date: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10), goes: g }));
 }
 
 function parse(html: string): Document {
@@ -132,5 +135,52 @@ describe('stripSummary', () => {
 
   it("says today's true figure past the cap", () => {
     expect(stripSummary(days([1, 9]))).toMatch(/Today: 9\.$/);
+  });
+});
+
+describe('missed days (results brief 97)', () => {
+  const gappy: StripDay[] = [
+    { date: '2026-02-26', goes: 1 },
+    { date: '2026-03-01', goes: 2 }, // 27, 28 Feb missed
+    { date: '2026-03-02', goes: 1 },
+    { date: '2026-03-05', goes: 3 }, // 3, 4 Mar missed
+  ];
+
+  it('counts the calendar days strictly between two played days', () => {
+    expect(missedBetween('2026-03-01', '2026-03-02')).toBe(0);
+    expect(missedBetween('2026-02-26', '2026-03-01')).toBe(2);
+    expect(missedBetween('2024-12-31', '2025-01-02')).toBe(1);
+  });
+
+  it('is 0 for a duplicate date or a malformed key', () => {
+    expect(missedBetween('2026-03-01', '2026-03-01')).toBe(0);
+    expect(missedBetween('nonsense', '2026-03-01')).toBe(0);
+  });
+
+  it('crosses a clock change as whole days', () => {
+    expect(missedBetween('2026-03-28', '2026-03-30')).toBe(1);
+    expect(missedBetween('2026-10-24', '2026-10-26')).toBe(1);
+  });
+
+  it('draws an empty column per missed day, in place', () => {
+    const doc = parse(goesStripHtml(gappy));
+    const kids = [...doc.querySelector('.goes-strip__inner')!.children].map((c) =>
+      c.hasAttribute('data-strip-missed') ? 'gap' : `day:${c.getAttribute('data-goes')}`,
+    );
+    expect(kids).toEqual(['day:1', 'gap', 'gap', 'day:2', 'day:1', 'gap', 'gap', 'day:3']);
+    expect(doc.querySelector('[data-strip-missed]')!.children).toHaveLength(0);
+  });
+
+  it('keeps the meta hint at days played', () => {
+    const doc = parse(goesStripHtml(gappy));
+    expect(doc.querySelector('.goes-strip__meta')!.textContent).toContain('4 days');
+  });
+
+  it('says how many were missed, and nothing when none were', () => {
+    expect(missedTotal(gappy)).toBe(4);
+    expect(stripSummary(gappy)).toBe(
+      'Goes per day, your 4 days played, 4 missed: 2 in one, 1 in two, 1 in three. Today: 3.',
+    );
+    expect(stripSummary(days([1, 2]))).not.toContain('missed');
   });
 });

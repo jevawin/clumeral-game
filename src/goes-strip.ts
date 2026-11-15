@@ -1,6 +1,7 @@
 // Clumeral — goes-strip.ts
 // The Streaks card's goes strip on /solved: one column per day played, oldest
-// left, today at the right end (results brief items 22, 23, 47, 60, 67, 68, 88).
+// left, today at the right end, and an empty column for each day missed between
+// them (results brief items 22, 23, 47, 60, 67, 68, 88, 97).
 //
 // Pure: day list in, markup string out. No DOM access, so it is unit-tested
 // without a page. The strip opens at today through CSS (`direction: rtl` on the
@@ -28,6 +29,25 @@ export function stripAreaPx(rows: number): number {
   return Math.max(rows * CELL_PX + (rows - 1) * GAP_PX, MIN_AREA_PX);
 }
 
+/** Days missed between two played days: the calendar days strictly between them.
+ *  0 for adjacent days, a duplicate date or a malformed key (brief 97). */
+export function missedBetween(earlier: string, later: string): number {
+  const n = dayNumber(later) - dayNumber(earlier) - 1;
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function dayNumber(key: string): number {
+  const [y, m, d] = key.split('-').map(Number);
+  return Date.UTC(y, m - 1, d) / 86_400_000;
+}
+
+/** Missed days across the whole list, first played day to today. */
+export function missedTotal(days: StripDay[]): number {
+  let n = 0;
+  for (let i = 1; i < days.length; i++) n += missedBetween(days[i - 1].date, days[i].date);
+  return n;
+}
+
 const BUCKET_WORDS = ['one', 'two', 'three', 'four', 'five', 'six or more'];
 
 /**
@@ -43,7 +63,9 @@ export function stripSummary(days: StripDay[]): string {
     .join(', ');
   const n = days.length;
   const today = days[n - 1]?.goes ?? 0;
-  return `Goes per day, your ${n} ${n === 1 ? 'day' : 'days'} played: ${parts}. Today: ${today}.`;
+  const missed = missedTotal(days);
+  const gaps = missed ? `, ${missed} missed` : '';
+  return `Goes per day, your ${n} ${n === 1 ? 'day' : 'days'} played${gaps}: ${parts}. Today: ${today}.`;
 }
 
 function attr(text: string): string {
@@ -52,6 +74,8 @@ function attr(text: string): string {
 
 const MISS = '<span class="goes-strip__cell goes-strip__cell--miss"></span>';
 const HIT = '<span class="goes-strip__cell goes-strip__cell--hit"></span>';
+/** A missed day: a column with no cells, so the gap shows (brief 97). */
+const GAP = '<div data-strip-missed></div>';
 const BOLT =
   '<span class="goes-strip__elide"><svg class="goes-strip__bolt" aria-hidden="true">' +
   '<use href="/sprites.svg#icon-bolt"/></svg></span>';
@@ -83,7 +107,7 @@ export function goesStripHtml(days: StripDay[]): string {
     '<div class="goes-strip__frame">' +
     `<div class="goes-strip__scroller" data-strip-scroller role="group" tabindex="0" aria-label="${attr(stripSummary(days))}">` +
     `<div class="goes-strip__inner" aria-hidden="true" style="block-size: ${areaH + GAP_PX + HEAD_PX}px">` +
-    days.map((d) => column(d.goes)).join('') +
+    days.map((d, i) => (i ? GAP.repeat(missedBetween(days[i - 1].date, d.date)) : '') + column(d.goes)).join('') +
     '</div></div></div>' +
     '<div class="goes-strip__meta" aria-hidden="true">' +
     `<span>${n} ${n === 1 ? 'day' : 'days'}</span><span class="goes-strip__today">Today</span>` +
