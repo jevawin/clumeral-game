@@ -18,7 +18,6 @@ export class CompletionPage {
   readonly message: Locator;
   readonly leaderboard: Locator;
   readonly streak: Locator;
-  readonly streakFigure: Locator;
   readonly streakLine: Locator;
   readonly allTime: Locator;
   /** The goes strip's scroller: focusable, named by its summary. */
@@ -40,7 +39,6 @@ export class CompletionPage {
     this.message = page.locator("[data-today-message]");
     this.leaderboard = page.locator('[data-stat-block="daily-leaderboard"]');
     this.streak = page.locator('[data-stat-block="streak"]');
-    this.streakFigure = page.locator("[data-streak-figure]");
     this.streakLine = page.locator("[data-streak-line]");
     this.allTime = page.locator('[data-stat-block="all-time"]');
     this.strip = page.locator("[data-strip-scroller]");

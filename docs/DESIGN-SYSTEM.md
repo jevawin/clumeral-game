@@ -251,16 +251,21 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
   screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
   code and is not. Leave it alone when tidying that file.
-- **Streaks**: "3-day play streak", the figure large in accent (or "3-day one-go streak" when
-  the one-go run matches it), then "Best: N", plus "· One-go run N" from 2 (results brief 101).
+- **Streaks**: one statement at body size -- "**3-day play streak**. Best: **20**." with the
+  bold parts in accent ("3-day one-go streak" when the one-go run matches it), plus
+  " One-go run: **N**." from 2 (results brief 101, 106).
+- **Four type sizes on the results page** (results brief 107): 2.125rem for today's figures,
+  1.1875rem for card headings, 1rem for statements, the ledger, the countdown and buttons,
+  and 0.8125rem (13px for the strip's row numbers) for small labels. The leaderboard's own
+  dot labels (0.9375rem, 0.75rem when tight) are the one exception.
 - **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, an empty 18px column per day missed between them (a break of 7 or more days is one column marked with its count, such as `12d`), 4px gaps, 10px
   cells stacked from the bottom, misses then the solving go. Misses are `--strip-miss`, a
   20% accent mix into surface; the solving go is solid accent. The misses sit under 3:1 on
   purpose -- Jamie relaxed WCAG 1.4.11 for them as accessibility owner (results brief 95).
   The message icon beside today's line is a plain accent icon with no pill. Rows are the worst day capped at
   5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
-  true figure on top. Row numbers down the left, "1 go" at the bottom, in 11px type so each
-  stays on its 10px row at any text size; no axis lines (results brief 102, 105). Under the
+  true figure on top. Row numbers down the left, "1 go" at the bottom, in 13px type (px, not rem) so
+  each stays on its 10px row at any text size; no axis lines (results brief 102, 105). Under the
   scroller, outside it so they never scroll away: "{n} days ago" on the left and "today" on
   the right, with a Lucide left arrow before the first and a 40px fade at the left edge
   while earlier days are off-screen (`data-more-left`, set by `wireStrip`). The scroller is

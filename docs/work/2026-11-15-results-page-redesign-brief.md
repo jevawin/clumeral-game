@@ -513,3 +513,16 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      history that leaves room between the row numbers and the first column.
      Jamie 2026-11-15 also confirmed the 11px row numbers (item 102, "1 yes") and the
      lowercase x labels ("2 yes").
+106. (amends 101) **The Streaks card is header, statement, strip, like the leaderboard.** Jamie:
+     "for a quick fix set box 2 to [3-day play streak]. Best: [20]." The big figure goes; one
+     line at body size reads "**3-day play streak**. Best: **20**.", the bold parts in accent.
+     "One-go run: **N**." follows from 2, as before (Claude kept it; Jamie to confirm).
+107. **At most four type sizes on the results page.** Jamie: "aim for max 4 font sizes total on
+     the results page", with today's third line "the same font size as the other boxes'
+     sub-headers" and the strip's row numbers and break label at the x labels' size. The
+     four: 2.125rem (today's figures), 1.1875rem (headings), 1rem (statements: today's
+     message, the streak line, the leaderboard's line, the ledger, notes, the countdown,
+     buttons) and 0.8125rem (x labels, break label, broken count; the row numbers are 13px,
+     the same at default text, px so they hold their rows). The leaderboard's dot labels keep
+     0.9375rem and 0.75rem when tight: their collision logic was tuned to them, so they are
+     left for the design-system work.

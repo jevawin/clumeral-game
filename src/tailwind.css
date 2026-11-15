@@ -556,14 +556,11 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     margin: 1.125rem 0 0; font-size: 2.125rem; font-weight: 700; line-height: 1.1;
     color: var(--color-accent);
   }
-  .result-card__message { margin: 1rem 0 0; display: flex; align-items: center; gap: 0.5625rem; font-size: 0.9375rem; }
+  .result-card__message { margin: 1rem 0 0; display: flex; align-items: center; gap: 0.5625rem; font-size: 1rem; }
   .result-card__pill { display: inline-flex; align-items: center; justify-content: center; flex: none; }
   .result-card__msg-icon { inline-size: 0.875rem; block-size: 0.875rem; color: var(--color-accent); }
   .result-card__note { margin: 0.75rem 0 0; font-size: 1rem; }
-  .streak__figure { margin: 1.125rem 0 0; line-height: 1.1; }
-  .streak__n { font-size: 2.125rem; font-weight: 700; color: var(--color-accent); }
-  .streak__label { font-size: 1.0625rem; font-weight: 600; }
-  .streak__line { margin: 0.5rem 0 0; font-size: 0.9375rem; }
+  .streak__line { margin: 1rem 0 0; font-size: 1rem; }
   .streak__line b { color: var(--color-accent); }
   /* The All time ledger: label left, figure right, one size, no rules (brief 25, 48). */
   .ledger { margin: 1.25rem 0 0; display: grid; gap: 1rem; font-size: 1rem; }
@@ -576,12 +573,13 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .goes-strip { display: flex; align-items: flex-start; gap: 4px; margin-block-start: 1.25rem; }
   /* Row numbers (brief 102, 105): one label per row on the cells' 14px pitch, no
      axis line. The top margin, set inline, skips the head room a broken column's
-     count uses. 11px, not rem, because each must sit on its 10px row: at 200%
-     text a rem label is 22px and the labels pile up. They grow with page zoom, as
+     count uses. 13px, the x labels' size at default text (brief 107), but px, not
+     rem, because each must sit on its 10px row: at 200% text a rem label is 26px
+     and the labels pile up. They grow with page zoom, as
      the cells do, and the figures are in the scroller's spoken summary. */
   .goes-strip__y {
     flex: none; display: flex; flex-direction: column; gap: 4px;
-    font-size: 11px; line-height: 10px; text-align: end; white-space: nowrap;
+    font-size: 13px; line-height: 10px; text-align: end; white-space: nowrap;
   }
   .goes-strip__y > span { block-size: 10px; }
   .goes-strip__col { flex: 1; min-inline-size: 0; }
@@ -626,7 +624,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     flex: none; min-inline-size: 18px; padding-inline: 2px;
     display: flex; align-items: flex-end; justify-content: center;
   }
-  .goes-strip__break { font-size: 0.6875rem; line-height: 10px; white-space: nowrap; }
+  .goes-strip__break { font-size: 0.8125rem; line-height: 10px; white-space: nowrap; }
   .goes-strip__inner > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
   .goes-strip__cell { block-size: 10px; border-radius: 2px; box-sizing: border-box; }
   .goes-strip__cell--hit { background: var(--color-accent); }
@@ -635,7 +633,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .goes-strip__cell--miss { background: var(--strip-miss); }
   .goes-strip__elide { block-size: 10px; display: flex; align-items: center; justify-content: center; }
   .goes-strip__bolt { inline-size: 8px; block-size: 10px; color: var(--color-accent); }
-  .goes-strip__count { block-size: 14px; display: flex; align-items: flex-end; justify-content: center; font-size: 0.6875rem; line-height: 1; }
+  .goes-strip__count { block-size: 14px; display: flex; align-items: flex-end; justify-content: center; font-size: 0.8125rem; line-height: 1; }
 
 
   /* ─── Daily leaderboard: the time chart (time chart brief items 47, 105) ──────

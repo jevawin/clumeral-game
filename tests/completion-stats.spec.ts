@@ -238,8 +238,8 @@ describe('the completion panel', () => {
   describe('the Streaks card', () => {
     it('shows the play streak and the best (brief 20, 82)', async () => {
       await render(RETURNING, 2, false, { seconds: 221 });
-      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('5-day play streak');
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best: 5');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('5-day play streak. Best: 5.');
+      expect([...panel().querySelectorAll('[data-streak-line] b')].map((b) => b.textContent)).toEqual(['5-day play streak', '5']);
       expect(collapse(block('streak')!.querySelector('h3'))).toBe('Streaks');
       expect(block('streak')!.querySelector('h3 use')!.getAttribute('href')).toBe('/sprites.svg#icon-flame');
     });
@@ -249,13 +249,12 @@ describe('the completion panel', () => {
         { date: day(0), tries: 1 }, { date: day(1), tries: 1 },
         { date: day(2), tries: 2 }, { date: day(3), tries: 2 },
       ], 1);
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best: 4 · One-go run 2');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('4-day play streak. Best: 4. One-go run: 2.');
     });
 
     it('names the harder run when they match, with no one-go part', async () => {
       await render([{ date: day(0), tries: 1 }, { date: day(1), tries: 1 }, { date: day(2), tries: 1 }], 1);
-      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('3-day one-go streak');
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best: 3');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('3-day one-go streak. Best: 3.');
     });
 
     it('holds the goes strip, and nothing else does', async () => {
