@@ -317,7 +317,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations; item 67 "summary") · S
     not widened. (assumed — memory: the five-node exception is deliberate)
 
 ## 10. Analytics
-Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 
 72. No new events. Views of `/solved` are already counted by `route_change`; the solve itself
     by `puzzle_complete` and `puzzle_time`. (assumed)
@@ -325,3 +325,32 @@ Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
     would need a new name in `VALID_EVENTS` (`src/worker/index.ts`), which is a worker change
     and out of scope (item 10). If wanted later, it is its own small item. (assumed)
 74. The preview-only variant switch (item 51) sends nothing. (assumed)
+
+## 11. Done / test plan
+Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+
+75. Unit, `player-stats`: each of the five message lines chosen when it should be and not
+    otherwise; today excluded from every baseline; equal-to-best is not "fastest ever"; a
+    rung needing a time is skipped with no time; "first" one-go solve wording; the streak
+    label switch; the one-go run shown only from 2; the strip's per-day list excludes
+    archive and marker rows; a 6+ day is a broken column; rows = worst day capped at 5; the
+    item 67 summary text. (assumed)
+76. Unit, `completion`: every panel mode renders exactly its cards (item 15) in the item 14
+    order; one `h2`; no `accent-2/3/4`, watermark or attempts chart anywhere; the
+    announcement unchanged. (assumed)
+77. e2e against the production build: a full-mode solve with seeded history checks card
+    order, ledger values, the strip opening at today, a broken column, keyboard scrolling of
+    the strip, and the random, archive and new-player modes; axe on `/solved` light and dark.
+    (assumed)
+78. Read the Playwright tail, not the exit code, and count passes per project — Firefox is
+    reported skipped locally. Unit count is checked by file count, not test count. (assumed —
+    memory: e2e exit code can lie; unit count is build-dependent)
+79. **QA level: full suite or results specs only?**
+    My rec: the full Playwright suite on the production build, all engines. Why: this
+    rewrites the whole results screen, its headings, styles and tests, and `/solved` is
+    reached from every solve path (daily, random, archive, reload), so a narrow run would
+    miss a break on a path nobody edited.
+80. Done when: Jamie has picked the strip miss style on the live preview and the other
+    variants and the switch are gone (item 51); unit, e2e and axe pass at the agreed level;
+    the review gates have passed (da-plan, human review, da-build, self-review); and the PR
+    into `staging` is open. (assumed)
