@@ -6,7 +6,7 @@
 closed. Gates met: no `Ack: pending`; `da-brief` passed with fixes (items 81–92); §4 carries
 Jamie's override.
 **Approval:** pending — Jamie.
-**da-plan:** see the revision log at the end.
+**da-plan:** run once on revision 1 (1 High, 7 Medium, 14 Low); all fixed in revision 2. **Blocked on Jamie:** R1 and R7 before Task 1.
 
 Read the brief's "da-brief fixes" section (81–92) first: it amends earlier items by number, and
 where they differ the later item wins. Item numbers below are brief item numbers.
@@ -65,14 +65,24 @@ Each is an implementation choice inside a settled item.
 
 ### Readings to confirm (Jamie)
 
-Places where the brief's words admit two readings. The plan takes the first; each is a
-one-line change if Jamie reads it the other way. None changes a settled product decision.
+Places where the brief's words admit two readings. R1 and R7 are copy and counting
+decisions, so they are **Jamie's to settle before Task 1 starts**, and the answer is recorded
+in the brief, not only here. R2–R5 are readings inside settled items; each is a one-line
+change if Jamie reads it the other way.
 
-- **R1 — item 55, difference format.** Item 55 says differences use "the sentence form" and
-  gives `17s quicker`, `9s under` and `1m 05s quicker`. The default `formatDuration` writes
-  `0m 17s`; only the compact form writes `17s`, and from a minute up the two are identical.
-  The plan follows item 55's own examples: differences use `formatDuration(n, { compact:
-  true })`. The figure line (item 54) keeps the default form (`1 go, 0m 41s`).
+- **R1 — item 55, difference format. Blocks Task 1.** Item 55 is self-contradictory: it says
+  differences use "the sentence form" (and item 54 says "never the compact chart form"), yet
+  its examples are `17s quicker` and `9s under`, which only the compact form writes (the
+  default writes `0m 17s`; from a minute up the two are identical, `1m 05s`). Recommendation:
+  follow the examples — differences use `formatDuration(n, { compact: true })`; the figure
+  line keeps the default form (`1 go, 0m 41s`). The plan is written that way; if Jamie picks
+  the sentence form, `compact(x)` in Task 1 becomes `formatDuration(x)` and the expected
+  strings become `0m 09s under`, `0m 17s quicker`.
+- **R7 — items 18, 83, a 0s time. Blocks Task 1.** `validSeconds(0)` is valid, so a junk 0s
+  solve (a bug the time chart already refuses, `completion.ts:358-363`) would become "Your
+  fastest ever" and drag every later average. Recommendation: rungs 1 and 3 treat a time
+  below 1s — today's or an earlier one — as no time. The plan is written that way
+  (`timed(s) = s !== null && s >= 1`); if Jamie declines, drop the `>= 1`.
 - **R2 — items 67/88, zero buckets.** The summary leaves out a bucket with no days ("56 in
   one, 3 in three…", never "0 in two").
 - **R3 — the default variant before the pick is `faded-passing`.** It is the only faded look
@@ -85,8 +95,14 @@ one-line change if Jamie reads it the other way. None changes a settled product 
   day count and today's goes; reading "243 days Today" after it adds nothing. O's left
   chevron before "{N} days" is not drawn: item 60 names the words only and the sprite sheet
   has no chevron.
-- **R6 — the octopus above the panel stays.** No item removes it; O is drawn without the app
-  chrome around the panel.
+- **R6 — a short strip hugs the right edge.** With `direction: rtl` (D6), a strip narrower
+  than the card sits against the right edge, under "Today". That is intended: today is the
+  anchor, and the strip grows leftwards as days are added. The scroller stays a tab stop
+  even when nothing scrolls (item 68 accepts it; the summary is still worth reaching).
+
+Noted, not built: `index.html` has no `[data-completion-octo]` element, so the octopus
+injection at the top of `renderCompletion` is dead code. It is left alone (outside this
+brief) and raised with Jamie as a hygiene item.
 
 ---
 
@@ -165,16 +181,18 @@ export function streakLine(stats: PlayerStats): StreakLine;
 
 ### Rules, exactly
 
-`earlier` = `history.filter(isCountable).filter((h) => h.date < today)` — strictly before
-today, so today never pulls a baseline (items 18, 31). `earlierTimes` = the `validSeconds`
-of each earlier row, nulls dropped.
+`earlier` = the rows `goesByDay` would keep (countable, `tries` an integer ≥ 1) with
+`date < today` — strictly before today, so today never pulls a baseline (items 18, 31). Using
+`goesByDay`'s filter means "Solve number" and the strip's "{N} days played" can never
+disagree over a forged row. `timed(s) = s !== null && s >= 1` (R7). `earlierTimes` = the
+`validSeconds` of each earlier row, kept where `timed`.
 
 `todayMessage` tries the rungs in item 81's order and returns the first that holds:
 
-1. **fastest** — `seconds !== null`, `earlierTimes.length >= MIN_EARLIER_TIMES`, and
+1. **fastest** — `timed(seconds)`, `earlierTimes.length >= MIN_EARLIER_TIMES`, and
    `seconds < Math.min(...earlierTimes)`. `under` = that minimum − `seconds`. Equal is not a
    beat (item 18).
-2. **quicker** — `seconds !== null`, `earlierTimes.length >= MIN_EARLIER_TIMES`;
+2. **quicker** — `timed(seconds)`, `earlierTimes.length >= MIN_EARLIER_TIMES`;
    `by = Math.round(mean(earlierTimes) − seconds)` on the exact mean, not the rounded
    `avgTimeSeconds`; holds when `by >= 1`. A difference that rounds to 0 does not count
    (item 55).
@@ -220,10 +238,13 @@ a fixed `TODAY`.
   - equal to best is not fastest: today 80 against the same → falls to `quicker` (`by` 10).
   - fastest skipped with 2 earlier times even when today beats both (item 83); falls through
     to `one-go` when today is one go.
-  - fastest and quicker skipped when `seconds` is null, and when earlier rows have no times.
+  - fastest and quicker skipped when `seconds` is null, when `seconds` is 0 (R7), and when
+    earlier rows have no times; an earlier 0s row is not counted towards the three.
   - today's own row in history does not change any baseline: the same case with and
     without today's row returns the same message (item 18).
-  - quicker chosen: earlier 100, 100, 101 (mean 100.33), today 83 → `by` 17.
+  - quicker chosen: earlier 60, 120, 120 (mean 100, best 60), today 83 → not fastest, `by` 17.
+  - an earlier row with `tries: '3'` is not counted: `solve-number` `n` matches
+    `goesByDay` length.
   - quicker not chosen at a 0.4s difference: earlier 60, 60, 61, today 60 → falls through.
   - one-go: 7 earlier one-go rows → `nth` 8; none earlier → `nth` 1.
   - fewer-goes: earlier tries 2, 3, 2 (2.3), today 2 → `usual: '2.3'`.
@@ -254,9 +275,15 @@ import { STRIP_CAP, type StripDay } from './player-stats.ts';
 export const CELL_PX = 10;   // item 47
 export const GAP_PX = 4;
 export const HEAD_PX = 14;   // room above the rows for a broken column's figure (O line 364)
+/** The rotated 13px "Goes" label is about 28px long; the rows area is never shorter
+ *  than this, so one- and two-row strips do not push the label into the meta row. */
+export const MIN_AREA_PX = 32;
 
 /** Rows = the worst day, capped at STRIP_CAP, at least 1 (item 22). */
 export function stripRows(days: StripDay[]): number;
+
+/** Height of the rows area: max(rows × CELL + (rows − 1) × GAP, MIN_AREA_PX). */
+export function stripAreaPx(rows: number): number;
 
 /** Item 67 as amended by 88; R2. */
 export function stripSummary(days: StripDay[]): string;
@@ -280,12 +307,12 @@ export function goesStripHtml(days: StripDay[]): string;
 
 ```html
 <div class="goes-strip" data-goes-strip>
-  <span class="goes-strip__y" aria-hidden="true" style="block-size: {rowsH}px">Goes</span>
+  <span class="goes-strip__y" aria-hidden="true" style="block-size: {areaH}px">Goes</span>
   <div class="goes-strip__col">
     <div class="goes-strip__frame">
       <div class="goes-strip__scroller" data-strip-scroller role="group" tabindex="0"
            aria-label="{summary}">
-        <div class="goes-strip__inner" aria-hidden="true" style="block-size: {rowsH + HEAD_PX}px">
+        <div class="goes-strip__inner" aria-hidden="true" style="block-size: {areaH + GAP_PX + HEAD_PX}px">
           {one column per day}
         </div>
       </div>
@@ -297,7 +324,10 @@ export function goesStripHtml(days: StripDay[]): string;
 </div>
 ```
 
-`rowsH = rows * CELL_PX + (rows - 1) * GAP_PX`. `{N} days` is `1 day` at 1 (item 60). The
+`areaH = stripAreaPx(stripRows(days))`. The inner height adds `GAP_PX + HEAD_PX` because a
+broken column is five rows, then the 4px flex gap, then the 14px count: 66 + 4 + 14 = 84px.
+Without the gap term the column overflows the track by 4px and the scroller grows a vertical
+scroll (O has that bug). `{N} days` is `1 day` at 1 (item 60). The
 summary is escaped for an attribute (it contains only digits, letters, commas, colons and
 full stops, but escape `&`, `"`, `<` anyway so the builder is safe by construction).
 
@@ -319,6 +349,9 @@ rows tall.
 Parse the returned string with `DOMParser` (jsdom) and query it.
 
 - `stripRows`: worst 3 → 3; worst 9 → 5; one day of 1 → 1; empty → 1.
+- `stripAreaPx`: 1 → 32, 2 → 32, 3 → 38, 5 → 66.
+- The inner track's `block-size` for a history with a 9-go day is `84px` — at least the
+  broken column's 5 × 10 + 4 × 4 + 4 + 14.
 - A 3-go day has 2 miss cells, 1 hit cell, in that DOM order, and no bolt or count.
 - A 9-go day is broken: 3 misses, the bolt, 1 hit, count text `9`.
 - A 6-go day is broken (6 is past the cap); a 5-go day is not.
@@ -466,13 +499,15 @@ const STRIP_VARIANT = stripVariant(new URL(location.href));
 
 Helpers:
 
-- `card(id, headingHtml, iconId, body)` →
+- `card(id, heading, iconId, body)` — `heading` is plain text →
   `<section data-stat-block="{id}" class="result-card" aria-labelledby="stat-head-{id}"><h3
   id="stat-head-{id}" class="result-card__head"><svg class="result-card__icon"
   aria-hidden="true"><use href="/sprites.svg#{iconId}"/></svg>{heading}</h3>{body}</section>`
   (items 44, 62, 66).
 - `todayCard(puzzleNum, isRandom, tries, seconds, showTime, mode, message)` — the Today card,
-  `data-stat-block="today"`, no icon (item 46):
+  no icon (item 46). Its outer element is
+  `<section data-stat-block="today" class="result-card" aria-labelledby="stat-head-today">`,
+  holding, in order:
   - `<h2 id="stat-head-today" class="result-card__title" data-completion-heading>{Puzzle
     #238 | Puzzle} <span class="result-card__solved">solved</span></h2>` — one `h2`, one
     line wrapping naturally (items 53, 63, 91).
@@ -488,13 +523,13 @@ Helpers:
   - The random note (`random`) and the new-player note (`new`) as
     `<p class="result-card__note">` with today's wording (item 61).
 - `streakCard(stats, history)` — `card('streak', 'Streaks', 'icon-flame', …)`:
-  - `<p class="streak__figure"><span class="streak__n">{figure}</span> <span
-    class="streak__label">{label}</span></p>`
-  - `<p class="streak__line">Best streak <b>{best}</b>{oneGoRun !== null ? ' · One-go run
-    <b>{oneGoRun}</b>' : ''}</p>` (item 82).
+  - `<p class="streak__figure" data-streak-figure><span class="streak__n">{figure}</span>
+    <span class="streak__label">{label}</span></p>`
+  - `<p class="streak__line" data-streak-line>Best streak <b>{best}</b>{oneGoRun !== null ?
+    ' · One-go run <b>{oneGoRun}</b>' : ''}</p>` (item 82).
   - `goesStripHtml(goesByDay(history))`.
 - `allTimeCard(stats)` — `card('all-time', 'All time', 'icon-calendar-head', …)`, a
-  `<dl class="ledger">` of four `<div class="ledger__row"><dt>{label}</dt><dd>{value}</dd></div>`
+  `<dl class="ledger">` of four `<div class="ledger__row" data-ledger-row><dt>{label}</dt><dd>{value}</dd></div>`
   in item 25's order: `Solved in one` → `{firstGoPercent ?? 0}%`; `Best one-go run` →
   `{bestFirstGoStreak}`; `Fastest solve` → `formatDuration(bestTimeSeconds)` (a dash when
   null); `Puzzles solved` → `{plays}` (items 25, 59, 69).
@@ -565,13 +600,19 @@ existing token (items 45, 50); every text size is rem; cell and gap sizes are px
 }
 .goes-strip__col { flex: 1; min-inline-size: 0; }
 .goes-strip__frame { border-radius: 2px; }
-.goes-strip__frame:has(> [data-strip-scroller]:focus-visible) {
-  outline: 2px solid var(--color-accent); outline-offset: 3px;
-}
 .goes-strip__scroller {
-  direction: rtl; overflow-x: auto; overscroll-behavior-x: contain; outline: none;
+  direction: rtl; overflow-x: auto; overscroll-behavior-x: contain;
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
   mask-image: linear-gradient(to right, transparent 0, #000 40px);
+}
+/* Fallback ring on the scroller itself (masked at the left edge) for an engine
+   without :has(); with it, the ring moves to the unmasked frame. */
+.goes-strip__scroller:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+@supports selector(:has(*)) {
+  .goes-strip__scroller:focus-visible { outline: none; }
+  .goes-strip__frame:has(> [data-strip-scroller]:focus-visible) {
+    outline: 2px solid var(--color-accent); outline-offset: 3px;
+  }
 }
 @media not all and (pointer: fine) {
   .goes-strip__scroller { scrollbar-width: none; }
@@ -580,7 +621,12 @@ existing token (items 45, 50); every text size is rem; cell and gap sizes are px
 @media (pointer: fine) {
   .goes-strip__scroller { scrollbar-width: thin; }
 }
-.goes-strip__inner { direction: ltr; display: flex; align-items: flex-end; gap: 4px; inline-size: max-content; }
+/* padding-inline-start: the 40px fade is fixed to the scroller box, so without it the
+   oldest columns would sit under the fade even when scrolled fully left. */
+.goes-strip__inner {
+  direction: ltr; display: flex; align-items: flex-end; gap: 4px; inline-size: max-content;
+  padding-inline-start: 40px;
+}
 .goes-strip__inner > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
 .goes-strip__cell { block-size: 10px; border-radius: 2px; box-sizing: border-box; }
 .goes-strip__cell--hit { background: var(--color-accent); }
@@ -603,9 +649,9 @@ existing token (items 45, 50); every text size is rem; cell and gap sizes are px
 [data-strip-variant="dotted"] .goes-strip__cell--miss { border: 1.5px dotted var(--color-accent); }
 ```
 
-`.goes-strip__scroller` sets `outline: none` only because the ring is drawn on the frame;
-`:focus-visible` still matches, and Task 8 asserts the frame's outline is visible on focus.
-The old `.stat-*` and `.goes-*` rules stay until Task 7, unused.
+The scroller drops its own ring only inside `@supports selector(:has(*))`, so an engine
+without `:has()` keeps a ring. Task 8 asserts the frame's outline on focus. The old
+`.stat-*` and `.goes-*` rules stay until Task 7, unused.
 
 ### Tests first — `tests/completion-stats.spec.ts` (rewritten), `tests/completion-links.spec.ts`, `tests/time-chart-view.spec.ts`
 
@@ -637,6 +683,18 @@ The old `.stat-*` and `.goes-*` rules stay until Task 7, unused.
   a `screens:enter` for `completion` (item 64).
 - Countdown: `Next puzzle in ` followed by a `<b>` holding the time.
 
+Existing describes in `completion-stats.spec.ts` that are kept, not dropped:
+- `heroLine` cases — unchanged; `/play` is out of scope (item 11).
+- "the announcement (brief 139)" — kept; only DOM setup changes.
+- "a forged history row cannot inject markup" — re-pointed at the new panel: a history row
+  with `tries: '<img src=x onerror=…>'` or a string `seconds` produces no element in the
+  panel, in the strip, in the ledger or in the message (they reach `innerHTML`).
+- "the time chart slot" — kept, with `this-game` → `today`.
+- "the panel colours itself once, at the top" — kept if `[data-completion-panel] { color:
+  var(--color-text) }` stays (it does).
+Deleted: the old-block describes inside "the completion panel" that assert boxes, columns,
+watermarks, the attempts chart and section accents — replaced by the cases above.
+
 `completion-links.spec.ts` keeps its four cases; only `setupDOM` changes.
 `time-chart-view.spec.ts`: only `setupDOM` changes in this task.
 
@@ -657,10 +715,22 @@ Items 8, 38, 44, 85.
   - `.time-chart__dot` border `1.5px solid var(--color-surface)`; its comment updated.
   - `[data-time-chart][aria-busy="true"]:empty` `min-block-size`: re-measure. The slot is now
     border-box with 18px padding and a 1.5px border, and the heading shrank from 1.5rem to
-    1.1875rem. Method: run `e2e/specs/time-chart.spec.ts` no-shift test's page state at a
-    375px viewport in Chromium and WebKit with the `20 players` preset, read the drawn card's
-    `getBoundingClientRect().height`, divide by 16, round up to one decimal place, and write
-    that rem value and the date into the comment.
+    1.1875rem. The content box narrows by 39px (288 → 249 at a 320px viewport, 343 → 304 at
+    375), so the longest copy line, "You're in the top 99% of solve times", may now wrap at
+    320 and the drawn height may differ by width. The no-shift test
+    (`e2e/specs/time-chart.spec.ts:157-172`) runs at 375 and 320 and allows under 1px.
+    Method:
+    1. Temporarily log `getBoundingClientRect().height` of the drawn `[data-time-chart]` in
+       that test's state (the 99%-copy stub) at 320 and 375, in `chromium-desktop` and
+       `webkit-desktop`. Remove the logging after.
+    2. Write the exact value as `{px}/16` rem to three decimals — no rounding up, which alone
+       can add 1.6px of shift.
+    3. If 320 and 375 give the same height (within 0.5px across both engines): one rule.
+    4. If they differ: two rules — the 375 value as the base, and the 320 value inside
+       `@media (max-width: 22.4375rem)` (359px), with both measurements and the date in the
+       comment. The test's two widths then each meet their own value.
+    5. If Chromium and WebKit differ by 1px or more at the same width, stop and tell Jamie
+       before choosing; do not pick one silently.
 - Delete the `[data-stat-block="daily-leaderboard"] { --section-accent … }` rule — the icon
   colour now comes from `.result-card__icon`.
 
@@ -668,10 +738,11 @@ Items 8, 38, 44, 85.
 
 In `describe('time chart tokens')`: measure against `surface` instead of `bg` in all three
 assertions, update the comment ("the card sits on the surface"), and pin the declaration
-`--chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));`. Add a
-case for the strip: `contrastRatio(accent, surface) >= 3` in all eight pairs, which covers the
-hit cell and the hollow and dotted outlines (item 70). The `faded` variant's 22% tint is not
-asserted: it is known to fail and exists only for the comparison (item 51).
+`--chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));`. No new
+accent-on-surface case: `palette-contrast.spec.ts:35` already asserts accent on surface at
+4.5:1, which covers the hit cell and the hollow and dotted outlines (item 70); the rebased
+`--chart-dot` case covers faded-passing. The `faded` variant's 22% tint is not asserted: it
+is known to fail and exists only for the comparison (item 51).
 
 `tests/time-chart-view.spec.ts`: the drawn card's class is `result-card` and its heading class
 `result-card__head`.
@@ -693,7 +764,8 @@ Items 13, 26, 27, 36, 39, 41, 43; D3.
 - `src/player-stats.ts`: delete `GOES_BUCKETS`, the `goesDistribution` field and its
   computation.
 - Delete `tests/accent-rotation.spec.ts` (its four-accent rule is what this removes, item 41).
-- `tests/player-stats.spec.ts`: delete the `goesDistribution` assertion at line 277.
+- `tests/player-stats.spec.ts`: delete the whole `describe('the goes chart')` block
+  (lines 264–286), not only its `goesDistribution` assertion.
 - `tests/demo-history.spec.ts` line 50: replace the `goesDistribution` read with
   `goesByDay(demoHistory(TODAY))`, asserting a day of 9 and a day of 6 are present (so the
   demo still shows two broken columns, item 42) and that the archived row is absent.
@@ -718,8 +790,9 @@ Items 41, 71, 77, 86.
 Locators: `heading` = `[data-completion-heading]`; `panel`; `today` =
 `[data-stat-block="today"]`; `figures` = `[data-today-figures]`; `message` =
 `[data-today-message]`; `leaderboard` = `[data-stat-block="daily-leaderboard"]`; `streak`;
-`allTime`; `strip` = `[data-strip-scroller]`; `stripDays` = `[data-strip-day]`;
-`ledger(label)` returns the `dd` in the `.ledger__row` whose `dt` has exactly that text;
+`allTime`; `streakFigure` = `[data-streak-figure]`; `streakLine` = `[data-streak-line]`;
+`strip` = `[data-strip-scroller]`; `stripDays` = `[data-strip-day]`;
+`ledger(label)` returns the `dd` in the `[data-ledger-row]` whose `dt` has exactly that text;
 `cards` = `[data-completion-panel] > section`; plus `live`, `countdown`, `feedbackBtn`,
 `links`. Remove `subheading`, `thisGame`, `records`, `average`, `cols`, `allTimeLines`,
 `goesRows`, `stat()`.
@@ -754,22 +827,43 @@ variant via `?strip=` so all four are scanned while they exist (Task 11 removes 
 ### New `e2e/specs/results-page.spec.ts`
 
 Frozen `TODAY`; seeded 40 consecutive days ending today, times on every row, one day of 9
-goes ten days back, today 3 goes in 148s; `seedPrefs` saving on.
+goes ten days back, today 3 goes in 148s; `seedPrefs` saving on. The leaderboard field is
+stubbed with a `page.route('**/api/times/**')` fulfilling a fixed 20-row field — move the
+existing `stubField` helper out of `e2e/specs/time-chart.spec.ts` into
+`e2e/helpers/time-field.ts` and import it in both specs — so the card always draws.
 
-- Card order: `cards` `data-stat-block` sequence starts `today`, then (if drawn)
-  `daily-leaderboard`, then `streak`, `all-time`.
+- Card order: `cards` `data-stat-block` sequence is exactly `today, daily-leaderboard,
+  streak, all-time`.
 - Ledger values match the seeded history (computed in the spec from the same array).
 - The strip opens at today: the last `[data-strip-day]`'s bounding box right edge is within
   the scroller's box, and the first day's is not (40 columns at 22px exceed the card).
 - A broken column: the day with `data-goes="9"` has `data-broken` and its count reads `9`.
-- Keyboard: focus the scroller with Tab from the heading region, press `ArrowLeft` five
+- No vertical scroll: the scroller's `scrollHeight === clientHeight` (+ its horizontal
+  scrollbar height on fine pointers: compare `offsetHeight - clientHeight` instead of
+  assuming 0).
+- The fade never hides the oldest day: after `scroller.scrollLeft = -scroller.scrollWidth`
+  (scrolls fully left in an rtl box), the first `[data-strip-day]`'s left edge is at least
+  40px inside the scroller's left edge.
+- Short strips: with a seeded history whose worst day is 1 go, and again with 2, the `Goes`
+  label's bounding box bottom is at or above the meta row's top.
+- Keyboard (projects `chromium-desktop`, `mobile-chromium`, `webkit-desktop`; skipped
+  elsewhere with `test.skip` and the reason): press Tab until `document.activeElement`
+  matches `[data-strip-scroller]` (at most 20 presses, then fail), press `ArrowLeft` five
   times, and `Math.abs(scrollLeft)` has grown; the frame's computed `outline-style` is
-  `solid` while focused.
-- Modes: `/random` solve → only `today`, random note visible; an archive solve of another
-  date reaching completion → only `today`; a 2-game history → `today` plus the new-player
-  note and no `streak`.
-- Item 52: on `chromium-desktop` the scroller's computed `scrollbar-width` is `thin`; on
-  `mobile-chromium` it is `none`.
+  `solid` while focused. If `webkit-desktop` does not scroll on arrows, drop it from the
+  list and say so in the test comment — the summary and the scrollbar remain.
+- Modes: `/random` solve → only `today`, random note visible; a 2-game history → `today`
+  plus the new-player note and no `streak`.
+- Archive mode (item 77). An archive solve never reaches `/solved` (`src/app.ts:1139-1143`);
+  the archive panel is pre-rendered into the hidden completion screen when an already-solved
+  past date opens (`src/app.ts:1016`). So: seed today solved plus a solved past date
+  (`archived: true`), open `/archive/{past date}`, wait for the solved-replay view, and
+  assert `[data-completion-panel] > section` has count 1 with `data-stat-block="today"` and
+  no `[data-strip-scroller]`, using `toHaveCount` / `toHaveAttribute` (the screen is hidden,
+  so not `toBeVisible`).
+- Item 52 (projects `chromium-desktop` and `mobile-chromium` only; `test.skip` on every
+  other project): on `chromium-desktop` the scroller's computed `scrollbar-width` is `thin`;
+  on `mobile-chromium` it is `none`.
 
 Commit: `test(results): e2e for the card layout and the goes strip`.
 
@@ -787,6 +881,9 @@ Jamie needs it for the pick (item 51).
   and that `--chart-dot` now mixes into `--color-surface`.
 - Comments in `src/tailwind.css` near the `--color-accent-2/3/4` tokens: say they are unused
   since this change and point at #370.
+- `docs/INVARIANTS.md`: update the test counts it cites under P1 (`tests/player-stats.spec.ts
+  (33)` and any other file this change grows or shrinks) to the counts after Task 7, and add
+  `tests/goes-strip.spec.ts` if P1's guard list names the player-facing stats files.
 
 Commit: `docs(results): card layout, strip and dot base`.
 
@@ -903,9 +1000,31 @@ Then the gates: human review, `da-build`, self-review, PR into `staging` (item 8
 
 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → (Jamie picks) → 11 → gates. Tasks 1–4 are additive
 and leave the old panel working. Task 5 switches the panel over, Task 6 depends on Task 5's
-card CSS, Task 7 removes only what Task 5 stopped using. Each task ends on `npm test` green and
-commits on its own.
+card CSS, Task 7 removes only what Task 5 stopped using. Each task ends on `npm test` (unit)
+green and commits on its own. **The e2e suite is expected red from Task 5 until Task 8**,
+because the old page object and specs still look for the old panel; nothing is pushed
+before Task 8 ends with e2e green.
+
+Task 1 does not start until Jamie has answered R1 and R7 and the answers are in the brief.
 
 ## Revision log
 
 - **Revision 1, 2026-11-15** — first draft from the closed brief.
+- **Revision 2, 2026-11-15** — `da-plan` on revision 1: 1 High, 7 Medium, 14 Low. All checked
+  against the code; all held. Fixed:
+  - H1 reserved leaderboard height: measured at 320 and 375 in two engines, exact value,
+    width-keyed rule if the heights differ (Task 6).
+  - M2 the "quicker" test case picked a history where "fastest" wins; new values (Task 1).
+  - M3 broken column 4px taller than the track; inner height adds `GAP_PX` (Task 2).
+  - M4 rotated "Goes" label overflowed one- and two-row strips; `MIN_AREA_PX` (Task 2).
+  - M5 the fade hid the oldest days at full scroll; 40px start padding (Task 5, e2e).
+  - M6 existing completion-stats describes listed as kept or re-pointed (Task 5).
+  - M7 archive mode e2e now uses the real pre-render path (Task 8).
+  - M8 R1 is a copy decision, not a reading; it blocks Task 1 and goes to Jamie and the brief.
+  - Lows fixed: R6 octo premise was false (dead code, raised, not built); keyboard test focus
+    and projects; item 52 project skip; deterministic card order via a shared field stub;
+    `data-*` hooks for ledger and streak; duplicate contrast case dropped; `:has()` fallback
+    ring; short strips hug the right edge on purpose (R6 new); whole goes-chart describe
+    deleted; `card()` parameter name and Today `section` written out; 0s times raised as R7
+    (blocks Task 1); `earlier` uses `goesByDay`'s filter; e2e red from Task 5 to 8 stated;
+    INVARIANTS counts added to Task 9.
