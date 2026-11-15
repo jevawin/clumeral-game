@@ -535,3 +535,10 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      n-day play streak white and bold only n-day". "**3-day** play streak" is text colour with
      "3-day" bold; "Best: **20**." and "One-go run: **2**." keep their bold accent figures.
      One-go run stays (Jamie: "keep").
+110. (amends 109) **Streak wording, and bold is always accent.** Jamie: "[N-day] play streak
+     (best: [N]). 1-go run: [N] — [bold + theme colour] — try changing all the card subtitles
+     so that bold = theme colour always (e.g. top 40% in card 1)". The line reads
+     "**3-day** play streak (best: **20**)", with ". 1-go run: **2**" from 2 and no closing
+     full stop. When the one-go run matches the play streak it reads "**3-day** 1-go streak"
+     (Claude's call, for "1-go" to match; Jamie to confirm). Every bold part of a card's
+     statement is bold accent: today's message, the leaderboard's line and the streak line.

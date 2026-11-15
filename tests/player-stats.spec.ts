@@ -520,11 +520,11 @@ describe('streakLine', () => {
   });
 
   it('switches the label when the runs match, and drops the one-go part', () => {
-    expect(line(4, 4)).toEqual({ figure: 4, label: '-day one-go streak', best: 30, oneGoRun: null });
+    expect(line(4, 4)).toEqual({ figure: 4, label: '-day 1-go streak', best: 30, oneGoRun: null });
   });
 
   it('reads the same at 1: "1-day play streak"', () => {
     expect(line(1, 0).label).toBe('-day play streak');
-    expect(line(1, 1).label).toBe('-day one-go streak');
+    expect(line(1, 1).label).toBe('-day 1-go streak');
   });
 });

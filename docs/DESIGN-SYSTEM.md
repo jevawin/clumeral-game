@@ -251,10 +251,11 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
   screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
   code and is not. Leave it alone when tidying that file.
-- **Streaks**: one statement at body size -- "**3-day** play streak. Best: **20**." The run
-  is text colour with only "3-day" bold ("3-day one-go streak" when the one-go run matches
-  it); the figures after it are bold accent, plus " One-go run: **N**." from 2 (results
-  brief 101, 106, 109).
+- **Streaks**: one statement at body size -- "**3-day** play streak (best: **20**)", plus
+  ". 1-go run: **N**" from 2; "**3-day** 1-go streak" when the one-go run matches it
+  (results brief 101, 106, 110).
+- **Bold in a card's statement is always bold accent** (results brief 110): today's message,
+  the leaderboard's line ("top **40%**") and the streak line.
 - **Four type sizes on the results page** (results brief 107): 2.125rem for today's figures,
   1.1875rem for card headings, 1rem for statements, the ledger, the countdown and buttons,
   and 0.8125rem (13px for the strip's row numbers) for small labels. The leaderboard's own

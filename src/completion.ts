@@ -209,11 +209,12 @@ function todayCard(
 /** Streaks: the play streak, the best, and the goes strip (brief 20–24, 82). */
 function streakCard(stats: PlayerStats, history: HistoryEntry[]): string {
   const l = streakLine(stats);
-  // One statement at body size (brief 106): the run in text colour with only
-  // "N-day" bold, then the figures in bold accent (brief 109).
-  const oneGo = l.oneGoRun !== null ? ` One-go run: <b>${l.oneGoRun}</b>.` : '';
+  // One statement at body size (brief 106, 110): "3-day play streak (best: 20).
+  // 1-go run: 2", every bold part in accent, as on every card's statement.
+  const run = `<b>${l.figure}-day</b>${l.label.replace(/^-day/, '')} (best: <b>${l.best}</b>)`;
+  const oneGo = l.oneGoRun !== null ? `. 1-go run: <b>${l.oneGoRun}</b>` : '';
   return card('streak', 'Streaks', 'icon-flame',
-    `<p class="streak__line" data-streak-line><strong class="streak__run">${l.figure}-day</strong>${l.label.replace(/^-day/, '')}. Best: <b>${l.best}</b>.${oneGo}</p>` +
+    `<p class="streak__line" data-streak-line>${run}${oneGo}</p>` +
     goesStripHtml(goesByDay(history)));
 }
 

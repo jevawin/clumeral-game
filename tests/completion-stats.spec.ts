@@ -238,10 +238,9 @@ describe('the completion panel', () => {
   describe('the Streaks card', () => {
     it('shows the play streak and the best (brief 20, 82)', async () => {
       await render(RETURNING, 2, false, { seconds: 221 });
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('5-day play streak. Best: 5.');
-      // Only "5-day" is bold, in text colour; the figures after it are accent (brief 109).
-      expect(panel().querySelector('[data-streak-line] .streak__run')!.textContent).toBe('5-day');
-      expect([...panel().querySelectorAll('[data-streak-line] b')].map((b) => b.textContent)).toEqual(['5']);
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('5-day play streak (best: 5)');
+      // Only "5-day" and the figures are bold (brief 110).
+      expect([...panel().querySelectorAll('[data-streak-line] b')].map((b) => b.textContent)).toEqual(['5-day', '5']);
       expect(collapse(block('streak')!.querySelector('h3'))).toBe('Streaks');
       expect(block('streak')!.querySelector('h3 use')!.getAttribute('href')).toBe('/sprites.svg#icon-flame');
     });
@@ -251,12 +250,12 @@ describe('the completion panel', () => {
         { date: day(0), tries: 1 }, { date: day(1), tries: 1 },
         { date: day(2), tries: 2 }, { date: day(3), tries: 2 },
       ], 1);
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('4-day play streak. Best: 4. One-go run: 2.');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('4-day play streak (best: 4). 1-go run: 2');
     });
 
     it('names the harder run when they match, with no one-go part', async () => {
       await render([{ date: day(0), tries: 1 }, { date: day(1), tries: 1 }, { date: day(2), tries: 1 }], 1);
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('3-day one-go streak. Best: 3.');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('3-day 1-go streak (best: 3)');
     });
 
     it('holds the goes strip, and nothing else does', async () => {
