@@ -55,12 +55,15 @@ describe('stripAreaPx', () => {
 describe('the axes (results brief 102)', () => {
   it('numbers each row, top first, with "1 go" at the bottom', () => {
     expect(yLabels(1)).toEqual(['1 go']);
-    expect(yLabels(3)).toEqual(['3', '2', '1 go']);
+    expect(yLabels(5)).toEqual(['5', '4', '3', '2', '1 go']);
   });
 
-  it('leaves rows 4 and 5 unnumbered, as a broken column skips goes there (brief 108)', () => {
-    expect(yLabels(4)).toEqual(['', '3', '2', '1 go']);
-    expect(yLabels(5)).toEqual(['', '', '3', '2', '1 go']);
+  it('leaves rows 4 and 5 unnumbered when a broken column skips goes there (brief 108)', () => {
+    expect(yLabels(5, true)).toEqual(['', '', '3', '2', '1 go']);
+    const labels = (goes: number[]) =>
+      [...parse(goesStripHtml(days(goes))).querySelectorAll('.goes-strip__y > span')].map((s) => s.textContent);
+    expect(labels([1, 9, 2])).toEqual(['', '', '3', '2', '1 go']);
+    expect(labels([1, 5, 2])).toEqual(['5', '4', '3', '2', '1 go']);
   });
 
   it('puts one y label per row in the markup', () => {

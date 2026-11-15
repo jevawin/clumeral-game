@@ -251,9 +251,10 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
   screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
   code and is not. Leave it alone when tidying that file.
-- **Streaks**: one statement at body size -- "**3-day play streak**. Best: **20**." with the
-  bold parts in accent ("3-day one-go streak" when the one-go run matches it), plus
-  " One-go run: **N**." from 2 (results brief 101, 106).
+- **Streaks**: one statement at body size -- "**3-day** play streak. Best: **20**." The run
+  is text colour with only "3-day" bold ("3-day one-go streak" when the one-go run matches
+  it); the figures after it are bold accent, plus " One-go run: **N**." from 2 (results
+  brief 101, 106, 109).
 - **Four type sizes on the results page** (results brief 107): 2.125rem for today's figures,
   1.1875rem for card headings, 1rem for statements, the ledger, the countdown and buttons,
   and 0.8125rem (13px for the strip's row numbers) for small labels. The leaderboard's own
@@ -264,7 +265,8 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   purpose -- Jamie relaxed WCAG 1.4.11 for them as accessibility owner (results brief 95).
   The message icon beside today's line is a plain accent icon with no pill. Rows are the worst day capped at
   5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
-  true figure on top. Row numbers down the left, "1 go" at the bottom and none above 3 (results brief 108), in 13px type (px, not rem) so
+  true figure on top. Row numbers down the left, "1 go" at the bottom, and none above 3 when the strip has a
+  broken column (results brief 108), in 13px type (px, not rem) so
   each stays on its 10px row at any text size; no axis lines (results brief 102, 105). Under the
   scroller, outside it so they never scroll away: "{n} days ago" on the left and "today" on
   the right, with a Lucide left arrow before the first and a 40px fade at the left edge

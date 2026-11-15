@@ -239,7 +239,9 @@ describe('the completion panel', () => {
     it('shows the play streak and the best (brief 20, 82)', async () => {
       await render(RETURNING, 2, false, { seconds: 221 });
       expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('5-day play streak. Best: 5.');
-      expect([...panel().querySelectorAll('[data-streak-line] b')].map((b) => b.textContent)).toEqual(['5-day play streak', '5']);
+      // Only "5-day" is bold, in text colour; the figures after it are accent (brief 109).
+      expect(panel().querySelector('[data-streak-line] .streak__run')!.textContent).toBe('5-day');
+      expect([...panel().querySelectorAll('[data-streak-line] b')].map((b) => b.textContent)).toEqual(['5']);
       expect(collapse(block('streak')!.querySelector('h3'))).toBe('Streaks');
       expect(block('streak')!.querySelector('h3 use')!.getAttribute('href')).toBe('/sprites.svg#icon-flame');
     });

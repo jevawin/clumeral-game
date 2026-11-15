@@ -516,7 +516,7 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
 106. (amends 101) **The Streaks card is header, statement, strip, like the leaderboard.** Jamie:
      "for a quick fix set box 2 to [3-day play streak]. Best: [20]." The big figure goes; one
      line at body size reads "**3-day play streak**. Best: **20**.", the bold parts in accent.
-     "One-go run: **N**." follows from 2, as before (Claude kept it; Jamie to confirm).
+     "One-go run: **N**." follows from 2, as before (Jamie: "keep", item 109).
 107. **At most four type sizes on the results page.** Jamie: "aim for max 4 font sizes total on
      the results page", with today's third line "the same font size as the other boxes'
      sub-headers" and the strip's row numbers and break label at the x labels' size. The
@@ -528,5 +528,10 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      left for the design-system work.
 108. (amends 102) **Row numbers stop at 3.** Jamie: "Remove 4 and 5 from the y axis … they don't
      make sense when we skip numbers eg you have 9 … only up to 3 makes sense then the skip
-     starts". Rows 4 and 5 keep their space but carry no number, on every strip, whether or not
-     it has a broken column.
+     starts". Rows 4 and 5 keep their space but carry no number when the strip has a broken
+     column (a day of 6+ goes); a strip without one numbers every row. **Jamie: "1 only when
+     skipping".**
+109. (amends 106) **The run reads in text colour, only "N-day" bold.** Jamie: "keep and make
+     n-day play streak white and bold only n-day". "**3-day** play streak" is text colour with
+     "3-day" bold; "Best: **20**." and "One-go run: **2**." keep their bold accent figures.
+     One-go run stays (Jamie: "keep").

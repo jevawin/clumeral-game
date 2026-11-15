@@ -26,17 +26,18 @@ export function stripAreaPx(rows: number): number {
   return rows * CELL_PX + (rows - 1) * GAP_PX;
 }
 
-/** Rows above this are unnumbered: in a broken column, row 4 is the bolt and
- *  row 5 the solving go, so "4" and "5" would be wrong there (brief 108). */
+/** With a broken column, rows above this are unnumbered: there row 4 is the bolt
+ *  and row 5 the solving go, so "4" and "5" would be wrong (brief 108). */
 export const LABELLED_ROWS = 3;
 
-/** The y axis's labels, top row first: the row number up to row 3, '' above it,
- *  and "1 go" on the bottom row so the axis says what it counts (brief 102, 108). */
-export function yLabels(rows: number): string[] {
+/** The y axis's labels, top row first, and "1 go" on the bottom row so the axis
+ *  says what it counts (brief 102). Every row is numbered unless the strip has a
+ *  broken column; then rows 4 and 5 are '' (brief 108). */
+export function yLabels(rows: number, broken = false): string[] {
   return Array.from({ length: rows }, (_, k) => {
     const r = rows - k;
     if (r === 1) return '1 go';
-    return r <= LABELLED_ROWS ? String(r) : '';
+    return !broken || r <= LABELLED_ROWS ? String(r) : '';
   });
 }
 
@@ -138,7 +139,7 @@ export function goesStripHtml(days: StripDay[]): string {
   if (!days.length) return '';
   const rows = stripRows(days);
   const areaH = stripAreaPx(rows);
-  const y = yLabels(rows).map((l) => `<span>${l}</span>`).join('');
+  const y = yLabels(rows, days.some((d) => d.goes > STRIP_CAP)).map((l) => `<span>${l}</span>`).join('');
   return (
     '<div class="goes-strip" data-goes-strip>' +
     `<div class="goes-strip__y" aria-hidden="true" style="margin-block-start: ${HEAD_PX + GAP_PX}px">${y}</div>` +
