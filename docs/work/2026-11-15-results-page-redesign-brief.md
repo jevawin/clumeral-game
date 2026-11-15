@@ -489,9 +489,27 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      long strip opens at today; a short one sits at the left beside the y axis. The 40px
      fade and its start padding are gone. The y labels are 11px, not rem, so each stays on
      its 10px row at 200% text (a rem label is 22px there and they pile up); they grow with
-     page zoom as the cells do, and the figures are in the spoken summary. (Jamie owns the
-     11px call.)
+     page zoom as the cells do, and the figures are in the spoken summary. **Jamie accepted
+     the 11px call as accessibility owner, 2026-11-15 ("1 yes").** Lines and layout amended
+     by 105.
 103. (amends 52) **Scrollbars are left to the platform.** Jamie: "can you leave as automatic? i
      have them set to show when scrolling on mac this seems to be overriding". No
      `scrollbar-width` and no hiding. The vertical scrollbar Jamie saw was overflow-x
      making overflow-y auto as well; the scroller now sets `overflow-y: hidden`.
+104. (amends 27) **Average time comes back, in All time.** Jamie: "we still need your average
+     time in all time". A ledger row, "Average time", between Fastest solve and Puzzles
+     solved: the mean of every countable time, rounded to the second, a dash when there are
+     none. The same figure the message already uses as its baseline.
+105. (amends 102) **Labels always in view, an arrow, the fade back, no axis lines.** Jamie, on the
+     preview: "'N days ago' is lost, i think that should always be on screen and if you can't
+     see the end it has a left arrow before it … use lucide's arrow left in font colour … lose
+     the x y axis lines for now, they look odd and losing the fade on the left edge makes it
+     less obvious you're missing a chunk". The x labels sit outside the scroller, so they
+     never scroll away. While earlier days are off-screen, a Lucide arrow-left in text colour
+     sits before "{n} days ago" and the 40px fade is on; scrolled to the oldest day, or on a
+     strip that fits, neither shows, so the oldest day sits beside the row numbers. A small
+     script (`wireStrip`) sets this on load, scroll and resize. The row numbers stay; both
+     axis lines go. The track hugs the right again, so today sits over "today"; on a short
+     history that leaves room between the row numbers and the first column.
+     Jamie 2026-11-15 also confirmed the 11px row numbers (item 102, "1 yes") and the
+     lowercase x labels ("2 yes").

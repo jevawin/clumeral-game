@@ -3,9 +3,10 @@
 // left, today at the right end, and an empty column for each day missed between
 // them (results brief items 22, 23, 47, 60, 67, 68, 88, 97).
 //
-// Pure: day list in, markup string out. No DOM access, so it is unit-tested
-// without a page. The strip opens at today through CSS (`direction: rtl` on the
-// scroller, plan D6), so nothing here needs to run after insertion.
+// Markup is pure: day list in, string out, unit-tested without a page. The strip
+// opens at today through CSS (`direction: rtl` on the scroller, plan D6). The one
+// piece that runs after insertion is wireStrip, which marks when earlier days are
+// off-screen to the left, for the arrow and the fade (brief 105).
 
 import { STRIP_CAP, type StripDay } from './player-stats.ts';
 
@@ -14,8 +15,6 @@ export const CELL_PX = 10;
 export const GAP_PX = 4;
 /** Room above the rows for a broken column's true figure. */
 export const HEAD_PX = 14;
-/** Space between the cells and the x-axis line. */
-export const BASE_PX = 3;
 
 /** Rows = the worst day, capped at STRIP_CAP, at least 1 (brief 22). */
 export function stripRows(days: StripDay[]): number {
@@ -120,10 +119,13 @@ function column(goes: number): string {
   return `<div data-strip-day data-goes="${goes}">${MISS.repeat(goes - 1)}${HIT}</div>`;
 }
 
-/** The whole strip, or '' for an empty list. A y axis with a label per row and a
- *  line, beside the scroller; inside it, the columns sit on an x-axis line with
- *  "{n} days ago" and "today" under it (brief 102). The inner track sits at the
- *  left when it fits, beside the y axis, and opens at today when it does not. */
+const ARROW =
+  '<svg class="goes-strip__arrow" aria-hidden="true"><use href="/sprites.svg#icon-arrow-left"/></svg>';
+
+/** The whole strip, or '' for an empty list. Row numbers down the left, top row
+ *  first to "1 go" (brief 102); under the scroller, "{n} days ago" on the left and
+ *  "today" on the right, always in view, with a left arrow before the first while
+ *  earlier days are off-screen (brief 105). No axis lines. */
 export function goesStripHtml(days: StripDay[]): string {
   if (!days.length) return '';
   const rows = stripRows(days);
@@ -135,11 +137,33 @@ export function goesStripHtml(days: StripDay[]): string {
     '<div class="goes-strip__col">' +
     '<div class="goes-strip__frame">' +
     `<div class="goes-strip__scroller" data-strip-scroller role="group" tabindex="0" aria-label="${attr(stripSummary(days))}">` +
-    '<div class="goes-strip__inner" aria-hidden="true">' +
-    `<div class="goes-strip__bars" style="block-size: ${areaH + GAP_PX + HEAD_PX}px">` +
+    `<div class="goes-strip__inner" aria-hidden="true" style="block-size: ${areaH + GAP_PX + HEAD_PX}px">` +
     days.map((d, i) => (i ? gapColumns(missedBetween(days[i - 1].date, d.date)) : '') + column(d.goes)).join('') +
-    '</div>' +
-    `<div class="goes-strip__x"><span>${xStart(days)}</span><span>today</span></div>` +
-    '</div></div></div></div></div>'
+    '</div></div></div>' +
+    `<div class="goes-strip__x" aria-hidden="true"><span class="goes-strip__start">${ARROW}${xStart(days)}</span><span>today</span></div>` +
+    '</div></div>'
   );
+}
+
+let watcher: ResizeObserver | null = null;
+
+/** Keeps `data-more-left` on the strip while earlier days are off-screen to the
+ *  left: on load, on scroll and on resize. The scroller is rtl, so its scrollLeft
+ *  runs from 0 at today to minus the overflow at the oldest day. */
+export function wireStrip(root: ParentNode): void {
+  watcher?.disconnect();
+  watcher = null;
+  const strip = root.querySelector<HTMLElement>('[data-goes-strip]');
+  const scroller = strip?.querySelector<HTMLElement>('[data-strip-scroller]');
+  if (!strip || !scroller) return;
+  const update = () => {
+    const hidden = scroller.scrollWidth - scroller.clientWidth - Math.abs(scroller.scrollLeft);
+    strip.toggleAttribute('data-more-left', hidden > 1);
+  };
+  scroller.addEventListener('scroll', update, { passive: true });
+  if (typeof ResizeObserver === 'function') {
+    watcher = new ResizeObserver(update);
+    watcher.observe(scroller);
+  }
+  update();
 }

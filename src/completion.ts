@@ -21,7 +21,7 @@ import {
   type TodayMessage,
 } from './player-stats.ts';
 import { setTimeChartContext, showTimeChart, timeChartSlot } from './time-chart-view.ts';
-import { goesStripHtml } from './goes-strip.ts';
+import { goesStripHtml, wireStrip } from './goes-strip.ts';
 
 
 // ─── SVG ─────────────────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ function streakCard(stats: PlayerStats, history: HistoryEntry[]): string {
     goesStripHtml(goesByDay(history)));
 }
 
-/** All time: a ledger, label left, figure right (brief 25, 59, 69). */
+/** All time: a ledger, label left, figure right (brief 25, 59, 69, 104). */
 function allTimeCard(stats: PlayerStats): string {
   const row = (label: string, value: string) =>
     `<div class="ledger__row" data-ledger-row><dt>${label}</dt><dd>${value}</dd></div>`;
@@ -225,6 +225,7 @@ function allTimeCard(stats: PlayerStats): string {
     row('Solved in one', `${stats.firstGoPercent ?? 0}%`) +
     row('Best one-go run', String(stats.bestFirstGoStreak)) +
     row('Fastest solve', formatDuration(stats.bestTimeSeconds)) +
+    row('Average time', formatDuration(stats.avgTimeSeconds)) +
     row('Puzzles solved', String(stats.plays)) +
     '</dl>');
 }
@@ -348,6 +349,7 @@ export function renderCompletion(
     if (showsChart) cards.push(timeChartSlot());
     if (mode === 'full') cards.push(streakCard(stats, history), allTimeCard(stats));
     dom.panel.innerHTML = cards.join('');
+    wireStrip(dom.panel);
   }
 
   // Prepared once per solve, written by the screens:enter listener above. The

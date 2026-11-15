@@ -18,6 +18,7 @@ const VIEWBOXES: Record<string, string> = {
   'icon-bolt': '0 0 8 10',
   'icon-trophy': '0 0 24 24',
   'icon-arrow-up': '0 0 24 24',
+  'icon-arrow-left': '0 0 24 24',
   'icon-tick': '0 0 24 24',
   'icon-calculator': '0 0 24 24',
   'icon-gamepad': '0 0 24 24',

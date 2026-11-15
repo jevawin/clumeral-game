@@ -573,17 +573,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   /* The goes strip (results brief 22, 47, 52, 68; plan D6, D7).
      direction: rtl on the scroller opens it at today, the right end, in every
      engine with no script; the inner track turns back to ltr. */
-  .goes-strip { display: flex; align-items: flex-start; margin-block-start: 1.25rem; }
-  /* The y axis (brief 102): one label per row on the cells' 14px pitch, and the
-     axis line down to meet the x-axis line. Its top margin, set inline, skips the
-     head room a broken column's count uses. The bottom padding is BASE_PX plus
-     the x line, so the two lines meet. The labels are 11px, not rem, because each
-     must sit on its 10px row: at 200% text a rem label is 22px and the rows'
-     labels pile up. They grow with page zoom, as the cells do; the figures are
-     also in the scroller's spoken summary (brief 102, 104). */
+  .goes-strip { display: flex; align-items: flex-start; gap: 4px; margin-block-start: 1.25rem; }
+  /* Row numbers (brief 102, 105): one label per row on the cells' 14px pitch, no
+     axis line. The top margin, set inline, skips the head room a broken column's
+     count uses. 11px, not rem, because each must sit on its 10px row: at 200%
+     text a rem label is 22px and the labels pile up. They grow with page zoom, as
+     the cells do, and the figures are in the scroller's spoken summary. */
   .goes-strip__y {
     flex: none; display: flex; flex-direction: column; gap: 4px;
-    padding-inline-end: 4px; padding-block-end: 4px; border-inline-end: 1px solid var(--color-text);
     font-size: 11px; line-height: 10px; text-align: end; white-space: nowrap;
   }
   .goes-strip__y > span { block-size: 10px; }
@@ -595,8 +592,15 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .goes-strip__scroller {
     direction: rtl; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
   }
-  /* The ring goes on the frame where :has() exists, so it is not clipped by the
-     scroller's overflow; without :has(), on the scroller itself. */
+  /* The fade at the left edge, only while earlier days are off-screen (brief 105;
+     wireStrip sets the attribute), so a strip scrolled to its oldest day or one
+     that fits is never faded and its oldest day sits beside the row numbers. */
+  [data-more-left] .goes-strip__scroller {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
+    mask-image: linear-gradient(to right, transparent 0, #000 40px);
+  }
+  /* The mask would fade a ring drawn on the scroller, so the ring goes on the
+     unmasked frame where :has() exists; without it, on the scroller itself. */
   .goes-strip__scroller:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
   @supports selector(:has(*)) {
     .goes-strip__scroller:focus-visible { outline: none; }
@@ -604,33 +608,26 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
       outline: 2px solid var(--color-accent); outline-offset: 3px;
     }
   }
-  /* margin-right: auto puts a track that fits at the LEFT, beside the y axis (the
-     scroller is rtl, so the auto margin takes the spare room). A track wider than
-     the scroller overflows to the left and opens at today. On a short history the
-     x labels are wider than the columns, so they set the width and the columns
-     sit at its right, under "today". */
+  /* The track hugs the right, so today sits over "today". */
   .goes-strip__inner {
-    direction: ltr; display: flex; flex-direction: column;
-    inline-size: max-content; margin-right: auto;
-  }
-  /* content-box: the inline block-size is the cells' area plus head room, and the
-     base gap and x line go below it, where the y axis's padding expects them. */
-  .goes-strip__bars {
-    box-sizing: content-box; display: flex; align-items: flex-end; justify-content: flex-end; gap: 4px;
-    padding-inline-start: 4px; padding-block-end: 3px; border-block-end: 1px solid var(--color-text);
+    direction: ltr; box-sizing: content-box; display: flex; align-items: flex-end; gap: 4px;
+    inline-size: max-content; margin-inline-start: auto;
   }
   .goes-strip__x {
     display: flex; justify-content: space-between; gap: 1rem;
     margin-block-start: 0.375rem; font-size: 0.8125rem; white-space: nowrap;
   }
-  .goes-strip__bars > [data-strip-missed] { inline-size: 18px; flex: none; }
+  .goes-strip__start { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .goes-strip__arrow { display: none; inline-size: 1em; block-size: 1em; color: var(--color-text); }
+  [data-more-left] .goes-strip__arrow { display: block; }
+  .goes-strip__inner > [data-strip-missed] { inline-size: 18px; flex: none; }
   /* A long break (brief 98): one column, its day count sat on the cells' baseline. */
-  .goes-strip__bars > [data-strip-break] {
+  .goes-strip__inner > [data-strip-break] {
     flex: none; min-inline-size: 18px; padding-inline: 2px;
     display: flex; align-items: flex-end; justify-content: center;
   }
   .goes-strip__break { font-size: 0.6875rem; line-height: 10px; white-space: nowrap; }
-  .goes-strip__bars > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
+  .goes-strip__inner > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
   .goes-strip__cell { block-size: 10px; border-radius: 2px; box-sizing: border-box; }
   .goes-strip__cell--hit { background: var(--color-accent); }
   /* Missed goes are faded (results brief 51, 95). Under 3:1 by design: Jamie, as

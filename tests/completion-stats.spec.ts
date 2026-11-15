@@ -283,6 +283,7 @@ describe('the completion panel', () => {
         ['Solved in one', '20%'],
         ['Best one-go run', '1'],
         ['Fastest solve', '0m 48s'],
+        ['Average time', '4m 06s'], // (221 + 48 + 300 + 260 + 400) / 5 = 245.8
         ['Puzzles solved', '5'],
       ]);
     });
@@ -293,6 +294,7 @@ describe('the completion panel', () => {
         ['Solved in one', '0%'],
         ['Best one-go run', '0'],
         ['Fastest solve', '—'],
+        ['Average time', '—'],
         ['Puzzles solved', '3'],
       ]);
     });

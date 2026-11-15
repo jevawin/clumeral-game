@@ -9,6 +9,7 @@ import {
   xStart,
   stripSummary,
   goesStripHtml,
+  wireStrip,
   missedBetween,
   missedTotal,
   BREAK_DAYS,
@@ -74,8 +75,8 @@ describe('the axes (results brief 102)', () => {
 describe('goesStripHtml', () => {
   it('sizes the inner track to hold a broken column and its count', () => {
     const doc = parse(goesStripHtml(days([2, 9, 1])));
-    const bars = doc.querySelector<HTMLElement>('.goes-strip__bars')!;
-    expect(bars.style.blockSize).toBe('84px');
+    const inner = doc.querySelector<HTMLElement>('.goes-strip__inner')!;
+    expect(inner.style.blockSize).toBe('84px');
   });
 
   it('draws a 3-go day as two misses then the hit, with no bolt or count', () => {
@@ -178,7 +179,7 @@ describe('missed days (results brief 97)', () => {
 
   it('draws an empty column per missed day, in place', () => {
     const doc = parse(goesStripHtml(gappy));
-    const kids = [...doc.querySelector('.goes-strip__bars')!.children].map((c) =>
+    const kids = [...doc.querySelector('.goes-strip__inner')!.children].map((c) =>
       c.hasAttribute('data-strip-missed') ? 'gap' : `day:${c.getAttribute('data-goes')}`,
     );
     expect(kids).toEqual(['day:1', 'gap', 'gap', 'day:2', 'day:1', 'gap', 'gap', 'day:3']);
@@ -201,7 +202,7 @@ describe('missed days (results brief 97)', () => {
 describe('long breaks (results brief 98)', () => {
   function kinds(list: StripDay[]): string[] {
     const doc = parse(goesStripHtml(list));
-    return [...doc.querySelector('.goes-strip__bars')!.children].map((c) => {
+    return [...doc.querySelector('.goes-strip__inner')!.children].map((c) => {
       if (c.hasAttribute('data-strip-missed')) return 'gap';
       if (c.hasAttribute('data-strip-break')) return `break:${c.textContent}`;
       return 'day';
@@ -231,5 +232,44 @@ describe('long breaks (results brief 98)', () => {
     expect(stripSummary([{ date: '2026-01-01', goes: 2 }, { date: '2026-04-01', goes: 1 }])).toContain(
       '2 days played, 89 missed',
     );
+  });
+});
+
+describe('wireStrip (results brief 105)', () => {
+  function mount(scrollWidth: number, clientWidth: number, scrollLeft = 0) {
+    document.body.innerHTML = goesStripHtml(days([1, 2, 3]));
+    const scroller = document.querySelector<HTMLElement>('[data-strip-scroller]')!;
+    Object.defineProperty(scroller, 'scrollWidth', { value: scrollWidth, configurable: true });
+    Object.defineProperty(scroller, 'clientWidth', { value: clientWidth, configurable: true });
+    scroller.scrollLeft = scrollLeft;
+    Object.defineProperty(scroller, 'scrollLeft', { value: scrollLeft, writable: true, configurable: true });
+    wireStrip(document.body);
+    return { strip: document.querySelector<HTMLElement>('[data-goes-strip]')!, scroller };
+  }
+
+  it('marks earlier days off-screen when the track is wider than the scroller', () => {
+    expect(mount(500, 280).strip.hasAttribute('data-more-left')).toBe(true);
+  });
+
+  it('does not mark a strip that fits', () => {
+    expect(mount(280, 280).strip.hasAttribute('data-more-left')).toBe(false);
+  });
+
+  it('clears the mark once scrolled to the oldest day, and sets it again on the way back', () => {
+    const { strip, scroller } = mount(500, 280);
+    scroller.scrollLeft = -220;
+    scroller.dispatchEvent(new Event('scroll'));
+    expect(strip.hasAttribute('data-more-left')).toBe(false);
+    scroller.scrollLeft = -100;
+    scroller.dispatchEvent(new Event('scroll'));
+    expect(strip.hasAttribute('data-more-left')).toBe(true);
+  });
+
+  it('puts the arrow before the start label, hidden from speech', () => {
+    mount(500, 280);
+    const start = document.querySelector('.goes-strip__start')!;
+    expect(start.firstElementChild!.querySelector('use')!.getAttribute('href')).toBe('/sprites.svg#icon-arrow-left');
+    expect(start.textContent).toBe('2 days ago');
+    expect(document.querySelector('.goes-strip__x')!.getAttribute('aria-hidden')).toBe('true');
   });
 });

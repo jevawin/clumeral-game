@@ -61,10 +61,13 @@ function expectedLedger(history: HistoryEntry[]) {
     best = Math.max(best, run);
   }
   const fastest = Math.min(...sorted.map((h) => h.seconds!));
+  const avg = Math.round(sorted.reduce((s, h) => s + h.seconds!, 0) / sorted.length);
+  const mmss = (s: number) => `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
   return {
     solvedInOne: `${Math.round((ones / sorted.length) * 100)}%`,
     bestOneGoRun: String(best),
-    fastest: `${Math.floor(fastest / 60)}m ${String(fastest % 60).padStart(2, "0")}s`,
+    fastest: mmss(fastest),
+    average: mmss(avg),
     plays: String(sorted.length),
   };
 }
@@ -90,6 +93,7 @@ test.describe("results page — full mode", () => {
     await expect(completion.ledger("Solved in one")).toHaveText(want.solvedInOne);
     await expect(completion.ledger("Best one-go run")).toHaveText(want.bestOneGoRun);
     await expect(completion.ledger("Fastest solve")).toHaveText(want.fastest);
+    await expect(completion.ledger("Average time")).toHaveText(want.average);
     await expect(completion.ledger("Puzzles solved")).toHaveText(want.plays);
   });
 
@@ -134,26 +138,43 @@ test.describe("results page — full mode", () => {
     expect(first.x - (y.x + y.width)).toBeLessThanOrEqual(6);
   });
 
-  test("a short history sits beside the y axis, with today under its last column", async ({ page }) => {
+  test("a short history puts today over its last column, with no arrow or fade", async ({ page }) => {
     await openFull(page, FULL.slice(0, 4));
-    const y = await box(page, ".goes-strip__y");
-    const x = await box(page, ".goes-strip__x");
     const last = await box(page, "[data-strip-day]", "last");
     const today = await box(page, ".goes-strip__x > span", "last");
-    expect(x.x - (y.x + y.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(last.x + last.width - (today.x + today.width))).toBeLessThanOrEqual(1);
+    await expect(page.locator(".goes-strip__arrow")).toBeHidden();
+    await expect(page.locator("[data-goes-strip]")).not.toHaveAttribute("data-more-left", "");
   });
 
-  test("the two axis lines meet, and each y label sits on its row", async ({ page }) => {
+  test("N days ago stays in view, with an arrow while earlier days are off-screen (brief 105)", async ({ page }) => {
+    await openFull(page);
+    const start = page.locator(".goes-strip__start");
+    await expect(start).toHaveText("39 days ago");
+    // "In view" here means inside the card's strip column, not the window: the
+    // label sits outside the scroller, so scrolling the strip never moves it.
+    const inColumn = async () => {
+      const col = await box(page, ".goes-strip__col");
+      const b = await box(page, ".goes-strip__start");
+      expect(b.x).toBeGreaterThanOrEqual(col.x - 0.5);
+      expect(b.x + b.width).toBeLessThanOrEqual(col.x + col.width + 0.5);
+    };
+    await inColumn();
+    await expect(page.locator(".goes-strip__arrow")).toBeVisible();
+    const mask = () => page.locator("[data-strip-scroller]").evaluate((el) => getComputedStyle(el).maskImage);
+    expect(await mask()).toContain("gradient");
+    const scroller = page.locator("[data-strip-scroller]");
+    await scroller.evaluate((el) => { el.scrollLeft = -el.scrollWidth; });
+    await expect(page.locator(".goes-strip__arrow")).toBeHidden();
+    await expect.poll(mask).toBe("none");
+    await inColumn();
+  });
+
+  test("each row number sits on its row", async ({ page }) => {
     await openFull(page, FULL.slice(0, 5).map((h) => ({ ...h, tries: Math.min(h.tries, 3) })));
-    const y = await box(page, ".goes-strip__y");
-    const bars = await box(page, ".goes-strip__bars");
-    expect(Math.abs(y.y + y.height - (bars.y + bars.height))).toBeLessThanOrEqual(1);
-    const labels = page.locator(".goes-strip__y > span");
-    await expect(labels).toHaveText(["3", "2", "1 go"]);
-    // The bottom label is level with a hit cell on the bottom row.
+    await expect(page.locator(".goes-strip__y > span")).toHaveText(["3", "2", "1 go"]);
     const one = await box(page, ".goes-strip__y > span", "last");
-    const cell = await box(page, '[data-strip-day] .goes-strip__cell', 0);
+    const cell = await box(page, "[data-strip-day] .goes-strip__cell", 0);
     expect(Math.abs(one.y + one.height / 2 - (cell.y + cell.height / 2))).toBeLessThanOrEqual(1.5);
   });
 

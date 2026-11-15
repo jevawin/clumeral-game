@@ -259,16 +259,19 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   purpose -- Jamie relaxed WCAG 1.4.11 for them as accessibility owner (results brief 95).
   The message icon beside today's line is a plain accent icon with no pill. Rows are the worst day capped at
   5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
-  true figure on top. Two 1px axis lines in text colour (results brief 102): the y axis
-  numbers each row, "1 go" at the bottom, in 11px type so each label stays on its 10px row
-  at any text size; the x axis reads "{n} days ago" and "today" under the line. The
-  scroller is `direction: rtl` so a long strip opens at today with no script; a short one
-  sits at the left beside the y axis. No fade, no start padding, and scrollbars are left to
-  the platform (results brief 103) with `overflow-y: hidden`. The scroller is a focusable
-  `role="group"` named by a one-sentence summary; the columns and axes are `aria-hidden`.
-  Its focus ring is drawn on the frame.
+  true figure on top. Row numbers down the left, "1 go" at the bottom, in 11px type so each
+  stays on its 10px row at any text size; no axis lines (results brief 102, 105). Under the
+  scroller, outside it so they never scroll away: "{n} days ago" on the left and "today" on
+  the right, with a Lucide left arrow before the first and a 40px fade at the left edge
+  while earlier days are off-screen (`data-more-left`, set by `wireStrip`). The scroller is
+  `direction: rtl` so it opens at today with no script, and the track hugs the right so
+  today sits over "today". Scrollbars are left to the platform (results brief 103) with
+  `overflow-y: hidden`. The scroller is a focusable `role="group"` named by a one-sentence
+  summary; the columns and labels are `aria-hidden`. Its focus ring is drawn on the
+  unmasked frame, because the mask would fade it.
 - **All time** is a `dl` ledger: label left in text colour, figure right in bold accent, one
-  size, no rules -- Solved in one, Best one-go run, Fastest solve, Puzzles solved.
+  size, no rules -- Solved in one, Best one-go run, Fastest solve, Average time, Puzzles
+  solved.
 - **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
   and inherit from `html`/`body`. The play screen keeps Inconsolata for its keypad.
 - **`--chart-dot` mixes into `--color-surface`**, not `--color-bg`, since the leaderboard

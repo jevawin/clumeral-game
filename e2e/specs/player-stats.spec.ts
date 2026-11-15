@@ -79,6 +79,7 @@ test.describe("player stats — the panel after a solve", () => {
     await expect(completion.ledger("Solved in one")).toHaveText("40%");
     await expect(completion.ledger("Best one-go run")).toHaveText("2");
     await expect(completion.ledger("Fastest solve")).toHaveText(/^\d+m \d\ds$/);
+    await expect(completion.ledger("Average time")).toHaveText(/^\d+m \d\ds$/);
     await expect(completion.ledger("Puzzles solved")).toHaveText("5");
 
     // Cut from the page (results brief 26, 27).
