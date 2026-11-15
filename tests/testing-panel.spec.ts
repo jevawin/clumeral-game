@@ -7,6 +7,9 @@ import {
   initTestingPanel,
   randomHistory,
   testingAllowed,
+  stripVariant,
+  keepStrip,
+  STRIP_VARIANTS,
   type FieldPreset,
 } from '../src/testing-panel.ts';
 import { buildField, rankCopy, ranking, type FieldRow } from '../src/time-chart.ts';
@@ -29,6 +32,42 @@ describe('testingAllowed', () => {
     for (const h of ['clumeral.com', 'www.clumeral.com', 'clumeral-game.jevawin.workers.dev', 'other.workers.dev', 'evilworkers.dev', 'workers.dev.example.com']) {
       expect(testingAllowed(h), h).toBe(false);
     }
+  });
+});
+
+describe('stripVariant (results brief 51, 84)', () => {
+  const at = (host: string, query = '') => stripVariant(new URL(`https://${host}/solved${query}`));
+
+  it('reads each variant on a preview host', () => {
+    for (const host of ['localhost', 'x-clumeral-game.jevawin.workers.dev']) {
+      for (const v of STRIP_VARIANTS) expect(at(host, `?strip=${v}`), `${host} ${v}`).toBe(v);
+    }
+  });
+
+  it('is the default on production, whatever the query', () => {
+    for (const host of ['clumeral.com', 'clumeral-game.jevawin.workers.dev']) {
+      for (const q of ['?strip=hollow', '', '?strip=bogus']) {
+        expect(at(host, q), `${host} ${q}`).toBe('faded-passing');
+      }
+    }
+  });
+
+  it('is the default for no value or an unknown one on a preview host', () => {
+    expect(at('localhost')).toBe('faded-passing');
+    expect(at('localhost', '?strip=bogus')).toBe('faded-passing');
+  });
+});
+
+describe('keepStrip', () => {
+  const keep = (query: string) => keepStrip(new URL(`http://localhost/solved${query}`));
+
+  it('carries a valid variant through a history swap', () => {
+    expect(keep('?strip=dotted')).toBe('?strip=dotted');
+  });
+
+  it('drops an unknown or missing one', () => {
+    expect(keep('?strip=bogus')).toBe('');
+    expect(keep('')).toBe('');
   });
 });
 
@@ -125,5 +164,25 @@ describe('initTestingPanel', () => {
     expect(sessionStorage.getItem('clumeral-testing-field')).toBe('tie');
     expect(document.querySelector('[data-testing-field="tie"]')!.getAttribute('aria-pressed')).toBe('true');
     expect(document.querySelector('[data-testing-field="real"]')!.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('offers the four strip styles, the default pressed', () => {
+    initTestingPanel('localhost');
+    document.querySelector<HTMLButtonElement>('[data-testing-open]')!.click();
+    const ids = [...document.querySelectorAll<HTMLElement>('[data-testing-strip]')].map((b) => b.dataset.testingStrip);
+    expect(ids).toEqual(['faded', 'faded-passing', 'hollow', 'dotted']);
+    expect(document.querySelector('[data-testing-strip="faded-passing"]')!.getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('[data-testing-strip="hollow"]')!.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  // jsdom cannot follow location.assign and will not let it be stubbed, so the
+  // navigation itself is covered in e2e/specs/testing-panel.spec.ts.
+  it('a strip button writes no storage (results brief 74)', () => {
+    localStorage.clear();
+    initTestingPanel('localhost');
+    document.querySelector<HTMLButtonElement>('[data-testing-open]')!.click();
+    const before = [localStorage.length, sessionStorage.length];
+    document.querySelector<HTMLButtonElement>('[data-testing-strip="hollow"]')!.click();
+    expect([localStorage.length, sessionStorage.length]).toEqual(before);
   });
 });

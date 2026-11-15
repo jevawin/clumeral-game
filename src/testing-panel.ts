@@ -9,6 +9,10 @@
 // touching the page unless the host is local or a workers.dev preview. The answer
 // helpers also depend on /api/dev/answer, which 404s on clumeral.com.
 //
+// The strip style (results brief 51, 84) is a `?strip=` query parameter instead:
+// it writes nothing, survives a reload and can be pasted between devices. It is
+// removed, with the losing styles, once Jamie picks one.
+//
 // The field choice is kept in sessionStorage so it survives a reload and dies
 // with the tab. History choices write dlng_history and dlng_prefs exactly as the
 // existing ?demo= switch does, and are meant for preview data only.
@@ -26,6 +30,39 @@ const FIELD_KEY = 'clumeral-testing-field';
  *  PRODUCTION deployment, and not any other workers.dev host. */
 export function testingAllowed(hostname: string): boolean {
   return ['localhost', '127.0.0.1', '[::1]'].includes(hostname) || hostname.endsWith('-clumeral-game.jevawin.workers.dev');
+}
+
+/** How the goes strip draws a miss. Preview only: compared live, then the
+ *  losers and this switch go before the PR (results brief 51, 87). */
+export const STRIP_VARIANTS = ['faded', 'faded-passing', 'hollow', 'dotted'] as const;
+export type StripVariant = (typeof STRIP_VARIANTS)[number];
+/** The only faded look that passes 3:1 with no new colour (plan R3). */
+export const DEFAULT_STRIP_VARIANT: StripVariant = 'faded-passing';
+
+const STRIP_LABELS: Record<StripVariant, string> = {
+  faded: 'Faded',
+  'faded-passing': 'Faded (passing)',
+  hollow: 'Hollow',
+  dotted: 'Dotted',
+};
+
+function validStrip(url: URL): StripVariant | null {
+  const v = url.searchParams.get('strip');
+  return (STRIP_VARIANTS as readonly string[]).includes(v ?? '') ? (v as StripVariant) : null;
+}
+
+/** `?strip=` on a preview host; the default anywhere else or for any other value.
+ *  Writes nothing and sends nothing (results brief 74, 84). */
+export function stripVariant(url: URL): StripVariant {
+  if (!testingAllowed(url.hostname)) return DEFAULT_STRIP_VARIANT;
+  return validStrip(url) ?? DEFAULT_STRIP_VARIANT;
+}
+
+/** The query to append on a history swap, so the strip style is not reset
+ *  mid-comparison: `?strip={value}` for a valid one, else ''. */
+export function keepStrip(url: URL): string {
+  const v = validStrip(url);
+  return v ? `?strip=${v}` : '';
 }
 
 export const FIELD_PRESETS = [
@@ -247,6 +284,9 @@ export function initTestingPanel(hostname = location.hostname): void {
     <h3 class="testing-panel__head">Daily leaderboard</h3>
     <p class="testing-panel__note">Built around your time today. Kept until this tab closes.</p>
     <div class="testing-panel__grid">${buttons(FIELD_PRESETS, 'data-testing-field')}</div>
+    <h3 class="testing-panel__head">Strip misses</h3>
+    <p class="testing-panel__note">Reloads the results page with this style.</p>
+    <div class="testing-panel__grid">${buttons(STRIP_VARIANTS.map((id) => ({ id, label: STRIP_LABELS[id] })), 'data-testing-strip')}</div>
   </div>`;
   document.body.append(dialog);
 
@@ -254,6 +294,10 @@ export function initTestingPanel(hostname = location.hostname): void {
     const f = readField();
     for (const b of dialog.querySelectorAll<HTMLElement>('[data-testing-field]')) {
       b.setAttribute('aria-pressed', String(b.dataset.testingField === f));
+    }
+    const strip = stripVariant(new URL(location.href));
+    for (const b of dialog.querySelectorAll<HTMLElement>('[data-testing-strip]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.testingStrip === strip));
     }
   };
   const close = () => (typeof dialog.close === 'function' ? dialog.close() : dialog.removeAttribute('open'));
@@ -278,7 +322,9 @@ export function initTestingPanel(hostname = location.hostname): void {
       } catch {
         return;
       }
-      location.assign(h.go);
+      location.assign(h.go + keepStrip(new URL(location.href)));
+    } else if (t.dataset.testingStrip) {
+      location.assign('/solved?strip=' + t.dataset.testingStrip);
     } else if (t.dataset.testingField) {
       try {
         sessionStorage.setItem(FIELD_KEY, t.dataset.testingField);
