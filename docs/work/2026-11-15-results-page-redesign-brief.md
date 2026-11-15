@@ -256,7 +256,7 @@ Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52
     rules)".**
 
 ## 8. Copy & wording
-Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 
 53. Today heading: "Puzzle #238" over "solved"; random: "Puzzle" over "solved". The "!" and
     "You took:" go. (assumed — O)
@@ -282,3 +282,36 @@ Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 60. Strip: "Goes" y label, "{N} days" (singular "1 day"), "Today". (assumed — O)
 61. The new-player and random notes keep today's wording. "Next puzzle in 2h 25m" keeps its
     wording with the time in bold. (assumed)
+
+## 9. Accessibility
+Settled: pending · Sign-off: pending (Jamie) · Ack: n/a (owned section)
+
+62. Each card is a `<section aria-labelledby>` pointing at its heading, as today. (assumed)
+63. The Today heading is the screen's one `h2`, as the current "…solved!" heading is. "Puzzle
+    #238" and "solved" are two lines of ONE heading (O draws two `h2`s, which a screen reader
+    would hear as two headings). The other cards keep `h3`, as the leaderboard already has.
+    (assumed)
+64. The one polite announcement is unchanged: "Solved in 3. 2 minutes 28 seconds. Play
+    streak 30." The message line is read in place, not announced. (assumed — keeps #311 and
+    #368 behaviour)
+65. The figure line is spoken in words: "3 goes, 2 minutes 28 seconds" via `speakDuration`,
+    with the "2m 28s" text hidden from speech, so "m" is never read as a letter. (assumed —
+    the reason `speakDuration` exists)
+66. Decorative icons (heading icons, the message icon, the bolt) are `aria-hidden`. (assumed)
+67. **What does a screen reader get from the goes strip?** The columns are pictures and there
+    can be 240 of them.
+    My rec: hide the columns from speech and give the strip a short text summary instead:
+    "Goes per day, last 243 days: 56 in one, 104 in two, 48 in three, 24 in four, 8 in five,
+    3 in six or more. Today: 3." Why: a list of 243 days is unusable by ear, and the summary
+    carries what the picture shows at a glance. It also keeps the attempts distribution
+    available to screen-reader users after item 26 cut it visually.
+68. The strip is focusable (`tabindex="0"`) so keyboard users can scroll it with the arrow
+    keys, with a 2px accent focus ring; desktop gets the scrollbar (item 52). (assumed —
+    axe `scrollable-region-focusable`)
+69. The All time ledger is a `dl`, read "Solved in one, 23%". The rotated "Goes" label and the
+    broken-column figures are `aria-hidden`; the summary in item 67 covers them. (assumed)
+70. All text stays in `--color-text` or `--color-accent`, which already pass AA in all eight
+    theme × mode pairs. The miss-cell variant is held to 3:1 or recorded per item 51. No
+    new motion. (assumed)
+71. axe runs on `/solved` in full mode, light and dark. The Label in Name exception list is
+    not widened. (assumed — memory: the five-node exception is deliberate)
