@@ -164,7 +164,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Sign-off: Dave 2026-
     wrong is the kind of bug players report.
 
 ## 5. State & persistence
-Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 
 30. Nothing new is stored. Every figure reads `dlng_history` through `loadHistory` and is
     computed on each render; nothing is written. No new keys, no `dlng_` change. (assumed —
@@ -174,3 +174,36 @@ Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 32. The goes strip opens scrolled to today every time; its scroll position is not
     remembered. (assumed)
 33. Nothing goes in the URL. `/solved` stays the route. (assumed)
+
+## 6. How it fits
+Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+
+34. `src/completion.ts` — `renderCompletion` keeps its signature, `panelMode`, the countdown,
+    the links and the one announcement. It rewrites the panel markup as the Today, Streaks
+    and All time cards. `statColumn`, `statLine`, `goesChart` and the per-section accent go.
+    `heroLine` (the `/play` sentence) is untouched. (assumed)
+35. `index.html` — the standalone `data-completion-heading` / `data-completion-subheading`
+    pair leaves the completion section; the solved heading is rendered inside the Today card
+    by `completion.ts`. Heading level is settled in §9. (assumed)
+36. `src/player-stats.ts` — stays pure and stays the one place counting rules live. It gains
+    additive outputs: the before-today baselines and the chosen message rung (items 17–18),
+    and the per-day goes list for the strip (item 22). Existing fields stay; whether
+    `goesDistribution` is removed once nothing reads it is the plan's call. (assumed)
+37. The goes strip may be its own render module beside `time-chart-view.ts`; the plan
+    decides. (assumed)
+38. `src/time-chart-view.ts` — only the leaderboard's container and heading classes change
+    to the card style (item 8). Its computation and fetch are untouched. (assumed)
+39. `src/tailwind.css` — removes `.stat-col*`, `.stat-line*`, `.goes-*`, `.stat-figure*` and
+    the section accent rules (550–556); adds the card, ledger and strip styles. (assumed)
+40. `public/sprites.svg` — gains a bolt for the broken column. The section heading icons get
+    tight viewBoxes so their ink sits on the padding line (time-note: "the fix belongs in the
+    sprite sheet"). `icon-calendar` is also used on `/play` (`src/app.ts:881`), so the plan
+    checks every reuse before changing a viewBox. (assumed)
+41. Tests that change: `tests/completion-stats.spec.ts`, `tests/completion-links.spec.ts`,
+    `tests/accent-rotation.spec.ts` (deleted or rewritten — its four-accent rule is what this
+    removes), `tests/time-chart-view.spec.ts`, and e2e `player-stats`, `game-solve`, `a11y`,
+    `random`, `testing-panel`, `time-chart` with `e2e/pages/completion.page.ts`. (assumed)
+42. `src/demo-history.ts` / the testing panel gains days past the cap if needed, so the
+    broken column can be seen on a preview. (assumed)
+43. No worker change (item 10). `tests/token-parity.spec.ts` keeps passing because the
+    spare tokens stay (item 13). (assumed)
