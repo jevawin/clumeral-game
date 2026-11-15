@@ -525,6 +525,104 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--color-text);
   }
 
+  /* ─── Results cards (results page redesign, board O) ──────────────────────────
+     Every section is one card: surface fill, 1.5px border, 6px radius, 18px
+     padding (results brief 44). One accent: figures and heading icons in
+     --color-accent, every label and sentence in --color-text (brief 45). Text
+     sizes in rem; the strip's cells and gaps in px, as O draws them (brief 47). */
+  .result-card {
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 0.375rem;
+    padding: 1.125rem;
+  }
+  .result-card__title { margin: 0; font-size: 1.1875rem; font-weight: 400; line-height: 1.3; }
+  .result-card__solved { font-weight: 700; color: var(--color-accent); }
+  .result-card__head {
+    display: flex; align-items: center; gap: 0.5625rem; margin: 0;
+    font-size: 1.1875rem; font-weight: 700; line-height: 1.3; color: var(--color-text);
+  }
+  .result-card__icon { inline-size: 1.3125rem; block-size: 1.3125rem; flex: none; color: var(--color-accent); }
+  .result-card__figures {
+    margin: 1.125rem 0 0; font-size: 2.125rem; font-weight: 700; line-height: 1.1;
+    color: var(--color-accent);
+  }
+  .result-card__message { margin: 1rem 0 0; display: flex; align-items: center; gap: 0.5625rem; font-size: 0.9375rem; }
+  .result-card__pill { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .result-card__msg-icon { inline-size: 0.875rem; block-size: 0.875rem; color: var(--color-accent); }
+  .result-card__note { margin: 0.75rem 0 0; font-size: 1rem; }
+  .streak__figure { margin: 1.125rem 0 0; line-height: 1.1; }
+  .streak__n { font-size: 2.125rem; font-weight: 700; color: var(--color-accent); }
+  .streak__label { font-size: 1.0625rem; font-weight: 600; }
+  .streak__line { margin: 0.5rem 0 0; font-size: 0.9375rem; }
+  .streak__line b { color: var(--color-accent); }
+  /* The All time ledger: label left, figure right, one size, no rules (brief 25, 48). */
+  .ledger { margin: 1.25rem 0 0; display: grid; gap: 1rem; font-size: 1rem; }
+  .ledger__row { display: flex; justify-content: space-between; gap: 1rem; }
+  .ledger dd { margin: 0; font-weight: 700; color: var(--color-accent); white-space: nowrap; }
+
+  /* The goes strip (results brief 22, 47, 52, 68; plan D6, D7).
+     direction: rtl on the scroller opens it at today, the right end, in every
+     engine with no script; the inner track turns back to ltr. */
+  .goes-strip { display: flex; align-items: flex-start; gap: 0.5rem; margin-block-start: 1.25rem; }
+  .goes-strip__y {
+    flex: none; margin-block-start: 14px; writing-mode: vertical-rl; transform: rotate(180deg);
+    display: inline-flex; align-items: center; font-size: 0.8125rem; line-height: 1;
+  }
+  .goes-strip__col { flex: 1; min-inline-size: 0; }
+  .goes-strip__frame { border-radius: 2px; }
+  .goes-strip__scroller {
+    direction: rtl; overflow-x: auto; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
+    mask-image: linear-gradient(to right, transparent 0, #000 40px);
+  }
+  /* The mask would also fade a ring drawn on the scroller itself, so the ring goes
+     on the unmasked frame where :has() exists. Without :has(), the scroller keeps
+     its own ring, faded at the left edge but still there. */
+  .goes-strip__scroller:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+  @supports selector(:has(*)) {
+    .goes-strip__scroller:focus-visible { outline: none; }
+    .goes-strip__frame:has(> [data-strip-scroller]:focus-visible) {
+      outline: 2px solid var(--color-accent); outline-offset: 3px;
+    }
+  }
+  /* A thin native scrollbar on fine pointers, so a mouse can reach older days;
+     hidden on touch, as O (brief 52). */
+  @media not all and (pointer: fine) {
+    .goes-strip__scroller { scrollbar-width: none; }
+    .goes-strip__scroller::-webkit-scrollbar { display: none; }
+  }
+  @media (pointer: fine) {
+    .goes-strip__scroller { scrollbar-width: thin; }
+  }
+  /* padding-inline-start: the 40px fade is fixed to the scroller box, so without
+     it the oldest columns would sit under the fade even when scrolled fully left. */
+  .goes-strip__inner {
+    direction: ltr; display: flex; align-items: flex-end; gap: 4px; inline-size: max-content;
+    padding-inline-start: 40px;
+  }
+  .goes-strip__inner > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
+  .goes-strip__cell { block-size: 10px; border-radius: 2px; box-sizing: border-box; }
+  .goes-strip__cell--hit { background: var(--color-accent); }
+  .goes-strip__elide { block-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .goes-strip__bolt { inline-size: 8px; block-size: 10px; color: var(--color-accent); }
+  .goes-strip__count { block-size: 14px; display: flex; align-items: flex-end; justify-content: center; font-size: 0.6875rem; line-height: 1; }
+  .goes-strip__meta { display: flex; justify-content: space-between; margin-block-start: 0.5rem; font-size: 0.8125rem; }
+  .goes-strip__today { font-weight: 700; }
+
+  /* Miss-cell variants — preview only; the losers go before the PR (results brief
+     51, 87; plan D5). The pick also settles the message icon's pill. */
+  [data-strip-variant="faded"] .goes-strip__cell--miss {
+    background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface));
+  }
+  [data-strip-variant="faded"] .result-card__pill {
+    inline-size: 1.625rem; block-size: 1.625rem; border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface));
+  }
+  [data-strip-variant="faded-passing"] .goes-strip__cell--miss { background: var(--chart-dot); }
+  [data-strip-variant="hollow"] .goes-strip__cell--miss { border: 1.5px solid var(--color-accent); }
+  [data-strip-variant="dotted"] .goes-strip__cell--miss { border: 1.5px dotted var(--color-accent); }
+
   /* Section heading (polish brief 91): large, normal case, no rule beside it, and a
      decorative icon in the section's own colour — the player's accent, except
      Records, which takes the second one. Same distinction the numbers carry. */

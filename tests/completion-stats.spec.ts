@@ -3,15 +3,13 @@ import type { HistoryEntry } from '../src/types.ts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// The four stat boxes are gone, so this file is rewritten rather than patched.
-// It renders the real panel and reads it the way a player meets it — by heading
-// and by label — instead of by box index.
+// The results page as cards (results page redesign brief, board O): Today, the
+// Daily leaderboard, Streaks and All time. It renders the real panel and reads it
+// the way a player meets it — by heading and by label — instead of by box index.
 
 function setupDOM(): void {
   document.body.innerHTML = `
     <div data-completion-octo></div>
-    <h2 data-completion-heading></h2>
-    <p data-completion-subheading></p>
     <div data-completion-panel></div>
     <p data-completion-live></p>
     <p data-completion-countdown></p>
@@ -36,42 +34,25 @@ function block(id: string): HTMLElement | null {
   return panel().querySelector(`[data-stat-block="${id}"]`);
 }
 
-/** Every All-time line, whitespace-collapsed: "17 puzzles solved". */
-function allTimeLines(): string[] {
-  return [...panel().querySelectorAll('.stat-line')]
-    .map((el) => el.textContent!.replace(/\s+/g, ' ').trim());
-}
-
 function text(): string {
   return panel().textContent!.replace(/\s+/g, ' ').trim();
 }
 
-/** The text of one block, whitespace-collapsed the way `text()` does it. */
-function blockText(id: string): string {
-  return (block(id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+/** Every card in order, by its data-stat-block. */
+function order(): string[] {
+  return [...panel().querySelectorAll(':scope > section')].map((el) => (el as HTMLElement).dataset.statBlock!);
 }
 
-/** One column, found by the full words a screen reader hears (brief 67). */
-function col(fullLabel: string): { value: string; short: string } | null {
-  for (const el of panel().querySelectorAll('.stat-col')) {
-    if (el.querySelector('.sr-only')?.textContent?.trim() !== fullLabel) continue;
-    const value = el.querySelector('.stat-col__value')!;
-    return {
-      value: value.textContent!.trim(),
-      short: el.querySelector('.stat-col__label')!.textContent!.trim(),
-    };
-  }
-  return null;
+function collapse(el: Element | null): string {
+  return (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
-/** The visible column labels inside one block, in order. */
-function colLabels(id: string): string[] {
-  return [...block(id)!.querySelectorAll('.stat-col__label')].map((el) => el.textContent!.trim());
-}
-
-/** The visible values of the Today block's figures, in order. */
-function figures(): string[] {
-  return [...panel().querySelectorAll('.stat-figure__value')].map((el) => el.textContent!.trim());
+/** The ledger as label → value pairs, in order. */
+function ledger(): [string, string][] {
+  return [...panel().querySelectorAll('[data-ledger-row]')].map((row) => [
+    collapse(row.querySelector('dt')),
+    collapse(row.querySelector('dd')),
+  ]);
 }
 
 function live(): string {
@@ -109,337 +90,238 @@ describe('the completion panel', () => {
     vi.resetModules();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(TODAY + 'T10:00:00'));
+    // The leaderboard's fetch is held forever: only its slot matters here.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
   });
 
-  afterEach(() => { vi.useRealTimers(); });
-
-  it('renders all three blocks for a returning player', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-
-    expect(block('this-game')).not.toBeNull();
-    expect(block('streak')).not.toBeNull();
-    expect(block('records')).not.toBeNull();
-    expect(block('all-time')).not.toBeNull();
-    expect(block('average')).toBeNull();
-
-    expect(figures()).toEqual(['2 goes', '3m 41s']);
-
-    expect(col('Current day streak')!.value).toBe('5');
-    expect(col('Current 1-go streak')!.value).toBe('0');
-    expect(col('Fastest time')!.value).toBe('0m 48s');
-
-    // The number first, then what it means (brief 82).
-    expect(allTimeLines()).toEqual([
-      '5 Puzzles solved',
-      '1 (20%) Solved in one',
-      '4m 06s Average time', // (221+48+300+260+400)/5 = 245.8s
-      '2.4 Average attempts',
-    ]);
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
-  it('shows only This game for a brand-new player, with the third-game line', async () => {
-    await render([{ date: day(0), tries: 2, seconds: 100 }], 2, false, { seconds: 100 });
-    expect(block('this-game')).not.toBeNull();
-    expect(block('streak')).toBeNull();
-    expect(block('all-time')).toBeNull();
-    expect(text()).toContain('Your streaks and all-time stats start from your third game.');
-  });
-
-  it('still hides the other blocks on the second game', async () => {
-    await render([
-      { date: day(0), tries: 2 },
-      { date: day(1), tries: 3 },
-    ], 2);
-    expect(block('streak')).toBeNull();
-    expect(block('all-time')).toBeNull();
-  });
-
-  it('reveals the other blocks on the third game', async () => {
-    await render([
-      { date: day(0), tries: 2 },
-      { date: day(1), tries: 3 },
-      { date: day(2), tries: 3 },
-    ], 2);
-    expect(block('streak')).not.toBeNull();
-    expect(block('records')).not.toBeNull();
-    expect(block('all-time')).not.toBeNull();
-  });
-
-  it('treats a player who has just switched saving on as a new player (brief 131)', async () => {
-    await render([{ date: day(0), tries: 2 }], 2);
-    expect(text()).toContain('Your streaks and all-time stats start from your third game.');
-  });
-
-  it('shows only This game when score saving is off', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 }, { saveScore: false });
-    expect(block('this-game')).not.toBeNull();
-    expect(block('streak')).toBeNull();
-    expect(block('all-time')).toBeNull();
-    expect(figures()).toEqual(['2 goes', '3m 41s']);
-  });
-
-  it('says nothing at all about score saving, in any mode (P-01)', async () => {
-    // Brief 53, 65 and 90 all asked for something here; P-01 removed all three
-    // and deferred the opt-out to the menu ticket. The brief is what a builder
-    // reads first, so this is pinned explicitly.
-    await render(RETURNING, 2, false, { seconds: 221 }, { saveScore: false });
-    expect(text().toLowerCase()).not.toContain('saving');
-    expect(text().toLowerCase()).not.toContain('save my scores');
-    expect(panel().querySelector('input[type="checkbox"]')).toBeNull();
-  });
-
-  it('shows This game and the random line after a random puzzle', async () => {
-    await render(RETURNING, 2, true, { seconds: 221 });
-    expect(block('this-game')).not.toBeNull();
-    expect(block('streak')).toBeNull();
-    expect(block('all-time')).toBeNull();
-    expect(text()).toContain("Random puzzles don't count towards your stats.");
-  });
-
-  it('keeps the minimal panel for an archive replay', async () => {
-    await render(RETURNING, 3, false, {
-      activeDate: '2026-07-01',
-      todayLocal: TODAY,
-      seconds: 200,
+  describe('cards per mode (brief 14, 15)', () => {
+    it('full with a time: Today, leaderboard, Streaks, All time', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      expect(order()).toEqual(['today', 'daily-leaderboard', 'streak', 'all-time']);
     });
-    expect(block('this-game')).not.toBeNull();
-    expect(block('streak')).toBeNull();
-    expect(block('all-time')).toBeNull();
-    // No stopwatch figure at all, not an empty one — an archive replay carries
-    // no timing (brief 54, and brief 36 for the shape).
-    expect(figures()).toEqual(['3 goes']);
-    expect(blockText('this-game')).not.toContain('3m 20s');
+
+    it('full without a time: no leaderboard', async () => {
+      await render(RETURNING, 2, false, {});
+      expect(order()).toEqual(['today', 'streak', 'all-time']);
+    });
+
+    it('new: Today and the leaderboard, with the third-game note', async () => {
+      await render([{ date: day(0), tries: 2, seconds: 100 }], 2, false, { seconds: 100 });
+      expect(order()).toEqual(['today', 'daily-leaderboard']);
+      expect(collapse(block('today'))).toContain('Your streaks and all-time stats start from your third game.');
+    });
+
+    it('new on the second game; full from the third', async () => {
+      await render([{ date: day(0), tries: 2 }, { date: day(1), tries: 3 }], 2);
+      expect(order()).toEqual(['today']);
+      setupDOM();
+      vi.resetModules();
+      await render([{ date: day(0), tries: 2 }, { date: day(1), tries: 3 }, { date: day(2), tries: 3 }], 2);
+      expect(order()).toEqual(['today', 'streak', 'all-time']);
+    });
+
+    it('saving-off: Today and the leaderboard', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 }, { saveScore: false });
+      expect(order()).toEqual(['today', 'daily-leaderboard']);
+    });
+
+    it('marker: Today with the heading only', async () => {
+      await render([{ date: day(0), tries: 0, marker: true }], null, false, {}, { saveScore: false });
+      expect(order()).toEqual(['today']);
+      expect([...block('today')!.children].map((el) => el.tagName)).toEqual(['H2']);
+    });
+
+    it('random: Today with the random note', async () => {
+      await render(RETURNING, 2, true, { seconds: 221 });
+      expect(order()).toEqual(['today']);
+      expect(collapse(block('today'))).toContain("Random puzzles don't count towards your stats.");
+    });
+
+    it('archive: Today only', async () => {
+      await render(RETURNING, 3, false, { activeDate: '2026-07-01', todayLocal: TODAY, seconds: 200 });
+      expect(order()).toEqual(['today']);
+    });
+
+    it('says nothing at all about score saving, in any mode (P-01)', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 }, { saveScore: false });
+      expect(text().toLowerCase()).not.toContain('saving');
+      expect(panel().querySelector('input[type="checkbox"]')).toBeNull();
+    });
   });
 
-  it('gives the figures no block heading at all (brief 62)', async () => {
+  describe('the Today card', () => {
+    it('is the one h2: "Puzzle #N solved", solved in accent (brief 53, 63, 91)', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      const h2s = panel().querySelectorAll('h2');
+      expect(h2s.length).toBe(1);
+      expect(h2s[0].hasAttribute('data-completion-heading')).toBe(true);
+      expect(collapse(h2s[0])).toBe('Puzzle #157 solved');
+      expect(h2s[0].querySelector('.result-card__solved')!.textContent).toBe('solved');
+      expect(block('today')!.getAttribute('aria-labelledby')).toBe(h2s[0].id);
+    });
+
+    it('random reads "Puzzle solved"', async () => {
+      await render(RETURNING, 2, true, { seconds: 221 });
+      expect(collapse(panel().querySelector('h2'))).toBe('Puzzle solved');
+    });
+
+    it('has no section icon (brief 46)', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      expect(block('today')!.querySelector('h2 svg')).toBeNull();
+    });
+
+    it('shows the figure line, and speaks the time in words (brief 54, 65)', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      const fig = panel().querySelector('[data-today-figures]')!;
+      expect(fig.querySelector('[aria-hidden="true"]')!.textContent).toBe('2 goes, 3m 41s');
+      expect(fig.querySelector('.sr-only')!.textContent).toBe('2 goes, 3 minutes 41 seconds');
+    });
+
+    it('says "1 go", sentence form', async () => {
+      await render(RETURNING, 1, false, { seconds: 41 });
+      expect(panel().querySelector('[data-today-figures] [aria-hidden="true"]')!.textContent).toBe('1 go, 0m 41s');
+    });
+
+    it('drops the time with none, and in an archive replay', async () => {
+      await render(RETURNING, 3, false, {});
+      expect(collapse(panel().querySelector('[data-today-figures]'))).toBe('3 goes');
+      setupDOM();
+      vi.resetModules();
+      await render(RETURNING, 3, false, { activeDate: '2026-07-01', todayLocal: TODAY, seconds: 200 });
+      expect(collapse(panel().querySelector('[data-today-figures]'))).toBe('3 goes');
+    });
+
+    it('drops the figure line for a marker (brief 92)', async () => {
+      await render([{ date: day(0), tries: 0, marker: true }], null, false, {}, { saveScore: false });
+      expect(panel().querySelector('[data-today-figures]')).toBeNull();
+      expect(text()).not.toContain('Solved!');
+      expect(text()).not.toContain('Solved in');
+    });
+
+    it('shows the message in full mode (brief 17, 19)', async () => {
+      // Earlier times 48, 300, 260, 400: best 48, mean 252. Today 221 → 31s quicker.
+      await render(RETURNING, 2, false, { seconds: 221 });
+      const msg = panel().querySelector('[data-today-message]')!;
+      expect(collapse(msg)).toBe('31s quicker than your average.');
+      expect(msg.querySelector('b')!.textContent).toBe('31s quicker');
+      expect(msg.querySelector('use')!.getAttribute('href')).toBe('/sprites.svg#icon-arrow-up');
+      expect(msg.querySelector('svg')!.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('says fastest ever for a beaten best', async () => {
+      await render(RETURNING, 2, false, { seconds: 30 });
+      expect(collapse(panel().querySelector('[data-today-message]'))).toBe('Your fastest ever, 18s under your best.');
+    });
+
+    it('shows no message outside full mode', async () => {
+      await render([{ date: day(0), tries: 2, seconds: 100 }], 2, false, { seconds: 100 });
+      expect(panel().querySelector('[data-today-message]')).toBeNull();
+      for (const args of [
+        [RETURNING, 2, false, { seconds: 221 }, { saveScore: false }],
+        [[{ date: day(0), tries: 0, marker: true }], null, false, {}, { saveScore: false }],
+        [RETURNING, 2, true, { seconds: 221 }],
+        [RETURNING, 3, false, { activeDate: '2026-07-01', todayLocal: TODAY, seconds: 200 }],
+      ] as Parameters<typeof render>[]) {
+        setupDOM();
+        vi.resetModules();
+        await render(...args);
+        expect(panel().querySelector('[data-today-message]')).toBeNull();
+      }
+    });
+  });
+
+  describe('the Streaks card', () => {
+    it('shows the play streak and the best (brief 20, 82)', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('5 days played');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best streak 5');
+      expect(collapse(block('streak')!.querySelector('h3'))).toBe('Streaks');
+      expect(block('streak')!.querySelector('h3 use')!.getAttribute('href')).toBe('/sprites.svg#icon-flame');
+    });
+
+    it('adds the one-go run from 2', async () => {
+      await render([
+        { date: day(0), tries: 1 }, { date: day(1), tries: 1 },
+        { date: day(2), tries: 2 }, { date: day(3), tries: 2 },
+      ], 1);
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best streak 4 · One-go run 2');
+    });
+
+    it('names the harder run when they match, with no one-go part', async () => {
+      await render([{ date: day(0), tries: 1 }, { date: day(1), tries: 1 }, { date: day(2), tries: 1 }], 1);
+      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('3 days solved in one');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best streak 3');
+    });
+
+    it('holds the goes strip, and nothing else does', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      expect(panel().querySelectorAll('[data-strip-scroller]').length).toBe(1);
+      expect(block('streak')!.querySelector('[data-strip-scroller]')).not.toBeNull();
+      expect(block('streak')!.querySelectorAll('[data-strip-day]').length).toBe(5);
+    });
+
+    it('marks the panel with the strip style, the default on localhost', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      expect(panel().dataset.stripVariant).toBe('faded-passing');
+    });
+  });
+
+  describe('the All time card', () => {
+    it('is a ledger in order (brief 25, 59, 69)', async () => {
+      await render(RETURNING, 2, false, { seconds: 221 });
+      expect(collapse(block('all-time')!.querySelector('h3'))).toBe('All time');
+      expect(block('all-time')!.querySelector('h3 use')!.getAttribute('href')).toBe('/sprites.svg#icon-calendar-head');
+      expect(block('all-time')!.querySelector('dl')).not.toBeNull();
+      expect(ledger()).toEqual([
+        ['Solved in one', '20%'],
+        ['Best one-go run', '1'],
+        ['Fastest solve', '0m 48s'],
+        ['Puzzles solved', '5'],
+      ]);
+    });
+
+    it('never solved in one: 0% and 0; no time: a dash', async () => {
+      await render([{ date: day(0), tries: 2 }, { date: day(1), tries: 3 }, { date: day(2), tries: 3 }], 2);
+      expect(ledger()).toEqual([
+        ['Solved in one', '0%'],
+        ['Best one-go run', '0'],
+        ['Fastest solve', '—'],
+        ['Puzzles solved', '3'],
+      ]);
+    });
+  });
+
+  it('gives every card but Today an h3 with a hidden icon (brief 44, 62, 66)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(block('this-game')!.querySelector('h3')).toBeNull();
-    expect(text()).not.toContain('This game');
-    expect(text()).not.toContain('Today');
-  });
-
-  it('leads into the figures from the heading, and only when there are any (brief 63)', async () => {
-    const heading = () => document.querySelector('[data-completion-heading]')!.textContent;
-    await render(RETURNING, 2, false, { seconds: 221 });
-    expect(heading()).toBe('Puzzle #157 solved! You took:');
-    // A reload after a saving-off solve has neither figure, so the sentence
-    // would lead into nothing.
-    await render([{ date: day(0), tries: 0, marker: true }], null, false, {}, { saveScore: false });
-    expect(heading()).toBe('Puzzle #157 solved!');
-  });
-
-  it('has no "Solved in" sentence anywhere on the panel (brief 38)', async () => {
-    // The sentence lives on the /play screen now and only there. The two screens
-    // diverged on purpose (brief 39). Scoped to the figures — All time carries a
-    // "Solved in one" label, which is a different phrase that happens to start
-    // with the same two words.
-    await render(RETURNING, 2, false, { seconds: 221 });
-    expect(blockText('this-game')).not.toContain('Solved in');
-  });
-
-  it('gives each figure a word only a screen reader hears (brief 47)', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    expect(blockText('this-game')).toContain('Goes, 2 goes');
-    expect(blockText('this-game')).toContain('Time, 3m 41s');
-  });
-
-  it('hides both Today icons from the accessibility tree (brief 49)', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    const icons = block('this-game')!.querySelectorAll('svg');
-    expect(icons.length).toBe(2);
-    for (const icon of icons) expect(icon.getAttribute('aria-hidden')).toBe('true');
-  });
-
-  it('keeps the random line and the new-player line under the figures (brief 76)', async () => {
-    await render(RETURNING, 2, true, { seconds: 221 });
-    const kids = [...block('this-game')!.children].map((el) => el.className);
-    // No heading now: the figures come first, then the note.
-    expect(kids[0]).toBe('stat-today');
-    expect(blockText('this-game')).toContain("Random puzzles don't count towards your stats.");
-  });
-
-  it('splits into Streak and Records, each with an icon (brief 64, 65, 66)', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-
-    expect(block('streak')!.querySelector('h3')!.textContent!.trim()).toBe('Current streaks');
-    expect(block('records')!.querySelector('h3')!.textContent!.trim()).toBe('Records');
-    for (const id of ['streak', 'records']) {
-      const icon = block(id)!.querySelector('h3 .stat-block__icon');
-      expect(icon, `${id} heading icon`).not.toBeNull();
-      expect(icon!.getAttribute('aria-hidden')).toBe('true');
+    for (const id of ['streak', 'all-time']) {
+      const card = block(id)!;
+      expect(card.className).toBe('result-card');
+      const h3 = card.querySelector('h3')!;
+      expect(card.getAttribute('aria-labelledby')).toBe(h3.id);
+      expect(h3.querySelector('svg')!.getAttribute('aria-hidden')).toBe('true');
     }
-
-    expect(colLabels('streak')).toEqual(['Days', '1-go solve', 'Avg. time']);
-    expect(col('Current day streak')!.value).toBe('5');
-    expect(col('Current 1-go streak')!.value).toBe('0');
-    expect(col('Average time')!.value).toBe('4m 06s');
-
-    expect(colLabels('records')).toEqual(['1-go streak', 'Fastest']);
-    expect(col('Longest 1-go streak')!.value).toBe('1');
-    expect(col('Fastest time')!.value).toBe('0m 48s');
   });
 
-  it('takes its colour from the section, not from the figure (brief 79)', async () => {
-    // Streaks, Records and All time each set --section-accent once; every icon,
-    // number and box border inside reads from it. So there is no per-figure
-    // colour class left to get wrong, and the four theme colours cannot drift
-    // apart from the section they belong to.
+  it('drops the old panel entirely (brief 26, 27, 76)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    expect(panel().querySelector('.stat-col__value--best')).toBeNull();
-    for (const id of ['streak', 'records', 'all-time']) {
-      expect(block(id)!.getAttribute('data-stat-block')).toBe(id);
+    const html = panel().innerHTML;
+    for (const gone of ['stat-col', 'stat-col__mark', 'data-goes-row', 'Attempts distribution', 'Records',
+      'Average attempts', 'Avg. time', 'Come back tomorrow', 'You took', 'accent-2', 'accent-3', 'accent-4']) {
+      expect(html, gone).not.toContain(gone);
     }
   });
 
-  it('gives every section a heading icon, and every box a watermark (brief 73, 76)', async () => {
+  it('writes the countdown with the time in bold (brief 61)', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
-    // All three sections have one now, All time included.
-    for (const id of ['streak', 'records', 'all-time']) {
-      expect(block(id)!.querySelector('h3 .stat-block__icon'), id).not.toBeNull();
-    }
-    // One watermark per box, decorative, and no other icon inside a box.
-    const marks = panel().querySelectorAll('.stat-col__mark');
-    expect(marks.length).toBe(5);
-    for (const mark of marks) expect(mark.getAttribute('aria-hidden')).toBe('true');
-    for (const c of panel().querySelectorAll('.stat-col')) {
-      expect(c.querySelectorAll('svg').length).toBe(1);
-    }
-    // The two figures under the solved message keep theirs.
-    expect(panel().querySelectorAll('.stat-figure__icon').length).toBe(2);
-  });
-
-  it('drops the rule beside every heading (brief 73)', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    expect(panel().querySelector('.stat-block__rule')).toBeNull();
-  });
-
-  it('draws no line between All-time entries (brief 81)', () => {
-    const sheet = readFileSync(resolve(__dirname, '../src/tailwind.css'), 'utf8');
-    const rule = /\.stat-line\s*\{[^}]*\}/.exec(sheet)![0];
-    expect(rule).not.toContain('border');
-  });
-
-  it('says the short word on screen and the full one in speech', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    // "Days" on its own does not say days of what, and a screen reader has no
-    // column heading to lean on.
-    expect(col('Current day streak')!.short).toBe('Days');
-    expect(col('Longest 1-go streak')!.short).toBe('1-go streak');
-  });
-
-  it('keeps every dt inside a dl, with dd after it', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    for (const dt of panel().querySelectorAll('dt')) {
-      expect(dt.closest('dl'), dt.textContent!).not.toBeNull();
-    }
-    // Label first in the DOM as well as on screen now (brief 67). The watermark
-    // is a third child and comes last, so it never lands between the two.
-    for (const el of panel().querySelectorAll('.stat-col')) {
-      expect([...el.children].map((c) => c.tagName)).toEqual(['DT', 'DD', 'svg']);
-    }
-  });
-
-  it('asks the player back tomorrow, under the streak columns (brief 69)', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    // Under the heading and above the boxes, so it reads as the section's own
-    // sentence rather than a footnote to the last number (brief 74).
-    const kids = [...block('streak')!.children].map((el) => el.tagName);
-    expect(kids).toEqual(['H3', 'P', 'DL']);
-    expect(blockText('streak')).toContain('Come back tomorrow to maintain your streak!');
-    expect(blockText('records')).not.toContain('Come back tomorrow');
-  });
-
-  it('shows a dash for a record nobody has yet', async () => {
-    await render([
-      { date: day(0), tries: 2 },
-      { date: day(1), tries: 3 },
-      { date: day(2), tries: 3 },
-    ], 2);
-    expect(col('Fastest time')!.value).toBe('—');
-    expect(col('Average time')!.value).toBe('—');
-    expect(allTimeLines()).toContain('— Average time');
-  });
-
-  it('puts no explanatory line under the Records columns (brief 45)', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    expect(block('records')!.querySelector('.stat-note')).toBeNull();
-    expect(text()).not.toContain('Miss a day and the streak starts again.');
-    expect(text()).not.toContain('Days in a row you have finished the puzzle.');
-    expect(text()).not.toContain('Days in a row you got it on your first guess.');
-  });
-
-  it('reads "Solved!" and never "Solved in 0" when the goes are unknowable', async () => {
-    // The reload after a saving-off solve: today's row is a marker, so neither
-    // the goes nor the time were ever stored.
-    await render([{ date: day(0), tries: 0, marker: true }], null, false, {}, { saveScore: false });
-    expect(text()).toContain('Solved!');
-    expect(text()).not.toContain('Solved in');
-    expect(text()).not.toContain('0:00');
-    // The plain word and nothing else — no figures, empty or otherwise (brief 76).
-    expect(figures()).toEqual([]);
-  });
-
-  it('needs no explanatory lines — the figures read as sentences (brief 82)', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    // The old two-part row needed a note under it to say what the number meant.
-    // "5 puzzles solved" says it in the line itself.
-    expect(panel().querySelector('.stat-note.stat-row')).toBeNull();
-    for (const gone of [
-      'Daily puzzles you have finished.',
-      'Puzzles you got on your first guess.',
-      'Your average number of guesses.',
-      'How long you usually take.',
-    ]) {
-      expect(text(), gone).not.toContain(gone);
-    }
-  });
-
-  it('renders the goes chart as six rows with counts as text', async () => {
-    await render(RETURNING, 2, false, { seconds: 221 });
-    const rows = panel().querySelectorAll('[data-goes-row]');
-    expect(rows.length).toBe(6);
-    expect([...rows].map((r) => r.querySelector('[data-goes-label]')!.textContent))
-      .toEqual(['1', '2', '3', '4', '5', '6+']);
-    expect([...rows].map((r) => r.querySelector('[data-goes-count]')!.textContent))
-      .toEqual(['1', '2', '1', '1', '0', '0']);
-    expect(text()).toContain('Attempts distribution');
-  });
-
-  it('drops the stopwatch figure entirely when this game has no valid time', async () => {
-    // An empty figure with a dash in it is worse than no figure: it reads as a
-    // stat you have failed at rather than one that was never taken (brief 36).
-    await render(RETURNING, 2, false, {});
-    expect(figures()).toEqual(['2 goes']);
-    expect(blockText('this-game')).not.toContain('—');
-    expect(blockText('this-game')).not.toContain('0m 00s');
-  });
-
-  it('says "1 go", not "1 goes"', async () => {
-    await render(RETURNING, 1, false, { seconds: 30 });
-    expect(figures()).toEqual(['1 go', '0m 30s']);
-  });
-
-  it('shows a long game its own time and counts it in the averages', async () => {
-    const history: HistoryEntry[] = [
-      { date: day(0), tries: 1, seconds: 3900 },
-      { date: day(1), tries: 1, seconds: 60 },
-      { date: day(2), tries: 1, seconds: 120 },
-    ];
-    await render(history, 1, false, { seconds: 3900 });
-    expect(figures()).toEqual(['1 go', '1h 05m']);
-    expect(allTimeLines()).toContain('22m 40s Average time');
-    expect(col('Fastest time')!.value).toBe('1m 00s');
-  });
-
-  it('shows a dash for a figure nobody has data for', async () => {
-    await render([
-      { date: day(0), tries: 2 },
-      { date: day(1), tries: 3 },
-      { date: day(2), tries: 3 },
-    ], 2);
-    // A dash is right HERE — a box needs a placeholder rather than a gap.
-    expect(allTimeLines()).toContain('— Average time');
-    expect(col('Fastest time')!.value).toBe('—');
+    const cd = document.querySelector('[data-completion-countdown]')!;
+    expect(cd.firstChild!.nodeType).toBe(Node.TEXT_NODE);
+    expect(cd.firstChild!.textContent).toBe('Next puzzle in ');
+    expect(cd.querySelector('b')!.textContent).toBe('14h 0m');
   });
 });
 
@@ -505,8 +387,9 @@ describe('the announcement (brief 139)', () => {
   });
 });
 
-// Both builders reach innerHTML, and `tries` comes from dlng_history, which
-// loadHistory does not validate — unlike loadActive and loadUndo next door.
+// Both the /play sentence and the panel reach innerHTML, and `tries` comes from
+// dlng_history, which loadHistory does not validate — unlike loadActive and
+// loadUndo next door.
 //
 // heroLine is the /play screen's sentence now, not the panel's (brief 39). Its
 // assertions below are no longer about the completion screen at all: they are
@@ -535,21 +418,33 @@ describe('a forged history row cannot inject markup', () => {
     expect(mod.heroLine(4, null, true)).toBe('Solved in 4 goes');
   });
 
-  it('renders "Solved!" from the panel builder too, with no figures', async () => {
-    const mod = await import('../src/completion.ts');
-    for (const bad of ['<img src=x onerror=alert(1)>', '2<script>x</script>', 0, -1, 2.5, NaN]) {
-      expect(mod.todayFigures(bad as unknown as number, 30, true), String(bad))
-        .toBe('<p class="stat-hero">Solved!</p>');
-    }
-  });
-
   it('puts no markup in the panel when the stored row is forged', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    const bad = '<img src=x onerror=alert(1)>';
     await render(
-      [{ date: day(0), tries: '<img src=x onerror=alert(1)>' as unknown as number }],
-      '<img src=x onerror=alert(1)>' as unknown as number,
+      [{ date: day(0), tries: bad as unknown as number }],
+      bad as unknown as number,
     );
     expect(panel().querySelector('img')).toBeNull();
-    expect(text()).toContain('Solved!');
+    expect(panel().querySelector('[data-today-figures]')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps a forged row out of the strip, the ledger and the message', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    const bad = '<img src=x onerror=alert(1)>';
+    await render([
+      { date: day(0), tries: 2, seconds: 60 },
+      { date: day(1), tries: bad as unknown as number },
+      { date: day(2), tries: 1, seconds: bad as unknown as number },
+      { date: day(3), tries: 3, seconds: 90 },
+      { date: day(4), tries: 2, seconds: 80 },
+    ], 2, false, { seconds: 60 });
+    expect(panel().querySelector('img')).toBeNull();
+    expect(block('streak')!.querySelectorAll('[data-strip-day]').length).toBe(4);
+    expect(panel().querySelector('[data-today-message]')).not.toBeNull();
+    expect(panel().innerHTML).not.toContain('onerror');
+    vi.unstubAllGlobals();
   });
 });
 
@@ -618,14 +513,13 @@ describe('the time chart slot', () => {
   });
 
   const slot = () => panel().querySelector<HTMLElement>('[data-time-chart]');
-  const order = () => [...panel().children].map((el) => (el as HTMLElement).dataset.statBlock);
 
   it('sits empty and busy straight after this game, above the streaks, in full mode', async () => {
     await render(RETURNING, 2, false, { seconds: 221 });
     expect(slot()).not.toBeNull();
     expect(slot()!.innerHTML).toBe('');
     expect(slot()!.getAttribute('aria-busy')).toBe('true');
-    expect(order().slice(0, 3)).toEqual(['this-game', 'daily-leaderboard', 'streak']);
+    expect(order().slice(0, 3)).toEqual(['today', 'daily-leaderboard', 'streak']);
   });
 
   it('is there in new and saving-off modes', async () => {
