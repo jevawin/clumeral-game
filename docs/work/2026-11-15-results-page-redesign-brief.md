@@ -10,7 +10,7 @@ leaderboard card (Idea-O) shipped in #368 under `docs/work/2026-11-01-daily-time
 and is not reopened here.
 
 ## 1. What it is
-Settled: pending · Ack: pending
+Settled: Jamie 2026-11-15 (accepted all recommendations; item 6 with the note below) · Ack: pending (Dave)
 
 1. The problem. `/solved` today shows four accents at once (solved line in the player's
    accent, Current streaks, Records and All time in the three others), three rows of boxes
@@ -34,3 +34,27 @@ Settled: pending · Ack: pending
    spoiler rules, platform behaviour (`navigator.share` vs clipboard), analytics and tests.
    The page redesign is worth shipping without it, and bundling the two doubles the review.
    M and F4 both draw the buttons, so the layout leaves room for them (§7).
+   **Settled: Jamie 2026-11-15 — split. Not started now: "one chat one brief one thing at a
+   time". Share goes on the roadmap as next.** Done: scope added to existing issue #148
+   (comment 2026-11-15) and #148 moved from Future to the top of Next.
+
+## 2. Out of scope
+Settled: pending · Ack: pending
+
+7. Share, on any card. #148 owns it (item 6). No placeholder buttons ship. (assumed)
+8. The Daily leaderboard card's content and behaviour (#368). Only its container and heading
+   change to match the new card style, settled in §7. (assumed)
+9. A named leaderboard, ranks or accounts. Still blocked on auth (canvas time-note). (assumed)
+10. Worker, API and storage changes. Every figure on the page computes from `dlng_history`
+    plus the existing `/api/times/:num` read. No new keys, no new endpoints. (assumed —
+    redesign constraint, INVARIANTS)
+11. The `/play` screen's result sentence (`heroLine`), welcome, archive and random screens.
+    (assumed)
+12. Dave's whisker chart and the `puzzle_complete` `source` fix. M's goes tally that needed
+    the fix is replaced by the shipped time card. (assumed)
+13. **Do the three spare accent tokens go too?** `--color-accent-2/3/4` are used only by the
+    three results section rules (`src/tailwind.css:550-552`), and are also restated in the
+    worker's inline CSS (`src/worker/puzzles.ts:80-118`).
+    My rec: out of scope. Remove the three section rules, leave the tokens, and file a hygiene
+    issue to delete them. Why: deleting them touches the worker and the palette parity check,
+    which turns a frontend redesign into a worker change for no visible gain.
