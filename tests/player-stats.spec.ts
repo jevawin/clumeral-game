@@ -4,6 +4,13 @@ import {
   formatDuration,
   speakDuration,
   REVEAL_AFTER_GAMES,
+  goesByDay,
+  todayMessage,
+  messageCopy,
+  ordinal,
+  streakLine,
+  MIN_EARLIER_TIMES,
+  type PlayerStats,
 } from '../src/player-stats.ts';
 import type { HistoryEntry } from '../src/types.ts';
 
@@ -359,5 +366,179 @@ describe('the reveal gate', () => {
       { date: day(2), tries: 3, archived: true },
     ]);
     expect(s.countableGames > REVEAL_AFTER_GAMES).toBe(false);
+  });
+});
+
+// ─── Results page redesign (plan Task 1) ─────────────────────────────────────
+
+describe('goesByDay', () => {
+  it('drops archived and marker rows, keeps today, and sorts ascending', () => {
+    const days = goesByDay([
+      { date: day(0), tries: 3 },
+      { date: day(2), tries: 1 },
+      { date: day(1), tries: 4, archived: true },
+      { date: day(3), tries: 0, marker: true },
+      { date: day(4), tries: 9 },
+    ]);
+    expect(days).toEqual([
+      { date: day(4), goes: 9 },
+      { date: day(2), goes: 1 },
+      { date: day(0), goes: 3 },
+    ]);
+  });
+
+  it('drops a row whose tries is 0, fractional or a string', () => {
+    const days = goesByDay([
+      { date: day(0), tries: 2 },
+      { date: day(1), tries: 0 },
+      { date: day(2), tries: 1.5 },
+      { date: day(3), tries: '3' as unknown as number },
+    ]);
+    expect(days).toEqual([{ date: day(0), goes: 2 }]);
+  });
+});
+
+describe('todayMessage', () => {
+  // Earlier rows from one day back, oldest last, with the given times.
+  function timed(times: (number | undefined)[], tries = 2): HistoryEntry[] {
+    return times.map((s, i) => ({ date: day(i + 1), tries, ...(s === undefined ? {} : { seconds: s }) }));
+  }
+
+  it('needs three earlier times', () => {
+    expect(MIN_EARLIER_TIMES).toBe(3);
+  });
+
+  it('fastest ever: beats the earlier best', () => {
+    expect(todayMessage(timed([100, 90, 80]), TODAY, 2, 71)).toEqual({ kind: 'fastest', under: 9 });
+  });
+
+  it('equal to the best is not fastest; it falls to quicker', () => {
+    expect(todayMessage(timed([100, 90, 80]), TODAY, 2, 80)).toEqual({ kind: 'quicker', by: 10 });
+  });
+
+  it('skips the time rungs with only two earlier times, even when today beats both', () => {
+    expect(todayMessage(timed([100, 90]), TODAY, 1, 50)).toEqual({ kind: 'one-go', nth: 1 });
+  });
+
+  it('skips the time rungs with no time today', () => {
+    expect(todayMessage(timed([100, 90, 80]), TODAY, 2, null)).toEqual({ kind: 'solve-number', n: 4 });
+  });
+
+  it('skips the time rungs when today is 0s (brief 94)', () => {
+    expect(todayMessage(timed([100, 90, 80]), TODAY, 2, 0)).toEqual({ kind: 'solve-number', n: 4 });
+  });
+
+  it('skips the time rungs when earlier rows have no times', () => {
+    expect(todayMessage(timed([undefined, undefined, undefined]), TODAY, 2, 30))
+      .toEqual({ kind: 'solve-number', n: 4 });
+  });
+
+  it('does not count an earlier 0s row towards the three', () => {
+    expect(todayMessage(timed([100, 90, 0]), TODAY, 2, 50)).toEqual({ kind: 'solve-number', n: 4 });
+  });
+
+  it("today's own row never moves a baseline (brief 18)", () => {
+    const earlier = timed([100, 90, 80]);
+    const withToday = [{ date: TODAY, tries: 2, seconds: 71 }, ...earlier];
+    expect(todayMessage(withToday, TODAY, 2, 71)).toEqual(todayMessage(earlier, TODAY, 2, 71));
+    expect(todayMessage(withToday, TODAY, 2, 71)).toEqual({ kind: 'fastest', under: 9 });
+  });
+
+  it('quicker: against the exact earlier mean', () => {
+    expect(todayMessage(timed([60, 120, 120]), TODAY, 2, 83)).toEqual({ kind: 'quicker', by: 17 });
+  });
+
+  it('a difference that rounds to 0s is not quicker', () => {
+    expect(todayMessage(timed([60, 60, 61]), TODAY, 2, 60)).toEqual({ kind: 'solve-number', n: 4 });
+  });
+
+  it('an earlier row with tries as a string is not counted', () => {
+    const history: HistoryEntry[] = [
+      { date: day(1), tries: 2 },
+      { date: day(2), tries: '3' as unknown as number },
+      { date: day(3), tries: 2 },
+    ];
+    const m = todayMessage(history, TODAY, 2, null);
+    expect(m).toEqual({ kind: 'solve-number', n: goesByDay(history).length + 1 });
+  });
+
+  it('one-go: counts earlier one-go solves', () => {
+    const history = timed([undefined, undefined, undefined, undefined, undefined, undefined, undefined], 1);
+    expect(todayMessage(history, TODAY, 1, null)).toEqual({ kind: 'one-go', nth: 8 });
+    expect(todayMessage([], TODAY, 1, null)).toEqual({ kind: 'one-go', nth: 1 });
+  });
+
+  it('fewer goes: below the earlier average as shown', () => {
+    const history: HistoryEntry[] = [
+      { date: day(1), tries: 2 },
+      { date: day(2), tries: 3 },
+      { date: day(3), tries: 2 },
+    ];
+    expect(todayMessage(history, TODAY, 2, null)).toEqual({ kind: 'fewer-goes', usual: '2.3' });
+  });
+
+  it('fewer goes compares with the average as shown: 2 against 2.04 says nothing (brief 89)', () => {
+    const history: HistoryEntry[] = Array.from({ length: 25 }, (_, i) => ({ date: day(i + 1), tries: i === 0 ? 3 : 2 }));
+    expect(todayMessage(history, TODAY, 2, null)).toEqual({ kind: 'solve-number', n: 26 });
+  });
+
+  it('solve number when nothing is beaten', () => {
+    expect(todayMessage(timed([undefined, undefined]), TODAY, 3, null)).toEqual({ kind: 'solve-number', n: 3 });
+  });
+
+  it('null for tries that are not a whole number of at least 1', () => {
+    expect(todayMessage([], TODAY, null, 30)).toBeNull();
+    expect(todayMessage([], TODAY, 0, 30)).toBeNull();
+    expect(todayMessage([], TODAY, 1.5, 30)).toBeNull();
+  });
+});
+
+describe('messageCopy', () => {
+  it('writes the five lines (brief 55, 93)', () => {
+    expect(messageCopy({ kind: 'fastest', under: 9 }))
+      .toEqual({ icon: 'icon-trophy', pre: '', bold: 'Your fastest ever', post: ', 9s under your best.' });
+    expect(messageCopy({ kind: 'quicker', by: 17 }))
+      .toEqual({ icon: 'icon-arrow-up', pre: '', bold: '17s quicker', post: ' than your average.' });
+    expect(messageCopy({ kind: 'quicker', by: 65 }).bold).toBe('1m 05s quicker');
+    expect(messageCopy({ kind: 'one-go', nth: 8 }))
+      .toEqual({ icon: 'icon-tick', pre: '', bold: 'Straight in.', post: ' Your 8th one-go solve.' });
+    expect(messageCopy({ kind: 'one-go', nth: 1 }).post).toBe(' Your first one-go solve.');
+    expect(messageCopy({ kind: 'fewer-goes', usual: '2.3' }))
+      .toEqual({ icon: 'icon-calculator', pre: '', bold: 'Fewer goes', post: ' than your usual 2.3.' });
+    expect(messageCopy({ kind: 'solve-number', n: 30 }))
+      .toEqual({ icon: 'icon-gamepad', pre: 'Solve number ', bold: '30', post: '.' });
+  });
+});
+
+describe('ordinal', () => {
+  it('uses English suffixes, and "first" for 1 (brief 90)', () => {
+    const cases: [number, string][] = [
+      [1, 'first'], [2, '2nd'], [3, '3rd'], [4, '4th'], [11, '11th'], [12, '12th'], [13, '13th'],
+      [21, '21st'], [22, '22nd'], [23, '23rd'], [101, '101st'], [111, '111th'],
+    ];
+    for (const [n, out] of cases) expect(ordinal(n), String(n)).toBe(out);
+  });
+});
+
+describe('streakLine', () => {
+  function line(playStreak: number, firstGoStreak: number, bestPlayStreak = 30) {
+    return streakLine({ playStreak, firstGoStreak, bestPlayStreak } as PlayerStats);
+  }
+
+  it('days played, no one-go part at a run of 1', () => {
+    expect(line(30, 1)).toEqual({ figure: 30, label: 'days played', best: 30, oneGoRun: null });
+  });
+
+  it('shows the one-go run from 2', () => {
+    expect(line(30, 2).oneGoRun).toBe(2);
+  });
+
+  it('switches the label when the runs match, and drops the one-go part', () => {
+    expect(line(4, 4)).toEqual({ figure: 4, label: 'days solved in one', best: 30, oneGoRun: null });
+  });
+
+  it('singular at 1', () => {
+    expect(line(1, 0).label).toBe('day played');
+    expect(line(1, 1).label).toBe('day solved in one');
   });
 });
