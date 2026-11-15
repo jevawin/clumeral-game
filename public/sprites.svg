@@ -240,13 +240,31 @@
 
   <!-- Flame (Lucide flame) — marks a record on the completion panel. Inherits
        the colour of the number it sits beside, via currentColor. -->
-  <symbol id="icon-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="icon-flame" viewBox="4 0 20 24" preserveAspectRatio="xMinYMid meet" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
   </symbol>
 
+  <!-- Heading icons (flame, podium, calendar-head) have viewBoxes tightened on
+       the left to their ink edge, so the ink sits on the card's padding line
+       (results brief 40, plan D8). Height stays 24 units, so the scale is unchanged. -->
+
   <!-- Podium — the Daily leaderboard heading -->
-  <symbol id="icon-podium" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="icon-podium" viewBox="2 0 22 24" preserveAspectRatio="xMinYMid meet" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M9 11h6v9H9zM3 15h6v5H3zM15 7h6v13h-6z" />
+  </symbol>
+
+  <!-- Calendar, for the All time heading — icon-calendar's four shapes with the
+       tight heading viewBox. icon-calendar itself stays square for /play. -->
+  <symbol id="icon-calendar-head" viewBox="2 0 22 24" preserveAspectRatio="xMinYMid meet" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+    <line x1="16" x2="16" y1="2" y2="6" />
+    <line x1="8" x2="8" y1="2" y2="6" />
+    <line x1="3" x2="21" y1="10" y2="10" />
+  </symbol>
+
+  <!-- Bolt — the elided goes in a broken column of the goes strip (results brief 23) -->
+  <symbol id="icon-bolt" viewBox="0 0 8 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 0.5 2.5 3.8 5.5 6.2 3 9.5" />
   </symbol>
 
   <!-- Trophy (Lucide trophy) — the Records section heading -->
