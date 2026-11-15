@@ -177,9 +177,10 @@ The duplication goes away with #200, which migrates `/archive` to a SPA route.
   screen and only a desktop ever meets it. A Galaxy S24 Ultra reports 480 and a Pixel 8 Pro
   448, so 440 would not have held.
 - **Why px and not rem**: at large browser text the column stops growing rather than
-  outrunning the window. Components inside it keep their `rem` breakpoints — `.stat-boxes`
-  is `min-width: 22.5rem` deliberately, so the three records still stack at 200% text. Do
-  not "fix" one of the two to match the other; they answer different questions.
+  outrunning the window. Components inside it keep their `rem` breakpoints — the Daily
+  leaderboard's loading reserve switches at `max-width: 22.4375rem` deliberately, so it
+  follows large browser text too. Do not "fix" one of the two to match the other; they
+  answer different questions.
 - The Worker-rendered pages cannot import the token, so `/archive` and `/stats` repeat the
   numbers. `tests/page-width.spec.ts` asserts the width they *work out to*, not the strings.
   `/archive`'s `32rem` is already 480px of content behind its 1rem padding — leave it.
@@ -218,101 +219,60 @@ Component-specific CSS lives in `src/tailwind.css` using data-attribute selector
 - `.fb-cat` -- feedback category pill selected state
 - `.toast-msg` -- toast notification element
 - `.recurring` -- recurring decimal overdot
-- `.stat-block__*`, `.stat-hero`, `.stat-today`, `.stat-figure*`, `.stat-boxes`,
-  `.stat-box__*`, `.stat-flame`, `.stat-row`, `.stat-note` -- the completion panel's three
-  blocks. Note there is no `.stat-box` rule: the records have no box left, only a grid gap.
-- `.goes-*` -- the "How many goes you take" chart
+- `.result-card*`, `.streak__*`, `.ledger*` -- the results page's cards (Today, Daily
+  leaderboard, Streaks, All time)
+- `.goes-strip*` -- the Streaks card's goes strip
+- `.time-chart*` -- the Daily leaderboard's drawing
 - `.save-note*` -- the untick warning and submit countdown on the play screen
 
 ## The completion panel
 
-Three blocks in reading order: **Today**, **Best**, **All time**.
+Board O from the results page redesign (`docs/work/2026-11-15-results-page-redesign-brief.md`).
+Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **All time**, then
+"Next puzzle in…" and the actions.
 
-- **Today is the hero** -- two figures side by side, each an icon and a number, and the
-  largest type on the panel. It is the only thing that changed in the last ten seconds.
-  It shows `1 go` under a calculator-with-tick and `2m 38s` under a stopwatch.
+- **One card style.** Every section is a `.result-card`: `--color-surface` fill, 1.5px
+  `--color-border`, 6px radius, 18px padding, 18px between cards. The leaderboard takes the
+  same card. No second container style, no watermark icons.
+- **One accent.** Figures, heading icons and the strip in `--color-accent`; every label and
+  sentence in `--color-text`. The three spare accents (`--color-accent-2/3/4`) are read by
+  nothing since this redesign. They stay declared until #370, because the Worker mirrors them
+  and `tests/token-parity.spec.ts` compares the two.
+- **Headings.** Today has none of its own: "Puzzle #238 solved" is the screen's one `h2`,
+  `solved` in accent, one line that wraps naturally. Every other card has an `h3` at
+  1.1875rem with a decorative icon -- podium, flame, calendar. The icons' viewBoxes are
+  tightened on the left to their ink edge (`icon-flame`, `icon-podium`, `icon-calendar-head`),
+  so the ink sits on the padding line. `icon-calendar` itself stays square for `/play`.
+- **Today**: the figure line "3 goes, 2m 28s" (the sentence form of `formatDuration`; spoken
+  as "2 minutes 28 seconds"), then one message line in full mode only, chosen by
+  `todayMessage` in `src/player-stats.ts`. Message differences use the compact form
+  ("17s quicker"). A marker has no figure line.
 - **The completion panel has no `Solved in ...` sentence; the play screen still does.**
   That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
   screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
   code and is not. Leave it alone when tidying that file.
-- **Three rungs of type size**, used by every block: (1) the Today icons and figures,
-  (2) the box titles and the numbers in the boxes, (3) the small labels in the boxes.
-  Numbers are bold; box titles are the same size and not bold; labels are regular in the
-  ordinary foreground colour. All-caps stays on the block headings and never appears
-  inside a box.
-- **Section headings are 24px, normal case, with no rule beside them** and a decorative icon
-  in the section's own colour -- a flame for Streaks, a trophy for Records, a calendar for
-  All time.
-- **Figures sit in boxes borrowing the undo/reset controls' resting state**: surface fill,
-  the same 1.5px border (in the section's colour) and the same radius. The box's own icon is
-  repeated as a **watermark** -- 4rem, rotated 45deg, faint, run off the bottom-right corner
-  so the box clips it. `overflow: hidden` on `.stat-col` is what does the clipping.
-- **The label is above the number, in the DOM as well as on screen.** The redesign needed
-  `column-reverse` to put the number on top; this layout does not, so the visual order and
-  the reading order agree again. Do not add it back.
-- **Labels 16px, numbers 20-28px, subtitles never below 14px.** The number's `clamp` tops
-  out where three boxes still fit a 390px screen.
+- **Streaks**: the play streak large in accent, "days played" (or "days solved in one" when
+  the one-go run matches it), then "Best streak N", plus "· One-go run N" from 2.
+- **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, 4px gaps, 10px
+  cells stacked from the bottom, misses then the solving go. Rows are the worst day capped at
+  5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
+  true figure on top. The scroller is `direction: rtl` so it opens at today with no script,
+  with a 40px fade at the left edge and 40px of start padding so the fade never hides the
+  oldest day. Thin native scrollbar on fine pointers, none on touch. The scroller is a
+  focusable `role="group"` named by a one-sentence summary; the columns are `aria-hidden`.
+  Its focus ring is drawn on the unmasked frame, because the mask would fade it.
+- **All time** is a `dl` ledger: label left in text colour, figure right in bold accent, one
+  size, no rules -- Solved in one, Best one-go run, Fastest solve, Puzzles solved.
 - **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
-  at all and inherit from `html`/`body`, which is why removal was the right edit rather than
-  an override. The play screen keeps Inconsolata: its keypad relies on every key being the
-  same width.
-- **The two averages live in All time**, as rows with their explanatory lines, alongside
-  plays and first-go wins. They had their own block briefly and it repeated the panel.
-- **All four theme colours are on screen at once**, in picker order from the player's own:
-  their solve keeps `--color-accent`, then Streaks takes `--color-accent-2`, Records
-  `--color-accent-3` and All time `--color-accent-4`. Change theme and all four rotate
-  together. Each section sets `--section-accent` once and every icon, number and box border
-  inside reads from it, so there is no per-figure colour class to get wrong.
-- **Colour lands on icons, numbers and box borders only.** Never on a label, a heading or a
-  divider: everything a player has to read stays in the foreground colour.
-- It is CSS, not JavaScript. Chroma differs per theme *and* per mode, and the panel renders
-  once, so deriving the colours at render time would freeze three of them the moment
-  somebody switched theme on `/solved`. Each slot names the other hue's own `--chroma-*`
-  rather than reusing the current theme's -- borrowing Lime's chroma for Cherry puts Cherry
-  out of gamut. The mapping is pinned in `tests/accent-rotation.spec.ts`, and mirrored into
-  the Worker's inline style because `tests/token-parity.spec.ts` compares every `--accent-*`
-  declaration between the two.
-- **The boxes borrow the play screen's digit-box styling** -- surface background, 1.5px
-  border, 0.25rem radius, the `shadow-box` utility -- so a theme change moves both screens
-  together.
-- **Boxes are three across from 22.5rem and one column below it.** `rem`, not pixels: it
-  is 360px at default text size and also stacks at large browser text on a wide screen,
-  which is what the 320px / 200% requirement is really about.
-- **The number sits above its label on screen while the DOM stays `dt` then `dd`.**
-  `.stat-box__pair` is `column-reverse`. A screen reader must hear "Best time, 1m 20s",
-  and `dd` before `dt` is not conforming HTML; the pairing is carried by the description
-  list, not by position (WCAG 1.3.2). Do not "fix" the markup to match the picture --
-  `tests/completion-stats.spec.ts` pins the DOM order.
-- **The visible label is short and the spoken one is full.** "Fastest", "Streak" and
-  "Current" on screen; "Fastest time", "Longest 1-go streak", "Current play streak" in a
-  visually hidden span. Two spans, not a prefix and a suffix -- neither is the start of the
-  other.
-- **There is no Today block.** The two figures for this game sit centred directly under the
-  solved message, which reads `Puzzle #160 solved! You took:` -- and gains those three words
-  only when there are figures to follow them.
+  and inherit from `html`/`body`. The play screen keeps Inconsolata for its keypad.
+- **`--chart-dot` mixes into `--color-surface`**, not `--color-bg`, since the leaderboard
+  sits on a card. Lowest ratio 3.36:1 (Lime light). The dot border is `--color-surface` too.
 - **Times use unit letters, never a colon**: `0m 30s`, `4m 06s`, `1h 04m`. `4:06` can read
-  as four hours at a glance, and the separator the hero used to need -- a bullet, or the
-  pipe Dave suggested -- sits right beside a number, where a pipe is hard to tell from a 1.
-  Letters remove the ambiguity and the separator both. Seconds are padded to two digits so
-  a column lines up; minutes are not. An unknown time is a dash in a column of figures and
-  is dropped entirely from the play screen's sentence. On the panel an unknown time drops
-  the stopwatch figure altogether rather than showing an empty one. (Jamie and Dave,
+  as four hours at a glance. Seconds are padded to two digits; minutes are not. An unknown
+  time is a dash in the ledger and is dropped from the figure line. (Jamie and Dave,
   2026-08-11.)
-- **All time is open, not folded, but quiet**: plain rows rather than boxes, and no dividing
-  lines between them. Plays, first-go wins, average goes, average time, then the chart. The
-  fastest first-go win is gone for good -- "Fastest" under Records is the same idea told
-  better. The goes chart's bars stay on the player's own accent.
-- **The explanatory lines live in All time only.** Inside a box, "Best" over "Current"
-  under a labelled icon is already the explanation, and three sentences in three small
-  boxes was the clutter the redesign was called for.
-- **No new type sizes, and exactly one new colour token.** Everything is built from
-  `--color-text`, `--color-accent`, `--color-accent-2/3/4`, `--color-border` and
-  `--color-surface`. All four accents are the same four theme accents at the same
-  `--accent-l`, so `tests/palette-contrast.spec.ts` already covers every one of them.
-- **Blocks are absent, not hidden**, when they do not apply. A hidden block can still
-  reach the accessibility tree, and an empty "All time" heading reads as broken.
-- **The goes chart's bars are `aria-hidden`**; the count beside each bar is the accessible
-  content, so nothing in the chart is available only as a picture.
+- **Cards are absent, not hidden**, when they do not apply. A hidden card can still reach
+  the accessibility tree, and an empty "All time" heading reads as broken.
 - **The submit button dims to 0.5 opacity** while the untick countdown holds it. WCAG
   1.4.3 and 1.4.11 both exempt inactive controls from their contrast minimums, and those
   five seconds are exactly when the control is inactive. Deliberate -- do not "fix" it.

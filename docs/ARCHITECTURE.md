@@ -11,6 +11,7 @@ src/
   player-stats.ts  The counting rules — history rows in, displayed figures out (pure)
   time-chart.ts    Daily leaderboard card: maths, copy, layout arithmetic, spoken sentence (pure)
   time-chart-view.ts  Daily leaderboard card: the slot, the fetch, the DOM and measuring
+  goes-strip.ts    Results goes strip: markup and the spoken summary (pure)
   testing-panel.ts  Preview-only Testing dialog: fill/solve/wrong guess, history swaps, field presets
   demo-history.ts  Preview-only rich history and the ?demo= switch
   play-timer.ts    Counted play time: event-driven accumulator, injected clock (pure)

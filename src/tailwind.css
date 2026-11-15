@@ -64,9 +64,10 @@
   --accent-c: var(--chroma-lime);
 
   /* The other three themes, in picker order from the player's own (polish brief 97).
-     Streaks takes 2, Records takes 3 and All time takes 4, so every one of the
-     four theme colours is on the completion screen at once and they rotate
-     together when the player changes theme.
+     UNUSED since the results page redesign (2026-11-15): the page has one accent
+     now, and nothing reads --color-accent-2/3/4. They stay declared because the
+     Worker mirrors them and tests/token-parity.spec.ts compares the two; #370
+     deletes them from both. They were Streaks, Records and All time's colours.
 
      Each names the OTHER hue's own --chroma-* variable rather than reusing the
      current one, so every colour follows dark mode and stays inside sRGB —
