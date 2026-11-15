@@ -1,6 +1,6 @@
 # Results page redesign — brief
 
-Branch: `dev/results-page-redesign` · Started 2026-11-15
+Branch: `dev/results-page-redesign` · Started 2026-11-15 · Brief as a whole: Jamie 2026-11-15, pending da-brief
 
 Dave: Jamie 2026-11-15 — "dave's seen and signed off everything in advance from the designs
 and many discussions, assume for now he's acked everything and no further involvement from
@@ -327,7 +327,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
 74. The preview-only variant switch (item 51) sends nothing. (assumed)
 
 ## 11. Done / test plan
-Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations; item 79 full suite) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 
 75. Unit, `player-stats`: each of the five message lines chosen when it should be and not
     otherwise; today excluded from every baseline; equal-to-best is not "fastest ever"; a
