@@ -176,7 +176,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
 33. Nothing goes in the URL. `/solved` stays the route. (assumed)
 
 ## 6. How it fits
-Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this better than i so i take your reccs plus a review later"; Jamie reviews at plan/build) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
 
 34. `src/completion.ts` — `renderCompletion` keeps its signature, `panelMode`, the countdown,
     the links and the one announcement. It rewrites the panel markup as the Today, Streaks
@@ -207,3 +207,39 @@ Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
     broken column can be seen on a preview. (assumed)
 43. No worker change (item 10). `tests/token-parity.spec.ts` keeps passing because the
     spare tokens stay (item 13). (assumed)
+
+## 7. How it looks
+Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+
+44. Every section is a card: `--color-surface` fill, 1.5px `--color-border`, 6px radius,
+    18px padding, heading row with its icon. The Daily leaderboard takes the same card.
+    No Share buttons, so headings run the full width. (assumed — O, items 7, 8)
+45. One accent. Figures and heading icons in `--color-accent`; every label and sentence in
+    `--color-text`. No coloured labels, no watermark icons, no second container style.
+    (assumed — ideas-note, O)
+46. Today: "Puzzle #238" over "solved" (accent), then the figure line bold in accent, then
+    the message with a small icon and its figure in bold. No section icon on Today.
+    (assumed — O)
+47. Streaks: the play streak large in accent with its label beside it; the second line with
+    figures bold in accent; the strip as O draws it — 18px columns, 4px gaps, 10px cells,
+    a 40px fade at the left edge, "Goes" rotated as the y label, "{N} days" and "Today"
+    under it in 13px. Heading icon `icon-flame`. (assumed — O)
+48. All time: the ledger, label left in text colour, figure right in bold accent, one size,
+    no rules between rows. Heading icon `icon-calendar`. The Records trophy goes with the
+    Records card. (assumed — O)
+49. Widths follow the page column (up to 480px), not O's fixed 390. The strip fills the card
+    and scrolls; the ledger stretches. (assumed)
+50. Dark mode needs no extra rules: every colour is a token that already flips. (assumed)
+51. **How are the missed goes drawn in the strip?** O draws them in a 22% accent tint
+    (`--accent-soft`). That tint does not exist in the codebase (11 of the 15-token budget
+    used), and at 22% the miss cells fall well under 3:1 against the card, so a low-vision
+    player cannot count their goes (WCAG 1.4.11).
+    My rec: misses as hollow cells — a 1.5px accent outline, no fill — and the solving go
+    solid accent. Why: no new token, the outline passes 3:1 because it is the accent itself,
+    and hollow vs solid is the same language as the hollow and solid buttons below. The
+    message icon drops O's tinted pill for the same reason and sits as a plain accent icon.
+52. **Can a desktop mouse user scroll the strip?** O hides the scrollbar. Touch and trackpad
+    still scroll, keyboard scrolls once the strip has focus, but a plain mouse wheel scrolls
+    vertically and a mouse cannot drag, so a mouse-only user cannot reach older days.
+    My rec: a thin native scrollbar on fine pointers (`@media (pointer: fine)`), hidden on
+    touch, as O. Why: it costs a few pixels on desktop only, and phones keep O's clean look.
