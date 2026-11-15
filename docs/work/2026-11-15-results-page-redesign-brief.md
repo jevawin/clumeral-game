@@ -73,7 +73,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
     ships".
 
 ## 3. How it works
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie: signed off in advance from the designs and discussions); item 26 cut covered by the same
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie: signed off in advance from the designs and discussions); item 26 cut covered by the same · **Reopened by da-brief fixes 2026-11-15**
 
 Page order and modes
 
@@ -142,7 +142,7 @@ All time card
     My rec: cut. Why: 88% of completions are one-go, so it is one full bar and empty rows for
     most players, and it barely moves day to day. The goes strip above now shows goes per day,
     which the distribution only summarises. Dave built the live one, so his view is needed
-    before this settles.
+    before this settles. **Settled: cut — covered by Dave's relayed ack (§3 header); no longer open (da-brief L5).**
 27. **Agree these cuts from the page?** Avg. time (Current streaks and All time), Average
     attempts, the "1-go solve" current-streak box, the "Come back tomorrow" line, and the raw
     "7 (23%)" count (the percentage stays). Average time and goes are still computed for the
@@ -151,7 +151,7 @@ All time card
     ways of saying solved in one" ideas-note set out to remove.
 
 ## 4. Maths
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Sign-off: Dave 2026-11-15 (relayed by Jamie, in advance; covers items 17, 18, 20, 21, 25) · Ack: n/a
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Override: Jamie 2026-11-15 — items 17, 18, 21, 55 and the da-brief maths items (81, 83) are rules written in this brief, after the designs Dave saw, so Dave's advance sign-off cannot cover them. Jamie: "no further involvement from dave is required to get this live". Recorded as an override, not a sign-off (da-brief H1) · Ack: n/a
 
 28. n/a for puzzle generation and filtering: nothing here touches the generator, clues,
     seeding or the guess path. (assumed)
@@ -164,7 +164,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Sign-off: Dave 2026-
     wrong is the kind of bug players report.
 
 ## 5. State & persistence
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
 
 30. Nothing new is stored. Every figure reads `dlng_history` through `loadHistory` and is
     computed on each render; nothing is written. No new keys, no `dlng_` change. (assumed —
@@ -176,7 +176,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
 33. Nothing goes in the URL. `/solved` stays the route. (assumed)
 
 ## 6. How it fits
-Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this better than i so i take your reccs plus a review later"; Jamie reviews at plan/build) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this better than i so i take your reccs plus a review later"; Jamie reviews at plan/build) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
 
 34. `src/completion.ts` — `renderCompletion` keeps its signature, `panelMode`, the countdown,
     the links and the one announcement. It rewrites the panel markup as the Today, Streaks
@@ -209,7 +209,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this bette
     spare tokens stay (item 13). (assumed)
 
 ## 7. How it looks
-Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52 accepted) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52 accepted) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
 
 44. Every section is a card: `--color-surface` fill, 1.5px `--color-border`, 6px radius,
     18px padding, heading row with its icon. The Daily leaderboard takes the same card.
@@ -256,7 +256,7 @@ Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52
     rules)".**
 
 ## 8. Copy & wording
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
 
 53. Today heading: "Puzzle #238" over "solved"; random: "Puzzle" over "solved". The "!" and
     "You took:" go. (assumed — O)
@@ -284,7 +284,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
     wording with the time in bold. (assumed)
 
 ## 9. Accessibility
-Settled: Jamie 2026-11-15 (accepted all recommendations; item 67 "summary") · Sign-off: Jamie 2026-11-15 · Ack: n/a (owned section)
+Settled: Jamie 2026-11-15 (accepted all recommendations; item 67 "summary") · Sign-off: Jamie 2026-11-15 · Ack: n/a (owned section) · **Reopened by da-brief fixes 2026-11-15**
 
 62. Each card is a `<section aria-labelledby>` pointing at its heading, as today. (assumed)
 63. The Today heading is the screen's one `h2`, as the current "…solved!" heading is. "Puzzle
@@ -354,3 +354,69 @@ Settled: Jamie 2026-11-15 (accepted all recommendations; item 79 full suite) · 
     variants and the switch are gone (item 51); unit, e2e and axe pass at the agreed level;
     the review gates have passed (da-plan, human review, da-build, self-review); and the PR
     into `staging` is open. (assumed)
+
+## da-brief fixes (2026-11-15)
+
+Review: fresh-context `da-brief`, 1 High, 7 Medium, 6 Low. Every Medium+ is fixed below or
+waits on a question. Lows fixed too. New items continue the numbering; earlier items stand
+unless an item here amends them by number.
+
+H1 → §4 header now records an **Override: Jamie**, not a Dave sign-off, for the rules this
+brief wrote after the designs.
+
+81. (amends 17; M2) **Which line wins on most days?** The rationale in items 21 and 26 mixed
+    two populations: 88% of all production completions are one-go (today-note), while "0 on
+    77% of days" came from a sample player with a 23% one-go rate (onego-note). At 88%,
+    rung 2 "Straight in" wins most days and the time lines (rung 3) almost never show — the
+    one variable that moves day to day.
+    My rec: reorder to fastest ever → quicker than your average → straight in → fewer goes →
+    solve number. Why: time is the figure that differs every day (the leaderboard's own
+    rationale); a one-go solve is the norm for most players, so it makes a weak headline.
+82. (amends 20, 21, 57; M1) **What does the Streaks second line say?** When the figure is
+    "N days solved in one", "Best 30" reads as the best one-go run though it is the best
+    play streak, and "· One-go run N" repeats the headline.
+    My rec: the second line always names what it counts — "Best streak 30" — and adds
+    "· One-go run N" only from 2 AND only when the label has not already switched. Item 21's
+    rationale is corrected: at an 88% one-go rate a run of 2+ is common, so the part shows
+    for many players; the rule is kept because "One-go run 0/1" still says nothing.
+83. (amends 18, 19; M3) **How many earlier timed games before a time line can show?** The
+    gate counts games; most histories have 0–2 valid times because the timer is new (#347),
+    so "fastest ever" and "quicker than average" would fire against a single earlier time.
+    My rec: rungs 1 and 3 need 3 or more earlier valid times; until then they are skipped.
+    Why: matches "stats start from your third game"; one or two times is not a best or an
+    average anyone would trust.
+84. (amends 30, 51, 74; M4) The variant switch is a URL query parameter (e.g.
+    `?strip=hollow`) read only on preview builds. It survives a reload, can be pasted
+    between devices, writes no storage and needs no key. Removed with the losing variants.
+    (assumed)
+85. (amends 8, 38, 44, 50; M5) Moving the leaderboard onto a `--color-surface` card is more
+    than its container: `--chart-dot` is mixed into `--color-bg` and the dot border is
+    `--color-bg` (`src/tailwind.css:142-143`, `838-848`), and
+    `tests/palette-contrast.spec.ts:139-158` measures against bg. Both rebase onto
+    `--color-surface` and the test follows. Measured by da-brief on surface: lowest 3.36
+    (Lime light) and 3.87 (Cherry dark), still over 3:1. Same token, new mix base, still
+    11 of 15. (assumed)
+86. (amends 41, 40; M6) Tests that also change: `e2e/specs/completion.spec.ts` (asserts
+    Records, All time and "Average attempts", lines 32-37); `tests/sprites.spec.ts` (pins
+    `icon-trophy` and `viewBox="0 0 24 24"` on `icon-flame`/`icon-podium`, lines 12, 28 —
+    item 40's tight viewBoxes must update it); `tests/demo-history.spec.ts` (reads
+    `goesDistribution`, line 50); `tests/player-stats.spec.ts` (item 75). The plan also
+    checks `e2e/specs/archive.spec.ts` and `e2e/specs/undo-reset.spec.ts`, which reach the
+    completion screen. (assumed)
+87. (amends 51; M7) A fourth variant: **faded-passing** — misses in `--chart-dot`, the
+    existing 72% mix, which da-brief measured at 3.36–4.49:1 on surface in all eight
+    pairs. So the live pick has a faded look that already passes 1.4.11 with no new token.
+    (assumed — Jamie asked for variants to compare)
+88. (amends 67; L1, L2) The summary says "your 243 days played", not "last 243 days"
+    (item 24: missed days are not columns). It is the scroller's accessible name
+    (`role="group"` + `aria-label`, as O); the columns inside are `aria-hidden`, the scroller
+    itself is not, so `aria-hidden-focus` holds. Text belongs to §8. (assumed)
+89. (amends 55; L3) Rung 4 compares today's goes with the average as SHOWN (one decimal):
+    2 goes against 2.04 shows nothing, never "Fewer goes than your usual 2.0". (assumed)
+90. (amends 55; L4) "Nth" uses English ordinals: 1st→"first", then 2nd, 3rd, 4th … 11th,
+    12th, 13th, 21st, 22nd, 23rd, 101st, 111th. Item 75's tests cover 11–13 and 21. Each
+    rung's icon comes from the existing sprites; the plan picks them. (assumed)
+91. (amends 46, 53, 63; L4) "Puzzle #238 solved" is one line as O draws it, "solved" in
+    accent, wrapping naturally at narrow widths; still one `h2`. (assumed — O 148-150)
+92. (amends 16; L6) In marker mode the figure line is dropped, since the heading already
+    says solved; no "Solved!" under "Puzzle #238 solved". (assumed)
