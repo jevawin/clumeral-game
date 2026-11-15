@@ -540,5 +540,5 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      so that bold = theme colour always (e.g. top 40% in card 1)". The line reads
      "**3-day** play streak (best: **20**)", with ". 1-go run: **2**" from 2 and no closing
      full stop. When the one-go run matches the play streak it reads "**3-day** 1-go streak"
-     (Claude's call, for "1-go" to match; Jamie to confirm). Every bold part of a card's
+     (for "1-go" to match; **Jamie: "1 yes"**). Every bold part of a card's
      statement is bold accent: today's message, the leaderboard's line and the streak line.
