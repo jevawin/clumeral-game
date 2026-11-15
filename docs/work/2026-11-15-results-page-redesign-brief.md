@@ -2,12 +2,17 @@
 
 Branch: `dev/results-page-redesign` · Started 2026-11-15
 
-Inputs: canvas "Clumeral Screens" (artifact AGBzCYXhuT3JHke4fEaA6R) boards
-`Idea-M-Today-vs-Everyone` (M, the target), `Idea-K-F4` / `Idea-L-F4-Dark` (F4),
-`Results` (trace of the live page); canvas notes `docs/work/2026-11-01-canvas-notes.md`
-(f3-note, onego-note, ideas-note, stats-note, today-note, results-note). The Daily
-leaderboard card (Idea-O) shipped in #368 under `docs/work/2026-11-01-daily-time-chart-brief.md`
-and is not reopened here.
+Target design: **board O** (`Idea-O-Time-vs-Everyone`, exported at
+`docs/work/2026-11-01-Idea-O-Time-vs-Everyone.dc.html`). O is the whole page: board M with the
+Daily leaderboard in M's "Everyone today" slot. From Streaks down to the actions its markup is
+identical to M's (checked 2026-11-15). The leaderboard card shipped in #368 under
+`docs/work/2026-11-01-daily-time-chart-brief.md` and is not reopened here; this brief builds
+the rest of O. Where this brief cites "M", O says the same.
+
+Other inputs: canvas "Clumeral Screens" (artifact AGBzCYXhuT3JHke4fEaA6R) boards `Idea-K-F4` /
+`Idea-L-F4-Dark` (F4, the step before M) and `Results` (trace of the live page); canvas notes
+`docs/work/2026-11-01-canvas-notes.md` (f3-note, onego-note, ideas-note, stats-note,
+today-note, results-note).
 
 ## 1. What it is
 Settled: Jamie 2026-11-15 (accepted all recommendations; item 6 with the note below) · Ack: pending (Dave)
@@ -17,7 +22,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations; item 6 with the note be
    with watermark icons, streaks split across two sections, and an attempts chart that does
    not move from one day to the next. It reads busy and says "solved in one" three ways.
    (assumed — results-note, ideas-note, today-note)
-2. The fix is board M with the Daily leaderboard (Idea-O, shipped #368) in M's "Everyone
+2. The fix is board O: board M with the Daily leaderboard (shipped #368) in M's "Everyone
    today" slot: Today → Daily leaderboard → Streaks → All time → next puzzle → actions, one
    accent, one card style. (assumed — the direction chosen on the canvas)
 3. Who it is for: every player who lands on `/solved` after a daily solve. Random, archive,
