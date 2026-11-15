@@ -423,3 +423,19 @@ brief wrote after the designs.
     accent, wrapping naturally at narrow widths; still one `h2`. (assumed — O 148-150)
 92. (amends 16; L6) In marker mode the figure line is dropped, since the heading already
     says solved; no "Solved!" under "Puzzle #238 solved". (assumed)
+
+## Plan-stage questions (2026-11-15)
+
+Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both block Task 1.
+
+93. (amends 55; plan R1) **Message time differences: compact or sentence form?** Item 55 says
+    "the sentence form" but its examples are `17s quicker` and `9s under`, which only the
+    compact form writes (the sentence form writes `0m 17s`).
+    My rec: follow the examples — differences use the compact form (`17s`, `1m 05s`); the
+    figure line keeps the sentence form (`1 go, 0m 41s`, item 54).
+    **Settled: Jamie 2026-11-15 (accepted recommendation).**
+94. (amends 18, 83; plan R7) **Does a 0s time count?** `validSeconds(0)` is valid, so a junk
+    0s solve would read "Your fastest ever" and drag later averages. The time chart already
+    refuses a 0s time.
+    My rec: rungs 1 and 3 treat a time below 1s, today's or an earlier one, as no time.
+    **Settled: Jamie 2026-11-15 (accepted recommendation).**

@@ -5,8 +5,8 @@
 **Brief:** [2026-11-15-results-page-redesign-brief.md](2026-11-15-results-page-redesign-brief.md) —
 closed. Gates met: no `Ack: pending`; `da-brief` passed with fixes (items 81–92); §4 carries
 Jamie's override.
-**Approval:** pending — Jamie.
-**da-plan:** run once on revision 1 (1 High, 7 Medium, 14 Low); all fixed in revision 2. **Blocked on Jamie:** R1 and R7 before Task 1.
+**Approval:** Jamie, 2026-11-15, on revision 2. Build may start.
+**da-plan:** run once on revision 1 (1 High, 7 Medium, 14 Low); all fixed in revision 2. R1 and R7 settled by Jamie as brief items 93 and 94.
 
 Read the brief's "da-brief fixes" section (81–92) first: it amends earlier items by number, and
 where they differ the later item wins. Item numbers below are brief item numbers.
@@ -66,8 +66,8 @@ Each is an implementation choice inside a settled item.
 ### Readings to confirm (Jamie)
 
 Places where the brief's words admit two readings. R1 and R7 are copy and counting
-decisions, so they are **Jamie's to settle before Task 1 starts**, and the answer is recorded
-in the brief, not only here. R2–R5 are readings inside settled items; each is a one-line
+decisions, **settled by Jamie 2026-11-15 as brief items 93 (R1) and 94 (R7)**, both as
+recommended below. R2–R5 are readings inside settled items; each is a one-line
 change if Jamie reads it the other way.
 
 - **R1 — item 55, difference format. Blocks Task 1.** Item 55 is self-contradictory: it says
@@ -102,7 +102,7 @@ change if Jamie reads it the other way.
 
 Noted, not built: `index.html` has no `[data-completion-octo]` element, so the octopus
 injection at the top of `renderCompletion` is dead code. It is left alone (outside this
-brief) and raised with Jamie as a hygiene item.
+brief); filed as #371 (P3, hygiene, Future).
 
 ---
 
@@ -995,6 +995,8 @@ Then the gates: human review, `da-build`, self-review, PR into `staging` (item 8
 | 88 | Task 2 |
 | 89, 90 | Task 1 |
 | 91, 92 | Task 5 |
+| 93 | Task 1 (`compact(x)` for differences) |
+| 94 | Task 1 (`timed(s)`) |
 
 ## Sequencing
 
@@ -1005,7 +1007,7 @@ green and commits on its own. **The e2e suite is expected red from Task 5 until 
 because the old page object and specs still look for the old panel; nothing is pushed
 before Task 8 ends with e2e green.
 
-Task 1 does not start until Jamie has answered R1 and R7 and the answers are in the brief.
+R1 and R7 are settled (brief 93, 94), so Task 1 is unblocked.
 
 ## Revision log
 
@@ -1028,3 +1030,5 @@ Task 1 does not start until Jamie has answered R1 and R7 and the answers are in 
     deleted; `card()` parameter name and Today `section` written out; 0s times raised as R7
     (blocks Task 1); `earlier` uses `goesByDay`'s filter; e2e red from Task 5 to 8 stated;
     INVARIANTS counts added to Task 9.
+- **Approved, 2026-11-15** — Jamie, on revision 2, with R1 and R7 as recommended (brief 93,
+  94). Plan text otherwise unchanged.
