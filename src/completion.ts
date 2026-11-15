@@ -22,11 +22,6 @@ import {
 } from './player-stats.ts';
 import { setTimeChartContext, showTimeChart, timeChartSlot } from './time-chart-view.ts';
 import { goesStripHtml } from './goes-strip.ts';
-import { stripVariant } from './testing-panel.ts';
-
-// Read once: in-app navigation pushes a bare pathname and drops the query, so
-// the preview's ?strip= choice holds for the page's life (results plan D4).
-const STRIP_VARIANT = stripVariant(new URL(location.href));
 
 
 // ─── SVG ─────────────────────────────────────────────────────────────────────
@@ -345,7 +340,6 @@ export function renderCompletion(
   setTimeChartContext(showsChart ? { puzzleNum, seconds, sendUid } : null);
 
   if (dom.panel) {
-    dom.panel.dataset.stripVariant = STRIP_VARIANT;
     // Archive replays and markers carry no timing (brief 54).
     const message = mode === 'full' ? todayMessage(history, today, tries, seconds) : null;
     const cards = [todayCard(puzzleNum, isRandom, tries, seconds, showsTime(mode), mode, message)];

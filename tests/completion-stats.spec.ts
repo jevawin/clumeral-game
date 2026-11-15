@@ -265,9 +265,11 @@ describe('the completion panel', () => {
       expect(block('streak')!.querySelectorAll('[data-strip-day]').length).toBe(5);
     });
 
-    it('marks the panel with the strip style, the default on localhost', async () => {
+    it('carries no strip style switch once the pick is made (results plan Task 11)', async () => {
       await render(RETURNING, 2, false, { seconds: 221 });
-      expect(panel().dataset.stripVariant).toBe('faded-passing');
+      expect(panel().hasAttribute('data-strip-variant')).toBe(false);
+      const css = readFileSync(resolve(__dirname, '..', 'src/tailwind.css'), 'utf-8');
+      expect(css).not.toContain('data-strip-variant');
     });
   });
 

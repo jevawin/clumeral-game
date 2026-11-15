@@ -133,17 +133,19 @@
    ratio is computable. The leaderboard sits on a surface card since the results
    redesign (results brief 85), so 72% is held to the 3:1 floor against
    --color-surface in all eight theme × mode combinations — tightest is Lime
-   light at 3.36. The goes strip's faded-passing miss cell reads it too.
+   light at 3.36.
    tests/palette-contrast.spec.ts pins the maths and this exact declaration.
    The chart's lines are solid --color-text now (item 128), so they need no
    shade of their own.
 
    Outside @theme on purpose (plan D18): tests/token-parity.spec.ts requires every
    @theme --color-* to be mirrored in the Worker's /archive page, which never
-   shows the chart. It still counts against the 15-token ceiling: 11 in all.
+   shows the chart. It still counts against the 15-token ceiling: 12 in all, with --strip-miss.
    Dark mode re-resolves them because :root and html.dark are the same element. */
 :root {
   --chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));
+  /* The goes strip's missed goes (results brief 95): 20%, lighter than O's 22%. */
+  --strip-miss: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));
 }
 
 /* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
@@ -618,26 +620,15 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .goes-strip__inner > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
   .goes-strip__cell { block-size: 10px; border-radius: 2px; box-sizing: border-box; }
   .goes-strip__cell--hit { background: var(--color-accent); }
+  /* Missed goes are faded (results brief 51, 95). Under 3:1 by design: Jamie, as
+     accessibility owner, relaxed WCAG 1.4.11 for this non-text cell on 2026-11-15. */
+  .goes-strip__cell--miss { background: var(--strip-miss); }
   .goes-strip__elide { block-size: 10px; display: flex; align-items: center; justify-content: center; }
   .goes-strip__bolt { inline-size: 8px; block-size: 10px; color: var(--color-accent); }
   .goes-strip__count { block-size: 14px; display: flex; align-items: flex-end; justify-content: center; font-size: 0.6875rem; line-height: 1; }
   .goes-strip__meta { display: flex; justify-content: space-between; margin-block-start: 0.5rem; font-size: 0.8125rem; }
   .goes-strip__today { font-weight: 700; }
 
-  /* Miss-cell variants — preview only; the losers go before the PR (results brief
-     51, 87; plan D5). The pick also settles the message icon's pill. */
-  /* 20%, lighter than O's 22%, at Jamie's ask. Under 3:1 by design: Jamie relaxed
-     WCAG 1.4.11 for this non-text cell on 2026-11-15 (brief item 95). */
-  [data-strip-variant="faded"] .goes-strip__cell--miss {
-    background: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));
-  }
-  [data-strip-variant="faded"] .result-card__pill {
-    inline-size: 1.625rem; block-size: 1.625rem; border-radius: 9999px;
-    background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface));
-  }
-  [data-strip-variant="faded-passing"] .goes-strip__cell--miss { background: var(--chart-dot); }
-  [data-strip-variant="hollow"] .goes-strip__cell--miss { border: 1.5px solid var(--color-accent); }
-  [data-strip-variant="dotted"] .goes-strip__cell--miss { border: 1.5px dotted var(--color-accent); }
 
   /* ─── Daily leaderboard: the time chart (time chart brief items 47, 105) ──────
      Converted from Idea-O's .spread rules. Every vertical metric and font size

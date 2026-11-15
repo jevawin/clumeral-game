@@ -247,6 +247,9 @@ Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52
     variants and the switch are removed before the PR. The pick also settles the message
     icon's pill. If the pick is under 3:1 (WCAG 1.4.11), Jamie as accessibility owner records
     the call in this brief.
+    **Picked: Jamie 2026-11-15 — faded, at 20% (item 95), with the pill dropped: "1 drop",
+    "3 faded". The 1.4.11 call is recorded in item 95.** The other variants and the switch are
+    removed (plan Task 11). The message icon is a plain accent icon.
 52. **Can a desktop mouse user scroll the strip?** O hides the scrollbar. Touch and trackpad
     still scroll, keyboard scrolls once the strip has focus, but a plain mouse wheel scrolls
     vertically and a mouse cannot drag, so a mouse-only user cannot reach older days.
@@ -460,7 +463,7 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
     days draws as one column marked with the count, such as "12d", on the cells' baseline.
     Runs of 1–6 still draw one empty column per day, so a skipped day or a weekend away
     still shows its true width. The spoken summary still counts every missed day.
-    (assumed — 7 days and the "{n}d" mark are Claude's picks; Jamie to confirm on the preview)
+    **Settled: Jamie 2026-11-15 — 7 days and "{n}d" confirmed on the preview ("2 yes").**
 99. **A Long break history in the testing panel.** Jamie could not see the break in Missed
     days, because it sits off-screen until the strip is scrolled: "i don't have a long enough
     gap to see the gap can you add a testing function for it?". Long break: today and the two

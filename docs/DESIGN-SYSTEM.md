@@ -254,7 +254,10 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
 - **Streaks**: the play streak large in accent, "days played" (or "days solved in one" when
   the one-go run matches it), then "Best streak N", plus "· One-go run N" from 2.
 - **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, an empty 18px column per day missed between them (a break of 7 or more days is one column marked with its count, such as `12d`), 4px gaps, 10px
-  cells stacked from the bottom, misses then the solving go. Rows are the worst day capped at
+  cells stacked from the bottom, misses then the solving go. Misses are `--strip-miss`, a
+  20% accent mix into surface; the solving go is solid accent. The misses sit under 3:1 on
+  purpose -- Jamie relaxed WCAG 1.4.11 for them as accessibility owner (results brief 95).
+  The message icon beside today's line is a plain accent icon with no pill. Rows are the worst day capped at
   5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
   true figure on top. The scroller is `direction: rtl` so it opens at today with no script,
   with a 40px fade at the left edge and 40px of start padding so the fade never hides the

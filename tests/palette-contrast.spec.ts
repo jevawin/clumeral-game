@@ -146,7 +146,6 @@ describe('time chart tokens', () => {
   it.each(combos)('%s %s clears every chart floor on surface', (mode, name) => {
     const { accentL, accentC, surface, text } = PALETTE[mode];
     const accent = oklchToHex(accentL, accentC[name], PALETTE.hues[name]);
-    // Also the goes strip's faded-passing miss cell (results brief 87).
     expect(contrastRatio(mixSrgb(accent, surface, DOT_PCT), surface), '--chart-dot').toBeGreaterThanOrEqual(3);
     expect(contrastRatio(accent, surface), 'your dot').toBeGreaterThanOrEqual(3);
     // Chart text, and since item 128 the axis and leaders too.
@@ -159,5 +158,12 @@ describe('time chart tokens', () => {
     const css = readFileSync(resolve(__dirname, '..', 'src/tailwind.css'), 'utf-8');
     expect(css).toContain(`--chart-dot:  color-mix(in srgb, var(--color-accent) ${DOT_PCT}%, var(--color-surface));`);
     expect(css).not.toContain('--chart-line');
+  });
+
+  // The strip's missed goes sit under 3:1 on purpose (results brief 95), so there
+  // is no ratio to check. Pin the mix so it cannot drift unseen.
+  it('declares the strip miss token with exactly this mix', () => {
+    const css = readFileSync(resolve(__dirname, '..', 'src/tailwind.css'), 'utf-8');
+    expect(css).toContain('--strip-miss: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));');
   });
 });
