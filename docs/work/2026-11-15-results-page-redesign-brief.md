@@ -2,6 +2,11 @@
 
 Branch: `dev/results-page-redesign` · Started 2026-11-15
 
+Dave: Jamie 2026-11-15 — "dave's seen and signed off everything in advance from the designs
+and many discussions, assume for now he's acked everything and no further involvement from
+dave is required to get this live". Every Dave ack and sign-off below is recorded on that
+basis, relayed by Jamie.
+
 Target design: **board O** (`Idea-O-Time-vs-Everyone`, exported at
 `docs/work/2026-11-01-Idea-O-Time-vs-Everyone.dc.html`). O is the whole page: board M with the
 Daily leaderboard in M's "Everyone today" slot. From Streaks down to the actions its markup is
@@ -15,7 +20,7 @@ Other inputs: canvas "Clumeral Screens" (artifact AGBzCYXhuT3JHke4fEaA6R) boards
 today-note, results-note).
 
 ## 1. What it is
-Settled: Jamie 2026-11-15 (accepted all recommendations; item 6 with the note below) · Ack: pending (Dave)
+Settled: Jamie 2026-11-15 (accepted all recommendations; item 6 with the note below) · Ack: Dave 2026-11-15 (relayed by Jamie: signed off in advance from the designs and discussions)
 
 1. The problem. `/solved` today shows four accents at once (solved line in the player's
    accent, Current streaks, Records and All time in the three others), three rows of boxes
@@ -44,7 +49,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations; item 6 with the note be
    (comment 2026-11-15) and #148 moved from Future to the top of Next.
 
 ## 2. Out of scope
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: pending (Dave)
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie: signed off in advance from the designs and discussions)
 
 7. Share, on any card. #148 owns it (item 6). No placeholder buttons ship. (assumed)
 8. The Daily leaderboard card's content and behaviour (#368). Only its container and heading
@@ -68,7 +73,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: pending (Dave)
     ships".
 
 ## 3. How it works
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: pending (Dave — and item 26 needs his view on the record, since he built the live chart)
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie: signed off in advance from the designs and discussions); item 26 cut covered by the same
 
 Page order and modes
 
@@ -146,7 +151,7 @@ All time card
     ways of saying solved in one" ideas-note set out to remove.
 
 ## 4. Maths
-Settled: pending · Sign-off: pending (Dave) · Ack: n/a
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Sign-off: Dave 2026-11-15 (relayed by Jamie, in advance; covers items 17, 18, 20, 21, 25) · Ack: n/a
 
 28. n/a for puzzle generation and filtering: nothing here touches the generator, clues,
     seeding or the guess path. (assumed)
@@ -157,3 +162,15 @@ Settled: pending · Sign-off: pending (Dave) · Ack: n/a
     My rec: yes, a short sign-off from Dave on those five items. Why: they are counting rules
     a player can check against their own history, and getting a streak or a "fastest ever"
     wrong is the kind of bug players report.
+
+## 5. State & persistence
+Settled: pending · Ack: Dave 2026-11-15 (relayed by Jamie, in advance)
+
+30. Nothing new is stored. Every figure reads `dlng_history` through `loadHistory` and is
+    computed on each render; nothing is written. No new keys, no `dlng_` change. (assumed —
+    INVARIANTS, item 10)
+31. The message (item 17) uses history before today, so a reload of `/solved` later the same
+    day shows the same line. (assumed — follows from item 18)
+32. The goes strip opens scrolled to today every time; its scroll position is not
+    remembered. (assumed)
+33. Nothing goes in the URL. `/solved` stays the route. (assumed)
