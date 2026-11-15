@@ -150,7 +150,7 @@ let watcher: ResizeObserver | null = null;
 /** Keeps `data-more-left` on the strip while earlier days are off-screen to the
  *  left: on load, on scroll and on resize. The scroller is rtl, so its scrollLeft
  *  runs from 0 at today to minus the overflow at the oldest day. */
-export function wireStrip(root: ParentNode): void {
+export function wireStrip(root: HTMLElement): void {
   watcher?.disconnect();
   watcher = null;
   const strip = root.querySelector<HTMLElement>('[data-goes-strip]');
