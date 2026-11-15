@@ -1,6 +1,6 @@
 # Results page redesign — brief
 
-Branch: `dev/results-page-redesign` · Started 2026-11-15 · Brief as a whole: Jamie 2026-11-15, pending da-brief
+Branch: `dev/results-page-redesign` · Started 2026-11-15 · Brief as a whole: Jamie 2026-11-15 · da-brief passed with fixes 2026-11-15 (items 81–92) · **Closed — ready for Plan**
 
 Dave: Jamie 2026-11-15 — "dave's seen and signed off everything in advance from the designs
 and many discussions, assume for now he's acked everything and no further involvement from
@@ -73,7 +73,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
     ships".
 
 ## 3. How it works
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie: signed off in advance from the designs and discussions); item 26 cut covered by the same · **Reopened by da-brief fixes 2026-11-15**
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie: signed off in advance from the designs and discussions); item 26 cut covered by the same · **Reopened by da-brief fixes 2026-11-15, re-settled Jamie 2026-11-15 (accepted all recommendations, items 81–92)**
 
 Page order and modes
 
@@ -164,7 +164,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Override: Jamie 2026
     wrong is the kind of bug players report.
 
 ## 5. State & persistence
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15, re-settled Jamie 2026-11-15 (accepted all recommendations, items 81–92)**
 
 30. Nothing new is stored. Every figure reads `dlng_history` through `loadHistory` and is
     computed on each render; nothing is written. No new keys, no `dlng_` change. (assumed —
@@ -176,7 +176,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
 33. Nothing goes in the URL. `/solved` stays the route. (assumed)
 
 ## 6. How it fits
-Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this better than i so i take your reccs plus a review later"; Jamie reviews at plan/build) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
+Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this better than i so i take your reccs plus a review later"; Jamie reviews at plan/build) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15, re-settled Jamie 2026-11-15 (accepted all recommendations, items 81–92)**
 
 34. `src/completion.ts` — `renderCompletion` keeps its signature, `panelMode`, the countdown,
     the links and the one announcement. It rewrites the panel markup as the Today, Streaks
@@ -209,7 +209,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations — "you know this bette
     spare tokens stay (item 13). (assumed)
 
 ## 7. How it looks
-Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52 accepted) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
+Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52 accepted) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15, re-settled Jamie 2026-11-15 (accepted all recommendations, items 81–92)**
 
 44. Every section is a card: `--color-surface` fill, 1.5px `--color-border`, 6px radius,
     18px padding, heading row with its icon. The Daily leaderboard takes the same card.
@@ -256,7 +256,7 @@ Settled: Jamie 2026-11-15 (44–50 assumed; 51 deferred to a live comparison; 52
     rules)".**
 
 ## 8. Copy & wording
-Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15**
+Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15 (relayed by Jamie, in advance) · **Reopened by da-brief fixes 2026-11-15, re-settled Jamie 2026-11-15 (accepted all recommendations, items 81–92)**
 
 53. Today heading: "Puzzle #238" over "solved"; random: "Puzzle" over "solved". The "!" and
     "You took:" go. (assumed — O)
@@ -284,7 +284,7 @@ Settled: Jamie 2026-11-15 (accepted all recommendations) · Ack: Dave 2026-11-15
     wording with the time in bold. (assumed)
 
 ## 9. Accessibility
-Settled: Jamie 2026-11-15 (accepted all recommendations; item 67 "summary") · Sign-off: Jamie 2026-11-15 · Ack: n/a (owned section) · **Reopened by da-brief fixes 2026-11-15**
+Settled: Jamie 2026-11-15 (accepted all recommendations; item 67 "summary") · Sign-off: Jamie 2026-11-15 · Ack: n/a (owned section) · **Reopened by da-brief fixes 2026-11-15, re-settled Jamie 2026-11-15 (accepted all recommendations, items 81–92)**
 
 62. Each card is a `<section aria-labelledby>` pointing at its heading, as today. (assumed)
 63. The Today heading is the screen's one `h2`, as the current "…solved!" heading is. "Puzzle
@@ -372,6 +372,7 @@ brief wrote after the designs.
     My rec: reorder to fastest ever → quicker than your average → straight in → fewer goes →
     solve number. Why: time is the figure that differs every day (the leaderboard's own
     rationale); a one-go solve is the norm for most players, so it makes a weak headline.
+    **Settled: Jamie 2026-11-15 (accepted recommendation).**
 82. (amends 20, 21, 57; M1) **What does the Streaks second line say?** When the figure is
     "N days solved in one", "Best 30" reads as the best one-go run though it is the best
     play streak, and "· One-go run N" repeats the headline.
@@ -379,12 +380,14 @@ brief wrote after the designs.
     "· One-go run N" only from 2 AND only when the label has not already switched. Item 21's
     rationale is corrected: at an 88% one-go rate a run of 2+ is common, so the part shows
     for many players; the rule is kept because "One-go run 0/1" still says nothing.
+    **Settled: Jamie 2026-11-15 (accepted recommendation).**
 83. (amends 18, 19; M3) **How many earlier timed games before a time line can show?** The
     gate counts games; most histories have 0–2 valid times because the timer is new (#347),
     so "fastest ever" and "quicker than average" would fire against a single earlier time.
     My rec: rungs 1 and 3 need 3 or more earlier valid times; until then they are skipped.
     Why: matches "stats start from your third game"; one or two times is not a best or an
     average anyone would trust.
+    **Settled: Jamie 2026-11-15 (accepted recommendation).**
 84. (amends 30, 51, 74; M4) The variant switch is a URL query parameter (e.g.
     `?strip=hollow`) read only on preview builds. It survives a reload, can be pasted
     between devices, writes no storage and needs no key. Removed with the losing variants.
