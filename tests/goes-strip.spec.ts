@@ -263,6 +263,11 @@ describe('wireStrip (results brief 105)', () => {
     expect(mount(280, 280).strip.hasAttribute('data-more-left')).toBe(false);
   });
 
+  it('is a tab stop only while there is something to scroll', () => {
+    expect(mount(500, 280).scroller.getAttribute('tabindex')).toBe('0');
+    expect(mount(280, 280).scroller.hasAttribute('tabindex')).toBe(false);
+  });
+
   it('clears the mark once scrolled to the oldest day, and sets it again on the way back', () => {
     const { strip, scroller } = mount(500, 280);
     scroller.scrollLeft = -220;

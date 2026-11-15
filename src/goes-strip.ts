@@ -158,7 +158,9 @@ let watcher: ResizeObserver | null = null;
 
 /** Keeps `data-more-left` on the strip while earlier days are off-screen to the
  *  left: on load, on scroll and on resize. The scroller is rtl, so its scrollLeft
- *  runs from 0 at today to minus the overflow at the oldest day. */
+ *  runs from 0 at today to minus the overflow at the oldest day. Also keeps the
+ *  scroller a tab stop only while it has something to scroll, so a short strip is
+ *  not a stop that does nothing; its summary is still read as a labelled group. */
 export function wireStrip(root: HTMLElement): void {
   watcher?.disconnect();
   watcher = null;
@@ -168,6 +170,8 @@ export function wireStrip(root: HTMLElement): void {
   const update = () => {
     const hidden = scroller.scrollWidth - scroller.clientWidth - Math.abs(scroller.scrollLeft);
     strip.toggleAttribute('data-more-left', hidden > 1);
+    if (scroller.scrollWidth > scroller.clientWidth + 1) scroller.setAttribute('tabindex', '0');
+    else scroller.removeAttribute('tabindex');
   };
   scroller.addEventListener('scroll', update, { passive: true });
   if (typeof ResizeObserver === 'function') {
