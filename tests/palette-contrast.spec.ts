@@ -136,26 +136,28 @@ describe('shortcut hint tint (.board-ctrl__key)', () => {
 });
 
 // The "Daily leaderboard" card's two derived tokens (time chart brief items 64, 69,
-// 80, 97). The card sits on the page background, so every ratio is against bg.
+// 80, 97). The card sits on the surface (results brief 85), so every ratio is
+// against surface.
 // Others' dots are data, not decoration, so they meet 3:1 like the axis.
 describe('time chart tokens', () => {
   const DOT_PCT = 72;
   const combos = (['light', 'dark'] as const).flatMap((mode) => themes.map((name) => [mode, name] as const));
 
-  it.each(combos)('%s %s clears every chart floor on bg', (mode, name) => {
-    const { accentL, accentC, bg, text } = PALETTE[mode];
+  it.each(combos)('%s %s clears every chart floor on surface', (mode, name) => {
+    const { accentL, accentC, surface, text } = PALETTE[mode];
     const accent = oklchToHex(accentL, accentC[name], PALETTE.hues[name]);
-    expect(contrastRatio(mixSrgb(accent, bg, DOT_PCT), bg), '--chart-dot').toBeGreaterThanOrEqual(3);
-    expect(contrastRatio(accent, bg), 'your dot').toBeGreaterThanOrEqual(3);
+    // Also the goes strip's faded-passing miss cell (results brief 87).
+    expect(contrastRatio(mixSrgb(accent, surface, DOT_PCT), surface), '--chart-dot').toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(accent, surface), 'your dot').toBeGreaterThanOrEqual(3);
     // Chart text, and since item 128 the axis and leaders too.
-    expect(contrastRatio(text, bg), 'chart text and lines').toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(text, surface), 'chart text and lines').toBeGreaterThanOrEqual(4.5);
   });
 
   // The maths above holds only for the percentages it names. Pin the CSS to them,
   // so a hand-edit of one cannot pass with the test still green.
   it('declares the dot token with exactly this mix', () => {
     const css = readFileSync(resolve(__dirname, '..', 'src/tailwind.css'), 'utf-8');
-    expect(css).toContain(`--chart-dot:  color-mix(in srgb, var(--color-accent) ${DOT_PCT}%, var(--color-bg));`);
+    expect(css).toContain(`--chart-dot:  color-mix(in srgb, var(--color-accent) ${DOT_PCT}%, var(--color-surface));`);
     expect(css).not.toContain('--chart-line');
   });
 });

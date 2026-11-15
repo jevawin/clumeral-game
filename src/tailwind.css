@@ -127,10 +127,12 @@
 
 /* The "Daily leaderboard" time chart's dot shade (time chart brief items 64, 69,
    97). Not new colours: mixes of the accent and the text into the page
-   background, as --color-border is a mix of the text. Into --color-bg, not
+   background, as --color-border is a mix of the text. Into --color-surface, not
    transparent, so the dots are opaque, overlapping dots do not darken, and the
-   ratio is computable. 72% is set by the 3:1 floor against --color-bg
-   in all eight theme × mode combinations — tightest is Lime light at 3.22.
+   ratio is computable. The leaderboard sits on a surface card since the results
+   redesign (results brief 85), so 72% is held to the 3:1 floor against
+   --color-surface in all eight theme × mode combinations — tightest is Lime
+   light at 3.36. The goes strip's faded-passing miss cell reads it too.
    tests/palette-contrast.spec.ts pins the maths and this exact declaration.
    The chart's lines are solid --color-text now (item 128), so they need no
    shade of their own.
@@ -140,7 +142,7 @@
    shows the chart. It still counts against the 15-token ceiling: 11 in all.
    Dark mode re-resolves them because :root and html.dark are the same element. */
 :root {
-  --chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-bg));
+  --chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));
 }
 
 /* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
@@ -648,9 +650,6 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   [data-stat-block="streak"]   { --section-accent: var(--color-accent-2); }
   [data-stat-block="records"]  { --section-accent: var(--color-accent-3); }
   [data-stat-block="all-time"] { --section-accent: var(--color-accent-4); }
-  /* Daily leaderboard takes the player's own colour: it is the only block about
-     the same thing their own dot is (time chart brief item 49). */
-  [data-stat-block="daily-leaderboard"] { --section-accent: var(--color-accent); }
   .stat-block__icon { color: var(--section-accent); }
 
   /* This game — the hero. The only thing that changed in the last ten seconds,
@@ -844,12 +843,19 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
      No transition or animation on any rule here: the dots are drawn in place
      (item 51). */
   /* The reserved space while the field loads (item 54), so the card arriving
-     does not push Current streaks down mid-read. 13.1rem is the drawn card's
-     height, measured 2026-11-01 at a 375px viewport and default text, in
-     Chromium and WebKit alike (209.6px with 15px labels), with a one-line copy
-     line — the three longest lines all fit one line at 288px.
-     e2e/specs/time-chart.spec.ts's no-shift test holds it. */
-  [data-time-chart][aria-busy="true"]:empty { min-block-size: 13.1rem; }
+     does not push Streaks down mid-read. Reserved on the CONTENT box: the card's
+     1.5px border snaps to 1px in Chromium at 1x and stays 1.5px in WebKit at 2x,
+     so a border-box height would differ by 1px between engines. The content
+     heights are identical. Measured 2026-11-15 on the results card (18px
+     padding, 1.1875rem heading), default text, Chromium and WebKit:
+       375px viewport — 205.484px (drawn 243.484 / 244.484 with border)
+       320px viewport — 226.281px (the 99% copy line wraps to two lines)
+     Written to three decimals of a rem, never rounded up.
+     e2e/specs/time-chart.spec.ts's no-shift test holds both widths. */
+  [data-time-chart][aria-busy="true"]:empty { box-sizing: content-box; min-block-size: 12.842rem; }
+  @media (max-width: 22.4375rem) {
+    [data-time-chart][aria-busy="true"]:empty { min-block-size: 14.142rem; }
+  }
   .time-chart__line {
     margin: 0;
     margin-block-start: 0.875rem;
@@ -933,8 +939,8 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     margin-block-start: 0.375rem;
     margin-inline: auto;
   }
-  /* The card sits on the page background, so the border is --color-bg: it
-     separates touching dots (plan D14). */
+  /* The border is the card's own fill, --color-surface: it separates touching
+     dots (time chart plan D14; results brief 85). */
   .time-chart__dot {
     position: absolute;
     top: 4.125rem;
@@ -943,7 +949,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     z-index: 2;
     transform: translate(-50%, -50%);
     background: var(--chart-dot);
-    border: 1.5px solid var(--color-bg);
+    border: 1.5px solid var(--color-surface);
   }
   .time-chart__dot--you { background: var(--color-accent); z-index: 3; }
 

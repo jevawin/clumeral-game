@@ -176,6 +176,15 @@ describe('a drawn card', () => {
     expect(document.getElementById(s.getAttribute('aria-labelledby')!)).toBe(s.querySelector('h3'));
   });
 
+  it('takes the results card style (results brief 44, 8)', async () => {
+    await render(recorded, 2, { seconds: 41 });
+    await enter();
+    const s = slot();
+    expect(s.className).toBe('result-card');
+    expect(s.querySelector('h3')!.className).toBe('result-card__head');
+    expect(s.querySelector('h3 svg')!.getAttribute('class')).toBe('result-card__icon');
+  });
+
   // Item 65: nothing on the card is interactive.
   it('has nothing focusable', async () => {
     await render(recorded, 2, { seconds: 41 });
