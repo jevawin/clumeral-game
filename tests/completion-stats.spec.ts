@@ -465,11 +465,11 @@ describe('the panel colours itself once, at the top', () => {
     // html/body. Swept across the whole panel section rather than listing the
     // seven rules, so a rule added later is covered too. The play screen keeps
     // Inconsolata — its keypad needs every key the same width (brief 21).
-    // The slice runs to .digit-box, which is the first rule AFTER the panel —
-    // ending it at .goes-row__fill would leave .goes-row__count unswept.
+    // The slice runs to .digit-box, which is the first rule AFTER the panel, so
+    // the strip and the leaderboard are swept with the cards.
     const start = css.indexOf('[data-completion-panel] {');
     const panel = css.slice(start, css.indexOf('.digit-box {'));
-    expect(panel).toContain('.goes-row__count');
+    expect(panel).toContain('.goes-strip__meta');
     expect(panel).not.toContain('Inconsolata');
   });
 
@@ -486,6 +486,15 @@ describe('the panel colours itself once, at the top', () => {
     }
     const completion = readFileSync(resolve(__dirname, '../src/completion.ts'), 'utf8');
     expect(completion).not.toMatch(/class="stat-box[^"]*shadow-box/);
+  });
+
+  it('uses one accent: no spare accent read, and no old panel rule left (results brief 13, 39, 45)', () => {
+    for (const n of [2, 3, 4]) expect(css, `accent-${n}`).not.toContain(`var(--color-accent-${n})`);
+    for (const gone of ['.stat-col', '.goes-row', '--section-accent', '.stat-line', '.stat-figure', '.stat-block__']) {
+      expect(css, gone).not.toContain(gone);
+    }
+    // The tokens themselves stay until #370, so the Worker's mirror still matches.
+    for (const n of [2, 3, 4]) expect(css, `--color-accent-${n}:`).toContain(`--color-accent-${n}:`);
   });
 
   it('uses the theme token, never a literal colour', () => {

@@ -272,26 +272,6 @@ describe('exclusions', () => {
   });
 });
 
-describe('the goes chart', () => {
-  it('returns six buckets in order, zeros included, with the tail in 6+', () => {
-    const s = stats([
-      { date: day(0), tries: 1 },
-      { date: day(1), tries: 1 },
-      { date: day(2), tries: 3 },
-      { date: day(3), tries: 7 },
-      { date: day(4), tries: 12 },
-    ]);
-    expect(s.goesDistribution).toEqual([
-      { bucket: '1', count: 2 },
-      { bucket: '2', count: 0 },
-      { bucket: '3', count: 1 },
-      { bucket: '4', count: 0 },
-      { bucket: '5', count: 0 },
-      { bucket: '6+', count: 2 },
-    ]);
-  });
-});
-
 describe('formatting', () => {
   it('formats a duration for the screen with unit letters', () => {
     expect(formatDuration(221)).toBe('3m 41s');
@@ -370,6 +350,12 @@ describe('the reveal gate', () => {
 });
 
 // ─── Results page redesign (plan Task 1) ─────────────────────────────────────
+
+describe('the goes distribution is gone (results plan D3)', () => {
+  it('is not a field of the stats any more', () => {
+    expect('goesDistribution' in stats([{ date: day(0), tries: 2 }])).toBe(false);
+  });
+});
 
 describe('goesByDay', () => {
   it('drops archived and marker rows, keeps today, and sorts ascending', () => {

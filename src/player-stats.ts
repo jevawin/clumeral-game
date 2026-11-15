@@ -31,10 +31,6 @@ export const IDLE_TIMEOUT_MS = 120_000;
  *  (brief 19, 131). */
 export const REVEAL_AFTER_GAMES = 2;
 
-/** Buckets for the goes chart. Nothing caps how many goes a player can take, so
- *  the tail collapses into one row (brief 133). */
-export const GOES_BUCKETS: readonly string[] = ['1', '2', '3', '4', '5', '6+'];
-
 /**
  * The stored time for one game, or null when it is unknown.
  *
@@ -63,7 +59,6 @@ export interface PlayerStats {
   bestPlayStreak: number;
   firstGoStreak: number;
   bestFirstGoStreak: number;
-  goesDistribution: { bucket: string; count: number }[];
   /** Countable games played. Drives the reveal gate at brief 19 / 131. Always
    *  equal to `plays`; named separately because the gate is about how much the
    *  panel shows, and a later change to what "plays" means should not silently
@@ -168,12 +163,6 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
   const play = walkStreak(sorted, () => true);
   const firstGo = walkStreak(sorted, (h) => h.tries === 1);
 
-  const counts = new Map(GOES_BUCKETS.map((b) => [b, 0]));
-  for (const h of countable) {
-    const bucket = h.tries >= 6 ? '6+' : String(h.tries);
-    if (counts.has(bucket)) counts.set(bucket, counts.get(bucket)! + 1);
-  }
-
   return {
     plays,
     firstGoWins,
@@ -185,7 +174,6 @@ export function computePlayerStats(history: HistoryEntry[], today: string): Play
     bestPlayStreak: play.best,
     firstGoStreak: live ? firstGo.current : 0,
     bestFirstGoStreak: firstGo.best,
-    goesDistribution: GOES_BUCKETS.map((bucket) => ({ bucket, count: counts.get(bucket)! })),
     countableGames: plays,
   };
 }
