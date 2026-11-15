@@ -447,9 +447,9 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
 
 95. (amends 51) **The faded variant, lighter, under 3:1.** After seeing the preview, Jamie
     asked for faded to be "more faded" and relaxed the 3:1 floor for it: "relax the wcag rule
-    for this since it's not text". The faded miss cell drops from O's 22% accent tint to 12%, then, on a second look, to 20% ("2 20%").
-    WCAG 1.4.11 is relaxed for the miss cells only, by Jamie as accessibility owner. The
-    message icon's pill stays at 22%. The pick between variants is still open.
+    for this since it's not text". The faded miss cell drops from O's 22% accent tint to 12%,
+    then, on a second look, to 20% ("2 20%"). WCAG 1.4.11 is relaxed for the miss cells only,
+    by Jamie as accessibility owner. Faded was then picked and its pill dropped (item 51).
 96. **A Missed days history in the testing panel.** Jamie: "i need a missed days testing
     option". 45 days ending today with seven days skipped and one 12-day break, so the play streak breaks three
     days back and the strip shows that a skipped day draws no column (item 24). Preview only,
