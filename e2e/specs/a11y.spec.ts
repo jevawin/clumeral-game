@@ -9,6 +9,7 @@ import { expectedModifier } from "../helpers/modifier.ts";
 import { GamePage } from "../pages/game.page.ts";
 import { MenuPage } from "../pages/menu.page.ts";
 import { LABEL_IN_NAME_RULE, LABEL_IN_NAME_TARGETS, seriousViolations } from "../helpers/axe.ts";
+import { rows, stubField } from "../helpers/time-field.ts";
 import { FeedbackPage } from "../pages/feedback.page.ts";
 
 // The ONE rule this suite overrules, the exact nodes it overrules it on, and the
@@ -66,6 +67,34 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.locator("[data-completion-heading]")).toBeVisible();
       expect(await seriousViolations(page)).toEqual([]);
     });
+
+    // Full mode: every card, the leaderboard drawn, and a strip with a broken
+    // column (results brief 71). Once per miss style while the preview switch
+    // exists (results plan Task 8); Task 11 leaves the one picked.
+    for (const strip of ["faded", "faded-passing", "hollow", "dotted"]) {
+      test(`results page in full mode (${strip}) has no serious/critical violations`, async ({ page }) => {
+        const today = "2026-06-08";
+        const day = (back: number) => {
+          const d = new Date(today + "T00:00:00Z");
+          d.setUTCDate(d.getUTCDate() - back);
+          return d.toISOString().slice(0, 10);
+        };
+        await freezeDate(page, "2026-06-08T12:00:00Z");
+        await seedHistory(page, Array.from({ length: 40 }, (_, b) => ({
+          date: day(b),
+          tries: b === 10 ? 9 : (b % 3) + 1,
+          seconds: 60 + b,
+        })));
+        await seedLastVisit(page, today);
+        await stubField(page, rows([41, 56, 69, 81, 104, 163, 245]));
+        await page.goto(`/solved?strip=${strip}`);
+        await waitForScreenSettled(page, "completion");
+        await expect(page.locator("[data-strip-scroller]")).toBeVisible();
+        await expect(page.locator(".time-chart__line")).toBeVisible();
+        await expect(page.locator("[data-completion-panel]")).toHaveAttribute("data-strip-variant", strip);
+        expect(await seriousViolations(page)).toEqual([]);
+      });
+    }
 
     test("archive page has no serious/critical violations", async ({ page }) => {
       await page.goto("/archive");

@@ -8,8 +8,8 @@ import { freezeDate } from "../helpers/clock.ts";
 const NOW = "2026-06-08T12:00:00Z";
 const TODAY = "2026-06-08";
 
-// Three consecutive days ending today: plays=3, avg goes=(2+4+3)/3=3.0, streak=3.
-// Three is also the reveal gate, so all three blocks render.
+// Three consecutive days ending today: plays=3, none in one, streak=3.
+// Three is also the reveal gate, so every card renders.
 const HISTORY = [
   { date: "2026-06-08", tries: 2, seconds: 221 },
   { date: "2026-06-07", tries: 4, seconds: 300 },
@@ -29,13 +29,14 @@ test.describe("completion screen", () => {
     await gotoCompletion(page);
     const completion = new CompletionPage(page);
 
-    await expect(completion.thisGame).toBeVisible();
+    await expect(completion.today).toBeVisible();
     await expect(completion.streak).toBeVisible();
-    await expect(completion.records).toBeVisible();
     await expect(completion.allTime).toBeVisible();
-    await expect(completion.allTimeLines.nth(0)).toHaveText("3 Puzzles solved");
-    await expect(completion.allTimeLines.nth(3)).toHaveText("3.0 Average attempts");
-    await expect(completion.stat("Current day streak")).toHaveText("3");
+    await expect(completion.ledger("Puzzles solved")).toHaveText("3");
+    await expect(completion.ledger("Solved in one")).toHaveText("0%");
+    await expect(completion.streakFigure).toHaveText(/^3\s+days played$/);
+    await expect(completion.panel.locator('[data-stat-block="records"]')).toHaveCount(0);
+    await expect(completion.panel).not.toContainText("Average attempts");
   });
 
   test("countdown shows the time until the next puzzle, derived from the clock", async ({ page }) => {
@@ -48,6 +49,8 @@ test.describe("completion screen", () => {
 
     await expect(completion.countdown).toBeVisible();
     await expect(completion.countdown).toHaveText(/^Next puzzle in (11|12)h \d{1,2}m$/);
+    // The time is in bold (results brief 61).
+    await expect(completion.countdown.locator("b")).toHaveText(/^(11|12)h \d{1,2}m$/);
   });
 
   test("completion links and feedback button are present", async ({ page }) => {

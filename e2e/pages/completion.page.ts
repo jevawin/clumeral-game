@@ -1,26 +1,29 @@
 import type { Page, Locator } from "@playwright/test";
 
 // Completion screen (/solved). Thin page object: locators + actions only.
+// The panel is cards since the results redesign: Today, the Daily leaderboard,
+// Streaks and All time (results brief 14).
 export class CompletionPage {
   readonly screen: Locator;
+  /** "Puzzle #N solved" — the screen's one h2, inside the Today card. */
   readonly heading: Locator;
-  readonly subheading: Locator;
-  /** The container the three blocks are written into. */
+  /** The container the cards are written into. */
   readonly panel: Locator;
-  readonly thisGame: Locator;
-  /** Where you are now. */
+  /** Every card, in order. */
+  readonly cards: Locator;
+  readonly today: Locator;
+  /** "3 goes, 2m 28s". */
+  readonly figures: Locator;
+  /** The one line under the figures, full mode only. */
+  readonly message: Locator;
+  readonly leaderboard: Locator;
   readonly streak: Locator;
-  /** What you have ever done. */
-  readonly records: Locator;
-  /** Absent since the averages moved back into All time. Kept so the tests that
-   *  assert it has count 0 still say something. */
-  readonly average: Locator;
+  readonly streakFigure: Locator;
+  readonly streakLine: Locator;
   readonly allTime: Locator;
-  /** Every figure column, across Streak and Records. */
-  readonly cols: Locator;
-  /** Every All-time line: "17 puzzles solved". */
-  readonly allTimeLines: Locator;
-  readonly goesRows: Locator;
+  /** The goes strip's scroller: focusable, named by its summary. */
+  readonly strip: Locator;
+  readonly stripDays: Locator;
   /** The one polite announcement of the result. */
   readonly live: Locator;
   readonly countdown: Locator;
@@ -30,16 +33,18 @@ export class CompletionPage {
   constructor(public readonly page: Page) {
     this.screen = page.locator('[data-screen="completion"]');
     this.heading = page.locator("[data-completion-heading]");
-    this.subheading = page.locator("[data-completion-subheading]");
     this.panel = page.locator("[data-completion-panel]");
-    this.thisGame = page.locator('[data-stat-block="this-game"]');
+    this.cards = page.locator("[data-completion-panel] > section");
+    this.today = page.locator('[data-stat-block="today"]');
+    this.figures = page.locator("[data-today-figures]");
+    this.message = page.locator("[data-today-message]");
+    this.leaderboard = page.locator('[data-stat-block="daily-leaderboard"]');
     this.streak = page.locator('[data-stat-block="streak"]');
-    this.records = page.locator('[data-stat-block="records"]');
-    this.average = page.locator('[data-stat-block="average"]');
+    this.streakFigure = page.locator("[data-streak-figure]");
+    this.streakLine = page.locator("[data-streak-line]");
     this.allTime = page.locator('[data-stat-block="all-time"]');
-    this.cols = page.locator(".stat-col");
-    this.allTimeLines = page.locator(".stat-line");
-    this.goesRows = page.locator("[data-goes-row]");
+    this.strip = page.locator("[data-strip-scroller]");
+    this.stripDays = page.locator("[data-strip-day]");
     this.live = page.locator("[data-completion-live]");
     this.countdown = page.locator("[data-completion-countdown]");
     this.feedbackBtn = page.locator("[data-completion-feedback]");
@@ -50,19 +55,16 @@ export class CompletionPage {
     await this.page.goto("/solved");
   }
 
-  /**
-   * The value shown for a labelled stat, anywhere on the panel.
-   *
-   * Figure columns only. The All-time figures are sentences now — "17 puzzles
-   * solved" — so they are read straight off the panel text rather than looked up
-   * by label. The label passed here is always the words a screen reader hears:
-   * "Current day streak", not "Days".
-   */
-  stat(label: string): Locator {
+  /** The value in the All time ledger row whose label is exactly `label`. */
+  ledger(label: string): Locator {
     return this.panel
-      .locator(".stat-col")
-      .filter({ has: this.page.locator("dt, .sr-only", { hasText: new RegExp(`^${label}$`) }) })
-      .locator("dd")
-      .first();
+      .locator("[data-ledger-row]")
+      .filter({ has: this.page.locator("dt", { hasText: new RegExp(`^${label}$`) }) })
+      .locator("dd");
+  }
+
+  /** The data-stat-block of every card, in order. */
+  async cardOrder(): Promise<string[]> {
+    return this.cards.evaluateAll((els) => els.map((el) => (el as HTMLElement).dataset.statBlock ?? ""));
   }
 }

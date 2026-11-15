@@ -60,3 +60,26 @@ test("swaps in a rich history", async ({ page }) => {
   await waitForScreenSettled(page, "completion");
   await expect(page.locator('[data-stat-block="streak"]')).toBeVisible();
 });
+
+// The preview-only strip style switch (results brief 51, 84). Removed with the
+// losing styles once Jamie picks.
+test("a Strip misses button reloads the results page with that style", async ({ page }) => {
+  await seedHistory(page, [{ date: today(), tries: 2, answer: 123, seconds: 90 }]);
+  await page.goto("/solved");
+  await waitForScreenSettled(page, "completion");
+  await choose(page, '[data-testing-strip="hollow"]');
+  await expect(page).toHaveURL(/\/solved\?strip=hollow$/);
+  await expect(page.locator("[data-completion-panel]")).toHaveAttribute("data-strip-variant", "hollow");
+});
+
+// Seeded so /solved stays put (a stranger is sent to /welcome, which drops the
+// query). seedHistory re-seeds after the swap's reload; only the URL matters here.
+test("a history swap keeps the strip style", async ({ page }) => {
+  await seedHistory(page, [{ date: today(), tries: 2, answer: 123, seconds: 90 }]);
+  await page.goto("/solved?strip=dotted");
+  await waitForScreenSettled(page, "completion");
+  await choose(page, '[data-testing-history="rich"]');
+  await expect(page).toHaveURL(/\/solved\?strip=dotted$/);
+  await waitForScreenSettled(page, "completion");
+  await expect(page.locator("[data-completion-panel]")).toHaveAttribute("data-strip-variant", "dotted");
+});

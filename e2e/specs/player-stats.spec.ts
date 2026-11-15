@@ -53,68 +53,50 @@ async function startToday(
 }
 
 test.describe("player stats — the panel after a solve", () => {
-  test("shows all three blocks with the figures from history plus this game", async ({ page }) => {
+  test("shows every card with the figures from history plus this game", async ({ page }) => {
     await startToday(page, PAST);
     await solvePuzzle(page);
     await expectActiveScreen(page, "completion");
 
     const completion = new CompletionPage(page);
-    await expect(completion.thisGame).toBeVisible();
+    await expect(completion.today).toBeVisible();
     await expect(completion.streak).toBeVisible();
-    await expect(completion.records).toBeVisible();
     await expect(completion.allTime).toBeVisible();
-
-    // Three columns under Streak, two under Records (brief 65, 66).
-    await expect(completion.streak.locator(".stat-col")).toHaveCount(3);
-    await expect(completion.records.locator(".stat-col")).toHaveCount(2);
-    await expect(completion.average).toHaveCount(0);
-    // One clipped watermark per column, from completion.ts's stat-col__mark. Brief 68 put
-    // icons on the two headings and nowhere else, and this asserted 0 to match; the design
-    // round two days later (dce25fa, "boxed figures with clipped watermarks") moved them onto
-    // every column and this was never updated. The marks are aria-hidden, so the headings'
-    // icons remain the only ones that reach the accessibility tree.
-    await expect(completion.streak.locator(".stat-col svg")).toHaveCount(3);
-    await expect(completion.records.locator(".stat-col svg")).toHaveCount(2);
+    await expect(completion.panel.locator('[data-stat-block="records"]')).toHaveCount(0);
 
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is
-    // where the first-go streak breaks. Labels are the spoken ones — the visible
-    // word is just "Plays" or "1-go streak".
-    await expect(completion.stat("Current day streak")).toHaveText("5");
-    await expect(completion.stat("Longest 1-go streak")).toHaveText("2");
-    await expect(completion.stat("Current 1-go streak")).toHaveText("2");
-    // How long today's solve took is real wall time, so these assert the SHAPE.
-    // The arithmetic behind them is pinned exactly in tests/player-stats.spec.ts;
-    // what this proves is that real numbers reach the real panel at all.
-    await expect(completion.stat("Average time")).toHaveText(/^\d+m \d\ds$/);
-    await expect(completion.stat("Fastest time")).toHaveText(/^\d+m \d\ds$/);
+    // where the one-go run breaks — 2, so it shows (results brief 82).
+    await expect(completion.streakFigure).toHaveText(/^5\s+days played$/);
+    await expect(completion.streakLine).toHaveText("Best streak 5 · One-go run 2");
+    // One strip column per countable day, today last.
+    await expect(completion.stripDays).toHaveCount(5);
+    await expect(completion.stripDays.last()).toHaveAttribute("data-goes", "1");
 
-    // All time reads as four sentences, number first (brief 82).
-    await expect(completion.allTimeLines).toHaveCount(4);
-    await expect(completion.allTimeLines.nth(0)).toHaveText("5 Puzzles solved");
-    await expect(completion.allTimeLines.nth(1)).toHaveText("2 (40%) Solved in one");
-    await expect(completion.allTimeLines.nth(2)).toHaveText(/^\s*\d+m \d\ds\s+Average time\s*$/);
-    // (1 + 3 + 2 + 4 + 1) / 5
-    await expect(completion.allTimeLines.nth(3)).toHaveText("2.2 Average attempts");
+    // The ledger (results brief 25). How long today's solve took is real wall
+    // time, so the fastest solve asserts the SHAPE; the arithmetic is pinned in
+    // tests/player-stats.spec.ts.
+    await expect(completion.ledger("Solved in one")).toHaveText("40%");
+    await expect(completion.ledger("Best one-go run")).toHaveText("2");
+    await expect(completion.ledger("Fastest solve")).toHaveText(/^\d+m \d\ds$/);
+    await expect(completion.ledger("Puzzles solved")).toHaveText("5");
 
-    // Six chart rows, counts as text beside the bars.
-    await expect(completion.goesRows).toHaveCount(6);
-    await expect(completion.panel).toContainText("Attempts distribution");
+    // Cut from the page (results brief 26, 27).
+    for (const gone of ["Attempts distribution", "Average attempts", "Avg. time", "Come back tomorrow", "You took"]) {
+      await expect(completion.panel).not.toContainText(gone);
+    }
 
-    // Two figures rather than a sentence, and the one announcement — goes, time,
-    // play streak, nothing else, with the time spelled out for speech rather
-    // than read as "colon". The announcement is unchanged by the redesign
-    // (brief 48), and this is the proof.
-    await expect(completion.thisGame).toContainText("1 go");
-    await expect(completion.thisGame).toContainText(/\d+m \d\ds/);
-    await expect(completion.thisGame).not.toContainText("Solved in");
-    // The heading leads into them (brief 63).
-    await expect(completion.heading).toHaveText(/^Puzzle #\d+ solved! You took:$/);
-    await expect(completion.panel).toContainText("Come back tomorrow to maintain your streak!");
+    // The figure line rather than a sentence, and the one announcement — goes,
+    // time, play streak, nothing else, with the time spelled out for speech. The
+    // announcement is unchanged by the redesign (results brief 64).
+    await expect(completion.figures).toContainText(/^1 go, \d+m \d\ds/);
+    await expect(completion.today).not.toContainText("Solved in");
+    await expect(completion.heading).toHaveText(/^Puzzle #\d+ solved$/);
+    await expect(completion.message).toBeVisible();
     await expect(completion.live).toHaveText(/^Solved in 1\. .*seconds?\. Play streak 5\.$/);
   });
 
-  test("a brand-new player sees This game only, and why", async ({ page }) => {
+  test("a brand-new player sees Today only, and why", async ({ page }) => {
     // No history at all. /play would bounce a stranger to /welcome, so start
     // there and press Play — the real first-timer's route.
     await seedLastVisit(page, TODAY);
@@ -127,13 +109,12 @@ test.describe("player stats — the panel after a solve", () => {
     await expectActiveScreen(page, "completion");
 
     const completion = new CompletionPage(page);
-    await expect(completion.thisGame).toBeVisible();
+    await expect(completion.today).toBeVisible();
     await expect(completion.streak).toHaveCount(0);
-    await expect(completion.records).toHaveCount(0);
-    await expect(completion.average).toHaveCount(0);
     await expect(completion.allTime).toHaveCount(0);
-    // No figure columns at all on a first game — absent, not empty.
-    await expect(completion.cols).toHaveCount(0);
+    // No strip and no message on a first game — absent, not empty.
+    await expect(completion.strip).toHaveCount(0);
+    await expect(completion.message).toHaveCount(0);
     await expect(completion.panel).toContainText(
       "Your streaks and all-time stats start from your third game.",
     );
@@ -141,17 +122,16 @@ test.describe("player stats — the panel after a solve", () => {
 });
 
 test.describe("player stats — score saving switched off", () => {
-  test("shows This game only, says nothing about saving, and stores a marker", async ({ page }) => {
+  test("shows Today only, says nothing about saving, and stores a marker", async ({ page }) => {
     await startToday(page, PAST, { saveScore: false });
     await solvePuzzle(page);
     await expectActiveScreen(page, "completion");
 
     const completion = new CompletionPage(page);
-    await expect(completion.thisGame).toBeVisible();
+    await expect(completion.today).toBeVisible();
     await expect(completion.streak).toHaveCount(0);
-    await expect(completion.records).toHaveCount(0);
-    await expect(completion.average).toHaveCount(0);
     await expect(completion.allTime).toHaveCount(0);
+    await expect(completion.message).toHaveCount(0);
     // P-01: the panel says nothing at all about score saving, in any mode. The
     // setting lives on the play screen, where the consent happens.
     await expect(completion.panel).not.toContainText(/saving/i);
