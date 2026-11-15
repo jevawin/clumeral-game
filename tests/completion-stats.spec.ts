@@ -238,8 +238,8 @@ describe('the completion panel', () => {
   describe('the Streaks card', () => {
     it('shows the play streak and the best (brief 20, 82)', async () => {
       await render(RETURNING, 2, false, { seconds: 221 });
-      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('5 days played');
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best streak 5');
+      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('5-day play streak');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best: 5');
       expect(collapse(block('streak')!.querySelector('h3'))).toBe('Streaks');
       expect(block('streak')!.querySelector('h3 use')!.getAttribute('href')).toBe('/sprites.svg#icon-flame');
     });
@@ -249,13 +249,13 @@ describe('the completion panel', () => {
         { date: day(0), tries: 1 }, { date: day(1), tries: 1 },
         { date: day(2), tries: 2 }, { date: day(3), tries: 2 },
       ], 1);
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best streak 4 · One-go run 2');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best: 4 · One-go run 2');
     });
 
     it('names the harder run when they match, with no one-go part', async () => {
       await render([{ date: day(0), tries: 1 }, { date: day(1), tries: 1 }, { date: day(2), tries: 1 }], 1);
-      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('3 days solved in one');
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best streak 3');
+      expect(collapse(panel().querySelector('[data-streak-figure]'))).toBe('3-day one-go streak');
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('Best: 3');
     });
 
     it('holds the goes strip, and nothing else does', async () => {
@@ -471,7 +471,7 @@ describe('the panel colours itself once, at the top', () => {
     // the strip and the leaderboard are swept with the cards.
     const start = css.indexOf('[data-completion-panel] {');
     const panel = css.slice(start, css.indexOf('.digit-box {'));
-    expect(panel).toContain('.goes-strip__meta');
+    expect(panel).toContain('.goes-strip__x');
     expect(panel).not.toContain('Inconsolata');
   });
 

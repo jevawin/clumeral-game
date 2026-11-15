@@ -73,7 +73,7 @@ test("swaps in a history with missed days", async ({ page }) => {
   await expect(page.locator("[data-strip-day]")).toHaveCount(26);
   await expect(page.locator("[data-strip-missed]")).toHaveCount(7);
   await expect(page.locator("[data-strip-break]")).toHaveText("12d");
-  await expect(page.locator('[data-stat-block="streak"]')).toContainText(/\D3\s+days played/);
+  await expect(page.locator('[data-stat-block="streak"]')).toContainText("3-day play streak");
 });
 
 // The 20-day break sits next to today, so it is in view when the strip opens.

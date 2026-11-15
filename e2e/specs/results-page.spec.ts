@@ -122,26 +122,40 @@ test.describe("results page — full mode", () => {
     expect(m.scrollHeight).toBe(m.clientHeight);
   });
 
-  test("the fade never hides the oldest day", async ({ page }) => {
+  test("scrolled fully left, the oldest day sits beside the y axis (brief 102)", async ({ page }) => {
     await openFull(page);
     const scroller = page.locator("[data-strip-scroller]");
     // Fully left in an rtl box is the most negative scrollLeft.
     await scroller.evaluate((el) => { el.scrollLeft = -el.scrollWidth; });
     await expect.poll(() => scroller.evaluate((el) => el.scrollLeft)).toBeLessThan(0);
-    const s = await box(page, "[data-strip-scroller]");
+    const y = await box(page, ".goes-strip__y");
     const first = await box(page, "[data-strip-day]", 0);
-    expect(first.x - s.x).toBeGreaterThanOrEqual(39.5);
+    expect(first.x - (y.x + y.width)).toBeGreaterThanOrEqual(0);
+    expect(first.x - (y.x + y.width)).toBeLessThanOrEqual(6);
   });
 
-  for (const worst of [1, 2]) {
-    test(`a ${worst}-row strip keeps the Goes label above the meta row`, async ({ page }) => {
-      const short = FULL.slice(0, 5).map((h) => ({ ...h, tries: Math.min(h.tries, worst) }));
-      await openFull(page, short);
-      const label = await box(page, ".goes-strip__y");
-      const meta = await box(page, ".goes-strip__meta");
-      expect(label.y + label.height).toBeLessThanOrEqual(meta.y + 0.5);
-    });
-  }
+  test("a short history sits beside the y axis, with today under its last column", async ({ page }) => {
+    await openFull(page, FULL.slice(0, 4));
+    const y = await box(page, ".goes-strip__y");
+    const x = await box(page, ".goes-strip__x");
+    const last = await box(page, "[data-strip-day]", "last");
+    const today = await box(page, ".goes-strip__x > span", "last");
+    expect(x.x - (y.x + y.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(last.x + last.width - (today.x + today.width))).toBeLessThanOrEqual(1);
+  });
+
+  test("the two axis lines meet, and each y label sits on its row", async ({ page }) => {
+    await openFull(page, FULL.slice(0, 5).map((h) => ({ ...h, tries: Math.min(h.tries, 3) })));
+    const y = await box(page, ".goes-strip__y");
+    const bars = await box(page, ".goes-strip__bars");
+    expect(Math.abs(y.y + y.height - (bars.y + bars.height))).toBeLessThanOrEqual(1);
+    const labels = page.locator(".goes-strip__y > span");
+    await expect(labels).toHaveText(["3", "2", "1 go"]);
+    // The bottom label is level with a hit cell on the bottom row.
+    const one = await box(page, ".goes-strip__y > span", "last");
+    const cell = await box(page, '[data-strip-day] .goes-strip__cell', 0);
+    expect(Math.abs(one.y + one.height / 2 - (cell.y + cell.height / 2))).toBeLessThanOrEqual(1.5);
+  });
 
   test("the strip scrolls from the keyboard, with a visible ring", async ({ page }, info) => {
     // webkit-desktop was in the plan's list and is dropped: Tab reaches the strip
@@ -166,14 +180,17 @@ test.describe("results page — full mode", () => {
     expect(ring).toBe("solid");
   });
 
-  test("a thin scrollbar on a fine pointer, none on touch (brief 52)", async ({ page }, info) => {
+  test("leaves the scrollbar to the platform (brief 103)", async ({ page }, info) => {
     test.skip(
       !["chromium-desktop", "mobile-chromium"].includes(info.project.name),
-      "scrollbar-width is read on Chromium desktop (fine pointer) and mobile (touch)",
+      "scrollbar-width is read on Chromium desktop and mobile",
     );
     await openFull(page);
-    const width = await page.locator("[data-strip-scroller]").evaluate((el) => getComputedStyle(el).scrollbarWidth);
-    expect(width).toBe(info.project.name === "chromium-desktop" ? "thin" : "none");
+    const style = await page.locator("[data-strip-scroller]").evaluate((el) => {
+      const c = getComputedStyle(el);
+      return [c.scrollbarWidth, c.overflowY];
+    });
+    expect(style).toEqual(["auto", "hidden"]);
   });
 });
 

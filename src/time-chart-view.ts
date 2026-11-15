@@ -216,7 +216,7 @@ function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   const fullWidths = refBoxes.map((b) => b.getBoundingClientRect().width);
   if (!refsFit(fullWidths, width)) slot.classList.add('time-chart--tight');
 
-  const sizes = dotSizes(g, width);
+  const sizes = dotSizes(g);
   track.querySelectorAll<HTMLElement>('[data-tc-dot]').forEach((dot, k) => {
     dot.style.inlineSize = dot.style.blockSize = `${sizes[k]}px`;
   });

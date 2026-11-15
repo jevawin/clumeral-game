@@ -129,38 +129,24 @@ export interface Geometry {
   you: { fraction: number; seconds: number };
 }
 
-const DOT = 13;
-const DOT_MIN = 11;
-// Dots may overlap: each gets 1.6× its share of the axis (item 132).
-const DOT_SPREAD = 1.6;
+/** One player's dot (results brief 100, amending time chart items 131–133). Was
+ *  13px down to 11px with how crowded the axis was; Dave asked for more spread
+ *  between one player and a shared second, so one player is a fixed 9px and a
+ *  shared second grows from there. */
+export const DOT_ONE = 9;
 const DOT_YOU_MIN = 15;
 const DOT_MAX = 25;
 
 /**
- * The base dot size: 1.6× the axis length divided by the number of distinct
- * seconds on it, between 11px and 13px (Jamie, items 131–133). What crowds the
- * axis is how many dots share it, not how many people played, so a quiet day
- * gets 13px dots and a busy one shrinks to 11px — the size on a 50-player day,
- * the smallest that reads on an iPhone. Past that, dots overlap rather than
- * shrink. Neighbours may overlap;
- * the background ring keeps them apart. A wider track keeps bigger dots longer.
- */
-export function dotBase(distinct: number, track: number): number {
-  const span = track - 2 * TRACK_INSET;
-  return Math.min(DOT, Math.max(DOT_MIN, Math.round((DOT_SPREAD * span) / Math.max(1, distinct))));
-}
-
-/**
  * Every dot's diameter in px, in geometry order. A shared second grows by AREA
- * in proportion to its count (base × √count), so size keeps meaning something on
- * a busy day instead of hitting the cap at four players, as +4px each did. All
- * capped at 25. Yours is 4px larger than a stranger's on the same count, and
- * never under 15, so it stays findable when the base shrinks (item 66).
+ * in proportion to its count (9 × √count): 2 players 13px, 4 players 18px, 8 or
+ * more held at the 25px cap. Dots may overlap; the background ring keeps them
+ * apart. Yours is 4px larger than a stranger's on the same count, and never under
+ * 15, so it stays findable (item 66).
  */
-export function dotSizes(g: Geometry, track: number): number[] {
-  const base = dotBase(g.dots.filter((d) => d.count > 0).length, track);
+export function dotSizes(g: Geometry): number[] {
   return g.dots.map((d) => {
-    const s = Math.min(DOT_MAX, base * Math.sqrt(Math.max(1, d.count)));
+    const s = Math.min(DOT_MAX, DOT_ONE * Math.sqrt(Math.max(1, d.count)));
     return Math.round(d.mine ? Math.min(DOT_MAX, Math.max(DOT_YOU_MIN, s + 4)) : s);
   });
 }

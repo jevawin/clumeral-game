@@ -34,7 +34,7 @@ test.describe("completion screen", () => {
     await expect(completion.allTime).toBeVisible();
     await expect(completion.ledger("Puzzles solved")).toHaveText("3");
     await expect(completion.ledger("Solved in one")).toHaveText("0%");
-    await expect(completion.streakFigure).toHaveText(/^3\s+days played$/);
+    await expect(completion.streakFigure).toHaveText("3-day play streak");
     await expect(completion.panel.locator('[data-stat-block="records"]')).toHaveCount(0);
     await expect(completion.panel).not.toContainText("Average attempts");
   });

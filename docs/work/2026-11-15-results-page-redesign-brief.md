@@ -469,3 +469,29 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
     gap to see the gap can you add a testing function for it?". Long break: today and the two
     days before, 20 days missed, then 20 days played, so the "20d" column is in view on load.
     Preview only.
+
+## Dave's review, worked through with Jamie (2026-11-15)
+
+100. (amends time chart brief 131–133) **More spread in the leaderboard's dot sizes.** Dave:
+     "make the dot for a single user time even smaller". One player is a fixed 9px (was 13px,
+     down to 11px on a busy day); a shared second still grows by area from there: 2 players
+     13px, 4 players 18px, 8 or more held at 25px. Yours stays 4px larger and at least 15px.
+     Accessibility: no WCAG rule sets a size for a dot you cannot tap; a 9px dot shows about
+     6px of colour inside its ring. **Settled: Jamie 2026-11-15 ("1 approved").**
+101. **Streak copy.** Jamie: "3 days play should be 3-day play streak / Best: 20". The figure
+     reads "3-day play streak" (or "3-day one-go streak" when the one-go run matches it); the
+     line under it reads "Best: 20", with "· One-go run N" from 2 as before.
+102. (amends 22, 47) **The strip gets two axes, and loses the "Goes" label.** Dave: "'Goes' is
+     a little oddly placed"; Jamie: "try instead closing the gap on the left edge, and give
+     both axes a line", with numbers in place of the text. A 1px y-axis line with a label
+     per row, top down to "1 go"; a 1px x-axis line with "{n} days ago" under its left end
+     and "today" under its right. {n} is calendar days from the oldest column to today. A
+     long strip opens at today; a short one sits at the left beside the y axis. The 40px
+     fade and its start padding are gone. The y labels are 11px, not rem, so each stays on
+     its 10px row at 200% text (a rem label is 22px there and they pile up); they grow with
+     page zoom as the cells do, and the figures are in the spoken summary. (Jamie owns the
+     11px call.)
+103. (amends 52) **Scrollbars are left to the platform.** Jamie: "can you leave as automatic? i
+     have them set to show when scrolling on mac this seems to be overriding". No
+     `scrollbar-width` and no hiding. The vertical scrollbar Jamie saw was overflow-x
+     making overflow-y auto as well; the scroller now sets `overflow-y: hidden`.

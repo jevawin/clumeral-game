@@ -67,8 +67,8 @@ test.describe("player stats — the panel after a solve", () => {
     // Five countable games ending today, so the play streak is live. Today is
     // solved first go, and so was yesterday; the day before took three, which is
     // where the one-go run breaks — 2, so it shows (results brief 82).
-    await expect(completion.streakFigure).toHaveText(/^5\s+days played$/);
-    await expect(completion.streakLine).toHaveText("Best streak 5 · One-go run 2");
+    await expect(completion.streakFigure).toHaveText("5-day play streak");
+    await expect(completion.streakLine).toHaveText("Best: 5 · One-go run 2");
     // One strip column per countable day, today last.
     await expect(completion.stripDays).toHaveCount(5);
     await expect(completion.stripDays.last()).toHaveAttribute("data-goes", "1");

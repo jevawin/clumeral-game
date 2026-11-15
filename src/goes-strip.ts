@@ -14,10 +14,8 @@ export const CELL_PX = 10;
 export const GAP_PX = 4;
 /** Room above the rows for a broken column's true figure. */
 export const HEAD_PX = 14;
-/** The rotated 13px "Goes" label is about 28px long; the rows area is never
- *  shorter than this, so one- and two-row strips do not push the label into the
- *  meta row below. */
-export const MIN_AREA_PX = 32;
+/** Space between the cells and the x-axis line. */
+export const BASE_PX = 3;
 
 /** Rows = the worst day, capped at STRIP_CAP, at least 1 (brief 22). */
 export function stripRows(days: StripDay[]): number {
@@ -26,7 +24,20 @@ export function stripRows(days: StripDay[]): number {
 
 /** Height of the rows area. */
 export function stripAreaPx(rows: number): number {
-  return Math.max(rows * CELL_PX + (rows - 1) * GAP_PX, MIN_AREA_PX);
+  return rows * CELL_PX + (rows - 1) * GAP_PX;
+}
+
+/** The y axis's labels, top row first: the row number, and "1 go" on the bottom
+ *  row so the axis says what it counts (brief 102). */
+export function yLabels(rows: number): string[] {
+  return Array.from({ length: rows }, (_, k) => (rows - k === 1 ? '1 go' : String(rows - k)));
+}
+
+/** The x axis's left label: how long ago the oldest column is (brief 102). */
+export function xStart(days: StripDay[]): string {
+  if (days.length < 2) return '';
+  const n = missedBetween(days[0].date, days[days.length - 1].date) + 1;
+  return `${n} ${n === 1 ? 'day' : 'days'} ago`;
 }
 
 /** Days missed between two played days: the calendar days strictly between them.
@@ -109,22 +120,26 @@ function column(goes: number): string {
   return `<div data-strip-day data-goes="${goes}">${MISS.repeat(goes - 1)}${HIT}</div>`;
 }
 
-/** The whole strip, or '' for an empty list. */
+/** The whole strip, or '' for an empty list. A y axis with a label per row and a
+ *  line, beside the scroller; inside it, the columns sit on an x-axis line with
+ *  "{n} days ago" and "today" under it (brief 102). The inner track sits at the
+ *  left when it fits, beside the y axis, and opens at today when it does not. */
 export function goesStripHtml(days: StripDay[]): string {
   if (!days.length) return '';
-  const areaH = stripAreaPx(stripRows(days));
-  const n = days.length;
+  const rows = stripRows(days);
+  const areaH = stripAreaPx(rows);
+  const y = yLabels(rows).map((l) => `<span>${l}</span>`).join('');
   return (
     '<div class="goes-strip" data-goes-strip>' +
-    `<span class="goes-strip__y" aria-hidden="true" style="block-size: ${areaH}px">Goes</span>` +
+    `<div class="goes-strip__y" aria-hidden="true" style="margin-block-start: ${HEAD_PX + GAP_PX}px">${y}</div>` +
     '<div class="goes-strip__col">' +
     '<div class="goes-strip__frame">' +
     `<div class="goes-strip__scroller" data-strip-scroller role="group" tabindex="0" aria-label="${attr(stripSummary(days))}">` +
-    `<div class="goes-strip__inner" aria-hidden="true" style="block-size: ${areaH + GAP_PX + HEAD_PX}px">` +
+    '<div class="goes-strip__inner" aria-hidden="true">' +
+    `<div class="goes-strip__bars" style="block-size: ${areaH + GAP_PX + HEAD_PX}px">` +
     days.map((d, i) => (i ? gapColumns(missedBetween(days[i - 1].date, d.date)) : '') + column(d.goes)).join('') +
-    '</div></div></div>' +
-    '<div class="goes-strip__meta" aria-hidden="true">' +
-    `<span>${n} ${n === 1 ? 'day' : 'days'}</span><span class="goes-strip__today">Today</span>` +
-    '</div></div></div>'
+    '</div>' +
+    `<div class="goes-strip__x"><span>${xStart(days)}</span><span>today</span></div>` +
+    '</div></div></div></div></div>'
   );
 }

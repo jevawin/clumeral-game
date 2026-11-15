@@ -211,8 +211,8 @@ function streakCard(stats: PlayerStats, history: HistoryEntry[]): string {
   const l = streakLine(stats);
   const oneGo = l.oneGoRun !== null ? ` · One-go run <b>${l.oneGoRun}</b>` : '';
   return card('streak', 'Streaks', 'icon-flame',
-    `<p class="streak__figure" data-streak-figure><span class="streak__n">${l.figure}</span> <span class="streak__label">${l.label}</span></p>` +
-    `<p class="streak__line" data-streak-line>Best streak <b>${l.best}</b>${oneGo}</p>` +
+    `<p class="streak__figure" data-streak-figure><span class="streak__n">${l.figure}</span><span class="streak__label">${l.label}</span></p>` +
+    `<p class="streak__line" data-streak-line>Best: <b>${l.best}</b>${oneGo}</p>` +
     goesStripHtml(goesByDay(history)));
 }
 

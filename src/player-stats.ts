@@ -288,7 +288,8 @@ export function ordinal(n: number): string {
 export interface StreakLine {
   /** The play streak. */
   figure: number;
-  /** "days played" | "day played" | "days solved in one" | "day solved in one". */
+  /** "-day play streak" | "-day one-go streak", written straight after the
+   *  figure: "3-day play streak" (results brief 101). */
   label: string;
   /** The best play streak. */
   best: number;
@@ -303,10 +304,9 @@ export interface StreakLine {
  */
 export function streakLine(stats: PlayerStats): StreakLine {
   const switched = stats.playStreak > 0 && stats.firstGoStreak === stats.playStreak;
-  const unit = stats.playStreak === 1 ? 'day' : 'days';
   return {
     figure: stats.playStreak,
-    label: `${unit} ${switched ? 'solved in one' : 'played'}`,
+    label: `-day ${switched ? 'one-go' : 'play'} streak`,
     best: stats.bestPlayStreak,
     oneGoRun: !switched && stats.firstGoStreak >= 2 ? stats.firstGoStreak : null,
   };

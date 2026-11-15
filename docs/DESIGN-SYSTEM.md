@@ -251,19 +251,22 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
   screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
   code and is not. Leave it alone when tidying that file.
-- **Streaks**: the play streak large in accent, "days played" (or "days solved in one" when
-  the one-go run matches it), then "Best streak N", plus "· One-go run N" from 2.
+- **Streaks**: "3-day play streak", the figure large in accent (or "3-day one-go streak" when
+  the one-go run matches it), then "Best: N", plus "· One-go run N" from 2 (results brief 101).
 - **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, an empty 18px column per day missed between them (a break of 7 or more days is one column marked with its count, such as `12d`), 4px gaps, 10px
   cells stacked from the bottom, misses then the solving go. Misses are `--strip-miss`, a
   20% accent mix into surface; the solving go is solid accent. The misses sit under 3:1 on
   purpose -- Jamie relaxed WCAG 1.4.11 for them as accessibility owner (results brief 95).
   The message icon beside today's line is a plain accent icon with no pill. Rows are the worst day capped at
   5; a day past the cap is a broken column -- three misses, a bolt, the solving go and the
-  true figure on top. The scroller is `direction: rtl` so it opens at today with no script,
-  with a 40px fade at the left edge and 40px of start padding so the fade never hides the
-  oldest day. Thin native scrollbar on fine pointers, none on touch. The scroller is a
-  focusable `role="group"` named by a one-sentence summary; the columns are `aria-hidden`.
-  Its focus ring is drawn on the unmasked frame, because the mask would fade it.
+  true figure on top. Two 1px axis lines in text colour (results brief 102): the y axis
+  numbers each row, "1 go" at the bottom, in 11px type so each label stays on its 10px row
+  at any text size; the x axis reads "{n} days ago" and "today" under the line. The
+  scroller is `direction: rtl` so a long strip opens at today with no script; a short one
+  sits at the left beside the y axis. No fade, no start padding, and scrollbars are left to
+  the platform (results brief 103) with `overflow-y: hidden`. The scroller is a focusable
+  `role="group"` named by a one-sentence summary; the columns and axes are `aria-hidden`.
+  Its focus ring is drawn on the frame.
 - **All time** is a `dl` ledger: label left in text colour, figure right in bold accent, one
   size, no rules -- Solved in one, Best one-go run, Fastest solve, Puzzles solved.
 - **The whole panel reads in Quicksand**, numbers included. The rules declare no font family

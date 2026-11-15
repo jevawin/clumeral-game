@@ -512,7 +512,7 @@ describe('streakLine', () => {
   }
 
   it('days played, no one-go part at a run of 1', () => {
-    expect(line(30, 1)).toEqual({ figure: 30, label: 'days played', best: 30, oneGoRun: null });
+    expect(line(30, 1)).toEqual({ figure: 30, label: '-day play streak', best: 30, oneGoRun: null });
   });
 
   it('shows the one-go run from 2', () => {
@@ -520,11 +520,11 @@ describe('streakLine', () => {
   });
 
   it('switches the label when the runs match, and drops the one-go part', () => {
-    expect(line(4, 4)).toEqual({ figure: 4, label: 'days solved in one', best: 30, oneGoRun: null });
+    expect(line(4, 4)).toEqual({ figure: 4, label: '-day one-go streak', best: 30, oneGoRun: null });
   });
 
-  it('singular at 1', () => {
-    expect(line(1, 0).label).toBe('day played');
-    expect(line(1, 1).label).toBe('day solved in one');
+  it('reads the same at 1: "1-day play streak"', () => {
+    expect(line(1, 0).label).toBe('-day play streak');
+    expect(line(1, 1).label).toBe('-day one-go streak');
   });
 });

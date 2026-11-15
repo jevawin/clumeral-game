@@ -5,6 +5,8 @@ import { describe, it, expect } from 'vitest';
 import {
   stripRows,
   stripAreaPx,
+  yLabels,
+  xStart,
   stripSummary,
   goesStripHtml,
   missedBetween,
@@ -42,19 +44,38 @@ describe('stripRows', () => {
 });
 
 describe('stripAreaPx', () => {
-  it('is the rows plus gaps, never under the rotated label', () => {
-    expect(stripAreaPx(1)).toBe(32);
-    expect(stripAreaPx(2)).toBe(32);
-    expect(stripAreaPx(3)).toBe(38);
+  it('is the rows plus the gaps between them', () => {
+    expect(stripAreaPx(1)).toBe(10);
+    expect(stripAreaPx(2)).toBe(24);
     expect(stripAreaPx(5)).toBe(66);
+  });
+});
+
+describe('the axes (results brief 102)', () => {
+  it('numbers each row, top first, with "1 go" at the bottom', () => {
+    expect(yLabels(1)).toEqual(['1 go']);
+    expect(yLabels(4)).toEqual(['4', '3', '2', '1 go']);
+  });
+
+  it('puts one y label per row in the markup', () => {
+    const doc = parse(goesStripHtml(days([1, 3, 2])));
+    expect([...doc.querySelectorAll('.goes-strip__y > span')].map((s) => s.textContent)).toEqual(['3', '2', '1 go']);
+  });
+
+  it('starts the x axis at the oldest day, in calendar days', () => {
+    expect(xStart(days([1]))).toBe('');
+    expect(xStart(days([1, 2]))).toBe('1 day ago');
+    expect(xStart([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-10', goes: 1 }])).toBe('9 days ago');
+    const doc = parse(goesStripHtml(days([1, 2, 1])));
+    expect(doc.querySelector('.goes-strip__x')!.textContent).toBe('2 days agotoday');
   });
 });
 
 describe('goesStripHtml', () => {
   it('sizes the inner track to hold a broken column and its count', () => {
     const doc = parse(goesStripHtml(days([2, 9, 1])));
-    const inner = doc.querySelector<HTMLElement>('.goes-strip__inner')!;
-    expect(inner.style.blockSize).toBe('84px');
+    const bars = doc.querySelector<HTMLElement>('.goes-strip__bars')!;
+    expect(bars.style.blockSize).toBe('84px');
   });
 
   it('draws a 3-go day as two misses then the hit, with no bolt or count', () => {
@@ -97,14 +118,6 @@ describe('goesStripHtml', () => {
     expect(scroller.hasAttribute('aria-hidden')).toBe(false);
     expect(doc.querySelector('.goes-strip__inner')!.getAttribute('aria-hidden')).toBe('true');
     expect(doc.querySelector('.goes-strip__y')!.getAttribute('aria-hidden')).toBe('true');
-    expect(doc.querySelector('.goes-strip__meta')!.getAttribute('aria-hidden')).toBe('true');
-  });
-
-  it('labels the day count under the strip, singular at 1', () => {
-    expect(parse(goesStripHtml(days([1, 2]))).querySelector('.goes-strip__meta')!.textContent)
-      .toBe('2 daysToday');
-    expect(parse(goesStripHtml(days([1]))).querySelector('.goes-strip__meta')!.textContent)
-      .toBe('1 dayToday');
   });
 
   it('is empty for no days', () => {
@@ -165,16 +178,15 @@ describe('missed days (results brief 97)', () => {
 
   it('draws an empty column per missed day, in place', () => {
     const doc = parse(goesStripHtml(gappy));
-    const kids = [...doc.querySelector('.goes-strip__inner')!.children].map((c) =>
+    const kids = [...doc.querySelector('.goes-strip__bars')!.children].map((c) =>
       c.hasAttribute('data-strip-missed') ? 'gap' : `day:${c.getAttribute('data-goes')}`,
     );
     expect(kids).toEqual(['day:1', 'gap', 'gap', 'day:2', 'day:1', 'gap', 'gap', 'day:3']);
     expect(doc.querySelector('[data-strip-missed]')!.children).toHaveLength(0);
   });
 
-  it('keeps the meta hint at days played', () => {
-    const doc = parse(goesStripHtml(gappy));
-    expect(doc.querySelector('.goes-strip__meta')!.textContent).toContain('4 days');
+  it('counts the x axis in calendar days, missed ones included', () => {
+    expect(xStart(gappy)).toBe('7 days ago');
   });
 
   it('says how many were missed, and nothing when none were', () => {
@@ -189,7 +201,7 @@ describe('missed days (results brief 97)', () => {
 describe('long breaks (results brief 98)', () => {
   function kinds(list: StripDay[]): string[] {
     const doc = parse(goesStripHtml(list));
-    return [...doc.querySelector('.goes-strip__inner')!.children].map((c) => {
+    return [...doc.querySelector('.goes-strip__bars')!.children].map((c) => {
       if (c.hasAttribute('data-strip-missed')) return 'gap';
       if (c.hasAttribute('data-strip-break')) return `break:${c.textContent}`;
       return 'day';
