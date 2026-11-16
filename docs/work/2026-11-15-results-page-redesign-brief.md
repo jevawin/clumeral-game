@@ -551,3 +551,9 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      "1-go run" go. The wording follows everywhere (Jamie: "match text"): All time's "Best
      one-go run" becomes "Longest solve-in-one streak", and the message's "Your 6th one-go
      solve." becomes "Your 6th solve-in-one."
+112. (amends 98) **A long break is a marked gap with bolts.** Jamie: "when there's a long gap
+     like our 20d test gap, put 2 empty columns either side and in white put the same
+     lightning bolt icon we use for the gap in column height — [   ]~20d~[   ]". A break of 7
+     or more days draws two empty columns, a bolt the full height of the rows, the count
+     ("20d"), a second bolt, and two empty columns. The bolts are the sprite's bolt in text
+     colour, stretched to the rows' height with the stroke kept at 1.6px.

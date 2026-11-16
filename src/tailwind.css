@@ -622,9 +622,14 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   [data-more-left] .goes-strip__arrow { display: block; }
   .goes-strip__inner > [data-strip-missed] { inline-size: 18px; flex: none; }
   /* A long break (brief 98): one column, its day count sat on the cells' baseline. */
+  /* A long break (brief 98, 112): a full-height bolt either side of the count,
+     in text colour, with two empty columns either side of the whole mark. */
   .goes-strip__inner > [data-strip-break] {
-    flex: none; min-inline-size: 18px; padding-inline: 2px;
-    display: flex; align-items: flex-end; justify-content: center;
+    flex: none; display: flex; align-items: flex-end; gap: 4px;
+  }
+  .goes-strip__tall-bolt {
+    inline-size: 8px; block-size: var(--strip-area); flex: none;
+    fill: none; stroke: var(--color-text); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
   }
   .goes-strip__break { font-size: 0.8125rem; line-height: 10px; white-space: nowrap; }
   .goes-strip__inner > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }

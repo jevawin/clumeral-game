@@ -35,7 +35,7 @@ browser store as a production database with no backups — because that is what 
   and vanish.
 
 **Guarded by.** `tests/storage-history.spec.ts` (18 cases), `tests/player-stats.spec.ts` (58),
-`tests/goes-strip.spec.ts` (33, the strip counts the same rows),
+`tests/goes-strip.spec.ts` (34, the strip counts the same rows),
 `tests/storage-active.spec.ts` (tolerance of malformed values), `tests/save-pref.spec.ts`,
 `e2e/specs/restore.spec.ts`.
 

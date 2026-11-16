@@ -71,7 +71,8 @@ test("swaps in a history with missed days", async ({ page }) => {
   await expect(page).toHaveURL(/\/solved$/);
   await waitForScreenSettled(page, "completion");
   await expect(page.locator("[data-strip-day]")).toHaveCount(26);
-  await expect(page.locator("[data-strip-missed]")).toHaveCount(7);
+  // Seven skipped days, plus the two empty columns either side of the break (brief 112).
+  await expect(page.locator("[data-strip-missed]")).toHaveCount(11);
   await expect(page.locator("[data-strip-break]")).toHaveText("12d");
   await expect(page.locator('[data-stat-block="streak"]')).toContainText("3-day play streak");
 });
