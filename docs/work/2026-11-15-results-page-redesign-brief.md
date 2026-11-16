@@ -553,10 +553,12 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      solve." becomes "Your 6th solve-in-one."
 112. (amends 98) **A long break is a marked gap with bolts.** Jamie: "when there's a long gap
      like our 20d test gap, put 2 empty columns either side and in white put the same
-     lightning bolt icon we use for the gap in column height — [   ]~20d~[   ]". A break of 7
-     or more days draws two empty columns, a bolt the full height of the rows, the count
-     ("20d"), a second bolt, and two empty columns. The bolts are the sprite's bolt in text
-     colour, stretched to the rows' height with the stroke kept at 1.6px.
+     lightning bolt icon we use for the gap in column height — [   ]~20d~[   ]", then, on the
+     preview: "it should be the same lightning bolt as the vertical columns rotated 90d, same
+     size as the vertical ones too only rotated 90 and centred in the column". A break of 7
+     or more days draws two empty columns, the broken column's 8×10px bolt turned 90°, the
+     count ("20d"), a second bolt, and two empty columns. The bolts (text colour) and the
+     count sit centred in the rows' height.
 113. (amends 111) **All time's row is "Solve-in-one streak".** Jamie: "it's very long, hopefully
      it's clear it's your best from it being all time". "Longest solve-in-one streak" becomes
      "Solve-in-one streak"; the figure is still the best.

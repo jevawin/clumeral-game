@@ -236,13 +236,15 @@ describe('long breaks (results brief 98)', () => {
     ]);
   });
 
-  it('flanks the count with two full-height bolts (brief 112)', () => {
+  it('flanks the count with two bolts on their side (brief 112)', () => {
     const doc = parse(goesStripHtml([{ date: '2026-03-01', goes: 3 }, { date: '2026-03-21', goes: 1 }]));
     const mark = doc.querySelector('[data-strip-break]')!;
     expect([...mark.children].map((c) => c.getAttribute('class'))).toEqual([
-      'goes-strip__tall-bolt', 'goes-strip__break', 'goes-strip__tall-bolt',
+      'goes-strip__side-bolt', 'goes-strip__break', 'goes-strip__side-bolt',
     ]);
-    // The rows' height, for the bolts to stretch to: 3 rows of 10px and two 4px gaps.
+    // The broken column's sprite, not a copy of it.
+    expect(mark.querySelector('use')!.getAttribute('href')).toBe('/sprites.svg#icon-bolt');
+    // The rows' height, to centre the mark in: 3 rows of 10px and two 4px gaps.
     expect(doc.querySelector('.goes-strip__inner')!.getAttribute('style')).toContain('--strip-area: 38px');
   });
 

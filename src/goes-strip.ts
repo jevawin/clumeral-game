@@ -100,25 +100,23 @@ const GAP = '<div data-strip-missed></div>';
  *  per day, so a long time away does not fill the strip with blanks (brief 98). */
 export const BREAK_DAYS = 7;
 
-/** The sprite's bolt (icon-bolt), drawn inline so it can stretch to the rows'
- *  full height: a <use> keeps the symbol's own aspect ratio. The stroke does not
- *  scale, so it stays the sprite's 1.6px at any height. */
-const TALL_BOLT =
-  '<svg class="goes-strip__tall-bolt" viewBox="0 0 8 10" preserveAspectRatio="none" aria-hidden="true">' +
-  '<path d="M5 0.5 2.5 3.8 5.5 6.2 3 9.5" vector-effect="non-scaling-stroke"/></svg>';
+/** The broken column's bolt, the same sprite at the same 8×10px, turned 90° to
+ *  lie across the break (brief 112). */
+const SIDE_BOLT =
+  '<span class="goes-strip__side-bolt"><svg aria-hidden="true"><use href="/sprites.svg#icon-bolt"/></svg></span>';
 
 /** Empty columns either side of a long break's mark (brief 112). */
 export const BREAK_PAD = 2;
 
 /** The columns between two played days: one empty column per missed day, or,
- *  once the run reaches BREAK_DAYS, two empty columns, a full-height bolt, the
+ *  once the run reaches BREAK_DAYS, two empty columns, a bolt on its side, the
  *  count, a bolt and two empty columns (brief 98, 112). */
 function gapColumns(missed: number): string {
   if (missed >= BREAK_DAYS) {
     // `missed` is a whole number from missedBetween, so it is safe in markup.
     return (
       GAP.repeat(BREAK_PAD) +
-      `<div data-strip-break data-missed="${missed}">${TALL_BOLT}<span class="goes-strip__break">${missed}d</span>${TALL_BOLT}</div>` +
+      `<div data-strip-break data-missed="${missed}">${SIDE_BOLT}<span class="goes-strip__break">${missed}d</span>${SIDE_BOLT}</div>` +
       GAP.repeat(BREAK_PAD)
     );
   }
