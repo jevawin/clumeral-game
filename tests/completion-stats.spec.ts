@@ -255,6 +255,11 @@ describe('the completion panel', () => {
       expect(collapse(panel().querySelector('[data-streak-in-one]'))).toBe('3-day solve-in-one streak. Best: 3.');
     });
 
+    it('shows a 1-day solve-in-one streak, the first value with a line', async () => {
+      await render([{ date: day(0), tries: 1 }, { date: day(1), tries: 2 }, { date: day(2), tries: 2 }], 1);
+      expect(collapse(panel().querySelector('[data-streak-in-one]'))).toBe('1-day solve-in-one streak. Best: 1.');
+    });
+
     it('holds the goes strip, and nothing else does', async () => {
       await render(RETURNING, 2, false, { seconds: 221 });
       expect(panel().querySelectorAll('[data-strip-scroller]').length).toBe(1);

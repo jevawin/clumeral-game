@@ -268,6 +268,16 @@ describe('wireStrip (results brief 105)', () => {
     expect(mount(280, 280).scroller.hasAttribute('tabindex')).toBe(false);
   });
 
+  it('keeps the tab stop while focused, and drops it once focus leaves', () => {
+    const { scroller } = mount(500, 280);
+    scroller.focus();
+    Object.defineProperty(scroller, 'scrollWidth', { value: 280, configurable: true });
+    scroller.dispatchEvent(new Event('scroll'));
+    expect(scroller.getAttribute('tabindex')).toBe('0');
+    scroller.blur();
+    expect(scroller.hasAttribute('tabindex')).toBe(false);
+  });
+
   it('clears the mark once scrolled to the oldest day, and sets it again on the way back', () => {
     const { strip, scroller } = mount(500, 280);
     scroller.scrollLeft = -220;

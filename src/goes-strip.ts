@@ -171,9 +171,12 @@ export function wireStrip(root: HTMLElement): void {
     const hidden = scroller.scrollWidth - scroller.clientWidth - Math.abs(scroller.scrollLeft);
     strip.toggleAttribute('data-more-left', hidden > 1);
     if (scroller.scrollWidth > scroller.clientWidth + 1) scroller.setAttribute('tabindex', '0');
-    else scroller.removeAttribute('tabindex');
+    // Never pull the tab stop from under focus (a resize while focused would
+    // drop the player to <body>); it goes on the next update after focus leaves.
+    else if (document.activeElement !== scroller) scroller.removeAttribute('tabindex');
   };
   scroller.addEventListener('scroll', update, { passive: true });
+  scroller.addEventListener('blur', update);
   if (typeof ResizeObserver === 'function') {
     watcher = new ResizeObserver(update);
     watcher.observe(scroller);
