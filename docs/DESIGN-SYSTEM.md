@@ -260,9 +260,9 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   1.1875rem for card headings, 1rem for statements, the ledger, the countdown and buttons,
   and 0.8125rem (13px for the strip's row numbers) for small labels. The leaderboard's own
   dot labels (0.9375rem, 0.75rem when tight) are the one exception.
-- **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, an empty 18px column per day missed between them (a break of 7 or more days is three cell-sized blocks on the bottom row: the broken
-  column's bolt turned 90° in text colour, its count such as `12d`, and a bolt; results
-  brief 112), 4px gaps, 10px
+- **The goes strip** (`src/goes-strip.ts`): one 18px column per day played, a mark on the bottom row where days were missed between them -- one missed day is the
+  broken column's bolt turned 90° in text colour, two or more are bolt, count (`2d`),
+  bolt, each in a cell-sized block (results brief 112, 115), 4px gaps, 10px
   cells stacked from the bottom, misses then the solving go. Misses are `--strip-miss`, a
   20% accent mix into surface; the solving go is solid accent. The misses sit under 3:1 on
   purpose -- Jamie relaxed WCAG 1.4.11 for them as accessibility owner (results brief 95).

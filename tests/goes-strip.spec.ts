@@ -12,7 +12,6 @@ import {
   wireStrip,
   missedBetween,
   missedTotal,
-  BREAK_DAYS,
 } from '../src/goes-strip.ts';
 import type { StripDay } from '../src/player-stats.ts';
 
@@ -185,13 +184,12 @@ describe('missed days (results brief 97)', () => {
     expect(missedBetween('2026-10-24', '2026-10-26')).toBe(1);
   });
 
-  it('draws an empty column per missed day, in place', () => {
+  it('marks each gap in place, adjacent days with nothing between', () => {
     const doc = parse(goesStripHtml(gappy));
     const kids = [...doc.querySelector('.goes-strip__inner')!.children].map((c) =>
-      c.hasAttribute('data-strip-missed') ? 'gap' : `day:${c.getAttribute('data-goes')}`,
+      c.hasAttribute('data-strip-break') ? `gap:${c.getAttribute('data-missed')}` : `day:${c.getAttribute('data-goes')}`,
     );
-    expect(kids).toEqual(['day:1', 'gap', 'gap', 'day:2', 'day:1', 'gap', 'gap', 'day:3']);
-    expect(doc.querySelector('[data-strip-missed]')!.children).toHaveLength(0);
+    expect(kids).toEqual(['day:1', 'gap:2', 'day:2', 'day:1', 'gap:2', 'day:3']);
   });
 
   it('counts the x axis in calendar days, missed ones included', () => {
@@ -207,33 +205,33 @@ describe('missed days (results brief 97)', () => {
   });
 });
 
-describe('long breaks (results brief 98)', () => {
+describe('gap marks (results brief 112, 115)', () => {
   function kinds(list: StripDay[]): string[] {
     const doc = parse(goesStripHtml(list));
     return [...doc.querySelector('.goes-strip__inner')!.children].map((c) => {
-      if (c.hasAttribute('data-strip-missed')) return 'gap';
-      if (c.hasAttribute('data-strip-break')) return `break:${c.textContent}`;
-      return 'day';
+      if (!c.hasAttribute('data-strip-break')) return 'day';
+      const bolts = c.querySelectorAll('.goes-strip__side-bolt').length;
+      return `gap:${bolts}bolt${c.textContent ? ':' + c.textContent : ''}`;
     });
   }
 
-  it('is a week', () => {
-    expect(BREAK_DAYS).toBe(7);
-  });
-
-  it('draws six missed days in full', () => {
-    expect(kinds([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-08', goes: 1 }])).toEqual([
-      'day', 'gap', 'gap', 'gap', 'gap', 'gap', 'gap', 'day',
+  it('draws one missed day as a single bolt', () => {
+    expect(kinds([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-03', goes: 1 }])).toEqual([
+      'day', 'gap:1bolt', 'day',
     ]);
   });
 
-  it('draws seven or more as one break column with the count', () => {
-    expect(kinds([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-09', goes: 1 }])).toEqual([
-      'day', 'break:7d', 'day',
+  it('draws two or more as bolt, count, bolt', () => {
+    expect(kinds([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-04', goes: 1 }])).toEqual([
+      'day', 'gap:2bolt:2d', 'day',
     ]);
     expect(kinds([{ date: '2026-01-01', goes: 2 }, { date: '2026-04-01', goes: 1 }])).toEqual([
-      'day', 'break:89d', 'day',
+      'day', 'gap:2bolt:89d', 'day',
     ]);
+  });
+
+  it('draws nothing between consecutive days', () => {
+    expect(kinds(days([1, 2, 3]))).toEqual(['day', 'day', 'day']);
   });
 
   it('flanks the count with two bolts on their side (brief 112)', () => {

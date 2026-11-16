@@ -61,8 +61,8 @@ test("swaps in a rich history", async ({ page }) => {
   await expect(page.locator('[data-stat-block="streak"]')).toBeVisible();
 });
 
-// 45 days (src/testing-panel.ts MISSED_BACKS): seven skipped days, each an empty
-// column (results brief 97), and a 12-day break as one marked column (brief 98).
+// 45 days (src/testing-panel.ts MISSED_BACKS): gaps of 2, 1, 3, 1 and 12 days,
+// each one mark (results brief 115): a single bolt for one day, "Nd" for more.
 // The play streak breaks three days back.
 test("swaps in a history with missed days", async ({ page }) => {
   await page.goto("/welcome");
@@ -71,8 +71,9 @@ test("swaps in a history with missed days", async ({ page }) => {
   await expect(page).toHaveURL(/\/solved$/);
   await waitForScreenSettled(page, "completion");
   await expect(page.locator("[data-strip-day]")).toHaveCount(26);
-  await expect(page.locator("[data-strip-missed]")).toHaveCount(7);
-  await expect(page.locator("[data-strip-break]")).toHaveText("12d");
+  const marks = page.locator("[data-strip-break]");
+  await expect(marks).toHaveCount(5);
+  await expect(marks).toHaveText(["12d", "", "3d", "", "2d"]);
   await expect(page.locator('[data-stat-block="streak"]')).toContainText("3-day play streak");
 });
 

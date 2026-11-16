@@ -1,7 +1,7 @@
 // Clumeral — goes-strip.ts
 // The Streaks card's goes strip on /solved: one column per day played, oldest
-// left, today at the right end, and an empty column for each day missed between
-// them (results brief items 22, 23, 47, 60, 67, 68, 88, 97).
+// left, today at the right end, and a bolt mark where days were missed between
+// them (results brief items 22, 23, 47, 60, 67, 68, 88, 115).
 //
 // Markup is pure: day list in, string out, unit-tested without a page. The strip
 // opens at today through CSS (`direction: rtl` on the scroller, plan D6). The one
@@ -93,30 +93,21 @@ function attr(text: string): string {
 
 const MISS = '<span class="goes-strip__cell goes-strip__cell--miss"></span>';
 const HIT = '<span class="goes-strip__cell goes-strip__cell--hit"></span>';
-/** A missed day: a column with no cells, so the gap shows (brief 97). */
-const GAP = '<div data-strip-missed></div>';
-
-/** A break this long or longer draws as one marked column instead of a column
- *  per day, so a long time away does not fill the strip with blanks (brief 98). */
-export const BREAK_DAYS = 7;
-
 /** The broken column's bolt, the same sprite at the same 8×10px, turned 90° to
- *  lie across the break (brief 112). */
+ *  lie across the gap (brief 112). */
 const SIDE_BOLT =
   '<span class="goes-strip__side-bolt"><svg aria-hidden="true"><use href="/sprites.svg#icon-bolt"/></svg></span>';
 
-/** The columns between two played days: one empty column per missed day, or,
- *  once the run reaches BREAK_DAYS, three columns on the bottom row: a bolt on its
- *  side, the count, a bolt (brief 98, 112). Each sits centred in a block the size
- *  of one cell, as if it were a cell. */
+/** The mark between two played days, on the bottom row (brief 115, amending 97,
+ *  98, 112). An empty column read like a mistake in the graph, so a gap is drawn,
+ *  not left blank: one missed day is a single bolt on its side; two or more are a
+ *  bolt, the count ("2d") and a bolt. Each piece sits centred in a block the size
+ *  of one cell. Adjacent days draw nothing. */
 function gapColumns(missed: number): string {
-  if (missed >= BREAK_DAYS) {
-    // `missed` is a whole number from missedBetween, so it is safe in markup.
-    return (
-      `<div data-strip-break data-missed="${missed}">${SIDE_BOLT}<span class="goes-strip__break">${missed}d</span>${SIDE_BOLT}</div>`
-    );
-  }
-  return GAP.repeat(missed);
+  if (missed < 1) return '';
+  // `missed` is a whole number from missedBetween, so it is safe in markup.
+  const inner = missed === 1 ? SIDE_BOLT : `${SIDE_BOLT}<span class="goes-strip__break">${missed}d</span>${SIDE_BOLT}`;
+  return `<div data-strip-break data-missed="${missed}">${inner}</div>`;
 }
 const BOLT =
   '<span class="goes-strip__elide"><svg class="goes-strip__bolt" aria-hidden="true">' +

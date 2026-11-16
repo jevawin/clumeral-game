@@ -620,10 +620,10 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .goes-strip__start { display: inline-flex; align-items: center; gap: 0.25rem; }
   .goes-strip__arrow { display: none; inline-size: 1em; block-size: 1em; color: var(--color-text); }
   [data-more-left] .goes-strip__arrow { display: block; }
-  .goes-strip__inner > [data-strip-missed] { inline-size: 18px; flex: none; }
   /* A long break (brief 98): one column, its day count sat on the cells' baseline. */
-  /* A long break (brief 98, 112): three blocks on the bottom row, each the size of
-     a cell (18×10, the count may run wider), with its bolt or count centred. */
+  /* A gap (brief 112, 115): one block (one missed day) or three (bolt, count,
+     bolt) on the bottom row, each the size of a cell (18×10, the count may run
+     wider), with its bolt or count centred. */
   .goes-strip__inner > [data-strip-break] { flex: none; display: flex; align-items: flex-end; gap: 4px; }
   .goes-strip__side-bolt, .goes-strip__break {
     flex: none; min-inline-size: 18px; block-size: 10px;

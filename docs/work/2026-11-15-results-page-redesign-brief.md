@@ -569,3 +569,9 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      me 6+ go solve days … so i can see it with both lightning bolts on the graph at the same
      time". Yesterday took 7 goes and the day before the break 9, so a broken column sits on
      each side of the "20d" mark, all in view on load.
+115. (amends 97, 98, 112) **Every gap is a bolt mark, never an empty column.** Jamie: "if 1 day,
+     just a single lightning bolt; if 2+ days ~2d~; otherwise now missed single days look
+     like fuck ups in the graph". One missed day draws a single bolt on its side in a
+     cell-sized block on the bottom row; two or more draw bolt, count ("2d"), bolt. The
+     7-day threshold and the empty columns go. The spoken summary still counts every missed
+     day.
