@@ -51,7 +51,7 @@ export function initTimeChart(opts: { uid: string }): void {
 /** The reserved, empty slot. Inserted by renderCompletion. aria-labelledby is set
  *  only once drawn, so it never points at a heading that does not exist. */
 export function timeChartSlot(): string {
-  return '<section data-stat-block="daily-leaderboard" data-time-chart class="stat-block" aria-busy="true"></section>';
+  return '<section data-stat-block="daily-leaderboard" data-time-chart class="result-card" aria-busy="true"></section>';
 }
 
 /** The Testing panel's hook. Returning null falls through to the real fetch. */
@@ -162,7 +162,7 @@ function draw(slot: HTMLElement, c: TimeChartContext, rows: FieldRow[], real: bo
     )
     .join('');
 
-  slot.innerHTML = `<h3 id="${HEAD_ID}" class="stat-block__head"><svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#icon-podium"/></svg>Daily leaderboard</h3>
+  slot.innerHTML = `<h3 id="${HEAD_ID}" class="result-card__head"><svg class="result-card__icon" aria-hidden="true"><use href="/sprites.svg#icon-podium"/></svg>Daily leaderboard</h3>
     <p class="time-chart__line">${copy.pre}<b>${copy.bold}</b>${copy.post}</p>
     <p class="sr-only">${spokenSummary(field, g)}</p>
     <div class="time-chart__track" data-time-chart-track aria-hidden="true">
@@ -216,7 +216,7 @@ function place(slot: HTMLElement, track: HTMLElement, g: Geometry): void {
   const fullWidths = refBoxes.map((b) => b.getBoundingClientRect().width);
   if (!refsFit(fullWidths, width)) slot.classList.add('time-chart--tight');
 
-  const sizes = dotSizes(g, width);
+  const sizes = dotSizes(g);
   track.querySelectorAll<HTMLElement>('[data-tc-dot]').forEach((dot, k) => {
     dot.style.inlineSize = dot.style.blockSize = `${sizes[k]}px`;
   });

@@ -369,16 +369,13 @@
       <section data-screen="completion" class="hidden flex-1 flex-col bg-bg opacity-0 transition-opacity duration-[250ms] ease-in-out page-pad" aria-hidden="true">
         <div class="page-col flex-1 flex flex-col items-center gap-6 py-8 text-center">
 
-          <!-- Solved heading + subheading -->
-          <h2 data-completion-heading class="text-xl font-bold text-text"></h2>
-          <p data-completion-subheading class="text-base text-text"></p>
-
-          <!-- Stat blocks — This game, Streaks, All time. Each block is written by
-               completion.ts and is ABSENT rather than hidden when it does not apply:
+          <!-- Cards — Today (with the solved heading), Daily leaderboard, Streaks,
+               All time. Each card is written by completion.ts and is ABSENT
+               rather than hidden when it does not apply:
                a hidden block can still reach the accessibility tree, and a screen
                reader landing on an empty "All time" heading is exactly the
                "looks broken" impression the reveal gate exists to avoid. -->
-          <div data-completion-panel class="w-full flex flex-col gap-6 text-left"></div>
+          <div data-completion-panel class="w-full flex flex-col gap-[1.125rem] text-left"></div>
 
 
           <!-- Countdown -->

@@ -8,7 +8,7 @@ import {
   median,
   ordinal,
   refsFit,
-  dotBase,
+  DOT_ONE,
   dotSizes,
   TRACK_INSET,
   percentile,
@@ -86,55 +86,51 @@ describe('dot sizes', () => {
     expect(disc.count).toBe(0);
   });
 
-  // Items 132, 133: dots may overlap, and never shrink below their size on a
-  // 50-player day (11px), the smallest Jamie finds legible on an iPhone.
-  it('starts at 13px on a quiet day and stops at an 11px floor', () => {
-    expect(dotBase(1, 288)).toBe(13);
-    expect(dotBase(19, 288)).toBe(13);
-    expect(dotBase(39, 288)).toBe(11);
-    expect(dotBase(74, 288)).toBe(11);
-    expect(dotBase(300, 288)).toBe(11);
-  });
-
-  it('gives a wider track bigger dots for the same day', () => {
-    expect(dotBase(39, 480)).toBeGreaterThan(dotBase(39, 288));
+  // Results brief 100: one player is a fixed 9px, whatever the day or track.
+  it('draws one player at 9px on a quiet day and a busy one', () => {
+    expect(DOT_ONE).toBe(9);
+    for (const g of [geometry(field(strangers(18), 300)), geometry(field(strangers(80), 3))]) {
+      const sizes = dotSizes(g);
+      const ones = g.dots.map((d, k) => (!d.mine && d.count === 1 ? sizes[k] : null)).filter((x) => x !== null);
+      expect(ones.length).toBeGreaterThan(0);
+      expect(new Set(ones)).toEqual(new Set([9]));
+    }
   });
 
   it('grows a shared second by area, so size² is proportional to count', () => {
-    const g = geometry(field(strangers(18), 300));
-    const sizes = dotSizes(g, 288);
-    expect(sizes[0]).toBe(13);
-    // 13 × √3 = 22.5, and the cap is 25.
-    const shared = geometry(buildField([{ second: 10, count: 3 }, { second: 200, count: 1 }], 400));
-    expect(dotSizes(shared, 288)[0]).toBe(23);
-    const crowd = geometry(buildField([{ second: 10, count: 9 }, ...rows(strangers(60).map((t) => t + 20))], 9999));
-    // Base 11 here, so nine on one second is 33, held at the cap.
-    expect(dotSizes(crowd, 288)[0]).toBe(25);
-    // Two on one second: 11 × √2 = 15.6.
-    const pair = geometry(buildField([{ second: 10, count: 2 }, ...rows(strangers(60).map((t) => t + 20))], 9999));
-    expect(dotSizes(pair, 288)[0]).toBe(16);
+    const at = (count: number) =>
+      dotSizes(geometry(buildField([{ second: 10, count }, { second: 200, count: 1 }], 400)))[0];
+    expect(at(2)).toBe(13); // 9 × √2 = 12.7
+    expect(at(4)).toBe(18);
+    expect(at(7)).toBe(24); // 9 × √7 = 23.8
+    expect(at(8)).toBe(25); // 25.5, held at the cap
   });
 
   it('caps every dot at 25', () => {
     const g = geometry(buildField([{ second: 10, count: 50 }], 400));
-    expect(Math.max(...dotSizes(g, 288))).toBe(25);
+    expect(Math.max(...dotSizes(g))).toBe(25);
   });
 
   it('keeps yours 4px larger, and never under 15', () => {
-    expect(dotSizes(geometry(field([1000], 10)), 288)[0]).toBe(17);
     const busy = geometry(field(strangers(80), 3));
-    const sizes = dotSizes(busy, 288);
+    const sizes = dotSizes(busy);
     const mine = busy.dots.findIndex((d) => d.mine);
     expect(sizes[mine]).toBe(15);
     expect(sizes[mine]).toBeGreaterThan(Math.max(...sizes.filter((_, k) => k !== mine)));
+    const shared = geometry(buildField([{ second: 10, count: 3 }], 10));
+    const m = shared.dots.findIndex((d) => d.mine);
+    expect(dotSizes(shared)[m]).toBe(Math.round(Math.min(25, 9 * Math.sqrt(dotsCount(shared, m)) + 4)));
   });
 
   it('sizes the median disc as one player', () => {
     const g = geometry(field([10, 20, 40], 31));
-    const sizes = dotSizes(g, 288);
-    expect(sizes.at(-1)).toBe(dotBase(4, 288));
+    expect(dotSizes(g).at(-1)).toBe(9);
   });
 });
+
+function dotsCount(g: ReturnType<typeof geometry>, k: number): number {
+  return Math.max(1, g.dots[k].count);
+}
 
 describe('the median', () => {
   it('is the middle value at odd n and the rounded mean of the middle two at even n', () => {
@@ -381,7 +377,8 @@ describe('all-identical fields', () => {
       const f = field(Array(n - 1).fill(41), 41);
       const g = geometry(f);
       expect(g.dots).toEqual([{ fraction: 0.5, count: n, mine: true }]);
-      expect(dotSizes(g, 288)).toEqual([25]);
+      // Yours, shared by n: 9 × √3 + 4 = 19.6, and 9 × √10 + 4 held at the cap.
+      expect(dotSizes(g)).toEqual([n === 3 ? 20 : 25]);
       expect(g.refs.map((r) => [r.word, r.anchor, r.seconds])).toEqual([['Fastest', 'center', 41]]);
       expect(copy(Array(n - 1).fill(41), 41)).toBe("You're the joint fastest today");
       expect(spokenSummary(f, g)).toBe(`${n} players solved today, all in 41 seconds. Yours: 41 seconds.`);

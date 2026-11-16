@@ -6,6 +6,9 @@ import {
   fieldPreset,
   initTestingPanel,
   randomHistory,
+  missedDaysHistory,
+  MISSED_BACKS,
+  longBreakHistory,
   testingAllowed,
   type FieldPreset,
 } from '../src/testing-panel.ts';
@@ -96,6 +99,31 @@ describe('randomHistory', () => {
         expect(e.seconds! >= 1 && e.seconds! <= 86400).toBe(true);
       }
     }
+  });
+});
+
+describe('missedDaysHistory', () => {
+  it('solves today and skips exactly the listed days, in a 45-day span', () => {
+    const h = missedDaysHistory('2026-11-01');
+    expect(h[0].date).toBe('2026-11-01');
+    expect(h).toHaveLength(45 - MISSED_BACKS.length);
+    expect(new Set(h.map((e) => e.date)).size).toBe(h.length);
+    expect(h.map((e) => e.date)).not.toContain('2026-10-29'); // 3 days back
+    expect(h.at(-1)!.date).toBe('2026-09-18'); // 44 days back
+    for (const e of h) expect(e.tries).toBeGreaterThanOrEqual(1);
+    expect(h.some((e) => e.tries > 5)).toBe(true);
+  });
+});
+
+describe('longBreakHistory', () => {
+  it('plays today and two days before, misses 20, then plays 20', () => {
+    const h = longBreakHistory('2026-11-01');
+    expect(h).toHaveLength(23);
+    expect(h.slice(0, 3).map((e) => e.date)).toEqual(['2026-11-01', '2026-10-31', '2026-10-30']);
+    expect(h[3].date).toBe('2026-10-09'); // 23 days back: the 20 between are missed
+    // A 6+ goes day either side of the break (yesterday, and the day before it).
+    expect([h[1].tries, h[3].tries]).toEqual([7, 9]);
+    expect(new Set(h.map((e) => e.date)).size).toBe(h.length);
   });
 });
 

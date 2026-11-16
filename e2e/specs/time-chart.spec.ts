@@ -5,7 +5,8 @@ import { expectActiveScreen, waitForScreenSettled } from "../helpers/screens.ts"
 import { seedHistory, seedPrefs, type HistoryEntry } from "../helpers/storage.ts";
 import { solveRandom } from "../helpers/random.ts";
 import { seriousViolations } from "../helpers/axe.ts";
-import type { Page, Route } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { rows, stubField } from "../helpers/time-field.ts";
 
 // The "Daily leaderboard" card on /solved (time chart brief item 83).
 //
@@ -61,21 +62,6 @@ const day = (back: number) => {
 async function seedSolved(page: Page, seconds: number) {
   const past: HistoryEntry[] = [1, 2, 3, 4].map((b) => ({ date: day(b), tries: 1, answer: 111, seconds: 60 + b }));
   await seedHistory(page, [{ date: day(0), tries: 2, answer: 123, seconds }, ...past]);
-}
-
-type Row = { second: number; count: number };
-const rows = (times: number[]): Row[] => times.map((second) => ({ second, count: 1 }));
-
-/** Stub the field. Returns a release() when `hold` is set, for the no-shift test. */
-async function stubField(page: Page, times: Row[], opts: { hold?: boolean; status?: number } = {}) {
-  let release!: () => void;
-  const held = new Promise<void>((r) => (release = r));
-  await page.route("**/api/times/*", async (route: Route) => {
-    if (opts.hold) await held;
-    if (opts.status) await route.fulfill({ status: opts.status, json: { error: "Times unavailable" } });
-    else await route.fulfill({ json: { times } });
-  });
-  return release;
 }
 
 async function openSolved(page: Page) {
@@ -233,10 +219,11 @@ test.describe("time chart — layout", () => {
     }
   }
 
-  // 352 gives 288px of content at 200%: each 1rem gutter is 32px there.
+  // 391 gives a 288px track at 200%: each 1rem gutter is 32px there, and the
+  // results card adds 18px of padding and a 1.5px border a side (results brief 44).
   for (const f of FIELDS) {
     test(`labels never collide at 200% text, 288px of content — ${f.name}`, async ({ page }) => {
-      await page.setViewportSize({ width: 352, height: 900 });
+      await page.setViewportSize({ width: 391, height: 900 });
       await page.addInitScript(() => {
         document.addEventListener("DOMContentLoaded", () => {
           document.documentElement.style.fontSize = "200%";
@@ -247,7 +234,8 @@ test.describe("time chart — layout", () => {
       await openSolved(page);
       await expect(copyLine(page)).toBeVisible();
       const b = await check(page, 2);
-      expect(b.track.right - b.track.left).toBeCloseTo(288, 0);
+      // Within 1px: the card's 1.5px border snaps to 1px in Chromium at 1x.
+      expect(Math.abs(b.track.right - b.track.left - 288)).toBeLessThanOrEqual(1);
       if (f.name === "you in the middle") expect(b.below).toBe(true);
       // Item 125: three 15px labels cannot fit 288px here, so they step down to 12px.
       await expect(card(page)).toHaveClass(/time-chart--tight/);
@@ -268,7 +256,7 @@ test.describe("time chart — when it is absent", () => {
     await openSolved(page);
     await expect(card(page)).toBeHidden();
     await expect(card(page)).toBeEmpty();
-    await expect(page.locator('[data-stat-block="this-game"]')).toBeVisible();
+    await expect(page.locator('[data-stat-block="today"]')).toBeVisible();
     await expect(page.locator('[data-stat-block="streak"]')).toBeVisible();
     await expect(page.locator('[data-stat-block="all-time"]')).toBeVisible();
   });

@@ -136,6 +136,47 @@ export function randomHistory(today = todayKey(), rng = Math.random): HistoryEnt
   return out;
 }
 
+/** 45 days back with seven days skipped in runs of one to three, each an empty
+ *  column (brief 97), and one 12-day break, drawn as a single marked column
+ *  (brief 98). The play streak breaks three days back. Today solved. Goes vary, with one day past the cap. */
+export const MISSED_BACKS = [3, 4, 9, 15, 16, 17, 22, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36] as const;
+export function missedDaysHistory(today = todayKey()): HistoryEntry[] {
+  const goes = [1, 2, 1, 3, 1, 4, 2, 1, 7, 2];
+  const out: HistoryEntry[] = [];
+  for (let back = 0; back < 45; back++) {
+    if ((MISSED_BACKS as readonly number[]).includes(back)) continue;
+    out.push({
+      date: dayBefore(today, back),
+      tries: goes[back % goes.length],
+      answer: 100 + back * 7,
+      seconds: 45 + ((back * 53) % 400),
+    });
+  }
+  return out;
+}
+
+/** Back after a long break: today and the two days before it, then 20 days
+ *  missed, then 20 days played. The break sits next to today, so the strip opens
+ *  on its mark ("20d", brief 98, 112) with no scrolling. A 6+ goes day sits on
+ *  each side of the break, yesterday (7) and the day before it (9), so both kinds
+ *  of bolt are in view together. */
+export const BREAK_BACKS = { recent: 3, missed: 20, before: 20 } as const;
+export function longBreakHistory(today = todayKey()): HistoryEntry[] {
+  const { recent, missed, before } = BREAK_BACKS;
+  const goes = [1, 2, 3, 1, 2];
+  const out: HistoryEntry[] = [];
+  for (let back = 0; back < recent + missed + before; back++) {
+    if (back >= recent && back < recent + missed) continue;
+    out.push({
+      date: dayBefore(today, back),
+      tries: back === 1 ? 7 : back === recent + missed ? 9 : goes[back % goes.length],
+      answer: 100 + back * 11,
+      seconds: 50 + ((back * 41) % 300),
+    });
+  }
+  return out;
+}
+
 const HISTORIES: { id: string; label: string; go: string; write: () => void }[] = [
   {
     id: 'rich',
@@ -148,6 +189,18 @@ const HISTORIES: { id: string; label: string; go: string; write: () => void }[] 
     label: 'Random history',
     go: '/solved',
     write: () => setHistory(randomHistory(), true),
+  },
+  {
+    id: 'missed',
+    label: 'Missed days',
+    go: '/solved',
+    write: () => setHistory(missedDaysHistory(), true),
+  },
+  {
+    id: 'long-break',
+    label: 'Long break',
+    go: '/solved',
+    write: () => setHistory(longBreakHistory(), true),
   },
   {
     id: 'new',

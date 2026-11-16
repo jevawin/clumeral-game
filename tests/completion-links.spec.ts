@@ -3,8 +3,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 function setupDOM(): void {
   document.body.innerHTML = `
     <div data-completion-octo></div>
-    <h2 data-completion-heading></h2>
-    <p data-completion-subheading></p>
     <div data-completion-panel></div>
     <p data-completion-live></p>
     <p data-completion-countdown></p>
