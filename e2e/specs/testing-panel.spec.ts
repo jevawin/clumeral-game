@@ -85,6 +85,14 @@ test("swaps in a history with a long break", async ({ page }) => {
   await waitForScreenSettled(page, "completion");
   const mark = page.locator("[data-strip-break]");
   await expect(mark).toHaveText("20d");
+  // A broken column either side of the break, and neither touches the mark.
+  const broken = page.locator("[data-strip-day][data-broken]");
+  await expect(broken).toHaveCount(2);
+  const m = (await mark.boundingBox())!;
+  for (const k of [0, 1]) {
+    const c = (await broken.nth(k).boundingBox())!;
+    expect(c.x + c.width <= m.x || c.x >= m.x + m.width).toBe(true);
+  }
   const s = await page.locator("[data-strip-scroller]").boundingBox();
   const b = await mark.boundingBox();
   expect(b!.x).toBeGreaterThanOrEqual(s!.x);

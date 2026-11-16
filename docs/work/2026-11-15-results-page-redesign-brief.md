@@ -562,3 +562,7 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
 113. (amends 111) **All time's row is "Solve-in-one streak".** Jamie: "it's very long, hopefully
      it's clear it's your best from it being all time". "Longest solve-in-one streak" becomes
      "Solve-in-one streak"; the figure is still the best.
+114. (amends 99) **Long break shows both kinds of bolt.** Jamie: "make the 'long break' also give
+     me 6+ go solve days … so i can see it with both lightning bolts on the graph at the same
+     time". Yesterday took 7 goes and the day before the break 9, so a broken column sits on
+     each side of the "20d" mark, all in view on load.

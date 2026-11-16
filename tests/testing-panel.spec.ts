@@ -121,6 +121,8 @@ describe('longBreakHistory', () => {
     expect(h).toHaveLength(23);
     expect(h.slice(0, 3).map((e) => e.date)).toEqual(['2026-11-01', '2026-10-31', '2026-10-30']);
     expect(h[3].date).toBe('2026-10-09'); // 23 days back: the 20 between are missed
+    // A 6+ goes day either side of the break (yesterday, and the day before it).
+    expect([h[1].tries, h[3].tries]).toEqual([7, 9]);
     expect(new Set(h.map((e) => e.date)).size).toBe(h.length);
   });
 });
