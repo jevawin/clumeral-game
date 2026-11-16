@@ -283,7 +283,7 @@ describe('the completion panel', () => {
       expect(block('all-time')!.querySelector('dl')).not.toBeNull();
       expect(ledger()).toEqual([
         ['Solved in one', '20%'],
-        ['Longest solve-in-one streak', '1'],
+        ['Solve-in-one streak', '1'],
         ['Fastest solve', '0m 48s'],
         ['Average time', '4m 06s'], // (221 + 48 + 300 + 260 + 400) / 5 = 245.8
         ['Puzzles solved', '5'],
@@ -294,7 +294,7 @@ describe('the completion panel', () => {
       await render([{ date: day(0), tries: 2 }, { date: day(1), tries: 3 }, { date: day(2), tries: 3 }], 2);
       expect(ledger()).toEqual([
         ['Solved in one', '0%'],
-        ['Longest solve-in-one streak', '0'],
+        ['Solve-in-one streak', '0'],
         ['Fastest solve', '—'],
         ['Average time', '—'],
         ['Puzzles solved', '3'],

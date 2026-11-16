@@ -91,7 +91,7 @@ test.describe("results page — full mode", () => {
     const completion = await openFull(page);
     const want = expectedLedger(FULL);
     await expect(completion.ledger("Solved in one")).toHaveText(want.solvedInOne);
-    await expect(completion.ledger("Longest solve-in-one streak")).toHaveText(want.bestOneGoRun);
+    await expect(completion.ledger("Solve-in-one streak")).toHaveText(want.bestOneGoRun);
     await expect(completion.ledger("Fastest solve")).toHaveText(want.fastest);
     await expect(completion.ledger("Average time")).toHaveText(want.average);
     await expect(completion.ledger("Puzzles solved")).toHaveText(want.plays);

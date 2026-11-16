@@ -557,3 +557,6 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      or more days draws two empty columns, a bolt the full height of the rows, the count
      ("20d"), a second bolt, and two empty columns. The bolts are the sprite's bolt in text
      colour, stretched to the rows' height with the stroke kept at 1.6px.
+113. (amends 111) **All time's row is "Solve-in-one streak".** Jamie: "it's very long, hopefully
+     it's clear it's your best from it being all time". "Longest solve-in-one streak" becomes
+     "Solve-in-one streak"; the figure is still the best.

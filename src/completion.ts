@@ -226,7 +226,7 @@ function allTimeCard(stats: PlayerStats): string {
   return card('all-time', 'All time', 'icon-calendar-head',
     '<dl class="ledger">' +
     row('Solved in one', `${stats.firstGoPercent ?? 0}%`) +
-    row('Longest solve-in-one streak', String(stats.bestFirstGoStreak)) +
+    row('Solve-in-one streak', String(stats.bestFirstGoStreak)) +
     row('Fastest solve', formatDuration(stats.bestTimeSeconds)) +
     row('Average time', formatDuration(stats.avgTimeSeconds)) +
     row('Puzzles solved', String(stats.plays)) +

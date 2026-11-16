@@ -279,7 +279,7 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   summary; the columns and labels are `aria-hidden`. Its focus ring is drawn on the
   unmasked frame, because the mask would fade it.
 - **All time** is a `dl` ledger: label left in text colour, figure right in bold accent, one
-  size, no rules -- Solved in one, Longest solve-in-one streak, Fastest solve, Average time, Puzzles
+  size, no rules -- Solved in one, Solve-in-one streak, Fastest solve, Average time, Puzzles
   solved.
 - **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
   and inherit from `html`/`body`. The play screen keeps Inconsolata for its keypad.

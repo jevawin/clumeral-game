@@ -297,7 +297,7 @@ export interface StreakLine {
 /**
  * The Streaks card's two lines (brief 111, amending 20, 21, 82, 101, 110): the
  * play streak with its best, and the solve-in-one streak with ITS best, so each
- * "Best" compares like with like and matches All time's longest solve-in-one
+ * "Best" compares like with like and matches All time's solve-in-one
  * streak.
  */
 export function streakLine(stats: PlayerStats): StreakLine {

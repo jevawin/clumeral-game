@@ -77,7 +77,7 @@ test.describe("player stats — the panel after a solve", () => {
     // time, so the fastest solve asserts the SHAPE; the arithmetic is pinned in
     // tests/player-stats.spec.ts.
     await expect(completion.ledger("Solved in one")).toHaveText("40%");
-    await expect(completion.ledger("Longest solve-in-one streak")).toHaveText("2");
+    await expect(completion.ledger("Solve-in-one streak")).toHaveText("2");
     await expect(completion.ledger("Fastest solve")).toHaveText(/^\d+m \d\ds$/);
     await expect(completion.ledger("Average time")).toHaveText(/^\d+m \d\ds$/);
     await expect(completion.ledger("Puzzles solved")).toHaveText("5");
