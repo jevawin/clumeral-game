@@ -236,26 +236,23 @@ describe('the completion panel', () => {
   });
 
   describe('the Streaks card', () => {
-    it('shows the play streak and the best (brief 20, 82)', async () => {
+    it('shows the play streak, and no solve-in-one line at 0 (brief 111)', async () => {
       await render(RETURNING, 2, false, { seconds: 221 });
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('5-day play streak (best: 5)');
-      // Only "5-day" and the figures are bold (brief 110).
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('5-day play streak. Best: 5.');
+      // Today took two goes, so there is no solve-in-one streak: the line is left out.
+      expect(panel().querySelector('[data-streak-in-one]')).toBeNull();
+      // Only "N-day" and the figures are bold (brief 110).
       expect([...panel().querySelectorAll('[data-streak-line] b')].map((b) => b.textContent)).toEqual(['5-day', '5']);
       expect(collapse(block('streak')!.querySelector('h3'))).toBe('Streaks');
       expect(block('streak')!.querySelector('h3 use')!.getAttribute('href')).toBe('/sprites.svg#icon-flame');
     });
 
-    it('adds the one-go run from 2', async () => {
-      await render([
-        { date: day(0), tries: 1 }, { date: day(1), tries: 1 },
-        { date: day(2), tries: 2 }, { date: day(3), tries: 2 },
-      ], 1);
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('4-day play streak (best: 4). 1-go run: 2');
-    });
-
-    it('names the harder run when they match, with no one-go part', async () => {
-      await render([{ date: day(0), tries: 1 }, { date: day(1), tries: 1 }, { date: day(2), tries: 1 }], 1);
-      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('3-day 1-go streak (best: 3)');
+    it('gives the solve-in-one streak its own best, never the play best', async () => {
+      // A long mixed run first, then today and the two days before in one go.
+      const h = Array.from({ length: 10 }, (_, b) => ({ date: day(b), tries: b < 3 ? 1 : 2 }));
+      await render(h, 1);
+      expect(collapse(panel().querySelector('[data-streak-line]'))).toBe('10-day play streak. Best: 10.');
+      expect(collapse(panel().querySelector('[data-streak-in-one]'))).toBe('3-day solve-in-one streak. Best: 3.');
     });
 
     it('holds the goes strip, and nothing else does', async () => {
@@ -281,7 +278,7 @@ describe('the completion panel', () => {
       expect(block('all-time')!.querySelector('dl')).not.toBeNull();
       expect(ledger()).toEqual([
         ['Solved in one', '20%'],
-        ['Best one-go run', '1'],
+        ['Longest solve-in-one streak', '1'],
         ['Fastest solve', '0m 48s'],
         ['Average time', '4m 06s'], // (221 + 48 + 300 + 260 + 400) / 5 = 245.8
         ['Puzzles solved', '5'],
@@ -292,7 +289,7 @@ describe('the completion panel', () => {
       await render([{ date: day(0), tries: 2 }, { date: day(1), tries: 3 }, { date: day(2), tries: 3 }], 2);
       expect(ledger()).toEqual([
         ['Solved in one', '0%'],
-        ['Best one-go run', '0'],
+        ['Longest solve-in-one streak', '0'],
         ['Fastest solve', '—'],
         ['Average time', '—'],
         ['Puzzles solved', '3'],

@@ -206,15 +206,16 @@ function todayCard(
   return `<section data-stat-block="today" class="result-card" aria-labelledby="stat-head-today">${parts.join('')}</section>`;
 }
 
-/** Streaks: the play streak, the best, and the goes strip (brief 20–24, 82). */
+/** Streaks: two lines, each streak with its own best, then the goes strip
+ *  (brief 20–24, 111). The solve-in-one line is left out while that streak is
+ *  0. Bold is accent, as on every card's statement (110). */
 function streakCard(stats: PlayerStats, history: HistoryEntry[]): string {
   const l = streakLine(stats);
-  // One statement at body size (brief 106, 110): "3-day play streak (best: 20).
-  // 1-go run: 2", every bold part in accent, as on every card's statement.
-  const run = `<b>${l.figure}-day</b>${l.label.replace(/^-day/, '')} (best: <b>${l.best}</b>)`;
-  const oneGo = l.oneGoRun !== null ? `. 1-go run: <b>${l.oneGoRun}</b>` : '';
+  const line = (attr: string, n: number, kind: string, best: number) =>
+    `<p class="streak__line" ${attr}><b>${n}-day</b> ${kind} streak. Best: <b>${best}</b>.</p>`;
   return card('streak', 'Streaks', 'icon-flame',
-    `<p class="streak__line" data-streak-line>${run}${oneGo}</p>` +
+    line('data-streak-line', l.play, 'play', l.bestPlay) +
+    (l.inOne > 0 ? line('data-streak-in-one', l.inOne, 'solve-in-one', l.bestInOne) : '') +
     goesStripHtml(goesByDay(history)));
 }
 
@@ -225,7 +226,7 @@ function allTimeCard(stats: PlayerStats): string {
   return card('all-time', 'All time', 'icon-calendar-head',
     '<dl class="ledger">' +
     row('Solved in one', `${stats.firstGoPercent ?? 0}%`) +
-    row('Best one-go run', String(stats.bestFirstGoStreak)) +
+    row('Longest solve-in-one streak', String(stats.bestFirstGoStreak)) +
     row('Fastest solve', formatDuration(stats.bestTimeSeconds)) +
     row('Average time', formatDuration(stats.avgTimeSeconds)) +
     row('Puzzles solved', String(stats.plays)) +

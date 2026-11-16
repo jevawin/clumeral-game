@@ -34,7 +34,7 @@ browser store as a production database with no backups — because that is what 
   not, and neither is tightening validation on an existing field — old rows fail the new check
   and vanish.
 
-**Guarded by.** `tests/storage-history.spec.ts` (18 cases), `tests/player-stats.spec.ts` (61),
+**Guarded by.** `tests/storage-history.spec.ts` (18 cases), `tests/player-stats.spec.ts` (58),
 `tests/goes-strip.spec.ts` (32, the strip counts the same rows),
 `tests/storage-active.spec.ts` (tolerance of malformed values), `tests/save-pref.spec.ts`,
 `e2e/specs/restore.spec.ts`.

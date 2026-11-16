@@ -268,7 +268,7 @@ export function messageCopy(m: TodayMessage): MessageCopy {
     case 'quicker':
       return { icon: 'icon-arrow-up', pre: '', bold: `${compact(m.by)} quicker`, post: ' than your average.' };
     case 'one-go':
-      return { icon: 'icon-tick', pre: '', bold: 'Straight in.', post: ` Your ${ordinal(m.nth)} one-go solve.` };
+      return { icon: 'icon-tick', pre: '', bold: 'Straight in.', post: ` Your ${ordinal(m.nth)} solve-in-one.` };
     case 'fewer-goes':
       return { icon: 'icon-calculator', pre: '', bold: 'Fewer goes', post: ` than your usual ${m.usual}.` };
     case 'solve-number':
@@ -286,29 +286,25 @@ export function ordinal(n: number): string {
 }
 
 export interface StreakLine {
-  /** The play streak. */
-  figure: number;
-  /** "-day play streak" | "-day 1-go streak", written straight after the
-   *  figure: "3-day play streak" (results brief 101). */
-  label: string;
-  /** The best play streak. */
-  best: number;
-  /** Shown only from 2 and only when the label has not switched. */
-  oneGoRun: number | null;
+  /** The current play streak, and the best one. */
+  play: number;
+  bestPlay: number;
+  /** The current solve-in-one streak, and the best one. */
+  inOne: number;
+  bestInOne: number;
 }
 
 /**
- * The Streaks card's figure and second line (brief 20, 21, 56, 57 as amended by
- * 82). When the one-go run equals the play streak the label names the harder
- * one, and the one-go part would only repeat it.
+ * The Streaks card's two lines (brief 111, amending 20, 21, 82, 101, 110): the
+ * play streak with its best, and the solve-in-one streak with ITS best, so each
+ * "Best" compares like with like and matches All time's best one-go run.
  */
 export function streakLine(stats: PlayerStats): StreakLine {
-  const switched = stats.playStreak > 0 && stats.firstGoStreak === stats.playStreak;
   return {
-    figure: stats.playStreak,
-    label: `-day ${switched ? '1-go' : 'play'} streak`,
-    best: stats.bestPlayStreak,
-    oneGoRun: !switched && stats.firstGoStreak >= 2 ? stats.firstGoStreak : null,
+    play: stats.playStreak,
+    bestPlay: stats.bestPlayStreak,
+    inOne: stats.firstGoStreak,
+    bestInOne: stats.bestFirstGoStreak,
   };
 }
 

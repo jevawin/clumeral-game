@@ -542,3 +542,12 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      full stop. When the one-go run matches the play streak it reads "**3-day** 1-go streak"
      (for "1-go" to match; **Jamie: "1 yes"**). Every bold part of a card's
      statement is bold accent: today's message, the leaderboard's line and the streak line.
+111. (amends 82, 101, 106, 109, 110; da-build Medium) **Two streak lines, each with its own
+     best.** da-build found that "3-day 1-go streak (best: 20)" put the best PLAY streak beside
+     a one-go streak, contradicting All time's best one-go run on the same screen. Jamie:
+     "two lines — [N-day] play streak. Best: [N]. — [N-day] solve-in-one streak. Best: [N]."
+     The second line's best is the best solve-in-one streak. Jamie: "when no solve in one …
+     omit it", so the second line is left out while that streak is 0. The switching label and
+     "1-go run" go. The wording follows everywhere (Jamie: "match text"): All time's "Best
+     one-go run" becomes "Longest solve-in-one streak", and the message's "Your 6th one-go
+     solve." becomes "Your 6th solve-in-one."

@@ -561,6 +561,7 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
   .result-card__msg-icon { inline-size: 0.875rem; block-size: 0.875rem; color: var(--color-accent); }
   .result-card__note { margin: 0.75rem 0 0; font-size: 1rem; }
   .streak__line { margin: 1rem 0 0; font-size: 1rem; }
+  .streak__line + .streak__line { margin-block-start: 0.25rem; }
   /* Every card's statement: bold is always bold accent (brief 110). */
   .result-card__message b, .time-chart__line b, .streak__line b { font-weight: 700; color: var(--color-accent); }
   /* The All time ledger: label left, figure right, one size, no rules (brief 25, 48). */

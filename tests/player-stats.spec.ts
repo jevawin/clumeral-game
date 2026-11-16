@@ -487,8 +487,8 @@ describe('messageCopy', () => {
       .toEqual({ icon: 'icon-arrow-up', pre: '', bold: '17s quicker', post: ' than your average.' });
     expect(messageCopy({ kind: 'quicker', by: 65 }).bold).toBe('1m 05s quicker');
     expect(messageCopy({ kind: 'one-go', nth: 8 }))
-      .toEqual({ icon: 'icon-tick', pre: '', bold: 'Straight in.', post: ' Your 8th one-go solve.' });
-    expect(messageCopy({ kind: 'one-go', nth: 1 }).post).toBe(' Your first one-go solve.');
+      .toEqual({ icon: 'icon-tick', pre: '', bold: 'Straight in.', post: ' Your 8th solve-in-one.' });
+    expect(messageCopy({ kind: 'one-go', nth: 1 }).post).toBe(' Your first solve-in-one.');
     expect(messageCopy({ kind: 'fewer-goes', usual: '2.3' }))
       .toEqual({ icon: 'icon-calculator', pre: '', bold: 'Fewer goes', post: ' than your usual 2.3.' });
     expect(messageCopy({ kind: 'solve-number', n: 30 }))
@@ -506,25 +506,10 @@ describe('ordinal', () => {
   });
 });
 
-describe('streakLine', () => {
-  function line(playStreak: number, firstGoStreak: number, bestPlayStreak = 30) {
-    return streakLine({ playStreak, firstGoStreak, bestPlayStreak } as PlayerStats);
-  }
-
-  it('days played, no one-go part at a run of 1', () => {
-    expect(line(30, 1)).toEqual({ figure: 30, label: '-day play streak', best: 30, oneGoRun: null });
-  });
-
-  it('shows the one-go run from 2', () => {
-    expect(line(30, 2).oneGoRun).toBe(2);
-  });
-
-  it('switches the label when the runs match, and drops the one-go part', () => {
-    expect(line(4, 4)).toEqual({ figure: 4, label: '-day 1-go streak', best: 30, oneGoRun: null });
-  });
-
-  it('reads the same at 1: "1-day play streak"', () => {
-    expect(line(1, 0).label).toBe('-day play streak');
-    expect(line(1, 1).label).toBe('-day 1-go streak');
+describe('streakLine (brief 111)', () => {
+  it('pairs each streak with its own best', () => {
+    const stats = { playStreak: 3, bestPlayStreak: 20, firstGoStreak: 3, bestFirstGoStreak: 4 } as PlayerStats;
+    // The case da-build found: a solve-in-one streak must not take the play best.
+    expect(streakLine(stats)).toEqual({ play: 3, bestPlay: 20, inOne: 3, bestInOne: 4 });
   });
 });

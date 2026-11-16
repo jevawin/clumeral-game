@@ -251,9 +251,9 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   That divergence is deliberate. `heroLine` in `src/completion.ts` builds the play
   screen's line and is called from `src/app.ts`, not from the panel -- it looks like panel
   code and is not. Leave it alone when tidying that file.
-- **Streaks**: one statement at body size -- "**3-day** play streak (best: **20**)", plus
-  ". 1-go run: **N**" from 2; "**3-day** 1-go streak" when the one-go run matches it
-  (results brief 101, 106, 110).
+- **Streaks**: two lines at body size, each streak with its own best (results brief 111):
+  "**3-day** play streak. Best: **20**." then "**2-day** solve-in-one streak. Best: **4**."
+  The second line is left out while the solve-in-one streak is 0.
 - **Bold in a card's statement is always bold accent** (results brief 110): today's message,
   the leaderboard's line ("top **40%**") and the streak line.
 - **Four type sizes on the results page** (results brief 107): 2.125rem for today's figures,
@@ -278,7 +278,7 @@ Four cards in reading order: **Today**, **Daily leaderboard**, **Streaks**, **Al
   summary; the columns and labels are `aria-hidden`. Its focus ring is drawn on the
   unmasked frame, because the mask would fade it.
 - **All time** is a `dl` ledger: label left in text colour, figure right in bold accent, one
-  size, no rules -- Solved in one, Best one-go run, Fastest solve, Average time, Puzzles
+  size, no rules -- Solved in one, Longest solve-in-one streak, Fastest solve, Average time, Puzzles
   solved.
 - **The whole panel reads in Quicksand**, numbers included. The rules declare no font family
   and inherit from `html`/`body`. The play screen keeps Inconsolata for its keypad.
