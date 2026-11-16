@@ -71,8 +71,7 @@ test("swaps in a history with missed days", async ({ page }) => {
   await expect(page).toHaveURL(/\/solved$/);
   await waitForScreenSettled(page, "completion");
   await expect(page.locator("[data-strip-day]")).toHaveCount(26);
-  // Seven skipped days, plus the two empty columns either side of the break (brief 112).
-  await expect(page.locator("[data-strip-missed]")).toHaveCount(11);
+  await expect(page.locator("[data-strip-missed]")).toHaveCount(7);
   await expect(page.locator("[data-strip-break]")).toHaveText("12d");
   await expect(page.locator('[data-stat-block="streak"]')).toContainText("3-day play streak");
 });
@@ -93,6 +92,9 @@ test("swaps in a history with a long break", async ({ page }) => {
     const c = (await broken.nth(k).boundingBox())!;
     expect(c.x + c.width <= m.x || c.x >= m.x + m.width).toBe(true);
   }
+  // The mark is on the bottom row: its foot is level with a column's bottom cell.
+  const cell = (await page.locator("[data-strip-day] .goes-strip__cell").first().boundingBox())!;
+  expect(Math.abs(m.y + m.height - (cell.y + cell.height))).toBeLessThanOrEqual(0.5);
   const s = await page.locator("[data-strip-scroller]").boundingBox();
   const b = await mark.boundingBox();
   expect(b!.x).toBeGreaterThanOrEqual(s!.x);

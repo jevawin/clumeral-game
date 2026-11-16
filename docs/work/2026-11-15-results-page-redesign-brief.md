@@ -555,10 +555,13 @@ Raised by `da-plan` on the plan's revision 1 as plan readings R1 and R7. Both bl
      like our 20d test gap, put 2 empty columns either side and in white put the same
      lightning bolt icon we use for the gap in column height — [   ]~20d~[   ]", then, on the
      preview: "it should be the same lightning bolt as the vertical columns rotated 90d, same
-     size as the vertical ones too only rotated 90 and centred in the column". A break of 7
-     or more days draws two empty columns, the broken column's 8×10px bolt turned 90°, the
-     count ("20d"), a second bolt, and two empty columns. The bolts (text colour) and the
-     count sit centred in the rows' height.
+     size as the vertical ones too only rotated 90 and centred in the column". Then: "it's
+     not 2 full columns either side … [normal][lightning][Nd][lightning][normal] … they should
+     all be on the bottom row … each is filling a rectangle the size of a normal row block".
+     A break of 7 or more days draws three blocks on the bottom row, each the size of a cell
+     (18×10px; the count may run wider): the broken column's 8×10px bolt turned 90°, the
+     count ("20d"), a second bolt. Each is centred in its block; the bolts are text colour.
+     No empty columns.
 113. (amends 111) **All time's row is "Solve-in-one streak".** Jamie: "it's very long, hopefully
      it's clear it's your best from it being all time". "Longest solve-in-one streak" becomes
      "Solve-in-one streak"; the figure is still the best.

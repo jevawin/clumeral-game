@@ -105,19 +105,15 @@ export const BREAK_DAYS = 7;
 const SIDE_BOLT =
   '<span class="goes-strip__side-bolt"><svg aria-hidden="true"><use href="/sprites.svg#icon-bolt"/></svg></span>';
 
-/** Empty columns either side of a long break's mark (brief 112). */
-export const BREAK_PAD = 2;
-
 /** The columns between two played days: one empty column per missed day, or,
- *  once the run reaches BREAK_DAYS, two empty columns, a bolt on its side, the
- *  count, a bolt and two empty columns (brief 98, 112). */
+ *  once the run reaches BREAK_DAYS, three columns on the bottom row: a bolt on its
+ *  side, the count, a bolt (brief 98, 112). Each sits centred in a block the size
+ *  of one cell, as if it were a cell. */
 function gapColumns(missed: number): string {
   if (missed >= BREAK_DAYS) {
     // `missed` is a whole number from missedBetween, so it is safe in markup.
     return (
-      GAP.repeat(BREAK_PAD) +
-      `<div data-strip-break data-missed="${missed}">${SIDE_BOLT}<span class="goes-strip__break">${missed}d</span>${SIDE_BOLT}</div>` +
-      GAP.repeat(BREAK_PAD)
+      `<div data-strip-break data-missed="${missed}">${SIDE_BOLT}<span class="goes-strip__break">${missed}d</span>${SIDE_BOLT}</div>`
     );
   }
   return GAP.repeat(missed);
@@ -159,7 +155,7 @@ export function goesStripHtml(days: StripDay[]): string {
     '<div class="goes-strip__col">' +
     '<div class="goes-strip__frame">' +
     `<div class="goes-strip__scroller" data-strip-scroller role="group" tabindex="0" aria-label="${attr(stripSummary(days))}">` +
-    `<div class="goes-strip__inner" aria-hidden="true" style="block-size: ${areaH + GAP_PX + HEAD_PX}px; --strip-area: ${areaH}px">` +
+    `<div class="goes-strip__inner" aria-hidden="true" style="block-size: ${areaH + GAP_PX + HEAD_PX}px">` +
     days.map((d, i) => (i ? gapColumns(missedBetween(days[i - 1].date, d.date)) : '') + column(d.goes)).join('') +
     '</div></div></div>' +
     `<div class="goes-strip__x" aria-hidden="true"><span class="goes-strip__start">${ARROW}${xStart(days)}</span><span>today</span></div>` +

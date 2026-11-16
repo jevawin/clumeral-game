@@ -229,10 +229,10 @@ describe('long breaks (results brief 98)', () => {
 
   it('draws seven or more as one break column with the count', () => {
     expect(kinds([{ date: '2026-03-01', goes: 1 }, { date: '2026-03-09', goes: 1 }])).toEqual([
-      'day', 'gap', 'gap', 'break:7d', 'gap', 'gap', 'day',
+      'day', 'break:7d', 'day',
     ]);
     expect(kinds([{ date: '2026-01-01', goes: 2 }, { date: '2026-04-01', goes: 1 }])).toEqual([
-      'day', 'gap', 'gap', 'break:89d', 'gap', 'gap', 'day',
+      'day', 'break:89d', 'day',
     ]);
   });
 
@@ -244,8 +244,7 @@ describe('long breaks (results brief 98)', () => {
     ]);
     // The broken column's sprite, not a copy of it.
     expect(mark.querySelector('use')!.getAttribute('href')).toBe('/sprites.svg#icon-bolt');
-    // The rows' height, to centre the mark in: 3 rows of 10px and two 4px gaps.
-    expect(doc.querySelector('.goes-strip__inner')!.getAttribute('style')).toContain('--strip-area: 38px');
+
   });
 
   it('still counts every missed day in the summary', () => {
