@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { demoAllowed, demoHistory, applyDemoParam } from '../src/demo-history.ts';
-import { computePlayerStats } from '../src/player-stats.ts';
+import { computePlayerStats, goesByDay } from '../src/player-stats.ts';
 
 const TODAY = '2026-08-11';
 
@@ -46,11 +46,12 @@ describe('the seeded history', () => {
     expect(stats.firstGoStreak).toBeGreaterThan(0);
   });
 
-  it('fills every bucket of the goes chart, tail included', () => {
-    const counts = Object.fromEntries(stats.goesDistribution.map((d) => [d.bucket, d.count]));
-    for (const bucket of ['1', '2', '3', '4', '5', '6+']) {
-      expect(counts[bucket], bucket).toBeGreaterThan(0);
-    }
+  it('draws two broken columns in the goes strip, and no archived row (results brief 42)', () => {
+    const days = goesByDay(demoHistory(TODAY));
+    const goes = days.map((d) => d.goes);
+    expect(goes).toContain(9);
+    expect(goes).toContain(6);
+    expect(days.some((d) => d.date === '2026-05-04')).toBe(false);
   });
 
   it('has an average time and a best time to show', () => {

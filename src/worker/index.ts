@@ -6,7 +6,7 @@ import { readDailyPuzzle, runDailyCron, type StoredPuzzle } from './daily-puzzle
 import { signToken, verifyToken } from './crypto.ts';
 import { isFuturePuzzleDate } from './date-guard.ts';
 import { renderDashboard } from './stats.ts';
-import { getStats, parsePeriod, recordEvent } from './analytics-db.ts';
+import { getStats, getTodayTimes, MAX_UID, parsePeriod, recordEvent } from './analytics-db.ts';
 import { BACKFILL_CRON, runBackfill } from './backfill.ts';
 import { renderArchivePage } from './puzzles.ts';
 import {
@@ -47,8 +47,12 @@ export const VALID_EVENTS = new Set([
   // Value is the counted play seconds; source is 'clean' or 'idle-N', which is
   // how many times the two-minute cut-off fired that game. Today's daily puzzle
   // only, and only from a player with score saving on — see docs/ANALYTICS.md.
-  // No migration: the existing table already holds a name, a value and a source.
+  // puzzle_num (migration 0008) carries the puzzle number, stored for this event
+  // only (recordEvent drops it on any other); it is what GET /api/times/:num filters on.
   'puzzle_time',
+  // The results card (brief item 77). Source 'drawn' or 'failed', value the field
+  // size n (0 on failure). Sent once per /solved visit that should show the card.
+  'time_chart',
 ]);
 
 function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
@@ -278,6 +282,34 @@ export default {
       return json({ answer: puzzle.answer });
     }
 
+    // GET /api/times/:num — every solve time recorded for a puzzle number, as
+    // (second, count) pairs. Read by the results card. Never returns a uid, a
+    // timestamp or anything but a time and its count (brief item 37).
+    const timesByNum = url.pathname.match(/^\/api\/times\/(\d+)$/);
+    if (request.method === 'GET' && timesByNum) {
+      const noStore = { 'Cache-Control': 'no-store' };
+      const num = parseInt(timesByNum[1], 10);
+      if (num < 1) return json({ error: 'Invalid puzzle number' }, 400, noStore);
+      // Also rejects the malformed date a huge number produces.
+      const date = puzzleDate(num);
+      if (isFuturePuzzleDate(date)) return json({ error: 'Invalid puzzle number' }, 400, noStore);
+      // A header, never the query string, so the uid stays out of URL logs (item 118).
+      // Truncated as recordEvent truncates it, so a long uid still matches its row.
+      const excludeUid = (request.headers.get('X-Clumeral-Uid') ?? '').slice(0, MAX_UID);
+      try {
+        const times = await getTodayTimes(env.ANALYTICS_DB, {
+          hostname: url.hostname,
+          puzzleNum: num,
+          dayStartMs: Date.parse(date + 'T00:00:00Z'),
+          excludeUid,
+        });
+        return json({ times }, 200, noStore);
+      } catch (err) {
+        console.error('Times read failed:', err instanceof Error ? err.message : String(err));
+        return json({ error: 'Times unavailable' }, 500, noStore);
+      }
+    }
+
     // Dev-only: return the answer for the current puzzle (blocked on production domain)
     if (request.method === 'GET' && url.pathname === '/api/dev/answer') {
       if (url.hostname === 'clumeral.com') return new Response('Not found', { status: 404 });
@@ -423,8 +455,8 @@ export default {
 
     if (request.method === 'POST' && url.pathname === '/api/event') {
       try {
-        const body = await request.json() as { event?: string; uid?: string; value?: number; newUser?: boolean; source?: string };
-        const { event, uid, value, newUser, source } = body;
+        const body = await request.json() as { event?: string; uid?: string; value?: number; newUser?: boolean; source?: string; puzzleNum?: unknown };
+        const { event, uid, value, newUser, source, puzzleNum } = body;
         if (!event || !VALID_EVENTS.has(event) || !uid) {
           return new Response('Bad request', { status: 400 });
         }
@@ -446,6 +478,7 @@ export default {
             hostname: url.hostname,
             value,
             newUser,
+            puzzleNum,
           }).catch((err: unknown) => {
             console.error('Analytics D1 write failed:', err instanceof Error ? err.message : String(err));
           }),
