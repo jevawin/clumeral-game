@@ -61,3 +61,17 @@ export function contrastRatio(a: string, b: string): number {
   const lb = relativeLuminance(b);
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
+
+/** color-mix(in srgb, a p%, b): a per-channel mix of the gamma-encoded bytes,
+ *  which is what the browser computes for the srgb interpolation space. */
+export function mixSrgb(a: string, b: string, p: number): string {
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [ca, cb] = [rgb(a), rgb(b)];
+  return (
+    '#' +
+    ca
+      .map((v, k) => Math.round(v * (p / 100) + cb[k] * (1 - p / 100)))
+      .map((v) => v.toString(16).padStart(2, '0').toUpperCase())
+      .join('')
+  );
+}

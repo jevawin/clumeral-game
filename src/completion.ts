@@ -1,18 +1,27 @@
 // Clumeral — completion.ts
-// Renders the completion screen: heading, the three stat blocks, countdown,
-// feedback button. Rendering only — the counting rules live in player-stats.ts
-// so #163 and #148 can read the same numbers instead of copying them.
+// Renders the completion screen as cards (results page redesign, board O): Today,
+// the Daily leaderboard, Streaks, All time, then the countdown and the actions.
+// Rendering only — the counting rules live in player-stats.ts so #163 and #148
+// can read the same numbers instead of copying them.
 
 import { loadHistory, loadPrefs } from './storage.ts';
+import type { HistoryEntry } from './types.ts';
 import { todayKey } from './date.ts';
 import {
   computePlayerStats,
   formatDuration,
+  goesByDay,
+  messageCopy,
   speakDuration,
+  streakLine,
+  todayMessage,
   validSeconds,
   REVEAL_AFTER_GAMES,
   type PlayerStats,
+  type TodayMessage,
 } from './player-stats.ts';
+import { setTimeChartContext, showTimeChart, timeChartSlot } from './time-chart-view.ts';
+import { goesStripHtml, wireStrip } from './goes-strip.ts';
 
 
 // ─── SVG ─────────────────────────────────────────────────────────────────────
@@ -33,8 +42,6 @@ const COMPLETION_OCTO_SVG = `<svg aria-hidden="true" width="96" height="96" view
 // ─── DOM Cache ────────────────────────────────────────────────────────────────
 
 const dom = {
-  heading: document.querySelector('[data-completion-heading]') as HTMLElement | null,
-  subheading: document.querySelector('[data-completion-subheading]') as HTMLElement | null,
   panel: document.querySelector('[data-completion-panel]') as HTMLElement | null,
   live: document.querySelector('[data-completion-live]') as HTMLElement | null,
   countdown: document.querySelector('[data-completion-countdown]') as HTMLElement | null,
@@ -46,14 +53,10 @@ const dom = {
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
 //
-// No explanatory lines anywhere on the panel now. Every All-time figure carries
-// its own label — "17" over "Puzzles solved" — so it explains itself, and the
-// boxes above never had one (brief 45, polish brief 100, 104).
+// The two notes keep their wording (results brief 61).
 
-const STREAK_LINE = 'Come back tomorrow to maintain your streak!';
 const NEW_PLAYER_LINE = 'Your streaks and all-time stats start from your third game.';
 const RANDOM_LINE = "Random puzzles don't count towards your stats.";
-const CHART_LABEL = 'Attempts distribution';
 
 
 // ─── Which blocks exist ──────────────────────────────────────────────────────
@@ -66,7 +69,7 @@ const CHART_LABEL = 'Attempts distribution';
 //               never stored, so neither can be shown
 //   saving-off  score saving is switched off — this game only, from memory
 //   new         fewer than three countable games — nothing to show yet
-//   full        all three blocks
+//   full        all four cards
 //
 // NOTHING about score saving appears on this panel in any of them (P-01). The
 // setting lives on the play screen, where the consent happens; the discoverable
@@ -91,7 +94,8 @@ function panelMode(
 
 // ─── Countdown ───────────────────────────────────────────────────────────────
 
-function formatCountdown(isRandom: boolean): string | null {
+/** The lead words and the time, so the time can be set in bold (results brief 61). */
+function formatCountdown(isRandom: boolean): { lead: string; time: string } | null {
   if (isRandom) return null;
   const now = new Date();
   const midnight = new Date(now);
@@ -99,96 +103,18 @@ function formatCountdown(isRandom: boolean): string | null {
   const msUntil = midnight.getTime() - now.getTime();
   const hours = Math.floor(msUntil / 3600000);
   const minutes = Math.floor((msUntil % 3600000) / 60000);
-  if (hours > 0) return `Next puzzle in ${hours}h ${minutes}m`;
-  return `Next puzzle in ${minutes}m`;
+  const lead = 'Next puzzle in ';
+  return { lead, time: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m` };
 }
 
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 
-// A block is a <section> with its own heading, so a screen reader can jump
-// between them. The rule beside the heading is decorative.
-function block(id: string, heading: string, body: string, iconId: string): string {
-  // Every section has a heading with a decorative icon and no rule beside it
-  // (polish brief 91). The icon takes the section's own colour, which the CSS
-  // sets once per section — Streaks, Records and All time take the three theme
-  // colours the player did not pick, so all four are on screen at once
-  // (polish brief 97).
-  return `<section data-stat-block="${id}" class="stat-block" aria-labelledby="stat-head-${id}">
-    <h3 id="stat-head-${id}" class="stat-block__head">
-      <svg class="stat-block__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>${heading}
-    </h3>
-    ${body}
-  </section>`;
-}
-
-/**
- * One All-time figure: the number, with what it means under it (polish brief 101).
- *
- * Still a paragraph rather than a description list, and that is the point — the
- * two spans read as "17 puzzles solved" in one breath, in the order they are
- * written. So the number can sit above its label on screen without the DOM and
- * the picture disagreeing, which is what a `dt`/`dd` pair would have forced.
- */
-function statLine(value: string, words: string): string {
-  return `<p class="stat-line">
-    <span class="stat-line__value">${value}</span>
-    <span class="stat-line__label">${words}</span>
-  </p>`;
-}
-
-function plural(n: number, word: string): string {
-  return n === 1 ? word : `${word}s`;
-}
-
-/**
- * One column: a label with the number under it (brief 65, 66, 67).
- *
- * The label is above the number on screen AND first in the DOM, so the visual
- * order and the reading order finally agree — the redesign's `column-reverse`
- * is gone with the layout that needed it.
- *
- * The label still carries two spans: the short word that is shown and the full
- * one that is spoken. "Plays" on its own means the play streak here and the
- * all-time total two blocks down, and a screen reader has no column heading to
- * disambiguate them.
- */
-function statColumn(shortLabel: string, fullLabel: string, value: string, iconId: string): string {
-  // The icon is a watermark: big, faint, rotated, and clipped by the box's own
-  // corner (polish brief 94). Decorative in the strongest sense — it is a texture, not
-  // a label, so it is aria-hidden and the words carry everything.
-  return `<div class="stat-col">
-    <dt><span class="stat-col__label" aria-hidden="true">${shortLabel}</span><span class="sr-only">${fullLabel}</span></dt>
-    <dd class="stat-col__value">${value}</dd>
-    <svg class="stat-col__mark" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
-  </div>`;
-}
-
-function goesChart(distribution: PlayerStats['goesDistribution']): string {
-  const max = Math.max(1, ...distribution.map((d) => d.count));
-  const rows = distribution
-    .map((d) => {
-      const pct = Math.round((d.count / max) * 100);
-      // The bar is aria-hidden; the count beside it is the accessible content,
-      // so nothing in the chart is available only as a picture (brief 98).
-      return `<li class="goes-row" data-goes-row>
-        <span data-goes-label>${d.bucket}</span>
-        <span class="goes-row__track" aria-hidden="true"><span class="goes-row__fill" style="inline-size: ${pct}%"></span></span>
-        <span class="goes-row__count" data-goes-count>${d.count}</span>
-      </li>`;
-    })
-    .join('');
-  return `<div class="goes-chart">
-    <h4 id="goes-chart-label" class="stat-note">${CHART_LABEL}</h4>
-    <ul class="list-none p-0 m-0" aria-labelledby="goes-chart-label">${rows}</ul>
-  </div>`;
-}
-
 /**
  * The `/play` screen's result sentence: `Solved in 1 go, 0m 30s`.
  *
- * NOT the completion panel's — the panel shows two icon figures now and has no
- * sentence at all (redesign brief 38). This function looks like panel code and
+ * NOT the completion panel's — the panel's Today card has a figure line, not a
+ * sentence (redesign brief 38, results brief 16). This function looks like panel code and
  * is not: src/app.ts imports it and writes it into the play screen's feedback
  * line, which redesign brief 39 deliberately protects. The two screens diverged
  * on purpose. Leave it alone when tidying this file.
@@ -209,38 +135,102 @@ export function heroLine(tries: number | null, seconds: number | null, showTime:
   return `${goes}, ${formatDuration(seconds)}`;
 }
 
-/**
- * One figure: an icon, a word only a screen reader hears, and the number.
- *
- * The word is not optional decoration. Without it the panel reads as a bare
- * "1 go" beside a bare "2m 38s" and the icon carries the meaning, which is
- * exactly what an icon cannot do in speech (brief 47, 49).
- */
-function figure(iconId: string, spokenLabel: string, value: string): string {
-  return `<span class="stat-figure">
-    <svg class="stat-figure__icon" aria-hidden="true"><use href="/sprites.svg#${iconId}"/></svg>
-    <span class="sr-only">${spokenLabel}, </span><span class="stat-figure__value">${value}</span>
-  </span>`;
+
+// ─── The cards ───────────────────────────────────────────────────────────────
+//
+// Every card is a <section> labelled by its own heading, so a screen reader can
+// jump between them (results brief 44, 62). One accent: figures and heading
+// icons in it, every label and sentence in the text colour (brief 45).
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+/** A card with an h3 and a decorative icon. `heading` is plain text. */
+function card(id: string, heading: string, iconId: string, body: string): string {
+  return `<section data-stat-block="${id}" class="result-card" aria-labelledby="stat-head-${id}">` +
+    `<h3 id="stat-head-${id}" class="result-card__head"><svg class="result-card__icon" aria-hidden="true">` +
+    `<use href="/sprites.svg#${iconId}"/></svg>${heading}</h3>${body}</section>`;
+}
+
+/** A whole number of goes, or null. `tries` comes from dlng_history, which
+ *  loadHistory does not validate, and it reaches innerHTML. */
+function realGoes(tries: number | null): number | null {
+  return tries !== null && Number.isInteger(tries) && tries >= 1 ? tries : null;
 }
 
 /**
- * The Today block's body: the goes and the time, side by side (brief 38, 65).
- *
- * An unknown time drops the stopwatch figure entirely rather than showing an
- * empty one (brief 36). Unknowable goes — a reload after a saving-off solve —
- * is the plain word `Solved!` and no figures at all (brief 76).
+ * Today: "Puzzle #238 solved" as the screen's one h2 (results brief 53, 63, 91),
+ * the figure line, then the message. No section icon (brief 46). The h2 keeps
+ * the data-completion-heading hook the e2e helpers wait on (plan D10).
  */
-export function todayFigures(tries: number | null, seconds: number | null, showTime: boolean): string {
-  // The same guard heroLine applies, and for the same reason: this string
-  // reaches innerHTML and `tries` comes from dlng_history, which loadHistory
-  // does not validate. Anything that is not a real count of goes is "played,
-  // not recorded", which is already a state this handles.
-  if (tries === null || !Number.isInteger(tries) || tries < 1) return '<p class="stat-hero">Solved!</p>';
-  const goes = figure('icon-calculator', 'Goes', `${tries} ${tries === 1 ? 'go' : 'goes'}`);
-  const time = showTime && seconds !== null
-    ? figure('icon-stopwatch', 'Time', formatDuration(seconds))
-    : '';
-  return `<div class="stat-today">${goes}${time}</div>`;
+function todayCard(
+  puzzleNum: number,
+  isRandom: boolean,
+  tries: number | null,
+  seconds: number | null,
+  showTime: boolean,
+  mode: PanelMode,
+  message: TodayMessage | null,
+): string {
+  const name = isRandom ? 'Puzzle' : `Puzzle #${puzzleNum}`;
+  const parts = [
+    `<h2 id="stat-head-today" class="result-card__title" data-completion-heading>${name} <span class="result-card__solved">solved</span></h2>`,
+  ];
+
+  // A marker has no goes, and the heading already says solved (brief 92).
+  const goes = realGoes(tries);
+  if (goes !== null) {
+    const words = `${goes} ${plural(goes, 'go', 'goes')}`;
+    // Shown as "2m 28s", spoken as "2 minutes 28 seconds", so "m" is never read
+    // as a letter (brief 65).
+    const line = showTime && seconds !== null
+      ? `<span aria-hidden="true">${words}, ${formatDuration(seconds)}</span><span class="sr-only">${words}, ${speakDuration(seconds)}</span>`
+      : words;
+    parts.push(`<p class="result-card__figures" data-today-figures>${line}</p>`);
+  }
+
+  // Read in place, never announced (brief 64).
+  if (message) {
+    const c = messageCopy(message);
+    parts.push(
+      `<p class="result-card__message" data-today-message><span class="result-card__pill">` +
+      `<svg class="result-card__msg-icon" aria-hidden="true"><use href="/sprites.svg#${c.icon}"/></svg></span>` +
+      `<span>${c.pre}<b>${c.bold}</b>${c.post}</span></p>`,
+    );
+  }
+
+  if (mode === 'random') parts.push(`<p class="result-card__note">${RANDOM_LINE}</p>`);
+  // Not shown to a saving-off player: with saving off no third game ever
+  // accumulates, so it would be a promise we are not going to keep.
+  if (mode === 'new') parts.push(`<p class="result-card__note">${NEW_PLAYER_LINE}</p>`);
+
+  return `<section data-stat-block="today" class="result-card" aria-labelledby="stat-head-today">${parts.join('')}</section>`;
+}
+
+/** Streaks: two lines, each streak with its own best, then the goes strip
+ *  (brief 20–24, 111). The solve-in-one line is left out while that streak is
+ *  0. Bold is accent, as on every card's statement (110). */
+function streakCard(stats: PlayerStats, history: HistoryEntry[]): string {
+  const l = streakLine(stats);
+  const line = (attr: string, n: number, kind: string, best: number) =>
+    `<p class="streak__line" ${attr}><b>${n}-day</b> ${kind} streak. Best: <b>${best}</b>.</p>`;
+  return card('streak', 'Streaks', 'icon-flame',
+    line('data-streak-line', l.play, 'play', l.bestPlay) +
+    (l.inOne > 0 ? line('data-streak-in-one', l.inOne, 'solve-in-one', l.bestInOne) : '') +
+    goesStripHtml(goesByDay(history)));
+}
+
+/** All time: a ledger, label left, figure right (brief 25, 59, 69, 104). */
+function allTimeCard(stats: PlayerStats): string {
+  const row = (label: string, value: string) =>
+    `<div class="ledger__row" data-ledger-row><dt>${label}</dt><dd>${value}</dd></div>`;
+  return card('all-time', 'All time', 'icon-calendar-head',
+    '<dl class="ledger">' +
+    row('Solved in one', `${stats.firstGoPercent ?? 0}%`) +
+    row('Solve-in-one streak', String(stats.bestFirstGoStreak)) +
+    row('Fastest solve', formatDuration(stats.bestTimeSeconds)) +
+    row('Average time', formatDuration(stats.avgTimeSeconds)) +
+    row('Puzzles solved', String(stats.plays)) +
+    '</dl>');
 }
 
 /** Archive replays and markers carry no timing, on screen or in speech. */
@@ -284,6 +274,11 @@ document.addEventListener('screens:enter', (e) => {
     if (dom.live) dom.live.textContent = '';
     return;
   }
+  // Every entry is one visit to the card, so it fetches fresh each time (time
+  // chart brief item 93). Before the early return below, which skips every
+  // visit after the first announcement. The announcement itself is unchanged:
+  // the card is read in place, never announced (item 72).
+  showTimeChart();
   if (pendingAnnouncement === null) return;
   if (dom.live) dom.live.textContent = pendingAnnouncement;
   pendingAnnouncement = null;
@@ -322,18 +317,6 @@ export function renderCompletion(
     dom.octo.innerHTML = COMPLETION_OCTO_SVG;
   }
 
-  // Heading. The old subheading is now the figures inside the Today block, so it
-  // is cleared rather than left saying the same thing twice.
-  // Recomputed below the panel branch would be too late, so the mode is worked
-  // out first and the heading reads from it.
-  // Cleared AND hidden. It is a flex child of a `gap-6` stack, so an empty one
-  // still contributes 24px — which is half of why the figures sat so far below
-  // the heading (polish brief 90).
-  if (dom.subheading) {
-    dom.subheading.textContent = '';
-    dom.subheading.classList.add('hidden');
-  }
-
   const isArchivedOtherDate =
     !isRandom &&
     typeof opts.activeDate === 'string' &&
@@ -343,72 +326,33 @@ export function renderCompletion(
   // Everything is recomputed from history on every render, never kept as a
   // running total — a running total drifts the moment one write is missed
   // (brief 55).
-  const stats = computePlayerStats(loadHistory(), todayKey());
+  const history = loadHistory();
+  const today = todayKey();
+  const stats = computePlayerStats(history, today);
   const mode = panelMode(isRandom, isArchivedOtherDate, tries, stats);
   const seconds = validSeconds(opts.seconds);
 
-  // "You took:" leads into the two figures, so it is only correct when there
-  // are figures to follow it (brief 63). A reload after a saving-off solve has
-  // neither the goes nor the time, and the sentence would dangle over nothing.
-  const hasFigures = tries !== null && Number.isInteger(tries) && tries >= 1;
-  if (dom.heading) {
-    const solved = isRandom ? 'Puzzle solved!' : `Puzzle #${puzzleNum} solved!`;
-    dom.heading.textContent = hasFigures ? `${solved} You took:` : solved;
-  }
+  // The time chart (time chart brief 46): today's daily with a recorded or
+  // in-memory time. Random and archive have no field (4); a marker has no time
+  // (22, 92), and neither does a 0s time, which is junk (87) and would beat
+  // every real player, since the server drops 0s rows (116). The uid goes with
+  // the request only when today's time was sent — a recorded entry — so the
+  // server can leave the player's own row out (110).
+  const showsChart =
+    (mode === 'full' || mode === 'new' || mode === 'saving-off') && seconds !== null && seconds >= 1;
+  const sendUid = history.some((e) => e.date === today && !e.marker && !e.archived);
+  setTimeChartContext(showsChart ? { puzzleNum, seconds, sendUid } : null);
 
   if (dom.panel) {
-    // Archive replays keep the minimal panel they have today: no streaks, no
-    // totals and no timing (brief 54).
-    const showTime = showsTime(mode);
-    const thisGame = [
-      todayFigures(tries, seconds, showTime),
-      mode === 'random' ? `<p class="stat-note">${RANDOM_LINE}</p>` : '',
-      // Not shown to a saving-off player: with saving off no third game ever
-      // accumulates, so it would be a promise we are not going to keep.
-      mode === 'new' ? `<p class="stat-note">${NEW_PLAYER_LINE}</p>` : '',
-    ].join('');
-
-    // No Today block any more (brief 62) — no heading, no rule. The figures sit
-    // directly under the solved message, centred, and the two notes that used to
-    // live in that block sit under them.
-    const blocks = [`<div data-stat-block="this-game">${thisGame}</div>`];
-
-    if (mode === 'full') {
-      // Two sections where there used to be one (brief 64): where you are now,
-      // then what you have ever done. The colours carry that distinction —
-      // Streak in the player's own accent, Records in the second one.
-      // The line sits under the heading and above the boxes (polish brief 92), so it
-      // reads as the section's own sentence rather than a footnote to the last
-      // number in it.
-      blocks.push(block('streak', 'Current streaks',
-        `<p class="stat-note">${STREAK_LINE}</p>
-        <dl class="stat-cols">
-          ${statColumn('Days', 'Current day streak', String(stats.playStreak), 'icon-gamepad')}
-          ${statColumn('1-go solve', 'Current 1-go streak', String(stats.firstGoStreak), 'icon-calculator')}
-          ${statColumn('Avg. time', 'Average time', formatDuration(stats.avgTimeSeconds), 'icon-stopwatch')}
-        </dl>`, 'icon-flame'));
-
-      blocks.push(block('records', 'Records',
-        `<dl class="stat-cols stat-cols--two">
-          ${statColumn('1-go streak', 'Longest 1-go streak', String(stats.bestFirstGoStreak), 'icon-calculator')}
-          ${statColumn('Fastest', 'Fastest time', formatDuration(stats.bestTimeSeconds), 'icon-stopwatch')}
-        </dl>`, 'icon-trophy'));
-
-      const firstGo = stats.firstGoPercent === null
-        ? String(stats.firstGoWins)
-        : `${stats.firstGoWins} (${stats.firstGoPercent}%)`;
-
-      blocks.push(block('all-time', 'All time',
-        `<div class="stat-lines">
-          ${statLine(String(stats.plays), `${plural(stats.plays, 'Puzzle')} solved`)}
-          ${statLine(firstGo, 'Solved in one')}
-          ${statLine(formatDuration(stats.avgTimeSeconds), 'Average time')}
-          ${statLine(stats.avgGoes ?? '—', 'Average attempts')}
-        </div>
-        ${goesChart(stats.goesDistribution)}`, 'icon-calendar'));
-    }
-
-    dom.panel.innerHTML = blocks.join('');
+    // Archive replays and markers carry no timing (brief 54).
+    const message = mode === 'full' ? todayMessage(history, today, tries, seconds) : null;
+    const cards = [todayCard(puzzleNum, isRandom, tries, seconds, showsTime(mode), mode, message)];
+    // Straight under Today: it is about today too (time chart brief 53). Reserved
+    // empty now and drawn after the fetch (54).
+    if (showsChart) cards.push(timeChartSlot());
+    if (mode === 'full') cards.push(streakCard(stats, history), allTimeCard(stats));
+    dom.panel.innerHTML = cards.join('');
+    wireStrip(dom.panel);
   }
 
   // Prepared once per solve, written by the screens:enter listener above. The
@@ -425,9 +369,14 @@ export function renderCompletion(
 
   // Countdown (per D-10: hidden for random puzzles)
   if (dom.countdown) {
-    const text = formatCountdown(isRandom);
-    dom.countdown.textContent = text ?? '';
-    dom.countdown.classList.toggle('hidden', !text);
+    const c = formatCountdown(isRandom);
+    dom.countdown.textContent = c?.lead ?? '';
+    if (c) {
+      const b = document.createElement('b');
+      b.textContent = c.time;
+      dom.countdown.appendChild(b);
+    }
+    dom.countdown.classList.toggle('hidden', !c);
   }
 
   // Render Show puzzle + Archive links (SLV-01).

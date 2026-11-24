@@ -144,6 +144,7 @@ Prompt the user to start a new chat at these trigger points (the user keeps old 
 | Adding a roadmap item as a GitHub issue | [docs/ROADMAP-ISSUES.md](docs/ROADMAP-ISSUES.md) |
 | Feedback — storage (D1), reading it, triage process | [docs/FEEDBACK.md](docs/FEEDBACK.md) |
 | Analytics — event storage (D1), `/stats`, the chart, the Analytics Engine migration | [docs/ANALYTICS.md](docs/ANALYTICS.md) |
+| Traffic growing, or touching anything accepted "for now, at this volume" | [docs/CONSIDERATIONS.md](docs/CONSIDERATIONS.md) |
 
 Update the respective doc if it's incorrect or your work makes it outdated.
 
@@ -201,7 +202,7 @@ Clumeral is a daily number puzzle at clumeral.com. Players get clues about a 3-d
 ### Constraints
 
 - **Tech stack**: Tailwind CSS, existing Vite + Cloudflare Workers setup stays
-- **Backend**: No worker/API changes — frontend-only rebuild
+- **Backend**: No worker/API changes — frontend-only rebuild. One exception: the read-only `GET /api/times/:num` route and the `puzzle_num` column behind it, lifted for the results time chart ([brief](docs/work/2026-11-01-daily-time-chart-brief.md) item 7)
 - **Compatibility**: Must work on all current browsers (ES2022 target)
 - **Performance**: Celebration animation must be skippable and under 3s
 - **Design**: Under 15 semantic colour tokens in tailwind.config.ts

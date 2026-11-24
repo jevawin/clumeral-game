@@ -64,9 +64,10 @@
   --accent-c: var(--chroma-lime);
 
   /* The other three themes, in picker order from the player's own (polish brief 97).
-     Streaks takes 2, Records takes 3 and All time takes 4, so every one of the
-     four theme colours is on the completion screen at once and they rotate
-     together when the player changes theme.
+     UNUSED since the results page redesign (2026-11-15): the page has one accent
+     now, and nothing reads --color-accent-2/3/4. They stay declared because the
+     Worker mirrors them and tests/token-parity.spec.ts compares the two; #370
+     deletes them from both. They were Streaks, Records and All time's colours.
 
      Each names the OTHER hue's own --chroma-* variable rather than reusing the
      current one, so every colour follows dark mode and stays inside sRGB —
@@ -120,9 +121,31 @@
      The gutter lives OUTSIDE the cap, so content is min(480, viewport - 32).
      Deliberately px and not rem: at large browser text the column stops growing
      rather than outrunning the screen. Components inside it keep their rem
-     breakpoints so they still stack — see .stat-cols. */
+     breakpoints, such as the leaderboard reserve below 22.4375rem. */
   --page-max: 480px;
   --page-gutter: 1rem;
+}
+
+/* The "Daily leaderboard" time chart's dot shade (time chart brief items 64, 69,
+   97). Not new colours: mixes of the accent and the text into the page
+   background, as --color-border is a mix of the text. Into --color-surface, not
+   transparent, so the dots are opaque, overlapping dots do not darken, and the
+   ratio is computable. The leaderboard sits on a surface card since the results
+   redesign (results brief 85), so 72% is held to the 3:1 floor against
+   --color-surface in all eight theme × mode combinations — tightest is Lime
+   light at 3.36.
+   tests/palette-contrast.spec.ts pins the maths and this exact declaration.
+   The chart's lines are solid --color-text now (item 128), so they need no
+   shade of their own.
+
+   Outside @theme on purpose (plan D18): tests/token-parity.spec.ts requires every
+   @theme --color-* to be mirrored in the Worker's /archive page, which never
+   shows the chart. It still counts against the 15-token ceiling: 12 in all, with --strip-miss.
+   Dark mode re-resolves them because :root and html.dark are the same element. */
+:root {
+  --chart-dot:  color-mix(in srgb, var(--color-accent) 72%, var(--color-surface));
+  /* The goes strip's missed goes (results brief 95): 20%, lighter than O's 22%. */
+  --strip-miss: color-mix(in srgb, var(--color-accent) 20%, var(--color-surface));
 }
 
 /* Per-theme hue and chroma (#255). Plain rules, not @theme tokens — colours.ts
@@ -507,203 +530,285 @@ html, body { font-family: var(--font-sans); font-weight: 400; }
     color: var(--color-text);
   }
 
-  /* Section heading (polish brief 91): large, normal case, no rule beside it, and a
-     decorative icon in the section's own colour — the player's accent, except
-     Records, which takes the second one. Same distinction the numbers carry. */
-  .stat-block__head {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-block-end: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--color-text);
+  /* ─── Results cards (results page redesign, board O) ──────────────────────────
+     Every section is one card: surface fill, 1.5px border, 6px radius, 18px
+     padding (results brief 44). One accent: figures and heading icons in
+     --color-accent, every label and sentence in --color-text (brief 45). Text
+     sizes in rem; the strip's cells and gaps in px, as O draws them (brief 47). */
+  /* Padding in px, not rem, for the reason the page column is px: at large
+     browser text the card must not eat the content width. In rem it is 36px a
+     side at 200%, which left the Daily leaderboard's track too narrow for its
+     labels (they need about 262px at 200%; time chart brief items 122, 125). */
+  .result-card {
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 0.375rem;
+    padding: 18px;
   }
-  .stat-block__icon {
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
-    flex: none;
+  .result-card__title { margin: 0; font-size: 1.1875rem; font-weight: 400; line-height: 1.3; }
+  .result-card__solved { font-weight: 700; color: var(--color-accent); }
+  .result-card__head {
+    display: flex; align-items: center; gap: 0.5625rem; margin: 0;
+    font-size: 1.1875rem; font-weight: 700; line-height: 1.3; color: var(--color-text);
   }
-  /* One section per theme colour, in picker order from the player's own, so all
-     four are on screen together and rotate with the theme (polish brief 97). Colour is
-     carried by the icons and the numbers ONLY — never by a label, a heading or a
-     border of anything the player has to read (polish brief 98). */
-  [data-stat-block="streak"]   { --section-accent: var(--color-accent-2); }
-  [data-stat-block="records"]  { --section-accent: var(--color-accent-3); }
-  [data-stat-block="all-time"] { --section-accent: var(--color-accent-4); }
-  .stat-block__icon { color: var(--section-accent); }
-
-  /* This game — the hero. The only thing that changed in the last ten seconds,
-     so it is the largest type on the panel (brief 80). */
-  .stat-hero {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--color-text);
-    line-height: 1.2;
-  }
-
-  /* ─── The redesign: figures and boxes ──────────────────────────────────────
-     Three rungs of type size, used by every block (redesign brief 29):
-       1. the Today icons and figures      — the only thing that just happened
-       2. the box titles and their numbers
-       3. the small labels inside a box
-     Numbers are bold; box titles are the same size and NOT bold; labels are
-     regular in the ordinary foreground colour (brief 30). All-caps stays on the
-     block headings and never appears inside a box (brief 83 low-13). */
-
-  /* Today — the two figures side by side. Wraps rather than overflows: an
-     hour-long time makes the pair too wide for a 320px screen. */
-  /* Directly under the solved message now, with no block heading above them
-     (brief 62), so they centre rather than sitting hard left. */
-  /* Half the distance to the line above (polish brief 90). The panel is a flex child of
-     a 1.5rem stack, so pulling 0.75rem back off the top halves that one gap
-     without touching the rhythm of everything below. The empty subheading that
-     used to double it is hidden in completion.ts. */
-  .stat-today {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-block-start: -0.75rem;
-    margin-block-end: 0.5rem;
-  }
-  .stat-figure {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-  }
-  .stat-figure__icon {
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
-    flex: none;
-    /* Baseline-aligned text beside a baseline-less SVG sits high, so nudge it
-       down onto the same optical line as the number. */
-    transform: translateY(0.2em);
-  }
-  .stat-figure__value {
-    font-weight: 700;
-    font-size: clamp(1.375rem, 7vw, 1.75rem);
-    line-height: 1.2;
+  .result-card__icon { inline-size: 1.3125rem; block-size: 1.3125rem; flex: none; color: var(--color-accent); }
+  .result-card__figures {
+    margin: 1.125rem 0 0; font-size: 2.125rem; font-weight: 700; line-height: 1.1;
     color: var(--color-accent);
   }
+  .result-card__message { margin: 1rem 0 0; display: flex; align-items: center; gap: 0.5625rem; font-size: 1rem; }
+  .result-card__pill { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .result-card__msg-icon { inline-size: 0.875rem; block-size: 0.875rem; color: var(--color-accent); }
+  .result-card__note { margin: 0.75rem 0 0; font-size: 1rem; }
+  .streak__line { margin: 1rem 0 0; font-size: 1rem; }
+  .streak__line + .streak__line { margin-block-start: 0.25rem; }
+  /* Every card's statement: bold is always bold accent (brief 110). */
+  .result-card__message b, .time-chart__line b, .streak__line b { font-weight: 700; color: var(--color-accent); }
+  /* The All time ledger: label left, figure right, one size, no rules (brief 25, 48). */
+  .ledger { margin: 1.25rem 0 0; display: grid; gap: 1rem; font-size: 1rem; }
+  .ledger__row { display: flex; justify-content: space-between; gap: 1rem; }
+  .ledger dd { margin: 0; font-weight: 700; color: var(--color-accent); white-space: nowrap; }
 
-  /* Columns of figures, across, stacking below 360px. 22.5rem rather than 360px
-     so the stack also happens at large browser text on a wide screen — and note
-     the page column itself is in px, so these two answer different questions on
-     purpose. */
-  .stat-cols {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
+  /* The goes strip (results brief 22, 47, 52, 68; plan D6, D7).
+     direction: rtl on the scroller opens it at today, the right end, in every
+     engine with no script; the inner track turns back to ltr. */
+  .goes-strip { display: flex; align-items: flex-start; gap: 4px; margin-block-start: 1.25rem; }
+  /* Row numbers (brief 102, 105): one label per row on the cells' 14px pitch, no
+     axis line. The top margin, set inline, skips the head room a broken column's
+     count uses. 13px, the x labels' size at default text (brief 107), but px, not
+     rem, because each must sit on its 10px row: at 200% text a rem label is 26px
+     and the labels pile up. They grow with page zoom, as
+     the cells do, and the figures are in the scroller's spoken summary. */
+  .goes-strip__y {
+    flex: none; display: flex; flex-direction: column; gap: 4px;
+    font-size: 13px; line-height: 10px; text-align: end; white-space: nowrap;
+  }
+  .goes-strip__y > span { block-size: 10px; }
+  .goes-strip__col { flex: 1; min-inline-size: 0; }
+  .goes-strip__frame { border-radius: 2px; }
+  /* overflow-y: hidden, as overflow-x: auto alone makes y auto too, and a
+     classic scrollbar's height then raised a vertical one. Scrollbars are left to
+     the platform (brief 103): no width or hiding rules. */
+  .goes-strip__scroller {
+    direction: rtl; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  }
+  /* The fade at the left edge, only while earlier days are off-screen (brief 105;
+     wireStrip sets the attribute), so a strip scrolled to its oldest day or one
+     that fits is never faded and its oldest day sits beside the row numbers. */
+  [data-more-left] .goes-strip__scroller {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
+    mask-image: linear-gradient(to right, transparent 0, #000 40px);
+  }
+  /* The mask would fade a ring drawn on the scroller, so the ring goes on the
+     unmasked frame where :has() exists; without it, on the scroller itself. */
+  .goes-strip__scroller:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+  @supports selector(:has(*)) {
+    .goes-strip__scroller:focus-visible { outline: none; }
+    .goes-strip__frame:has(> [data-strip-scroller]:focus-visible) {
+      outline: 2px solid var(--color-accent); outline-offset: 3px;
+    }
+  }
+  /* The track hugs the right, so today sits over "today". */
+  .goes-strip__inner {
+    direction: ltr; box-sizing: content-box; display: flex; align-items: flex-end; gap: 4px;
+    inline-size: max-content; margin-inline-start: auto;
+  }
+  .goes-strip__x {
+    display: flex; justify-content: space-between; gap: 1rem;
+    margin-block-start: 0.375rem; font-size: 0.8125rem; white-space: nowrap;
+  }
+  .goes-strip__start { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .goes-strip__arrow { display: none; inline-size: 1em; block-size: 1em; color: var(--color-text); }
+  [data-more-left] .goes-strip__arrow { display: block; }
+  /* A long break (brief 98): one column, its day count sat on the cells' baseline. */
+  /* A gap (brief 112, 115): one block (one missed day) or three (bolt, count,
+     bolt) on the bottom row, each the size of a cell (18×10, the count may run
+     wider), with its bolt or count centred. */
+  .goes-strip__inner > [data-strip-break] { flex: none; display: flex; align-items: flex-end; gap: 4px; }
+  .goes-strip__side-bolt, .goes-strip__break {
+    flex: none; min-inline-size: 18px; block-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .goes-strip__side-bolt { color: var(--color-text); }
+  /* The broken column's 8×10 bolt, turned 90°. */
+  .goes-strip__side-bolt > svg { inline-size: 8px; block-size: 10px; flex: none; transform: rotate(90deg); }
+  .goes-strip__break { font-size: 0.8125rem; line-height: 1; white-space: nowrap; }
+  .goes-strip__inner > [data-strip-day] { inline-size: 18px; display: flex; flex-direction: column-reverse; gap: 4px; }
+  .goes-strip__cell { block-size: 10px; border-radius: 2px; box-sizing: border-box; }
+  .goes-strip__cell--hit { background: var(--color-accent); }
+  /* Missed goes are faded (results brief 51, 95). Under 3:1 by design: Jamie, as
+     accessibility owner, relaxed WCAG 1.4.11 for this non-text cell on 2026-11-15. */
+  .goes-strip__cell--miss { background: var(--strip-miss); }
+  .goes-strip__elide { block-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .goes-strip__bolt { inline-size: 8px; block-size: 10px; color: var(--color-accent); }
+  .goes-strip__count { block-size: 14px; display: flex; align-items: flex-end; justify-content: center; font-size: 0.8125rem; line-height: 1; }
+
+
+  /* ─── Daily leaderboard: the time chart (time chart brief items 47, 105) ──────
+     Converted from Idea-O's .spread rules. Every vertical metric and font size
+     is rem, so labels and their rows grow together at 200% text (item 69); dot
+     sizes and line weights stay px, since they are not text. Positions across
+     the track are written by time-chart-view.ts.
+
+     Labels are 15px on 18px rows, up from the board's 12px on 14px (Jamie,
+     2026-11-01, brief items 125, 130). The board's geometry is kept with the
+     row height L as the one variable: rows at 0 and L+2, the axis at 2L+30,
+     the labels below from 2L+58, and the track 4L+60. At L = 18: 66px and
+     132px. Leaders start 2px off their text and run to the axis (item 128).
+
+     Three rows: you above the axis, dots on it, the three references below. The
+     two label groups sit on opposite sides of the line, so they can never run
+     into each other wherever your dot lands. Within each label the TIME is the
+     line nearest the axis and the WORD the line further from it.
+
+     No transition or animation on any rule here: the dots are drawn in place
+     (item 51). */
+  /* The reserved space while the field loads (item 54), so the card arriving
+     does not push Streaks down mid-read. Reserved on the CONTENT box: the card's
+     1.5px border snaps to 1px in Chromium at 1x and stays 1.5px in WebKit at 2x,
+     so a border-box height would differ by 1px between engines. The content
+     heights are identical. Measured 2026-11-15 on the results card (18px
+     padding, 1.1875rem heading), default text, Chromium and WebKit, and
+     unchanged by the padding's move from 1.125rem to 18px (equal at default text):
+       375px viewport — 205.484px (drawn 243.484 / 244.484 with border)
+       320px viewport — 226.281px (the 99% copy line wraps to two lines)
+     Written to three decimals of a rem, never rounded up.
+     e2e/specs/time-chart.spec.ts's no-shift test holds both widths. */
+  [data-time-chart][aria-busy="true"]:empty { box-sizing: content-box; min-block-size: 12.842rem; }
+  @media (max-width: 22.4375rem) {
+    [data-time-chart][aria-busy="true"]:empty { min-block-size: 14.142rem; }
+  }
+  .time-chart__line {
     margin: 0;
-  }
-  @media (min-width: 22.5rem) {
-    .stat-cols { grid-template-columns: repeat(3, 1fr); }
-    .stat-cols--two { grid-template-columns: repeat(2, 1fr); }
-  }
-  /* The box (polish brief 93): the undo/reset controls' resting state — surface fill,
-     the same 1.5px border and the same radius — so the panel borrows a shape the
-     player already knows from the play screen rather than inventing one.
-     `overflow: hidden` is load-bearing: it is what clips the watermark. */
-  .stat-col {
-    position: relative;
-    overflow: hidden;
-    background: var(--color-surface);
-    border: 1.5px solid var(--section-accent);
-    border-radius: var(--radius-sm);
-    padding: 0.625rem 0.75rem;
-  }
-  /* The watermark (polish brief 94): the box's own icon, big, faint and rotated, run
-     off the bottom-right corner so the border crops it. Behind the text, and
-     `pointer-events: none` so it can never eat a tap. */
-  .stat-col__mark {
-    position: absolute;
-    inset-block-end: -0.875rem;
-    inset-inline-end: -0.875rem;
-    inline-size: 4rem;
-    block-size: 4rem;
-    transform: rotate(45deg);
-    color: var(--color-text);
-    opacity: 0.12;
-    pointer-events: none;
-  }
-  /* Label above number, in the DOM as well as on screen (brief 67). The
-     redesign needed column-reverse to put the number on top; this layout does
-     not, so the visual order and the reading order agree again. Do not add it
-     back without reading that brief item first.
-
-     16px label, 24px number — polish brief 95's floor and its "larger is larger". The
-     number's clamp tops out where three boxes still fit a 390px screen: 358px of
-     content, less two 8px gaps and six 12px paddings, is 42px of text per box at
-     the narrow end, which is what pins the lower bound rather than the upper. */
-  .stat-col__label {
-    display: block;
-    position: relative;
+    margin-block-start: 0.875rem;
     font-size: 1rem;
     font-weight: 400;
-    line-height: 1.2;
-    color: var(--color-text);
-  }
-  .stat-col__value {
-    margin: 0;
-    margin-block-start: 0.125rem;
-    position: relative;
-    font-weight: 700;
-    font-size: clamp(1.25rem, 6.5vw, 1.75rem);
-    line-height: 1.2;
-    color: var(--section-accent);
-  }
-
-  /* All time — a two-column grid, the number with its label under it (polish brief 101).
-     No borders, no boxes and no dividing rules: the grid does the separating. */
-  .stat-lines {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.875rem 1rem;
-  }
-  .stat-line {
     line-height: 1.3;
     color: var(--color-text);
   }
-  .stat-line__value {
-    display: block;
-    font-weight: 700;
-    font-size: 1.375rem;
-    color: var(--section-accent);
-  }
-  .stat-line__label {
-    display: block;
-    font-size: 1rem;
-    margin-block-start: 0.125rem;
-  }
-
-  /* Attempts distribution. The bar is decorative; the count beside it is the
-     accessible content (brief 98). The fill takes the section's colour, so it
-     matches the numbers above it rather than the player's own accent. */
-  .goes-chart { margin-block-start: 1rem; }
-  .goes-row {
-    display: grid;
-    grid-template-columns: 1.25rem 1fr 2.25rem;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
+  .time-chart__track {
+    position: relative;
+    block-size: 8.25rem;
+    margin-block-start: 0.875rem;
     color: var(--color-text);
-    padding-block: 0.1875rem;
   }
-  .goes-row__track {
-    block-size: 0.625rem;
-    border-radius: 0.3125rem;
-    background-color: var(--color-border);
-    overflow: hidden;
+  /* Lines are solid text colour, 2px — white in dark mode (Jamie, items 128,
+     130). The axis is centred on the dots' centre line. */
+  .time-chart__axis {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(4.125rem - 1px);
+    block-size: 2px;
+    background: var(--color-text);
   }
-  .goes-row__fill {
+  /* The 2px gap is what lines the second-row note (item 123) up with your time. */
+  .time-chart__above, .time-chart__below {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    inline-size: max-content;
+  }
+  .time-chart__above { top: 0; font-weight: 700; }
+  .time-chart__below { top: 5.875rem; }
+  .time-chart__t, .time-chart__w {
+    font-size: 0.9375rem;
+    line-height: 1.125rem;
+    white-space: nowrap;
+  }
+  /* Item 125: when three full-size references cannot sit side by side — large text
+     on a narrow phone — every chart label steps down to 12px together. Set by
+     time-chart-view.ts from measured widths. */
+  .time-chart--tight .time-chart__t,
+  .time-chart--tight .time-chart__w,
+  .time-chart--tight .time-chart__note { font-size: 0.75rem; }
+  /* The label is placed to FIT; the LEADER marks the TRUE position. Three labels
+     cannot always sit centred on their own dots without touching, so the label
+     moves and the line stays honest. */
+  /* Each leader runs from 2px off its text right to the axis, under its dot, so
+     it meets the dot rather than stopping short of it (item 128). Centred on its
+     mark by the translate. */
+  .time-chart__lead {
+    position: absolute;
+    z-index: 1;
+    inline-size: 2px;
+    block-size: 1.625rem;
+    transform: translateX(-50%);
+    background: var(--color-text);
+  }
+  .time-chart__lead--up { top: 2.5rem; }
+  .time-chart__lead--down { top: 4.125rem; }
+  /* The axis note, on the second row of the top corner furthest from your dot
+     (items 48, 123), level with your time. It is the axis's key, not a label on
+     a mark, so it has no leader (item 124). max-content in every position, so
+     it measures its text, never the row it sits in. */
+  .time-chart__note {
+    position: absolute;
+    top: 1.25rem;
+    inline-size: max-content;
+    font-size: 0.9375rem;
+    line-height: 1.125rem;
+    white-space: nowrap;
+    color: var(--color-text);
+  }
+  .time-chart__note--left { left: 0; }
+  .time-chart__note--right { right: 0; }
+  /* The fallback when the far corner has no room (item 122): Idea-R's caption,
+     centred below the chart. */
+  .time-chart__note--below {
+    position: static;
     display: block;
-    block-size: 100%;
-    border-radius: 0.3125rem;
-    background-color: var(--section-accent);
+    margin-block-start: 0.375rem;
+    margin-inline: auto;
   }
-  .goes-row__count { text-align: end; font-weight: 700; }
+  /* The border is the card's own fill, --color-surface: it separates touching
+     dots (time chart plan D14; results brief 85). */
+  .time-chart__dot {
+    position: absolute;
+    top: 4.125rem;
+    box-sizing: border-box;
+    border-radius: 9999px;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    background: var(--chart-dot);
+    border: 1.5px solid var(--color-surface);
+  }
+  .time-chart__dot--you { background: var(--color-accent); z-index: 3; }
+
+  /* ─── Testing panel (preview hosts only, testing-panel.ts) ───────────────
+     Never rendered on clumeral.com. Plain and functional on purpose: a tool for
+     Jamie and Dave, not part of the game's design. */
+  .testing-panel__open {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    min-block-size: 2.75rem;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .testing-panel {
+    inline-size: min(26rem, calc(100% - 2rem));
+    max-block-size: calc(100dvh - 2rem);
+    padding: 0;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+  .testing-panel::backdrop { background: rgb(0 0 0 / 0.4); }
+  .testing-panel__box { padding: 1rem 1.25rem 1.25rem; }
+  .testing-panel__top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .testing-panel__title { margin: 0; font-size: 1.5rem; font-weight: 700; }
+  .testing-panel__head { margin: 1rem 0 0; font-size: 1.125rem; font-weight: 700; }
+  .testing-panel__note { margin: 0.25rem 0 0.5rem; font-size: 0.875rem; }
+  .testing-panel__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .testing-panel__btn { inline-size: 100%; }
+  .testing-panel__btn[aria-pressed="true"] {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
 
   /* ─── HTP clue styles for welcome screen ─── */
   /* HTP digit box (reused from game digit-box styling) */
