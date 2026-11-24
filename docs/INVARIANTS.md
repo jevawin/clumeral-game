@@ -105,7 +105,10 @@ It now fails closed outside localhost and branch previews (`devAnswerAllowed`, p
 same PUZZLES KV, the repository is public so branch names are public, and
 `staging-clumeral-game.jevawin.workers.dev/api/dev/answer` returns today's real answer.
 Closing it means taking the no-token path off previews, which removes the preview
-Testing panel's fill and solve buttons, or gating it on a secret. Not yet decided.
+Testing panel's fill and solve buttons, or gating it on a secret. **Accepted, not fixed**
+(Jamie, 2026-11-24): any AI solves a puzzle in seconds, so the answer is not a secret worth
+guarding. The open door stays so the Testing panel keeps working. Revisit if the Daily
+leaderboard ever carries real stakes.
 
 **Guarded by.** For `/api/puzzle`, *nothing, directly.* `docs/ARCHITECTURE.md` states the rule, and the route tests
 exercise the endpoints, but no test asserts the answer is **absent** from an `/api/puzzle`
