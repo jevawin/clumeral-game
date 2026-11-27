@@ -1,9 +1,10 @@
 # Dependabot alert triage — brief
 
-Issue: #381 · Branch: `dev/dependabot-alert-triage` · Started 2026-11-27 · Brief as a whole: **pending Jamie** · da-brief: not run
+Issue: #381 · Branch: `dev/dependabot-alert-triage` · Started 2026-11-27 · Brief as a whole: Jamie 2026-11-27 · da-brief: pending
 
-Status: **draft.** Every section below carries recommendations but none is settled yet.
-Nothing is closeable until each ledger reads settled and acked.
+Status: **settled, awaiting da-brief.** Jamie 2026-11-27: "1 yes" (all recommendations
+accepted), "2 override" (Jamie overrides Dave's ack as dev lead on every joint section —
+dev tooling, no maths or player impact; recorded as override, not ack), "3 yes" (§4 and §9 n/a).
 
 Proposed short form: none. All 11 sections are kept; the ones that do not apply say so in
 one line and still need a word back.
@@ -43,7 +44,7 @@ pins `undici 7.24.4`, `ws 8.18.0`, `sharp ^0.34.5`, and its `wrangler 4.81.1` st
 esbuild 0.27.3.
 
 ## 1. What it is
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 1. The problem: GitHub shows 27 open security alerts on `main` and Dependabot keeps
    failing to fix them, so the alert list and the Actions tab both read as broken. Nobody has
@@ -56,7 +57,7 @@ Settled: pending · Ack: pending (Dave)
    reason, and the `ws` and `esbuild` runs stop failing. (assumed — #381 acceptance criteria)
 
 ## 2. Out of scope
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 5. #331 is not done here: no bump of `@cloudflare/vite-plugin`, `wrangler` or
    `@cloudflare/workers-types`, and none of their `ignore` entries is lifted. (assumed —
@@ -74,7 +75,7 @@ Settled: pending · Ack: pending (Dave)
    wider is maintenance, which stays out.
 
 ## 3. How it works
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 9. What do we do about the 22 `undici` alerts (8 high)?
    My rec: an npm `overrides` entry that forces `undici` to the newest 7.x (7.30.2 today)
@@ -113,18 +114,18 @@ Settled: pending · Ack: pending (Dave)
     accurate, and dismissing early hides them if the PR stalls.
 
 ## 4. Maths
-Settled: pending · Ack: n/a
+Settled: n/a agreed by Jamie 2026-11-27 · Dave sign-off: Override: Jamie 2026-11-27 (no maths touched) · Ack: n/a
 
-18. n/a — no puzzle generation, filtering or answer logic is touched. Dave, ok?
+18. n/a — no puzzle generation, filtering or answer logic is touched.
 
 ## 5. State & persistence
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 19. n/a — no player storage, no `dlng_` key, no D1, no KV. P1 and P7 are untouched.
     (assumed)
 
 ## 6. How it fits
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 20. Files touched: `package.json` (`overrides`), `package-lock.json`, `.github/dependabot.yml`
     (comment only), and #331's body or a comment (the override-removal step). No `src/`
@@ -138,29 +139,29 @@ Settled: pending · Ack: pending (Dave)
     item 27)
 
 ## 7. How it looks
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 24. n/a — nothing a player sees changes. (assumed)
 
 ## 8. Copy & wording
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 25. Dismissal comments follow one pattern: "Dev-only, transitive via miniflare (pinned by
     `@cloudflare/vite-plugin`/`wrangler`, see #331). <one-line reason>. Removed with #331."
     (assumed)
 
 ## 9. Accessibility
-Settled: pending · Ack: n/a (Jamie owns)
+Settled: Jamie 2026-11-27 (n/a agreed) · Ack: n/a (Jamie owns)
 
-26. n/a — no UI change. Jamie, ok?
+26. n/a — no UI change.
 
 ## 10. Analytics
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 27. n/a — no player-facing behaviour, nothing to count. (assumed)
 
 ## 11. Done / test plan
-Settled: pending · Ack: pending (Dave)
+Settled: Jamie 2026-11-27 (accepted all recommendations) · Ack: Override: Jamie 2026-11-27
 
 28. Which QA level?
     My rec: `npm ci` from clean, the full unit suite (41 files; the worker tests run on the
