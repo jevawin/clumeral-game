@@ -5,7 +5,7 @@
 **Brief:** [2026-11-27-dependabot-alert-triage-brief.md](2026-11-27-dependabot-alert-triage-brief.md) —
 closed. Gates met: no `Ack: pending`; `da-brief` passed with fixes (items 31–42); joint
 sections carry Jamie's override; §4 and §9 n/a.
-**Approval:** pending — Jamie.
+**Approval:** Jamie, 2026-11-27, on revision 2 ("approved"). Build may start. R1 taken as the plan's corrected wording, since the plan was approved with that text.
 **da-plan:** run once on revision 1 (0 High, 2 Medium, 5 Low); all fixed in revision 2.
 
 Read the brief's "da-brief fixes" section (31–42) first: it amends earlier items by number, and
