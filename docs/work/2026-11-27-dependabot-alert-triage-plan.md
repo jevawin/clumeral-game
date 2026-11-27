@@ -6,7 +6,7 @@
 closed. Gates met: no `Ack: pending`; `da-brief` passed with fixes (items 31–42); joint
 sections carry Jamie's override; §4 and §9 n/a.
 **Approval:** pending — Jamie.
-**da-plan:** pending.
+**da-plan:** run once on revision 1 (0 High, 2 Medium, 5 Low); all fixed in revision 2.
 
 Read the brief's "da-brief fixes" section (31–42) first: it amends earlier items by number, and
 where they differ the later item wins. Item numbers below are brief item numbers.
@@ -52,8 +52,9 @@ The brief's evidence block still holds. Re-measured today on this branch:
 - **D2. The lockfile is regenerated with `npm install`, then checked by diff.** The only
   lockfile entries allowed to change are `node_modules/**/undici` and `node_modules/**/ws`
   (version, `resolved`, `integrity`, and any `engines`/`dependencies` fields those packages
-  carry), plus the root `overrides` mirror. Any other entry changing is a stop: revert the
-  lockfile, report it, do not commit.
+  carry). A nested undici or ws entry being removed is expected: it dedupes onto the hoisted
+  copy once both copies agree. npm does not write `overrides` into the lockfile. Any other
+  entry changing is a stop: revert the lockfile, report it, do not commit.
 - **D3. Dismissals use `gh api` PATCH with `dismissed_reason=not_used`** (items 13, 16, 42):
 
   ```bash
@@ -88,7 +89,10 @@ The brief's evidence block still holds. Re-measured today on this branch:
 | Alert | Package | Comment |
 |---|---|---|
 | 29, 43, 64 | sharp | `Dev-only, transitive via miniflare (pinned by @cloudflare/vite-plugin/wrangler, see #331, and by @cloudflare/vitest-pool-workers). Reaches us only through miniflare's local Images binding, which this project does not use. Removed with #331 and the vitest-plugin move.` |
-| 15 | esbuild | `Dev-only, transitive via wrangler's exact pin and vite (see #331). Needs the esbuild dev server running on Windows; we run neither, and vite 8 does not serve through esbuild. Removed with #331.` |
+| 15 | esbuild | `Dev-only, transitive via wrangler's exact pin and vite (see #331). Needs the esbuild dev server running on Windows; we never run that server, and vite 8 does not serve through esbuild. Removed with #331.` |
+
+"Pinned by" in the sharp comment means the miniflare version is pinned; miniflare itself takes
+sharp as a range (`^0.34.5`). The comment stays true; R1 is where to tighten it.
 
 Both comments are under 280 characters (checked with `${#s}` before sending; Task 1 step 2).
 
@@ -98,6 +102,7 @@ Both comments are under 280 characters (checked with `${#s}` before sending; Tas
 
 Items 28, 38, 41. Nothing is committed.
 
+0. Set the scratch folder for every later command: `SCRATCH=<this session's scratchpad directory>; mkdir -p "$SCRATCH"`.
 1. `git status` clean. `rm -rf node_modules dist && npm ci`.
 2. Record the before-tree: `npm ls undici ws esbuild sharp > $SCRATCH/ls-before.txt`.
 3. Prove the build is deterministic (item 38):
@@ -108,8 +113,6 @@ Items 28, 38, 41. Nothing is committed.
    ```
    - No diff: `hash-a.txt` is the baseline; Task 3 compares hashes.
    - Diff: record which files differ. Write `(cd dist && find . -type f -exec stat -f '%z %N' {} + | sort -k2) > $SCRATCH/size-a.txt` as the baseline instead, and say so in the PR body.
-
-`$SCRATCH` is this session's scratchpad directory.
 
 ## Task 1 — Dismiss the sharp and esbuild alerts
 
@@ -128,20 +131,22 @@ No commit. Record the four numbers and the time in the PR body.
 
 Items 9, 10, 31, 32, 33.
 
-Test first (it fails now, which is the point):
+Test first. These four checks decide the result by their output, not by eye. Before the
+change, check 2 prints lines (7.24.4, 7.28.0, 8.18.0, 8.21.0) and check 3 prints 0, so they fail.
 
 ```bash
-npm ls undici ws --all
+# 1. Tree is valid: must print "exit 0"
+npm ls undici ws --all; echo "exit $?"
+# 2. No old copy anywhere: must print nothing
+npm ls undici ws --all | grep -E 'undici@7\.(24\.4|28\.0)|ws@8\.(18|21)\.0'
+# 3. miniflare copies on 7.30.2: must print 2 or more (deduped lines may fold)
+npm ls undici --all | grep -c 'undici@7.30.2'
+# 4. jsdom untouched: must exit 0
+npm ls undici --all | grep -q 'undici@8.12.3'; echo "exit $?"
 ```
 
-Expected after the change, and checked by eye against this list:
-- every `undici` under a `miniflare` is `7.30.2` (two copies: root and pool);
-- `jsdom`'s `undici` is still `8.12.3`;
-- every `ws` is `8.23.1` (plugin direct, root miniflare deduped, pool miniflare);
-- no `ws@8.18.0` and no `undici@7.24.4` or `7.28.0` anywhere;
-- `npm ls` exits 0 (no `invalid` or `ELSPROBLEMS` lines).
-
-Before the change it shows 7.24.4, 7.28.0 and 8.18.0, so it fails.
+Also, `npm ls ws --all | grep -c 'ws@8.23.1'` prints 2 or more, and no other `ws@` version
+appears.
 
 Then:
 1. Add the D1 block to `package.json`.
@@ -157,7 +162,7 @@ Then:
 Items 23, 28, 29, 34, 38, 41. Nothing is committed unless a fallback fires.
 
 1. `rm -rf node_modules dist && npm ci`. Must exit 0 with no `ERESOLVE`.
-2. Re-run the Task 2 `npm ls` check on the clean install.
+2. Re-run the Task 2 checks 1–4 on the clean install.
 3. `npm test`. Pass condition: 41 test files, all passing. The test count is build-dependent
    (memory: 826 locally vs 822 in CI); use the file count.
 4. `rm -rf dist && npm run build`, then hash as in Task 0 and `diff` against the baseline.
@@ -168,14 +173,22 @@ Items 23, 28, 29, 34, 38, 41. Nothing is committed unless a fallback fires.
    launch here) and that is expected. Count passes per project and record them.
 6. Fallback (item 34). If step 3 or 5 fails and the cause is not clear from the output within
    this task:
-   - Undici and ws fail together and cannot be told apart: drop each override in turn
-     (`ws` first, since it is the smaller move), re-run step 3 or 5, and keep the one that
-     passes.
-   - Drop a failing override from `package.json`, `npm install`, commit
+   - Find which override fails: remove the `ws` override (both keys), `npm install`, re-run
+     the failing step. Then restore it, remove the `undici` key instead, and re-run.
+     - Only one passes on its own: keep that one, drop the other.
+     - Both fail on their own: drop both.
+     - Both pass on their own but fail together: drop both. Do not dig further.
+   - Dropping the ws override removes `ws` from the `miniflare` key and the whole
+     `@cloudflare/vite-plugin` key. Dropping undici removes `undici` from the `miniflare` key.
+     An empty `miniflare` key or `overrides` block is removed too.
+   - `npm install`, re-run the Task 2 checks for what remains, commit
      `revert(deps): drop <pkg> override, fails <suite> (#381)`.
-   - Its alerts move to the dismissal list as `tolerable_risk`, comment:
+   - Remove the dropped package's words from the Task 4a note and its mention from the Task 5
+     comment. If both are dropped, Task 4a and Task 5 are not done at all.
+   - The dropped package's alerts go on a second dismissal list as `tolerable_risk`, comment:
      `Dev-only, transitive via miniflare (pinned by @cloudflare/vite-plugin/wrangler, see #331). Override to <version> broke <suite>; not debugged here. Removed with #331.`
-     These dismissals need Jamie's yes on the exact list before they are sent.
+     Jamie approves that exact list in chat. It is sent after the release reaches `main`
+     (item 17; item 35 brought forward only sharp and esbuild), and checked in Task 7.
    - Do not patch or debug miniflare.
 
 ## Task 4 — `.github/dependabot.yml` comments
@@ -211,9 +224,11 @@ line before `- dependency-name: "@cloudflare/vitest-pool-workers"`) with:
 ```yaml
       # The pool is held at 0.19.1 (#332). Minor has to be ignored here, not only
       # major: Dependabot reads a 0.x minor as a minor — proven, #326 put a
-      # 0.12 -> 0.22 jump inside the minor-and-patch group — and every release
-      # from 0.20.0 on ships a miniflare 5 alpha, the prerelease runtime under
-      # tests/worker/** that caused #325.
+      # 0.12 -> 0.22 jump inside the minor-and-patch group. That mattered first
+      # because 0.13.0 is where the vitest 4 peer begins (before #332, the pin
+      # was 0.12.21). It matters now because every release from 0.20.0 on ships
+      # a miniflare 5 alpha, the prerelease runtime under tests/worker/** that
+      # caused #325.
       #
       # Be clear what that costs. 0.19.1 is the LAST 0.19.x release, so patch is
       # allowed in principle but none will ever come: this is a permanent pin,
@@ -225,7 +240,8 @@ line before `- dependency-name: "@cloudflare/vitest-pool-workers"`) with:
       # to @cloudflare/vitest-plugin (see "Outstanding actions" in CLAUDE.md).
 ```
 
-Only this entry changes. The vitest entry above it also carries stale lines (the 0.12.x peer
+Only this entry changes. The block is rewritten, not only its numbers, so the PR body says
+so. The vitest entry above it also carries stale lines (the 0.12.x peer
 range, "Lifting these three entries is part of the vitest 4 task"); item 8 limits the fix to
 the pool entry, so those are listed as a follow-up in the PR body, not fixed.
 
@@ -317,3 +333,10 @@ Task 3 can adjust the header note in the same pass.
 ## Revision log
 
 - Revision 1, 2026-11-27: first draft.
+- Revision 2, 2026-11-27: da-plan fixes (0 High, 2 Medium, 5 Low; all fixed).
+  M1: Task 3 fallback covers both-fail and fail-together, removes dropped overrides from 4a
+  and Task 5, and times `tolerable_risk` dismissals after release (item 17). M2: Task 2's
+  test is four commands with fixed expected output. L1: D2 drops the lockfile overrides
+  mirror and expects removed nested entries. L2: Task 0 sets `$SCRATCH`. L3: note under the
+  dismissal list. L4: esbuild comment wording. L5: 4b keeps the 0.13.0 history and the PR
+  body says the block is rewritten.
