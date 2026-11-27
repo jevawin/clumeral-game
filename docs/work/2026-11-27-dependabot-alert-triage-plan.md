@@ -330,6 +330,46 @@ Task 0 → Task 1 (needs plan approval) → Task 2 → Task 3 → Task 4 → hum
 Task 4 is independent of Task 2 and may go first; it is kept after Task 3 so a fallback in
 Task 3 can adjust the header note in the same pass.
 
+## Build log (2026-11-27)
+
+Results of Tasks 0–4, for the PR body.
+
+- **Task 0.** Two clean builds are not byte-identical: `client/sw.js` differs, because
+  `vite.config.ts` stamps `Date.now()` into the service worker's `CACHE_NAME`. Fallback taken:
+  the baseline is the file list and sizes. The other 17 files' hashes were kept as a second
+  check.
+- **Task 1.** Dismissed as `not_used`, each verified afterwards: 29, 43, 64 (sharp) and 15
+  (esbuild), 2026-11-27 21:22:12–21:22:16 UTC. 23 alerts remain open (22 undici, 1 ws), to be
+  fixed by the release.
+- **Task 2.** `bc578a1`. The first `npm install` left the pool's nested
+  `@cloudflare/vitest-pool-workers/node_modules/ws` on 8.21.0, marked invalid: npm did not
+  re-resolve an already-locked nested entry under the new override. That one lockfile entry
+  was removed and `npm install` re-run. The lockfile diff changes `node_modules/undici` and
+  `node_modules/ws` and removes the pool's nested `undici` and `ws` (deduped). Nothing else
+  changes. All four checks pass.
+- **Task 3.**
+  - `npm ci` is clean, with no ERESOLVE, and the Task 2 checks pass again.
+  - Unit tests: **45/45 files** pass (1039 tests). The plan's "41" was out of date, because
+    tests were added after #332. `sw-precache.spec.ts` needs `dist/` and skips without it.
+  - Build: file list and sizes match the baseline, and all 17 non-SW hashes are identical.
+    `sw.js` is identical apart from `CACHE_NAME`.
+  - E2E. The first run never started, because no Playwright browsers were installed on this
+    Mac. Jamie approved `npx playwright install chromium webkit`. Per-project results of the
+    full run:
+    - chromium-desktop 198 passed, 2 skipped
+    - mobile-chromium 190 passed, 10 skipped
+    - legacy-chromium 13 passed, 5 skipped
+    - webkit-desktop 126 passed, 73 skipped, 1 failed
+    - mobile-webkit 166 passed, 33 skipped, 1 failed
+    - firefox-desktop 198 did not launch (not installed; it cannot launch here anyway)
+  - The two WebKit failures are the same test,
+    `undo-reset.spec.ts:310` "pressing an unavailable control does nothing at all" (Undo not
+    focused after a forced click). They are **pre-existing**: the test fails 6/6 on the
+    pre-override tree (`72d0050`, in a throwaway worktree) and 3/3 here. It passes on
+    Chromium, and on CI's Linux WebKit on staging. So this is macOS WebKit focus behaviour.
+    The fallback does not fire. Follow-up, not fixed here.
+- **Task 4.** `aee210f`. The comment-only check prints nothing, and the YAML parses.
+
 ## Revision log
 
 - Revision 1, 2026-11-27: first draft.
