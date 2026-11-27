@@ -1,5 +1,12 @@
 # Dependabot (added 2026-10-04). Weekly update PRs against main, tested by the
 # normal CI (ci-smoke + ci-matrix) before anyone merges them. Nothing auto-merges.
+#
+# package.json also carries npm `overrides` that force undici 7.30.2 and ws 8.23.1
+# under miniflare and @cloudflare/vite-plugin (#381). They exist because the pinned
+# Cloudflare toolchain (see the ignore entries below and #331) exact-pins vulnerable
+# versions, so Dependabot cannot move them. #331 removes them once the new tree
+# resolves patched versions without them. npm overrides cannot carry comments,
+# which is why this note is here.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -82,19 +89,22 @@ updates:
       # not documented either. Confirm both on the next scheduled run.
       - dependency-name: "@vitest/*"
         update-types: ["version-update:semver-major"]
-      # 0.12.21 -> 0.13.0 is a *minor* in Dependabot's reading of a 0.x version
-      # — proven, not assumed: #326 put a 0.12 -> 0.22 jump inside the
-      # minor-and-patch group, which only accepts minor and patch. And 0.13.0 is
-      # exactly where the vitest 4 peer begins. So minor has to be ignored here,
-      # not only major.
+      # The pool is held at 0.19.1 (#332). Minor has to be ignored here, not only
+      # major: Dependabot reads a 0.x minor as a minor — proven, #326 put a
+      # 0.12 -> 0.22 jump inside the minor-and-patch group. That mattered first
+      # because 0.13.0 is where the vitest 4 peer begins (before #332, the pin
+      # was 0.12.21). It matters now because every release from 0.20.0 on ships
+      # a miniflare 5 alpha, the prerelease runtime under tests/worker/** that
+      # caused #325.
       #
-      # Be clear what that costs. 0.12.21 is the LAST 0.12.x release, so patch is
+      # Be clear what that costs. 0.19.1 is the LAST 0.19.x release, so patch is
       # allowed in principle but none will ever come: this is a permanent pin,
-      # security patches included. The pool hard-depends on wrangler 4.72.0 and
-      # miniflare 4.20260310.0 while root wrangler and @cloudflare/vite-plugin
-      # keep bumping, so tests/worker/** runs against an ever-older workerd than
-      # dev, build and deploy do. Taken deliberately: an ageing test runtime
-      # beats a permanently red CI. It ends when the vitest 4 task lands.
+      # security patches included. The pool hard-depends on wrangler 4.116.0 and
+      # miniflare 4.20260730.0, so tests/worker/** runs on a different workerd
+      # from dev, build and deploy (root wrangler 4.80.0 / miniflare
+      # 4.20260401.0). Taken deliberately: an ageing test runtime beats a
+      # permanently red CI. The package is deprecated; the pin ends with the move
+      # to @cloudflare/vitest-plugin (see "Outstanding actions" in CLAUDE.md).
       - dependency-name: "@cloudflare/vitest-pool-workers"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
       # @cloudflare/workers-types majors are ignored because a types-only bump
