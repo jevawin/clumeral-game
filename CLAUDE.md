@@ -187,9 +187,10 @@ up in conversation — **there is no scheduled reminder and Claude cannot send o
   `readD1Migrations` exporting from the package root instead.
 
   Also still true, and nothing in CI will raise it: the pool carries its own exact
-  `wrangler 4.116.0` and `miniflare 4.20260730.0`, so `tests/worker/**` runs on an older workerd
-  than dev, build and deploy. Root stays on `wrangler 4.80.0` / `miniflare 4.20260401.0` because
-  `@cloudflare/vite-plugin@1.31.0` pins both exactly — see #331, which exists to reconcile them.
+  `wrangler 4.116.0` and `miniflare 4.20260730.0`, so `tests/worker/**` runs on a different
+  (newer) workerd than dev, build and deploy. Root stays on `wrangler 4.81.1` /
+  `miniflare 4.20260409.0` because `@cloudflare/vite-plugin@1.31.2` pins both exactly (#387 took
+  root from 4.80.0 through the lockfile) — see #331, which exists to reconcile them.
 
 ## Project
 
