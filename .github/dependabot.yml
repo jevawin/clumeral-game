@@ -101,8 +101,8 @@ updates:
       # allowed in principle but none will ever come: this is a permanent pin,
       # security patches included. The pool hard-depends on wrangler 4.116.0 and
       # miniflare 4.20260730.0, so tests/worker/** runs on a different workerd
-      # from dev, build and deploy (root wrangler 4.80.0 / miniflare
-      # 4.20260401.0). Taken deliberately: a test runtime that differs from
+      # from dev, build and deploy (root wrangler 4.81.1 / miniflare
+      # 4.20260409.0). Taken deliberately: a test runtime that differs from
       # deploy beats a permanently red CI. The package is deprecated; the pin
       # ends with the move to @cloudflare/vitest-plugin (see "Outstanding
       # actions" in CLAUDE.md).
@@ -110,22 +110,22 @@ updates:
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
       # @cloudflare/workers-types majors are ignored because a types-only bump
       # drags a real runtime with it. `wrangler` peers the types, and the range
-      # moves with the major: 4.80.0 wants "^4.20260401.1", 4.146.0 wants
+      # moves with the major: 4.81.1 wants "^4.20260409.1", 4.146.0 wants
       # "^5.20261001.1". So taking the types to 5 takes root wrangler to 4.146.0,
       # which brings miniflare 5 alpha and a newer workerd — while
-      # @cloudflare/vite-plugin still pins wrangler 4.80.0 on miniflare 4. The
+      # @cloudflare/vite-plugin still pins wrangler 4.81.1 on miniflare 4. The
       # two halves then disagree about the on-disk D1 format: `npm run e2e:db`
       # writes `.wrangler` with the new workerd, `vite preview` cannot read it
       # back, and e2e dies before a test runs. #331 carries the full diagnosis,
       # including why the CI log never shows the real error.
       #
-      # "@cloudflare/vite-plugin still pins wrangler 4.80.0" is true of the
+      # "@cloudflare/vite-plugin still pins wrangler 4.81.1" is true of the
       # version in package.json, NOT of the package — see the entry below, which
       # is what keeps it true.
       #
       # Major only, and that is deliberate: 4.x is still being released
       # (4.20260702.1 as of 2026-10-31, against 4.20260403.1 here), those bumps
-      # sit inside wrangler 4.80.0's peer range, and we want them.
+      # sit inside wrangler 4.81.1's peer range, and we want them.
       #
       # Dependabot refiles this one fast — #325 was closed and came back as #334
       # within the hour, which is why an ignore and not just a close.
@@ -137,14 +137,15 @@ updates:
         update-types: ["version-update:semver-major"]
       # @cloudflare/vite-plugin minors drag a PRERELEASE runtime in, which is the
       # same hazard as the entry above arriving by an unguarded route. The entry
-      # above reasons from this package holding wrangler 4.80.0 on miniflare 4;
-      # that is a property of 1.31.0, not of the package, and nothing was stopping
+      # above reasons from this package holding wrangler on miniflare 4;
+      # that is a property of 1.31.x, not of the package, and nothing was stopping
       # a plain minor from undoing it. #344 proposed exactly that and was closed.
       #
       # Measured against the registry on 2026-11-01 — these are exact pins in the
       # plugin's own `dependencies`, not ranges:
       #
-      #   1.31.0 (ours) -> wrangler 4.80.0  / miniflare 4.20260401.0
+      #   1.31.0        -> wrangler 4.80.0  / miniflare 4.20260401.0
+      #   1.31.2 (ours) -> wrangler 4.81.1  / miniflare 4.20260409.0   <- since #387
       #   1.49.0        -> wrangler 4.116.0 / miniflare 4.20260730.0   <- last on 4
       #   1.49.1        -> wrangler 4.117.0 / miniflare 5.20260730.0-alpha
       #   1.66.0 (head) -> wrangler 4.154.0 / miniflare 5.20261023.1-beta
@@ -155,10 +156,12 @@ updates:
       # safe only because a patch-only allowance keeps us inside 1.31.x, which
       # stays on miniflare 4 (1.31.2 -> wrangler 4.81.1 / miniflare 4.20260409.0).
       #
-      # Patch is deliberately still allowed, same as the wrangler/@cloudflare group
-      # above, but it is not quite free: 1.31.2 peers `wrangler ^4.81.1` while root
-      # pins 4.80.0, so a patch bump trades a prerelease runtime for a peer warning.
-      # That reconciliation is #331's job, not this entry's.
+      # Patch is deliberately still allowed, but none is left to take: #387 took
+      # 1.31.2, the last 1.31.x, so this is now a permanent pin like the two
+      # below. The peer warning once expected here (1.31.2 peers `wrangler
+      # ^4.81.1`) never appeared, because npm resolved root wrangler to 4.81.1
+      # inside the existing `^4.80.0` range — see the wrangler entry. Reconciling
+      # the whole toolchain is still #331's job, not this entry's.
       #
       # Step two of #331, beside the @cloudflare/workers-types entry above. Remove
       # both in that PR, which bumps the plugin, wrangler and the types together
@@ -175,8 +178,8 @@ updates:
       #
       # Where the crossover actually sits, measured 2026-11-01:
       #
-      #   4.80.0 (ours) -> miniflare 4.20260401.0
-      #   4.81.1        -> miniflare 4.20260409.0
+      #   4.80.0        -> miniflare 4.20260401.0
+      #   4.81.1 (ours) -> miniflare 4.20260409.0   <- since #387
       #   4.116.0       -> miniflare 4.20260730.0   <- last on 4
       #   4.117.0       -> miniflare 5.20260730.0-alpha
       #   4.155.0       -> miniflare 5.20261023.2-beta
@@ -186,14 +189,24 @@ updates:
       # latest safe one, and `update-types` cannot express "minors below 4.117.0".
       #
       # `versions: [">=4.117.0"]` COULD express it, and is deliberately not used:
-      # @cloudflare/vite-plugin@1.31.0 pins wrangler 4.80.0 exactly, so raising
+      # @cloudflare/vite-plugin@1.31.2 pins wrangler 4.81.1 exactly, so raising
       # root to 4.116.0 would put two different miniflare 4 builds in one tree
-      # (root 4.20260730.0, the plugin's 4.20260401.0) with different workerds —
+      # (root 4.20260730.0, the plugin's 4.20260409.0) with different workerds —
       # the same split that #325 broke on, in miniflare-4 flavour. Worth doing,
       # with an e2e run behind it, which makes it #331's job and not an ignore
       # entry's.
       #
-      # Be clear what this costs: 4.80.0 is the last 4.80.x, so no patch will ever
+      # This entry does not stop root wrangler moving, and #387 showed it. It
+      # filters the versions Dependabot proposes for wrangler; it does not filter
+      # what npm resolves to satisfy another update that is allowed. #387 was a
+      # plugin patch (1.31.0 -> 1.31.2), and 1.31.2 pins wrangler 4.81.1 exactly,
+      # so the lockfile took root wrangler 4.80.0 -> 4.81.1 with the `^4.80.0`
+      # range in package.json unchanged. Dependabot then listed wrangler in the
+      # PR title. That move was safe (still miniflare 4, and root and plugin
+      # share one workerd), and the entry needs no fix: no 1.31.x after 1.31.2
+      # exists, so the plugin cannot drag wrangler again under the ignore above.
+      #
+      # Be clear what this costs: 4.81.1 is the last 4.81.x, so no patch will ever
       # come and this is a permanent pin, security patches included. Same bargain
       # as @cloudflare/vitest-pool-workers above, and it ends the same way — in
       # #331, which bumps the plugin, wrangler and the types together onto one
