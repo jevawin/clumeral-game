@@ -102,9 +102,10 @@ updates:
       # security patches included. The pool hard-depends on wrangler 4.116.0 and
       # miniflare 4.20260730.0, so tests/worker/** runs on a different workerd
       # from dev, build and deploy (root wrangler 4.80.0 / miniflare
-      # 4.20260401.0). Taken deliberately: an ageing test runtime beats a
-      # permanently red CI. The package is deprecated; the pin ends with the move
-      # to @cloudflare/vitest-plugin (see "Outstanding actions" in CLAUDE.md).
+      # 4.20260401.0). Taken deliberately: a test runtime that differs from
+      # deploy beats a permanently red CI. The package is deprecated; the pin
+      # ends with the move to @cloudflare/vitest-plugin (see "Outstanding
+      # actions" in CLAUDE.md).
       - dependency-name: "@cloudflare/vitest-pool-workers"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
       # @cloudflare/workers-types majors are ignored because a types-only bump
