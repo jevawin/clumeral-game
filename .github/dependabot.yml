@@ -124,7 +124,7 @@ updates:
       # is what keeps it true.
       #
       # Major only, and that is deliberate: 4.x is still being released
-      # (4.20260702.1 as of 2026-10-31, against 4.20260403.1 here), those bumps
+      # (we are on 4.20260702.1, taken by 2026-10-31), those bumps
       # sit inside wrangler 4.81.1's peer range, and we want them.
       #
       # Dependabot refiles this one fast — #325 was closed and came back as #334
@@ -157,8 +157,8 @@ updates:
       # stays on miniflare 4 (1.31.2 -> wrangler 4.81.1 / miniflare 4.20260409.0).
       #
       # Patch is deliberately still allowed, but none is left to take: #387 took
-      # 1.31.2, the last 1.31.x, so this is now a permanent pin like the two
-      # below. The peer warning once expected here (1.31.2 peers `wrangler
+      # 1.31.2, the last 1.31.x, so this is now a permanent pin like the
+      # vitest-pool and wrangler entries. The peer warning once expected here (1.31.2 peers `wrangler
       # ^4.81.1`) never appeared, because npm resolved root wrangler to 4.81.1
       # inside the existing `^4.80.0` range — see the wrangler entry. Reconciling
       # the whole toolchain is still #331's job, not this entry's.
@@ -196,18 +196,21 @@ updates:
       # with an e2e run behind it, which makes it #331's job and not an ignore
       # entry's.
       #
-      # This entry does not stop root wrangler moving, and #387 showed it. It
-      # filters the versions Dependabot proposes for wrangler; it does not filter
-      # what npm resolves to satisfy another update that is allowed. #387 was a
-      # plugin patch (1.31.0 -> 1.31.2), and 1.31.2 pins wrangler 4.81.1 exactly,
-      # so the lockfile took root wrangler 4.80.0 -> 4.81.1 with the `^4.80.0`
-      # range in package.json unchanged. Dependabot then listed wrangler in the
-      # PR title. That move was safe (still miniflare 4, and root and plugin
-      # share one workerd), and the entry needs no fix: no 1.31.x after 1.31.2
-      # exists, so the plugin cannot drag wrangler again under the ignore above.
+      # This entry did not stop root wrangler moving in #387. Observed, not
+      # documented by GitHub: the ignore stops Dependabot opening a wrangler bump
+      # of its own, but a grouped update that needs a newer wrangler still
+      # carries it. #387 was a plugin patch (1.31.0 -> 1.31.2), and 1.31.2 pins
+      # wrangler 4.81.1 exactly, so the lockfile took root wrangler 4.80.0 ->
+      # 4.81.1 with the `^4.80.0` range in package.json unchanged. Dependabot
+      # still recorded it as a semver-minor wrangler update, in the PR
+      # description and the commit's `updated-dependencies` metadata. That move
+      # was safe (still miniflare 4, and root and plugin share one workerd). The
+      # entry needs no fix: no 1.31.x after 1.31.2 exists, so under the plugin
+      # ignore above nothing can drag wrangler again.
       #
-      # Be clear what this costs: 4.81.1 is the last 4.81.x, so no patch will ever
-      # come and this is a permanent pin, security patches included. Same bargain
+      # Be clear what this costs: 4.81.1 is the last 4.81.x, and now that the
+      # plugin cannot drag it, no patch will ever come. This is a permanent pin,
+      # security patches included. Same bargain
       # as @cloudflare/vitest-pool-workers above, and it ends the same way — in
       # #331, which bumps the plugin, wrangler and the types together onto one
       # miniflare. Remove this with the other two there.
