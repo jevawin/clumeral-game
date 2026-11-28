@@ -369,6 +369,24 @@ Results of Tasks 0–4, for the PR body.
     Chromium, and on CI's Linux WebKit on staging. So this is macOS WebKit focus behaviour.
     The fallback does not fire. Follow-up, not fixed here.
 - **Task 4.** `aee210f`. The comment-only check prints nothing, and the YAML parses.
+- **Human review.** Jamie, 2026-11-28: "good".
+- **da-build.** Fresh-context subagent, 2026-11-28: 0 High, 0 Medium, 3 Low, verdict pass
+  with fixes.
+  - L1 is fixed in `16ae23b`. "Ageing test runtime" was false: the pool's workerd
+    1.20260730.1 is newer than root's 1.20260401.1. The fix is comment-only.
+  - L2 is outside the diff. The unit-test-count memory said 41 files; it now says to take
+    the count from the tree.
+  - L3: the header's "#331 removes them" relies on the Task 5 comment, which must be posted
+    with the PR.
+- **Self-review** (docs/SELF-REVIEW.md), 2026-11-28. Every changed line was read against
+  `origin/staging...HEAD`. Comments match the tree, and versions and counts are current. The
+  CSS, HTML, clue, localStorage and worker/SW sections do not apply: there is no `src/`
+  change, and the shipped bundle is unchanged. Two stale lines sit outside this diff and are
+  left for follow-up:
+  - Line 1 of `dependabot.yml` still says "PRs against main" (it targets staging).
+  - CLAUDE.md's Outstanding actions says the pool runs an "older workerd" (item 22 keeps
+    CLAUDE.md unchanged).
+  - The vitest-entry follow-up from Task 4b also still stands.
 
 ## Revision log
 
