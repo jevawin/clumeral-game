@@ -45,6 +45,15 @@
     "vitest": "^4.1.12",
     "wrangler": "^4.80.0"
   },
+  "overrides": {
+    "miniflare": {
+      "undici": "7.30.2",
+      "ws": "8.23.1"
+    },
+    "@cloudflare/vite-plugin": {
+      "ws": "8.23.1"
+    }
+  },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "tailwindcss": "^4.3.3"
