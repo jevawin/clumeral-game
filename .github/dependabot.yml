@@ -158,8 +158,8 @@ updates:
       #
       # Patch is deliberately still allowed, but none is left to take: #387 took
       # 1.31.2, the last 1.31.x, so this is now a permanent pin like the
-      # vitest-pool and wrangler entries. The peer warning once expected here (1.31.2 peers `wrangler
-      # ^4.81.1`) never appeared, because npm resolved root wrangler to 4.81.1
+      # vitest-pool and wrangler entries. The peer warning once expected here
+      # (1.31.2 peers `wrangler ^4.81.1`) never appeared, because npm resolved root wrangler to 4.81.1
       # inside the existing `^4.80.0` range — see the wrangler entry. Reconciling
       # the whole toolchain is still #331's job, not this entry's.
       #
